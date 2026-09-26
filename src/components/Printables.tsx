@@ -21,7 +21,7 @@ function TraceGlyph({ char, casing }: { char: string; casing: "upper" | "lower" 
     <svg className="trace-glyph" viewBox="0 0 200 200" data-case={casing} role="img" aria-label={char}>
       <defs>
         <pattern id={patternId} width="12" height="12" patternUnits="userSpaceOnUse">
-          <circle cx="4" cy="4" r="2.4" fill="#6e9a74" />
+          <circle cx="4" cy="4" r="2.4" fill="var(--sage)" />
         </pattern>
       </defs>
       <text x="100" y="158" textAnchor="middle" fill={`url(#${patternId})`}>

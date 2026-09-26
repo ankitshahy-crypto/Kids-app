@@ -1,16 +1,17 @@
 import { aboutContent, type AboutFeatureId } from "../content/about";
+import { tint } from "../palette";
 import { laterPath, pathStages } from "../data/path";
 import { GrownupIcon, SpeakerIcon, StarIcon } from "./icons";
 
 const tints: Record<AboutFeatureId, string> = {
-  hero: "#F8E6D4",
-  voice: "#E4EEF8",
-  blend: "#E7F2EA",
-  lesson: "#FDE7D4",
-  stars: "#F8E6D4",
-  rewards: "#FDE7D4",
-  classroom: "#E4EEF8",
-  grownups: "#E5F4EA",
+  hero: tint.peach,
+  voice: tint.sky,
+  blend: tint.mint,
+  lesson: tint.blush,
+  stars: tint.peach,
+  rewards: tint.blush,
+  classroom: tint.sky,
+  grownups: tint.mintCard,
 };
 
 export function AboutWordNest() {

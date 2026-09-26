@@ -8,13 +8,13 @@ export function GoalRing({ ms, goalMinutes }: { ms: number; goalMinutes: number 
   return (
     <div className="goal-ring" role="img" aria-label="Today's reading" data-progress={ratio.toFixed(2)} data-met={met ? "true" : "false"}>
       <svg viewBox="0 0 40 40" aria-hidden="true">
-        <circle cx="20" cy="20" r={radius} fill="none" stroke="#E7F2EA" strokeWidth="4" />
+        <circle cx="20" cy="20" r={radius} fill="none" stroke="var(--mint-wash)" strokeWidth="4" />
         <circle
           cx="20"
           cy="20"
           r={radius}
           fill="none"
-          stroke={met ? "#7EAE86" : "#F2C14E"}
+          stroke={met ? "var(--sage-soft)" : "var(--gold)"}
           strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray={`${turn} ${turn}`}

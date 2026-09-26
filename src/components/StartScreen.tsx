@@ -1,22 +1,14 @@
 import { useState } from "react";
 import nestLogo from "../assets/nest-logo.svg";
 import { TAGLINE } from "../brand";
+import { face } from "../palette";
 import type { AnimalId } from "../data/animals";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { Avatar } from "../avatars";
 import { ParentGate } from "./ParentGate";
 import { LockIcon } from "./sceneArt";
 
-const backdrops: Record<AnimalId, string> = {
-  cat: "#F8D7C4",
-  dog: "#F6E3B8",
-  fox: "#F8D0C0",
-  bear: "#E7D3C0",
-  bunny: "#D9E8F6",
-  owl: "#E7DCF4",
-  frog: "#D7EEDC",
-  duck: "#FBE7B0",
-};
+const backdrops: Record<AnimalId, string> = face;
 
 export function StartScreen({
   profiles,

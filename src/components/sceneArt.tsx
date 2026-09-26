@@ -35,7 +35,7 @@ export function ShapesMark() {
     <svg viewBox="0 0 64 64" aria-hidden="true" className="mark">
       <circle cx="16" cy="40" r="10" fill="#F4A4B4" />
       <path d="M34 50 46 26l12 24z" fill="#8FCB7A" />
-      <text x="40" y="22" textAnchor="middle" fontSize="16" fontWeight="700" fill="#E2A15A" fontFamily="Fredoka, sans-serif">
+      <text x="40" y="22" textAnchor="middle" fontSize="16" fontWeight="700" fill="var(--text-warm)" fontFamily="Fredoka, sans-serif">
         3
       </text>
     </svg>

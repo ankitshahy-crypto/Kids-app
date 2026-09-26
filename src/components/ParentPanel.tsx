@@ -15,6 +15,7 @@ import {
   weekIndex,
 } from "../data/schedule";
 import type { Settings } from "../settings";
+import { tint } from "../palette";
 import { ChildForm } from "./ChildForm";
 import { StarIcon } from "./icons";
 import { LearningPath } from "./LearningPath";
@@ -26,13 +27,13 @@ const WEEKLY_LESSONS = 4;
 type ParentPage = "home" | "children" | "join" | "progress" | "teacher" | "rewards" | "settings" | "privacy";
 
 const rows: { id: ParentPage; label: string; tint: string }[] = [
-  { id: "children", label: "Children", tint: "#E5F4EA" },
-  { id: "join", label: "Join a class", tint: "#E4EEF8" },
-  { id: "progress", label: "Progress", tint: "#F8E6D4" },
-  { id: "teacher", label: "From Teacher", tint: "#E4EEF8" },
-  { id: "rewards", label: "Home Rewards", tint: "#FDE7D4" },
-  { id: "settings", label: "Settings", tint: "#E7F2EA" },
-  { id: "privacy", label: "Privacy", tint: "#E4EEF8" },
+  { id: "children", label: "Children", tint: tint.mintCard },
+  { id: "join", label: "Join a class", tint: tint.sky },
+  { id: "progress", label: "Progress", tint: tint.peach },
+  { id: "teacher", label: "From Teacher", tint: tint.sky },
+  { id: "rewards", label: "Home Rewards", tint: tint.blush },
+  { id: "settings", label: "Settings", tint: tint.mint },
+  { id: "privacy", label: "Privacy", tint: tint.sky },
 ];
 
 export function ParentView({
@@ -326,13 +327,13 @@ function ParentHome({
           </div>
           <div className="progress-ring" role="img" aria-label={`${pct} percent of letters introduced`}>
             <svg viewBox="0 0 72 72">
-              <circle cx="36" cy="36" r="28" fill="none" stroke="#E7F2EA" strokeWidth="7" />
+              <circle cx="36" cy="36" r="28" fill="none" stroke="var(--mint-wash)" strokeWidth="7" />
               <circle
                 cx="36"
                 cy="36"
                 r="28"
                 fill="none"
-                stroke="#7EAE86"
+                stroke="var(--sage-soft)"
                 strokeWidth="7"
                 strokeLinecap="round"
                 strokeDasharray={`${ring} ${ring}`}
