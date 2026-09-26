@@ -18,6 +18,7 @@ import {
 import type { Settings } from "../settings";
 import { ChildForm } from "./ChildForm";
 import { StarIcon } from "./icons";
+import { ReadingChart } from "./ReadingChart";
 import { SettingsFields } from "./SettingsFields";
 
 const WEEKLY_LESSONS = 4;
@@ -87,7 +88,7 @@ export function ParentView({
         Back
       </button>
 
-      {page === "home" && child ? <ParentHome child={child} onOpen={setPage} /> : null}
+      {page === "home" && child ? <ParentHome child={child} goalMinutes={settings.readingGoal} onOpen={setPage} /> : null}
       {page === "home" && !child ? (
         <header className="parent-hero">
           <div>
@@ -233,7 +234,15 @@ export function ParentView({
   );
 }
 
-function ParentHome({ child, onOpen }: { child: ChildProfile; onOpen: (page: ParentPage) => void }) {
+function ParentHome({
+  child,
+  goalMinutes,
+  onOpen,
+}: {
+  child: ChildProfile;
+  goalMinutes: number;
+  onOpen: (page: ParentPage) => void;
+}) {
   const now = new Date();
   const introduced = lettersIntroduced(weekIndex(child.createdAt, now));
   const total = letterPlanSize();
@@ -315,6 +324,8 @@ function ParentHome({ child, onOpen }: { child: ChildProfile; onOpen: (page: Par
           </span>
         </section>
       </div>
+
+      <ReadingChart days={child.readingMs} goalMinutes={goalMinutes} />
 
       <button type="button" className="teacher-card-link" data-section="teacher" onClick={() => onOpen("teacher")}>
         <span>

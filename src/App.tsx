@@ -3,6 +3,8 @@ import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./aud
 import { primeSpeech, resumeSpeech } from "./audio/player";
 import { Background } from "./components/Background";
 import { Closet } from "./components/Closet";
+import { GoalCheer } from "./components/GoalCheer";
+import { GoalRing } from "./components/GoalRing";
 import { GrownupsButton } from "./components/GrownupsButton";
 import { GrownupsMenu } from "./components/GrownupsMenu";
 import { Chevron, StarIcon } from "./components/icons";
@@ -19,9 +21,11 @@ import { StickerBook } from "./components/StickerBook";
 import { TeacherView } from "./components/TeacherView";
 import { TodayPath } from "./components/TodayPath";
 import type { DeckWord } from "./data/deck";
-import type { LessonStep, Sticker } from "./data/profiles";
+import { todayKey, type LessonStep, type Sticker } from "./data/profiles";
+import type { ReadingCredit } from "./data/reading";
 import { isReviewDay, planForWeek, practiceLetters, weekIndex, wordsForLetters } from "./data/schedule";
 import { useProfiles } from "./hooks/useProfiles";
+import { useReadingTime } from "./hooks/useReadingTime";
 import { useSettings } from "./hooks/useSettings";
 import { bindPressFeedback } from "./input/press";
 
@@ -32,12 +36,13 @@ const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
-  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear } = useProfiles();
+  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading } = useProfiles();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
   const [grownupsReturn, setGrownupsReturn] = useState<"start" | "kid">("start");
   const [flying, setFlying] = useState(false);
   const [cheer, setCheer] = useState<number | null>(null);
+  const [goalMet, setGoalMet] = useState(false);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -118,6 +123,23 @@ export default function App() {
     setScreen("today");
   };
 
+  const celebrateGoal = (result: ReadingCredit) => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) setFlying(true);
+    if (result.milestones.length > 0) {
+      setCheer(result.milestones[result.milestones.length - 1] ?? null);
+      playEffect("cheer", settingsRef.current);
+    } else {
+      setGoalMet(true);
+      playEffect("chime", settingsRef.current);
+    }
+  };
+
+  useReadingTime(mode === "kid" ? active : null, (id, totals) => {
+    const result = recordReading(id, totals, settingsRef.current.readingGoal);
+    if (result.awardedNow) celebrateGoal(result);
+  });
+
   const finishLetter = (word: DeckWord) => {
     const learned: Sticker[] = [
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
@@ -162,10 +184,13 @@ export default function App() {
                     <Chevron direction="left" />
                   </span>
                 </button>
-                <p className="star-count" data-stars={active.stars}>
-                  <StarIcon />
-                  <span>{active.stars}</span>
-                </p>
+                <div className="today-tools">
+                  <GoalRing ms={active.readingMs[todayKey()] ?? 0} goalMinutes={settings.readingGoal} />
+                  <p className="star-count" data-stars={active.stars}>
+                    <StarIcon />
+                    <span>{active.stars}</span>
+                  </p>
+                </div>
               </div>
             ) : null}
             <div className={`screen-body${screen === "today" ? " is-fit" : ""}`}>
@@ -178,6 +203,7 @@ export default function App() {
                   onNest={() => setScreen("nest")}
                   onCloset={() => setScreen("closet")}
                   onStickers={() => setScreen("stickers")}
+                  goalMinutes={settings.readingGoal}
                 />
               ) : null}
               {screen === "library" ? <KidCorner kind="library" onBack={() => setScreen("today")} /> : null}
@@ -219,9 +245,12 @@ export default function App() {
           </div>
         ) : null}
 
-        {mode === "teacher" ? <TeacherView profiles={profiles} onClose={() => setMode("start")} /> : null}
+        {mode === "teacher" ? (
+          <TeacherView profiles={profiles} goalMinutes={settings.readingGoal} onClose={() => setMode("start")} />
+        ) : null}
         {mode === "kid" && flying ? <StarFlight onDone={() => setFlying(false)} /> : null}
         {mode === "kid" && cheer !== null ? <MilestoneCheer stars={cheer} onDone={() => setCheer(null)} /> : null}
+        {mode === "kid" && goalMet ? <GoalCheer onDone={() => setGoalMet(false)} /> : null}
 
         {mode === "grownups" ? (
           <div className="screen-body">

@@ -1,5 +1,6 @@
 import { isReviewDay, planForWeek, practiceLetters, weekIndex } from "../data/schedule";
-import { dayProgress, type ChildProfile, type LessonStep } from "../data/profiles";
+import { dayProgress, todayKey, type ChildProfile, type LessonStep } from "../data/profiles";
+import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
 import { StarIcon } from "./icons";
 import { BookMark, EggNest, Hills, PencilMark, ShapesMark, ToyBox } from "./sceneArt";
@@ -19,6 +20,7 @@ export function TodayPath({
   onNest,
   onCloset,
   onStickers,
+  goalMinutes,
 }: {
   profile: ChildProfile;
   onOpen: (step: LessonStep) => void;
@@ -27,6 +29,7 @@ export function TodayPath({
   onNest: () => void;
   onCloset: () => void;
   onStickers: () => void;
+  goalMinutes: number;
 }) {
   const now = new Date();
   const review = isReviewDay(now);
@@ -41,10 +44,13 @@ export function TodayPath({
         <button type="button" className="today-avatar" aria-label="Switch child" onClick={onLeave}>
           <Hero animal={profile.animal} outfit={profile.outfit} />
         </button>
-        <p className="star-count" data-stars={profile.stars}>
-          <StarIcon />
-          <span>{profile.stars}</span>
-        </p>
+        <div className="today-tools">
+          <GoalRing ms={profile.readingMs[todayKey(now)] ?? 0} goalMinutes={goalMinutes} />
+          <p className="star-count" data-stars={profile.stars}>
+            <StarIcon />
+            <span>{profile.stars}</span>
+          </p>
+        </div>
       </div>
       {review ? <p className="today-review">Review</p> : null}
 

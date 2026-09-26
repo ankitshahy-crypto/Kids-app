@@ -15,6 +15,8 @@ export type Settings = {
   speed: SpeechSpeed;
   /** Device voice chosen in Settings. Null uses the best installed en-US voice. */
   voiceURI: string | null;
+  /** Daily active-reading goal. One bonus star, then no more for extra time. */
+  readingGoal: 5 | 10 | 15;
 };
 
 /**
@@ -37,6 +39,7 @@ export const DEFAULT_SETTINGS: Settings = {
   tapFeedback: true,
   speed: "slow",
   voiceURI: null,
+  readingGoal: 10,
 };
 
 function clampVolume(value: unknown, fallback: number): number {
@@ -66,6 +69,7 @@ export function loadSettings(): Settings {
       tapFeedback: record.tapFeedback !== false,
       speed: record.speed === "slower" ? "slower" : "slow",
       voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
+      readingGoal: record.readingGoal === 5 || record.readingGoal === 15 ? record.readingGoal : 10,
     };
   } catch {
     return DEFAULT_SETTINGS;

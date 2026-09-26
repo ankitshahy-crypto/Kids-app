@@ -45,6 +45,10 @@ export type ChildProfile = {
   nest: NestPiece[];
   /** Star totals already celebrated, such as 10 and 20. */
   celebrated: number[];
+  /** Active reading milliseconds, keyed by local date. Only increases. */
+  readingMs: Record<string, number>;
+  /** Dates whose reading goal already gave the one bonus star. */
+  readingAwarded: string[];
 };
 
 type ProfileStore = {
@@ -144,8 +148,8 @@ export function editChild(
   };
 }
 
-function emptyRewards(): Pick<ChildProfile, "outfit" | "stickers" | "nest" | "celebrated"> {
-  return { outfit: emptyOutfit(), stickers: [], nest: [], celebrated: [] };
+function emptyRewards(): Pick<ChildProfile, "outfit" | "stickers" | "nest" | "celebrated" | "readingMs" | "readingAwarded"> {
+  return { outfit: emptyOutfit(), stickers: [], nest: [], celebrated: [], readingMs: {}, readingAwarded: [] };
 }
 
 export function createChild(input: { name: string; ageRange: AgeRange; animal: AnimalId }): ChildProfile {
@@ -197,7 +201,21 @@ function withRewards(profile: ChildProfile): ChildProfile {
     celebrated: Array.isArray(profile.celebrated)
       ? profile.celebrated.filter((value) => typeof value === "number" && value > 0 && value % 10 === 0)
       : [],
+    readingMs: readingMap(profile.readingMs),
+    readingAwarded: Array.isArray(profile.readingAwarded)
+      ? profile.readingAwarded.filter((value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value))
+      : [],
   };
+}
+
+function readingMap(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object") return {};
+  const next: Record<string, number> = {};
+  for (const [key, ms] of Object.entries(value as Record<string, unknown>)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) continue;
+    next[key] = Math.floor(ms);
+  }
+  return next;
 }
 
 function isProfile(value: unknown): value is ChildProfile {
