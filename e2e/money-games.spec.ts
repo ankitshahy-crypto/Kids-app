@@ -44,6 +44,11 @@ async function install(page: Page) {
   await page.getByRole("button", { name: "LittleNest Time & Money" }).click();
 }
 
+async function openPlay(page: Page, name: string) {
+  await page.getByRole("button", { name: "Money play" }).click();
+  await page.getByRole("button", { name }).click();
+}
+
 async function passGate(page: Page) {
   const dialog = page.getByRole("dialog");
   const prompt = await dialog.getByRole("heading").innerText();
@@ -65,7 +70,7 @@ async function passGate(page: Page) {
 
 test("three jars earn coins and the save jar can reach the hat", async ({ page }, testInfo) => {
   await install(page);
-  await page.getByRole("button", { name: "Three jars" }).click();
+  await openPlay(page, "Three jars");
   const play = page.locator("[data-screen=jars]");
   if (testInfo.project.name === "chromium") {
     await play.screenshot({ path: "/opt/cursor/artifacts/money_jars.png" });
@@ -88,7 +93,7 @@ test("three jars earn coins and the save jar can reach the hat", async ({ page }
 
 test("the lemonade stand pays a coin for each cup served", async ({ page }, testInfo) => {
   await install(page);
-  await page.getByRole("button", { name: "Lemonade stand" }).click();
+  await openPlay(page, "Lemonade stand");
   const play = page.locator("[data-screen=lemonade]");
   if (testInfo.project.name === "chromium") {
     await play.screenshot({ path: "/opt/cursor/artifacts/money_lemonade.png" });
@@ -102,7 +107,7 @@ test("the lemonade stand pays a coin for each cup served", async ({ page }, test
 
 test("a snack that costs too much asks them to save", async ({ page }) => {
   await install(page);
-  await page.getByRole("button", { name: "Choose a snack" }).click();
+  await openPlay(page, "Choose a snack");
   const play = page.locator("[data-screen=choose]");
   await expect(play).toHaveAttribute("data-wallet", "10");
   await play.locator("[data-snack=milk]").click();
@@ -114,7 +119,7 @@ test("a snack that costs too much asks them to save", async ({ page }) => {
 
 test("needs and wants sort without a wrong bin ending the game", async ({ page }) => {
   await install(page);
-  await page.getByRole("button", { name: "Needs and wants" }).click();
+  await openPlay(page, "Needs and wants");
   const play = page.locator("[data-screen=needs]");
   await play.locator("[data-item=apple]").click();
   await play.locator("[data-bin=want]").click();
@@ -132,8 +137,10 @@ test("needs and wants sort without a wrong bin ending the game", async ({ page }
 
 test("cards stay closed early, then a debit tap lowers the save jar", async ({ page }, testInfo) => {
   await install(page);
-  await page.getByRole("button", { name: "Pretend cards" }).click();
+  await openPlay(page, "Pretend cards");
   await expect(page.locator("[data-screen=cards]")).toHaveAttribute("data-cards", "closed");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator("[data-screen=money-play]")).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Switch child" }).click();
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
@@ -153,7 +160,7 @@ test("cards stay closed early, then a debit tap lowers the save jar", async ({ p
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Mia" }).click();
   await page.getByRole("button", { name: "LittleNest Time & Money" }).click();
-  await page.getByRole("button", { name: "Pretend cards" }).click();
+  await openPlay(page, "Pretend cards");
   const cards = page.locator("[data-screen=cards]");
   await expect(cards).toHaveAttribute("data-cards", "open");
   await expect(cards).toHaveAttribute("data-save", "4");
