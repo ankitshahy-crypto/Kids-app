@@ -1,3 +1,5 @@
+import { SETTINGS_KEY, readStored, writeStored } from "./storage";
+
 export type SpeechSpeed = "slow" | "slower";
 
 export type Settings = {
@@ -51,11 +53,11 @@ function clampVolume(value: unknown, fallback: number): number {
   return Math.min(1, Math.max(0, number));
 }
 
-const STORAGE_KEY = "kids-app-settings-v1";
+const STORAGE_KEY = SETTINGS_KEY;
 
 export function loadSettings(): Settings {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readStored(localStorage, STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return DEFAULT_SETTINGS;
@@ -81,5 +83,5 @@ export function loadSettings(): Settings {
 }
 
 export function saveSettings(settings: Settings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  writeStored(localStorage, STORAGE_KEY, JSON.stringify(settings));
 }

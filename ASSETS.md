@@ -1,6 +1,6 @@
 # Asset provenance
 
-Everything visual or audible in WordNest is listed here. There are no analytics scripts, font CDNs, stock photos, or audio files downloaded at runtime.
+Everything visual or audible in LittleNest Learning is listed here. There are no analytics scripts, font CDNs, stock photos, or audio files downloaded at runtime.
 
 | Asset | Path | Source | License |
 | --- | --- | --- | --- |
@@ -13,7 +13,7 @@ Everything visual or audible in WordNest is listed here. There are no analytics 
 | Profile animals: cat, dog, fox, bear, bunny, owl, frog, duck | `src/avatars.tsx` | Original flat animal portraits made for this project | Original. No third-party artwork. |
 | Draw and color placeholder marks | `src/components/PlaceholderStep.tsx` | Original simple shapes made for this project | Original. No third-party artwork. |
 | Blob background, tiles, buttons | `src/index.css` | Original styling made for this project | Original. |
-| WordNest nest logo | `src/assets/nest-logo.svg` | Original pastel nest with a small animal peeking out, drawn for this project | Original. No third-party artwork. |
+| LittleNest nest logo | `src/assets/nest-logo.svg` | Original pastel nest with a small animal peeking out, drawn for this project | Original. No third-party artwork. |
 | Path and classroom marks | `src/components/sceneArt.tsx` | Original pencil, book, shapes, toy box, egg nest, hills, star jar, lock, and tab marks | Original. No third-party artwork. |
 | Approved screen references | `docs/mockups/` | Layout references supplied for this project. Not drawn into the app. | Reference only. Not runtime artwork. |
 | Browser tab icon | `public/favicon.svg` | Same original nest logo on a cream field | Original. |

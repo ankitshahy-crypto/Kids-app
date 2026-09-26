@@ -1,6 +1,8 @@
-# WordNest
+# LittleNest Learning
 
-WordNest is a TriageDesk product: a calm, offline reading-practice app for ages 3–5 first (and phonics as children grow toward 6–7). The child is the hero. It is reading practice, not therapy. The product direction lives in `docs/PRODUCT.md`.
+LittleNest Learning is a TriageDesk product (by TriageDesk): a calm, offline reading-practice app for ages 3–5 first (and phonics as children grow toward 6–7). The reading module is LittleNest Words. The child is the hero. It is reading practice, not therapy. The product direction lives in `docs/PRODUCT.md`.
+
+The planned site is littlenestlearning.app. That domain is not purchased yet. Sharing and the demo stay at the GitHub Pages address below. The repository name and the `/Kids-app/` path stay as they are.
 
 The first activity inside Today's lesson is **Sound it out**.
 
@@ -27,7 +29,7 @@ npm run dev
 
 Open the address Vite prints. On a phone the layout is a portrait column. On a tablet it stays centered, with a wider column, larger tap targets, and bigger art.
 
-The first screen shows the nest, the WordNest name, and a card of child avatars. Tap a child to open Today. **Parent** and **Teacher** open a small grown-up check (a number written as a word, or a small sum). A child who cannot read or add does not get through. Cancel closes it.
+The first screen shows the nest, the LittleNest Learning name, and a card of child avatars. Tap a child to open Today. **Parent** and **Teacher** open a small grown-up check (a number written as a word, or a small sum). A child who cannot read or add does not get through. Cancel closes it.
 
 Phones (and some browsers) will not speak until there has been a tap. Choosing a child, or opening the letter game, is that tap.
 
@@ -47,7 +49,7 @@ Teacher opens a classroom shell with sample data marked Demo: a class switcher, 
 
 ## Run on an iPhone
 
-The native project is the `ios/` folder (app id `com.triagedesk.wordnest`, display name WordNest). It is a universal app: iPhone stays portrait, and iPad supports portrait and landscape. From a Mac with Xcode:
+The native project is the `ios/` folder (app id `com.triagedesk.littlenest`, display name LittleNest). It is a universal app: iPhone stays portrait, and iPad supports portrait and landscape. From a Mac with Xcode:
 
 ```bash
 git clone <this-repo>

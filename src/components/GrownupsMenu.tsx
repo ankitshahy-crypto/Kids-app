@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
+import { MODULE_WORDS, PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
 import { shareWordNest, type ShareResult } from "../share";
 import type { AnimalId } from "../data/animals";
@@ -32,8 +33,8 @@ const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; ti
   { id: "account", title: "Account", note: "School sign-in is coming", tint: "#E4EEF8" },
   { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: "#FDE7D4" },
   { id: "privacy", title: "Privacy", note: "What stays on this device", tint: "#E5F4EA" },
-  { id: "about", title: "About WordNest", note: "Version and who makes the app", tint: "#E4EEF8" },
-  { id: "share", title: "Tell a friend or your school", note: "Share the WordNest link", tint: "#F8E6D4" },
+  { id: "about", title: `About ${PRODUCT_NAME}`, note: "Version and who makes the app", tint: "#E4EEF8" },
+  { id: "share", title: "Tell a friend or your school", note: `Share the ${PRODUCT_SHORT} link`, tint: "#F8E6D4" },
   { id: "printables", title: "Printables", note: "Letter tracing and blending sheets", tint: "#E4EEF8" },
 ];
 
@@ -226,7 +227,7 @@ export function GrownupsMenu({
           <p className="account-status">Not signed in</p>
           <p className="adult-copy">
             School sign-in is coming. A grown-up will be able to connect this device to a class later. There is no
-            account to create in this version, and WordNest does not ask for a card or a payment.
+            account to create in this version, and {PRODUCT_NAME} does not ask for a card or a payment.
           </p>
         </section>
       ) : null}
@@ -236,7 +237,7 @@ export function GrownupsMenu({
           <h2>Help</h2>
           <h3>How the daily lesson works</h3>
           <p className="adult-copy">
-            Each day the path has four stops: Letters, Draw, Story, and Colors. A star is for trying. On Friday the
+            Each day {MODULE_WORDS} has four stops: Letters, Draw, Story, and Colors. A star is for trying. On Friday the
             letters from that week come back for a short review.
           </p>
           <h3>Drag to blend</h3>
@@ -255,7 +256,7 @@ export function GrownupsMenu({
             <dt>Can a child open this menu?</dt>
             <dd>Only after the grown-up check. Cancel leaves them on the lesson.</dd>
             <dt>Where are profiles saved?</dt>
-            <dd>On this device. WordNest does not upload them.</dd>
+            <dd>On this device. {PRODUCT_NAME} does not upload them.</dd>
             <dt>How do I quiet the taps?</dt>
             <dd>Open Settings, then turn Tap sounds & buzz off. Dragging across a word stays quiet either way.</dd>
           </dl>
@@ -272,7 +273,7 @@ export function GrownupsMenu({
         <section className="adult-section" data-section="privacy">
           <h2>Privacy</h2>
           <ul className="plain-list">
-            <li>WordNest keeps information on this device.</li>
+            <li>{PRODUCT_NAME} keeps information on this device.</li>
             <li>A profile stores a first name or one initial, an age range, and an animal that is already in the app.</li>
             <li>Photos are not uploaded. The app does not take pictures.</li>
             <li>There is no health data and no diagnosis.</li>
@@ -298,7 +299,7 @@ export function GrownupsMenu({
           <p className="share-url" data-share-url={shareUrl}>
             {shareUrl}
           </p>
-          <p className="adult-copy">No codes and no tracking. This only shares the WordNest link.</p>
+          <p className="adult-copy">No codes and no tracking. This only shares the {PRODUCT_SHORT} link.</p>
           <button
             type="button"
             className="share-button"

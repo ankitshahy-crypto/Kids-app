@@ -1,16 +1,20 @@
-# WordNest: Learn to Read
+# LittleNest Learning: ABC & 123
 
 Store and website copy. The in-app About screen reads the same words from `src/content/about.ts`. The version number comes from `package.json`.
 
-**Subtitle:** Reading practice for ages 3–5
+**Name:** LittleNest Learning: ABC & 123
+
+**Subtitle:** Letters, numbers & colors 3-5
+
+**Tagline:** by TriageDesk
 
 **Promotional text:** Five happy minutes a day. Your child's own animal is the hero of every story, with no ads, no tricks, and no surprise charges.
 
 ## Description
 
-WordNest helps young children take their first steps into reading, one small word at a time. Made for ages 3 to 5 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!"
+LittleNest Learning helps young children take their first steps into reading, one small word at a time. Made for ages 3 to 5 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes in LittleNest Words: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!"
 
-## What makes WordNest different
+## What makes LittleNest Learning different
 
 - **Your child is the hero:** Stories star the animal they chose.
 - **Real, warm voices:** Natural voices, not a robot.
@@ -21,9 +25,9 @@ WordNest helps young children take their first steps into reading, one small wor
 - **Made for classrooms too:** Teachers can follow a class and share goals with parents.
 - **Grown-up tools:** They sit behind a simple check.
 
-## How WordNest teaches
+## How LittleNest Learning teaches
 
-WordNest follows one gentle path. Children learn letter sounds, then blend those sounds into a word, then read short words, then tiny stories. Phonics for ages 5 to 7 comes after that.
+LittleNest Words follows one gentle path. Children learn letter sounds, then blend those sounds into a word, then read short words, then tiny stories. Phonics for ages 5 to 7 comes after that.
 
 1. **Letters:** Hear each letter sound.
 2. **Blending:** Slide sounds together into a word.
@@ -37,12 +41,12 @@ No ads, no tracking, no in-app purchase tricks. First name or initial only. Prog
 
 ## Affordable for every family
 
-Learning to read shouldn't be expensive. WordNest is priced so every family can use it, and through partner schools it's included for families at little or no extra cost. No creeping subscriptions or endless add-ons.
+Learning to read shouldn't be expensive. LittleNest Learning is priced so every family can use it, and through partner schools it's included for families at little or no extra cost. No creeping subscriptions or endless add-ons.
 
 No price is shown in the app.
 
-WordNest is reading practice for young children. It is not a therapy or diagnostic tool.
+LittleNest Learning is reading practice for young children. It is not a therapy or diagnostic tool.
 
-WordNest is made by TriageDesk.
+by TriageDesk
 
 **Version:** 0.1.0

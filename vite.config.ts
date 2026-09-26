@@ -28,9 +28,9 @@ export default defineConfig({
       injectRegister: null,
       includeAssets: ["favicon.svg", "icons/*.png", "audio/**/*.mp3"],
       manifest: {
-        name: "WordNest: Learn to Read",
-        short_name: "WordNest",
-        description: "Reading practice for ages 3–5. Works offline after the first visit.",
+        name: "LittleNest Learning",
+        short_name: "LittleNest",
+        description: "LittleNest Learning: reading practice for ages 3–5. Works offline after the first visit.",
         theme_color: "#FBF6EE",
         background_color: "#FBF6EE",
         display: "standalone",

@@ -1,3 +1,5 @@
+import { OUTBOX_KEY, readStored, writeStored } from "../storage";
+
 /**
  * Work that needs a network later. Nothing here is sent.
  * A class server can read `class-sync` jobs when one exists.
@@ -11,8 +13,8 @@ export type OutboxJob = {
   createdAt: string;
 };
 
-const STORAGE_KEY = "kids-app-outbox-v1";
-const EVENT = "wordnest-outbox";
+const STORAGE_KEY = OUTBOX_KEY;
+const EVENT = "littlenest-outbox";
 
 type KeyValueStore = {
   getItem(key: string): string | null;
@@ -31,7 +33,7 @@ function store(): KeyValueStore | null {
 export function readOutbox(storage: KeyValueStore | null = store()): OutboxJob[] {
   if (!storage) return [];
   try {
-    const raw = storage.getItem(STORAGE_KEY);
+    const raw = readStored(storage, STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
@@ -44,7 +46,7 @@ export function readOutbox(storage: KeyValueStore | null = store()): OutboxJob[]
 function writeOutbox(jobs: OutboxJob[], storage: KeyValueStore | null = store()): void {
   if (!storage) return;
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(jobs));
+    writeStored(storage, STORAGE_KEY, JSON.stringify(jobs));
   } catch {
     // A full disk must not surface as an error in the lesson.
   }

@@ -1,12 +1,12 @@
-# WordNest product spec
+# LittleNest Learning product spec
 
 This document is the product direction for every later step. Build only what the current step calls for, and keep later steps compatible with the rules here.
 
 ## What it is
 
-WordNest is a TriageDesk product. It is a pre-reading and early-reading app. Ages 3–5 come first. It grows into phonics for ages 5–7.
+LittleNest Learning is a TriageDesk product (by TriageDesk). It is a pre-reading and early-reading app. Ages 3–5 come first. It grows into phonics for ages 5–7.
 
-Reading is the only subject. The child is the hero of the stories.
+The reading module is LittleNest Words. Reading is the only subject in this build. The child is the hero of the stories.
 
 Market it as reading practice. Never market it as therapy, and never describe a child in clinical language.
 
@@ -29,7 +29,7 @@ Step 1 only leaves a "From your teacher" placeholder card in the parent view. Th
 
 **Teacher view.** A separate teacher profile, behind the same grown-up check. A classroom shell: a class switcher, Scan QR, a class star jar, a roster of app names and avatars, and tabs for classes, roster, goals, the star jar, certificates, and notes. Step 1 shows that shell with demo data only.
 
-The start screen shows the nest, the WordNest name, and the child avatar buttons. Tapping a child opens the kid view. A labeled Grown-ups button sits in the top corner of the start screen and the child screens, away from the lesson path. Parent and Teacher stay as smaller locked pills. One tap on any of them opens a grown-up check a 3-to-5-year-old cannot pass. Cancel closes it without opening the view. Grown-ups then opens a menu: Settings, Child profiles, Account, Help, Privacy, and About.
+The start screen shows the nest, the LittleNest Learning name, and the child avatar buttons. Tapping a child opens the kid view. A labeled Grown-ups button sits in the top corner of the start screen and the child screens, away from the lesson path. Parent and Teacher stay as smaller locked pills. One tap on any of them opens a grown-up check a 3-to-5-year-old cannot pass. Cancel closes it without opening the view. Grown-ups then opens a menu: Settings, Child profiles, Account, Help, Privacy, and About.
 
 Step 1 sets up the shell and routing for all three views, builds the kid view, and builds a basic parent view that can add and edit a child. The teacher view in step 1 is a placeholder dashboard. Step 6 fills it in.
 

@@ -1,3 +1,4 @@
+import { PLACEMENT_KEY, readStored, writeStored } from "../storage";
 import { learningPlace, type PathStageId } from "./path";
 import { isReviewDay, letterSchedule, lettersIntroduced, planForWeek, practiceLetters, weekIndex } from "./schedule";
 import { READING, isSubjectKey, readingStages, subjectDefinition, type SubjectId } from "./subject";
@@ -49,7 +50,7 @@ export type ResolvedPlacement = {
 /** One class on this device until a server id replaces it. */
 export const DEVICE_CLASS_ID = "device-class";
 
-export const PLACEMENT_STORAGE_KEY = "kids-app-placement-v1";
+export const PLACEMENT_STORAGE_KEY = PLACEMENT_KEY;
 
 type KeyValueStore = {
   getItem(key: string): string | null;
@@ -229,7 +230,7 @@ export function parsePlacement(value: unknown): PlacementDocument | null {
 
 export function loadPlacement(storage: KeyValueStore = localStorage): PlacementDocument {
   try {
-    const raw = storage.getItem(PLACEMENT_STORAGE_KEY);
+    const raw = readStored(storage, PLACEMENT_STORAGE_KEY);
     if (!raw) return emptyPlacement();
     return parsePlacement(JSON.parse(raw)) ?? emptyPlacement();
   } catch {
@@ -238,7 +239,7 @@ export function loadPlacement(storage: KeyValueStore = localStorage): PlacementD
 }
 
 export function savePlacement(doc: PlacementDocument, storage: KeyValueStore = localStorage): void {
-  storage.setItem(PLACEMENT_STORAGE_KEY, JSON.stringify(doc));
+  writeStored(storage, PLACEMENT_STORAGE_KEY, JSON.stringify(doc));
 }
 
 /** Child override, then the class place, then that subject's calendar. Reading uses weeks since the profile was created. */
