@@ -59,6 +59,18 @@ body {
   overflow: hidden;
 }
 
+button,
+a,
+label,
+select,
+summary,
+[role="button"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  touch-action: manipulation;
+}
+
 button {
   font-family: inherit;
   border: 0;
@@ -70,6 +82,55 @@ button {
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
+}
+
+button.is-pressed,
+a.is-pressed,
+label.is-pressed,
+select.is-pressed,
+summary.is-pressed,
+input.is-pressed,
+[role="button"].is-pressed,
+.tile.is-pressed:not(:disabled),
+.tile-wrap.is-active .tile.is-pressed,
+.gate-choice.is-pressed,
+.gate-button.is-pressed,
+.nav-button.is-pressed,
+.play-button.is-pressed,
+.who-pick.is-pressed,
+.trail-stop.is-pressed,
+.parent-row.is-pressed,
+.kid-enter.is-pressed {
+  scale: 0.95;
+  filter: brightness(1.08);
+  box-shadow: 0 0 0 6px rgba(183, 224, 194, 0.65);
+}
+
+.is-busy {
+  opacity: 0.68;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.is-pressed,
+  a.is-pressed,
+  label.is-pressed,
+  select.is-pressed,
+  summary.is-pressed,
+  input.is-pressed,
+  [role="button"].is-pressed,
+  .tile.is-pressed:not(:disabled),
+  .tile-wrap.is-active .tile.is-pressed,
+  .gate-choice.is-pressed,
+  .gate-button.is-pressed,
+  .nav-button.is-pressed,
+  .play-button.is-pressed,
+  .who-pick.is-pressed,
+  .trail-stop.is-pressed,
+  .parent-row.is-pressed,
+  .kid-enter.is-pressed {
+    scale: 1;
+    filter: brightness(1.14);
+  }
 }
 
 button:focus-visible {
@@ -1576,6 +1637,7 @@ button:focus-visible {
   inset: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
 .hills {
@@ -2560,5 +2622,50 @@ button:focus-visible {
 
   .parent-view {
     width: min(880px, 100%);
+  }
+}
+
+button.is-pressed,
+a.is-pressed,
+label.is-pressed,
+select.is-pressed,
+summary.is-pressed,
+input.is-pressed,
+[role="button"].is-pressed,
+.tile.is-pressed:not(:disabled),
+.tile-wrap.is-active .tile.is-pressed,
+.gate-choice.is-pressed,
+.gate-button.is-pressed,
+.nav-button.is-pressed,
+.play-button.is-pressed,
+.who-pick.is-pressed,
+.trail-stop.is-pressed,
+.parent-row.is-pressed,
+.kid-enter.is-pressed {
+  scale: 0.95;
+  filter: brightness(1.08);
+  box-shadow: 0 0 0 6px rgba(183, 224, 194, 0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.is-pressed,
+  a.is-pressed,
+  label.is-pressed,
+  select.is-pressed,
+  summary.is-pressed,
+  input.is-pressed,
+  [role="button"].is-pressed,
+  .tile.is-pressed:not(:disabled),
+  .tile-wrap.is-active .tile.is-pressed,
+  .gate-choice.is-pressed,
+  .gate-button.is-pressed,
+  .nav-button.is-pressed,
+  .play-button.is-pressed,
+  .who-pick.is-pressed,
+  .trail-stop.is-pressed,
+  .parent-row.is-pressed,
+  .kid-enter.is-pressed {
+    scale: 1;
+    filter: brightness(1.14);
   }
 }

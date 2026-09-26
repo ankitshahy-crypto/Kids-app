@@ -15,6 +15,7 @@ import { isReviewDay, planForWeek, practiceLetters, weekIndex, wordsForLetters }
 import type { LessonStep } from "./data/profiles";
 import { useProfiles } from "./hooks/useProfiles";
 import { useSettings } from "./hooks/useSettings";
+import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher";
 type Screen = "today" | "library" | "nest" | LessonStep;
@@ -61,6 +62,8 @@ export default function App() {
   useEffect(() => {
     applyAudioSettings(settings);
   }, [settings]);
+
+  useEffect(() => bindPressFeedback(() => settingsRef.current), [settingsRef]);
 
   useEffect(() => {
     if (mode !== "kid") {

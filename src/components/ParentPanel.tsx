@@ -225,6 +225,28 @@ export function ParentView({
             onVolume={(musicVolume) => onChange({ musicVolume })}
           />
           <p className="adult-copy">Music loops are not in the app yet. The switch is ready for them.</p>
+          <fieldset className="setting-group" data-mix="taps">
+            <legend>Tap sounds & buzz</legend>
+            <div className="segment">
+              <button
+                type="button"
+                className={settings.tapFeedback ? "is-selected" : ""}
+                aria-pressed={settings.tapFeedback}
+                onClick={() => onChange({ tapFeedback: true })}
+              >
+                On
+              </button>
+              <button
+                type="button"
+                className={!settings.tapFeedback ? "is-selected" : ""}
+                aria-pressed={!settings.tapFeedback}
+                onClick={() => onChange({ tapFeedback: false })}
+              >
+                Off
+              </button>
+            </div>
+            <p className="adult-copy">A soft tap and a short buzz when a finger presses something. Dragging across a word stays quiet.</p>
+          </fieldset>
           <fieldset className="setting-group">
             <legend>Speech speed</legend>
             <SpeedButtons speed={settings.speed} onChange={(speed) => onChange({ speed })} />

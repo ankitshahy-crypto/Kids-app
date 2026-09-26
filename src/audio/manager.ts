@@ -11,7 +11,7 @@ import { isIos, isNativeApp } from "./platform";
  * logged in ASSETS.md. Tracing focus (`focus`) stays silent.
  */
 
-export type EffectName = "pop" | "chime" | "boop" | "celebrate";
+export type EffectName = "tap" | "pop" | "chime" | "boop" | "celebrate";
 
 export type MusicArea = "today" | "play" | "story" | "focus" | "none";
 
@@ -241,6 +241,10 @@ function startEffect(ctx: AudioContext, name: EffectName): void {
   const now = ctx.currentTime;
   const peak = 0.12;
   try {
+    if (name === "tap") {
+      tone(ctx, 740, 560, now, 0.035, peak * 0.22);
+      return;
+    }
     if (name === "pop") {
       tone(ctx, 520, 760, now, 0.07, peak);
       return;
