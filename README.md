@@ -25,7 +25,7 @@ npm install
 npm run dev
 ```
 
-Open the address Vite prints. The layout is a portrait phone screen, centered on a wide window.
+Open the address Vite prints. On a phone the layout is a portrait column. On a tablet it stays centered, with a wider column, larger tap targets, and bigger art.
 
 The first screen shows the nest, the WordNest name, and a card of child avatars. Tap a child to open Today. **Parent** and **Teacher** are small locked pills and open only after a press-and-hold of about 2 seconds.
 
@@ -47,7 +47,7 @@ Teacher opens a classroom shell with sample data marked Demo: a class switcher, 
 
 ## Run on an iPhone
 
-The native project is the `ios/` folder (app id `com.triagedesk.wordnest`, display name WordNest). It is portrait-only. From a Mac with Xcode:
+The native project is the `ios/` folder (app id `com.triagedesk.wordnest`, display name WordNest). It is a universal app: iPhone stays portrait, and iPad supports portrait and landscape. From a Mac with Xcode:
 
 ```bash
 git clone <this-repo>
@@ -63,7 +63,7 @@ npx cap open ios
 In Xcode:
 
 1. Select the **App** target, open **Signing & Capabilities**, and choose your **Team** (your Apple ID). Xcode creates the provisioning profile for the phone.
-2. Plug in the iPhone, pick it as the run destination, and press **Run**.
+2. Plug in the iPhone or iPad, pick it as the run destination, and press **Run**.
 
 The installed app does not need a network connection. Everything it shows and speaks is bundled or provided by the phone.
 
