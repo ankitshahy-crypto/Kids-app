@@ -1,8 +1,9 @@
+import { useState } from "react";
 import nestLogo from "../assets/nest-logo.svg";
 import type { AnimalId } from "../data/animals";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { Avatar } from "../avatars";
-import { HoldButton } from "./HoldButton";
+import { ParentGate } from "./ParentGate";
 import { LockIcon } from "./sceneArt";
 
 const backdrops: Record<AnimalId, string> = {
@@ -27,6 +28,15 @@ export function StartScreen({
   onParent: () => void;
   onTeacher: () => void;
 }) {
+  const [ask, setAsk] = useState<"parent" | "teacher" | null>(null);
+
+  const pass = () => {
+    const next = ask;
+    setAsk(null);
+    if (next === "parent") onParent();
+    if (next === "teacher") onTeacher();
+  };
+
   return (
     <div className="mode-switch" data-screen="start">
       <div className="mode-art">
@@ -38,7 +48,7 @@ export function StartScreen({
       </h1>
       <div className="who-card">
         {profiles.length === 0 ? (
-          <p className="who-empty">Ask a grown-up to hold Parent.</p>
+          <p className="who-empty">Ask a grown-up to tap Parent.</p>
         ) : (
           <div className="who-grid">
             {profiles.map((profile) => (
@@ -59,25 +69,16 @@ export function StartScreen({
         )}
       </div>
       <div className="gate-row">
-        <HoldButton
-          className="gate-button"
-          indicator="bar"
-          label="Parent. Press and hold to open."
-          onOpen={onParent}
-        >
+        <button type="button" className="gate-button" onClick={() => setAsk("parent")}>
           <LockIcon />
           Parent
-        </HoldButton>
-        <HoldButton
-          className="gate-button gate-teacher"
-          indicator="bar"
-          label="Teacher. Press and hold to open."
-          onOpen={onTeacher}
-        >
+        </button>
+        <button type="button" className="gate-button gate-teacher" onClick={() => setAsk("teacher")}>
           <LockIcon />
           Teacher
-        </HoldButton>
+        </button>
       </div>
+      {ask ? <ParentGate onPass={pass} onCancel={() => setAsk(null)} /> : null}
     </div>
   );
 }

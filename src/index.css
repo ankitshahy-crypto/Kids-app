@@ -72,15 +72,6 @@ button {
   touch-action: manipulation;
 }
 
-button.hold-button {
-  touch-action: none;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-user-drag: none;
-}
-
 button:focus-visible {
   outline: 3px solid #7eae86;
   outline-offset: 3px;
@@ -219,32 +210,6 @@ button:focus-visible {
 .gear-face .icon {
   width: 24px;
   height: 24px;
-}
-
-.hold-ring {
-  position: absolute;
-  inset: 0;
-  width: 64px;
-  height: 64px;
-}
-
-.hold-track,
-.hold-value {
-  fill: none;
-  stroke-width: 3.5;
-}
-
-.hold-track {
-  stroke: transparent;
-}
-
-.hold-value {
-  stroke: var(--sage);
-  stroke-dasharray: 100;
-  stroke-dashoffset: calc((1 - var(--hold, 0)) * 100);
-  stroke-linecap: round;
-  transform: rotate(-90deg);
-  transform-origin: 32px 32px;
 }
 
 .activity {
@@ -1197,17 +1162,106 @@ button:focus-visible {
   color: #8a8176;
 }
 
-.hold-bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: calc(var(--hold, 0) * 100%);
-  height: auto;
-  border-radius: inherit;
-  background: rgba(79, 125, 88, 0.45);
-  background: color-mix(in srgb, currentColor 50%, transparent);
-  pointer-events: none;
+.gate-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(70, 58, 48, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.gate-card {
+  width: min(360px, 100%);
+  background: #fffaf4;
+  color: #2c2a26;
+  border-radius: 28px;
+  box-shadow: 0 18px 40px rgba(80, 60, 40, 0.16);
+  padding: 22px 20px 16px;
+  text-align: center;
+}
+
+.gate-kicker {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6d7d74;
+}
+
+.gate-card h2 {
+  margin: 8px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.gate-miss {
+  margin: 8px 0 0;
+  color: #8a7464;
+  font-size: 16px;
+}
+
+.gate-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.gate-choice {
+  min-height: 72px;
+  border-radius: 18px;
+  background: #f6efe6;
+  color: #243056;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.gate-cancel {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  color: #6d7d74;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.silent-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 8;
+  transform: translateX(-50%);
+  width: min(420px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 18px;
+  background: #fffaf4;
+  color: #2c2a26;
+  box-shadow: 0 12px 28px rgba(80, 60, 40, 0.16);
+}
+
+.silent-hint p {
+  margin: 0;
+  flex: 1;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.silent-hint button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #e7f2ea;
+  color: #4f7d58;
+  font-weight: 700;
 }
 
 .parent-view,
@@ -1972,7 +2026,6 @@ button:focus-visible {
   .back-button,
   .top-spacer,
   .gear-button,
-  .hold-ring,
   .today-avatar,
   .nav-button {
     width: 80px;
@@ -1987,10 +2040,6 @@ button:focus-visible {
   .gear-face .icon {
     width: 28px;
     height: 28px;
-  }
-
-  .hold-value {
-    transform-origin: center;
   }
 
   .nav-button .icon {

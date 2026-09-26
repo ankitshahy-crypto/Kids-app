@@ -16,7 +16,7 @@ The app has three views. They do not look the same.
 
 **Kid view.** Picture-first, with huge tap targets and almost no text. Soft pastel hills and a winding path of four round stops: letters, tracing, story, and a color, shape, or number moment. The child's animal stands at the current stop. Stars sit in the corner. Play library and My Nest are on the path for later.
 
-**Parent view.** Behind a press-and-hold of about 2 seconds. Calmer and text-friendly. The home screen shows letters learned, lessons this week, stars, and a From your teacher card. Rows open Children, Progress, From Teacher, Home Rewards, Settings, and Privacy. Step 1 builds Children (add and edit) and Settings. The other rows are placeholders.
+**Parent view.** Behind a one-tap grown-up check (a number written as a word, or a small sum, with Cancel). Calmer and text-friendly. The home screen shows letters learned, lessons this week, stars, and a From your teacher card. Rows open Children, Progress, From Teacher, Home Rewards, Settings, and Privacy. Step 1 builds Children (add and edit) and Settings. The other rows are placeholders.
 
 In steps 5 and 6, a parent can monitor that child's progress and see what the teacher sent for them:
 
@@ -27,9 +27,9 @@ Teacher notes are tied to the child's app name only (the animal hero's name, or 
 
 Step 1 only leaves a "From your teacher" placeholder card in the parent view. The progress detail and the teacher inputs are filled in at steps 5 and 6.
 
-**Teacher view.** A separate teacher profile, also behind a press-and-hold. A classroom shell: a class switcher, Scan QR, a class star jar, a roster of app names and avatars, and tabs for classes, roster, goals, the star jar, certificates, and notes. Step 1 shows that shell with demo data only.
+**Teacher view.** A separate teacher profile, behind the same grown-up check. A classroom shell: a class switcher, Scan QR, a class star jar, a roster of app names and avatars, and tabs for classes, roster, goals, the star jar, certificates, and notes. Step 1 shows that shell with demo data only.
 
-The start screen shows the nest, the WordNest name, and the child avatar buttons. Tapping a child opens the kid view. Parent and Teacher are smaller locked pills and open only after a press-and-hold. A tap does not open them.
+The start screen shows the nest, the WordNest name, and the child avatar buttons. Tapping a child opens the kid view. Parent and Teacher are smaller locked pills. One tap opens a grown-up check a 3-to-5-year-old cannot pass. Cancel closes it without opening the view.
 
 Step 1 sets up the shell and routing for all three views, builds the kid view, and builds a basic parent view that can add and edit a child. The teacher view in step 1 is a placeholder dashboard. Step 6 fills it in.
 
@@ -127,7 +127,7 @@ Step 1 synthesizes the pop, the chime, the boop, and the celebration in the brow
 
 Parent controls, in Settings:
 
-- Music, effects, and voice each have their own on/off switch and volume.
+- Music, effects, and voice each have their own on/off switch and volume. Recorded clips, effects, and music go through a separate Web Audio volume so the sliders work on iOS. The phone's own speaking voice follows the slider where the browser allows it. On iOS that voice follows the phone's volume buttons, and the on/off switch still stops it.
 - Speech speed stays slow or slower, both near a natural pace.
 - Speaking voice: Best available, or a voice the parent picks, with a Preview button.
 
@@ -182,11 +182,11 @@ At the end of the year, the teacher archives the class.
 - No analytics and no tracking.
 - Until a classroom server exists, everything stays on the device (`localStorage`, IndexedDB, or Capacitor Preferences).
 
-Parent and Teacher open only after a press-and-hold of about 2 seconds on the start screen. A tap does not open them.
+Parent and Teacher open only after a grown-up check on the start screen. A correct answer takes an adult about two seconds. Cancel does not open them.
 
 ## Build order
 
-1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings (music, effects, voice, speech speed, and a voice preview), and progress notes, with places for home rewards and consent or delete, a "From your teacher" card, and a Join a class row. The audio manager prefers a recorded file from the manifest and otherwise uses the best device voice, ducks music while a voice plays, and plays a few soft synthesized effects. Letter sounds fall back to an example phrase, never a bare syllable. Words and sentences can be generated offline; the app does not call out to the network. Music files are not bundled yet. Teacher view: a placeholder classroom dashboard, including Add class and Pending requests, filled in at step 6.
+1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the grown-up check: add and edit a child, sound settings (music, effects, voice, speech speed, and a voice preview), and progress notes, with places for home rewards and consent or delete, a "From your teacher" card, and a Join a class row. The audio manager prefers a recorded file from the manifest and otherwise uses the best device voice, ducks music while a voice plays, and plays a few soft synthesized effects. Letter sounds fall back to an example phrase, never a bare syllable. Words and sentences can be generated offline; the app does not call out to the network. Music files are not bundled yet. Teacher view: a placeholder classroom dashboard, including Add class and Pending requests, filled in at step 6.
 2. Letter games, tracing, and read-along stories.
 3. Sentence tiles, rhyming, and the color, shape, and number moments.
 4. Home stars and parent-written rewards on the device. Cosmetic unlocks.

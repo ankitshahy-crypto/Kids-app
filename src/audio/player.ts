@@ -1,6 +1,7 @@
 import { recordedSrc, spokenLine } from "../data/audioCatalog";
 import type { DeckWord, LetterTile } from "../data/deck";
-import { beginVoice, endVoice, unlockAudio } from "./manager";
+import { beginVoice, endVoice, playOnBus, unlockAudio } from "./manager";
+import { deviceSpeechFollowsSlider } from "./platform";
 import { pickVoice } from "./voices";
 import { SPEECH_RATES, type Settings } from "../settings";
 
@@ -81,6 +82,13 @@ function loadVoices(synth: SpeechSynthesis, signal: AbortSignal): Promise<Speech
   });
 }
 
+function speechVolume(settings: Settings): number {
+  if (!deviceSpeechFollowsSlider()) return 1;
+  const level = settings.voiceVolume;
+  if (!Number.isFinite(level)) return 1;
+  return Math.min(1, Math.max(0, level));
+}
+
 function speak(text: string, settings: Settings, signal: AbortSignal): Promise<void> {
   const synth = window.speechSynthesis;
   if (!synth || !text.trim()) return sleep(SILENT_BEAT_MS, signal);
@@ -109,7 +117,7 @@ function speak(text: string, settings: Settings, signal: AbortSignal): Promise<v
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = SPEECH_RATES[settings.speed];
     utterance.pitch = NATURAL_PITCH;
-    utterance.volume = settings.voiceVolume;
+    utterance.volume = speechVolume(settings);
     utterance.lang = "en-US";
     utterance.onend = () => finish();
     utterance.onerror = () => finish();
@@ -177,7 +185,7 @@ export function previewVoice(settings: Settings): void {
   const utterance = new SpeechSynthesisUtterance(PREVIEW_PHRASE);
   utterance.rate = SPEECH_RATES[settings.speed];
   utterance.pitch = NATURAL_PITCH;
-  utterance.volume = settings.voiceVolume;
+  utterance.volume = speechVolume(settings);
   utterance.lang = "en-US";
   try {
     const voice = pickVoice(synth.getVoices(), settings.voiceURI);
@@ -198,38 +206,8 @@ export function previewVoice(settings: Settings): void {
   }
 }
 
-function playFile(src: string, signal: AbortSignal, volume: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal.aborted) {
-      reject(abortError());
-      return;
-    }
-    const audio = new Audio(src);
-    audio.volume = volume;
-    const cleanup = () => {
-      signal.removeEventListener("abort", onAbort);
-      audio.onended = null;
-      audio.onerror = null;
-    };
-    const onAbort = () => {
-      audio.pause();
-      cleanup();
-      reject(abortError());
-    };
-    signal.addEventListener("abort", onAbort, { once: true });
-    audio.onended = () => {
-      cleanup();
-      resolve();
-    };
-    audio.onerror = () => {
-      cleanup();
-      reject(new Error(`Could not play ${src}`));
-    };
-    void audio.play().catch((error: unknown) => {
-      cleanup();
-      reject(error instanceof Error ? error : new Error("Could not play audio"));
-    });
-  });
+function playFile(src: string, signal: AbortSignal): Promise<void> {
+  return playOnBus(src, "voice", signal);
 }
 
 /**
@@ -250,7 +228,7 @@ async function playCue(
   try {
     if (cue.src) {
       try {
-        await playFile(cue.src, signal, settings.voiceVolume);
+        await playFile(cue.src, signal);
         return;
       } catch (error) {
         if (isAbortError(error) || signal.aborted) throw abortError();

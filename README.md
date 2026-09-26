@@ -27,13 +27,13 @@ npm run dev
 
 Open the address Vite prints. On a phone the layout is a portrait column. On a tablet it stays centered, with a wider column, larger tap targets, and bigger art.
 
-The first screen shows the nest, the WordNest name, and a card of child avatars. Tap a child to open Today. **Parent** and **Teacher** are small locked pills and open only after a press-and-hold of about 2 seconds.
+The first screen shows the nest, the WordNest name, and a card of child avatars. Tap a child to open Today. **Parent** and **Teacher** open a small grown-up check (a number written as a word, or a small sum). A child who cannot read or add does not get through. Cancel closes it.
 
 Phones (and some browsers) will not speak until there has been a tap. Choosing a child, or opening the letter game, is that tap.
 
 ## Today
 
-A grown-up holds Parent for about 2 seconds, then adds a child: a first name or a single initial, an age range (3, 4, 5, or 6–7), and one of eight animals. The animal is the profile and the story hero. A single initial uses the animal's name in lessons. Edit and remove are under Children. The app never asks for a last name, birthdate, or school.
+A grown-up taps Parent and answers the check, then adds a child: a first name or a single initial, an age range (3, 4, 5, or 6–7), and one of eight animals. The animal is the profile and the story hero. A single initial uses the animal's name in lessons. Edit and remove are under Children. The app never asks for a last name, birthdate, or school.
 
 Today is a winding path of four stops: a letter, a pencil, a book, and shapes. The letter stop opens Sound it out, using this week's letters when those words exist. The other three stops are marked **Soon** and can be marked done so the path and stars work. The child's animal stands at the current stop. Each finished step adds one effort star for that day. Stars are not removed. Play library and My Nest are on the path for later.
 
@@ -69,7 +69,7 @@ The installed app does not need a network connection. Everything it shows and sp
 
 ## Parent settings
 
-Parent opens from the locked pill on the start screen only after a press-and-hold of about 2 seconds (a mark fills while you hold). A short tap does nothing. Grown-ups can add, edit, or remove a child, read letters and stars, and set music, effects, and voice separately, including volume and speech speed. Settings also lists the phone's clearer English voices and can preview one. Profiles and settings stay in `localStorage` on that device. Lessons play a file from `public/audio/` when that file is listed in the audio index, and use the phone's voice otherwise. A few soft effects are made in the app. Music loops are not included yet.
+Parent and Teacher open from the start screen after a grown-up check, and the settings gear uses the same check. Grown-ups can add, edit, or remove a child, read letters and stars, and set music, effects, and voice separately, including volume and speech speed. The sliders set a Web Audio volume for each channel, so they work on iPhone as well as on Android and desktop. The phone's own speaking voice ignores that slider on iOS; the on/off switch still stops it, and Settings says to use the phone's volume buttons. Settings also lists the phone's clearer English voices and can preview one. Profiles and settings stay in `localStorage` on that device. Lessons play a file from `public/audio/` when that file is listed in the audio index, and use the phone's voice otherwise. A few soft effects are made in the app. Music loops are not included yet.
 
 ## Add words later
 
@@ -95,7 +95,7 @@ npm run generate-audio -- --index-only
 
 `--force` replaces word and sentence files that are already there. The installed app only plays local files and the phone's own voice. It does not contact Google or any other server. Log each shipped file in `ASSETS.md`.
 
-Until a clip is indexed, device speech says the manifest phrase. Letter sounds use an example such as "b, as in ball". The phone picks an Enhanced, Premium, or Siri-quality en-US voice when it has one, and skips compact and novelty voices. Speech rate stays near 0.9 (0.85 on Slower) and pitch stays at 1. The iPhone silent switch can still mute speech.
+Until a clip is indexed, device speech says the manifest phrase. Letter sounds use an example such as "b, as in ball". The phone picks an Enhanced, Premium, or Siri-quality en-US voice when it has one, and skips compact and novelty voices. Speech rate stays near 0.9 (0.85 on Slower) and pitch stays at 1. In Safari, the iPhone silent switch can still mute Web Audio. The first tap on an iPhone shows a short note about that switch. The installed app asks iOS to play even when the switch is on.
 
 ## Privacy
 
