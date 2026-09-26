@@ -18,6 +18,15 @@ The app has three views. They do not look the same.
 
 **Parent view.** Behind a press-and-hold of about 2 seconds. Calmer and text-friendly. A parent manages child profiles, settings, home rewards, progress notes, and consent or delete.
 
+In steps 5 and 6, a parent can monitor that child's progress and see what the teacher sent for them:
+
+- Progress on this device: letters learned, lessons done, stars, and Friday notes.
+- Teacher inputs for that child: goals set, goals hit, certificates earned, the class star-jar status, and short teacher notes or encouragement.
+
+Teacher notes are tied to the child's app name only (the animal hero's name, or an initial), never a real name. They must never contain health or diagnosis information. The note field shows a gentle reminder of that.
+
+Step 1 only leaves a "From your teacher" placeholder card in the parent view. The progress detail and the teacher inputs are filled in at steps 5 and 6.
+
 **Teacher view.** A separate teacher profile, also behind a press-and-hold. A classroom dashboard: more than one class, rosters by in-app name and avatar only, goals, a class star jar, and certificates.
 
 The start screen is the mode switch. Kid is the large control and opens with a tap. Parent and Teacher are smaller and open only after a press-and-hold. The gear inside the kid view is the same hold gate into the parent view. A tap does not open Parent, Teacher, or the gear.
@@ -84,9 +93,11 @@ Stars are for effort only.
 
 The connection, goals, certificates, and class star jar are later (build step 6). Step 1 only reserves the teacher view as a placeholder dashboard.
 
-Option B comes first and is the one to pilot. The home app transfers progress to a classroom tablet with a QR code. No server.
+Option B comes first and is the one to pilot. The home app transfers progress to a classroom tablet with a QR code. No server. Teacher inputs travel back to the home app the same way, in reverse: another QR code, still with no server.
 
-Option A comes after that. A class code is a random picture plus a word, for example "Blue Fox 7." The teacher keeps the list of which code belongs to which child offline, and can print, export, and reissue codes. The server, when one exists, stores only the code, the avatar, the stars, and the letters practiced.
+Option A comes after that. A class code is a random picture plus a word, for example "Blue Fox 7." The teacher keeps the list of which code belongs to which child offline, and can print, export, and reissue codes. With class codes, progress and teacher inputs go through the minimal server. The server stores only the code, the avatar, the stars, the letters practiced, and the teacher inputs for that child (goals set, goals hit, certificates, class star-jar status, and short notes). It never stores a real name, a photo, or health information.
+
+Teacher notes are short encouragement tied to the child's app name only. The note field shows a gentle reminder: do not write health or diagnosis information.
 
 Teacher profile: the classroom teacher has a separate teacher profile, behind a parent or teacher gate, that can hold multiple classrooms. Each class roster shows children only by their in-app profile name (the animal hero's name, or an initial) and avatar, never real names. Any mapping to real names stays with the teacher offline, on their own printed or exported list, and never in the app data synced anywhere.
 
@@ -100,7 +111,7 @@ Also later, for the classroom:
 
 ## Privacy
 
-- No health information of any kind. No speech delay, diagnosis, therapy notes, or medical fields.
+- No health information of any kind. No speech delay, diagnosis, therapy notes, or medical fields. Teacher notes must never contain health or diagnosis information, and the note field shows a gentle reminder.
 - COPPA: a parent gives consent, behind the parent gate, before any class linking. They can unlink or delete at any time.
 - Photos and first names never go to a server.
 - No analytics and no tracking.
@@ -110,11 +121,11 @@ Parent and Teacher open only after a press-and-hold of about 2 seconds, from the
 
 ## Build order
 
-1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings, and progress notes, with places for home rewards and consent or delete. Teacher view: a placeholder classroom dashboard, filled in at step 6.
+1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings, and progress notes, with places for home rewards and consent or delete, plus a "From your teacher" placeholder card. Teacher view: a placeholder classroom dashboard, filled in at step 6.
 2. Letter games, tracing, and read-along stories.
 3. Sentence tiles, rhyming, and the color, shape, and number moments.
 4. Home stars and parent-written rewards on the device. Cosmetic unlocks.
-5. Parent progress view.
-6. Classroom connection, in the teacher view. QR first, picture-word codes later, then goals, certificates, and the class star jar.
+5. Parent progress view: letters learned, lessons done, stars, and Friday notes.
+6. Classroom connection, in the teacher view. QR first, picture-word codes later, then goals, certificates, and the class star jar. Teacher inputs travel back to the parent view by QR when there is no server, and through the minimal server once class codes exist.
 
 Each step should keep the soft pastel look, big tap targets, very little text, original artwork only, and the privacy rules above.

@@ -144,6 +144,14 @@ export function ParentView({
         </ul>
       </section>
 
+      <section className="adult-section" data-section="teacher">
+        <h2>From your teacher</h2>
+        <p className="adult-copy">
+          Goals, certificates, the class star jar, and short notes from the teacher will show here. Nothing is linked
+          yet.
+        </p>
+      </section>
+
       <section className="adult-section" data-section="rewards">
         <h2>Home rewards</h2>
         <p className="adult-copy">

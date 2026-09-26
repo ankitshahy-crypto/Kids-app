@@ -31,7 +31,7 @@ The letter plan is 1–2 new letters a week, plus review. Friday is review day: 
 
 ## Parent and teacher
 
-The parent view is a calmer, text-friendly screen: children (add and edit), sound and speech speed, progress notes, and labeled places for home rewards and class consent. Those last two are not built yet.
+The parent view is a calmer, text-friendly screen: children (add and edit), sound and speech speed, progress notes, a "From your teacher" placeholder, and labeled places for home rewards and class consent. Rewards, consent, and teacher inputs are not built yet.
 
 Teacher opens a classroom placeholder: more than one class, a roster that shows an in-app name and avatar only, goals, a class star jar, and certificates. That dashboard is filled in later. Real names are never shown there.
 
