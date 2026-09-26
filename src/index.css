@@ -978,6 +978,38 @@ button:focus-visible {
   accent-color: #6e9a74;
 }
 
+.voice-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.voice-select {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border-radius: 10px;
+  border: 1px solid #e4ddd3;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  padding: 0 10px;
+}
+
+.voice-preview {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: #faf8f5;
+  border: 1px solid #e4ddd3;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .name-input {
   width: 100%;
   height: 64px;

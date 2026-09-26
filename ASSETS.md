@@ -19,8 +19,9 @@ Everything visual or audible in WordNest is listed here. There are no analytics 
 | Browser tab icon | `public/favicon.svg` | Same original nest logo on a cream field | Original. |
 | iOS app icon | `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png` | Same original nest logo on a cream field | Original. |
 | iOS launch image | `ios/App/App/Assets.xcassets/Splash.imageset/` | Same original nest logo on a cream field | Original. |
-| Device speech (fallback voice) | none | The phone's Web Speech API (`speechSynthesis`). Not a file. | System voice. Varies by phone. Not a bundled asset. |
-| Recorded letter, word, and story voice | none yet | Target: a warm voice actor under a work-for-hire or other commercial license. Not bundled. | Log each file here, with source and license, before adding it. |
+| Device speech (fallback voice) | none | The phone's Web Speech API. The app chooses the best en-US voice it can (Enhanced, Premium, or Siri-quality) and avoids compact and novelty voices. Not a file. | System voice. Varies by phone. Not a bundled asset. |
+| Letter-sound recordings | none yet | Human voice for the 26 letters plus the extra phoneme ids in `src/data/audioManifest.json`. Paths such as `public/audio/letters/b.mp3`. Not generated. | Record with a person. Log each file here, with source and license, before shipping it. |
+| Word and sentence recordings | none yet | Offline Google Cloud Text-to-Speech (Neural2, Studio, or Chirp HD en-US) via `npm run generate-audio`, or a voice actor later. Not bundled until generated and logged. | Generate offline, then log each MP3 here. The app does not call Google. |
 | Parent-recorded words and name | none yet | Recorded on the device for that child. Never uploaded. | Device-only. Not a bundled asset. |
 | Tile pop, star chime, try-again boop, celebration | none | Synthesized in `src/audio/manager.ts` with the Web Audio API. No sample files. | Original. Generated in the app. |
 | Page-turn effect | none | Not in step 1. | Log it here if a file is added later. |
@@ -30,4 +31,4 @@ Fredoka's Latin letters were designed by Milena Brandão. The project is led by 
 
 No artwork, characters, or audio from ABCmouse, Khan Academy Kids, Speech Blubs, Duolingo, Sesame, or other learning products is used or traced.
 
-To replace a spoken sound later, add an audio file under `public/audio/` and set `audioSrc` on that letter or word in `src/data/deck.ts`. The player uses that file when it is set, and device speech otherwise. A parent recording stays on the device. To use a parent photo, set `photoSrc` to a local image path. Any file you add should be listed in this log with its source and license.
+No audio files are shipped yet. The manifest lists where they go. The app plays a file only after `src/data/audioAvailable.json` includes it, so a missing clip is not requested. Device speech then says the manifest line (an example phrase for a letter, the word itself for a word). A parent recording can still override one letter or word with `audioSrc` and stays on the device. To use a parent photo, set `photoSrc` to a local image path. Any file you add should be listed in this log with its source and license.

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "ios:sync": "npm run build && npx cap sync ios"
+    "ios:sync": "npm run build && npx cap sync ios",
+    "generate-audio": "node scripts/generate-audio.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.2",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",
+    "@google-cloud/text-to-speech": "^7.1.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^6.0.1",

@@ -11,12 +11,17 @@ export type Settings = {
   music: boolean;
   musicVolume: number;
   speed: SpeechSpeed;
+  /** Device voice chosen in Settings. Null uses the best installed en-US voice. */
+  voiceURI: string | null;
 };
 
-/** speechSynthesis rate. 1 is a typical speaking pace. */
+/**
+ * speechSynthesis rate. 1 is a typical speaking pace.
+ * Both steps stay near that pace so the voice does not sound dragged out.
+ */
 export const SPEECH_RATES: Record<SpeechSpeed, number> = {
-  slow: 0.68,
-  slower: 0.5,
+  slow: 0.9,
+  slower: 0.85,
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -28,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   music: true,
   musicVolume: 0.35,
   speed: "slow",
+  voiceURI: null,
 };
 
 function clampVolume(value: unknown, fallback: number): number {
@@ -55,6 +61,7 @@ export function loadSettings(): Settings {
       music: record.music !== false,
       musicVolume: clampVolume(record.musicVolume, DEFAULT_SETTINGS.musicVolume),
       speed: record.speed === "slower" ? "slower" : "slow",
+      voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
     };
   } catch {
     return DEFAULT_SETTINGS;

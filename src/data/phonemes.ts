@@ -1,31 +1,27 @@
 /**
- * Speakable stand-ins for phonics sounds.
- *
- * The Web Speech API cannot reliably produce pure IPA phonemes. It will say
- * a letter name ("dee") if you pass a single letter, so each sound is a short
- * approximation instead. Stop consonants include a tiny vowel ("buh") because
- * a synthesizer cannot hold a pure /b/. These are classroom-style hints, not
- * speech-therapy audio. A letter or word `audioSrc` replaces them when set.
+ * Phoneme keys for the starter deck.
+ * What the app says, and which recording to play, lives in `audioManifest.json`.
+ * Device speech uses an example phrase ("b, as in ball"), never a bare syllable.
  */
-export const PHONEME_TTS = {
-  ae: "aah",
-  eh: "eh",
-  ih: "ih",
-  aw: "aw",
-  uh: "uh",
-  b: "buh",
-  d: "duh",
-  f: "fff",
-  g: "guh",
-  h: "huh",
-  k: "kuh",
-  l: "lll",
-  m: "mmm",
-  n: "nnn",
-  p: "puh",
-  s: "sss",
-  t: "tuh",
-  ks: "kss",
-} as const;
+export const PHONEME_IDS = [
+  "ae",
+  "eh",
+  "ih",
+  "aw",
+  "uh",
+  "b",
+  "d",
+  "f",
+  "g",
+  "h",
+  "k",
+  "l",
+  "m",
+  "n",
+  "p",
+  "s",
+  "t",
+  "ks",
+] as const;
 
-export type PhonemeId = keyof typeof PHONEME_TTS;
+export type PhonemeId = (typeof PHONEME_IDS)[number];

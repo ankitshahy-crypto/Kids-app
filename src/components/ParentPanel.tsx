@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { previewVoice } from "../audio/player";
+import { subscribeVoices, type VoiceOption } from "../audio/voices";
 import { animals, type AnimalId } from "../data/animals";
 import {
   isReviewDay,
@@ -201,6 +203,7 @@ export function ParentView({
             onToggle={(voice) => onChange({ voice })}
             onVolume={(voiceVolume) => onChange({ voiceVolume })}
           />
+          <VoiceField settings={settings} onChange={onChange} />
           <MixRow
             label="Effects"
             on={settings.effects}
@@ -386,6 +389,42 @@ function MixRow({
           onChange={(event) => onVolume(Number(event.target.value) / 100)}
         />
       </label>
+    </fieldset>
+  );
+}
+
+function VoiceField({
+  settings,
+  onChange,
+}: {
+  settings: Settings;
+  onChange: (patch: Partial<Settings>) => void;
+}) {
+  const [options, setOptions] = useState<VoiceOption[]>([]);
+  useEffect(() => subscribeVoices(setOptions), []);
+  return (
+    <fieldset className="setting-group" data-mix="speaking-voice">
+      <legend>Speaking voice</legend>
+      <div className="voice-row">
+        <select
+          id="speaking-voice"
+          className="voice-select"
+          aria-label="Speaking voice"
+          value={settings.voiceURI ?? ""}
+          onChange={(event) => onChange({ voiceURI: event.target.value || null })}
+        >
+          <option value="">Best available</option>
+          {options.map((option) => (
+            <option key={option.voiceURI} value={option.voiceURI}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <button type="button" className="voice-preview" onClick={() => previewVoice(settings)}>
+          Preview
+        </button>
+      </div>
+      <p className="adult-copy">Preview uses this phone's voice. Lessons play a recording when one is saved.</p>
     </fieldset>
   );
 }

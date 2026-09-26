@@ -95,10 +95,13 @@ The app stays quiet unless a sound is doing a job. No constant noise, and no lou
 
 Voice:
 
-- Version 1 may speak with the device's own voice. That is the fallback.
-- The target is a recorded human voice for every letter sound, word, and story. A warm voice actor, under a work-for-hire or other commercial license.
-- A parent may record their own voice for words and for the child's name. Those recordings stay on the device and are never uploaded.
-- The audio manager plays a recorded file when one exists, and otherwise uses device speech.
+- The pipeline is built around pre-recorded files. `src/data/audioManifest.json` maps each letter sound, word, and sentence id to a file under `public/audio/`. The app plays that file when `src/data/audioAvailable.json` lists it.
+- Device speech is only the fallback, and it must not sound robotic. It picks the best en-US voice on the phone (Enhanced, Premium, or Siri-quality by name or quality; local when possible) and skips compact and novelty voices. Rate stays near a natural pace (about 0.9, or 0.85 on the slower setting). Pitch stays at 1.0. A parent can preview and choose the voice in Settings.
+- Letter sounds do not use isolated syllables such as "buh". Play the recorded clip when it exists. Otherwise say an example phrase, such as "b, as in ball".
+- The 26 letter sounds, plus the extra phoneme ids in the manifest, are recorded by a person. They are not synthesized.
+- Words and short sentences may be pre-generated offline with `npm run generate-audio`. That Node script calls Google Cloud Text-to-Speech (Neural2, Studio, or Chirp HD en-US) using `GOOGLE_APPLICATION_CREDENTIALS`, writes MP3s into `public/audio/`, and refreshes the available-file index. The developer runs it. The app makes no network calls.
+- A parent may record their own voice for words and for the child's name. Those recordings stay on the device and are never uploaded. An `audioSrc` on a letter or word overrides the manifest file.
+- A warm voice actor, under a work-for-hire or other commercial license, remains the target for story narration and for replacing generated word clips.
 
 Music:
 
@@ -121,7 +124,8 @@ Step 1 synthesizes the pop, the chime, the boop, and the celebration in the brow
 Parent controls, in Settings:
 
 - Music, effects, and voice each have their own on/off switch and volume.
-- Speech speed stays slow or slower.
+- Speech speed stays slow or slower, both near a natural pace.
+- Speaking voice: Best available, or a voice the parent picks, with a Preview button.
 
 Every audio file that is added later is logged in `ASSETS.md` with its source and license.
 
@@ -178,7 +182,7 @@ Parent and Teacher open only after a press-and-hold of about 2 seconds on the st
 
 ## Build order
 
-1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings (music, effects, voice, and speech speed), and progress notes, with places for home rewards and consent or delete, a "From your teacher" card, and a Join a class row. The audio manager prefers a recorded file and otherwise uses device speech, ducks music while a voice plays, and plays a few soft synthesized effects. Music files are not bundled yet. Teacher view: a placeholder classroom dashboard, including Add class and Pending requests, filled in at step 6.
+1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings (music, effects, voice, speech speed, and a voice preview), and progress notes, with places for home rewards and consent or delete, a "From your teacher" card, and a Join a class row. The audio manager prefers a recorded file from the manifest and otherwise uses the best device voice, ducks music while a voice plays, and plays a few soft synthesized effects. Letter sounds fall back to an example phrase, never a bare syllable. Words and sentences can be generated offline; the app does not call out to the network. Music files are not bundled yet. Teacher view: a placeholder classroom dashboard, including Add class and Pending requests, filled in at step 6.
 2. Letter games, tracing, and read-along stories.
 3. Sentence tiles, rhyming, and the color, shape, and number moments.
 4. Home stars and parent-written rewards on the device. Cosmetic unlocks.

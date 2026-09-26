@@ -1,7 +1,13 @@
+import { recordedSrc, spokenLine } from "../data/audioCatalog";
 import type { DeckWord, LetterTile } from "../data/deck";
-import { PHONEME_TTS } from "../data/phonemes";
 import { beginVoice, endVoice, unlockAudio } from "./manager";
+import { pickVoice } from "./voices";
 import { SPEECH_RATES, type Settings } from "../settings";
+
+/** 1.0 keeps the device voice at a natural pitch. */
+const NATURAL_PITCH = 1;
+
+export const PREVIEW_PHRASE = "Hi. Let's read together.";
 
 const SILENT_BEAT_MS = 720;
 
@@ -60,19 +66,24 @@ export function sleep(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
-  const english = voices.filter((voice) => voice.lang.toLowerCase().startsWith("en"));
-  const preferred = ["Samantha", "Karen", "Moira", "Google US English", "Daniel"];
-  for (const name of preferred) {
-    const match = english.find((voice) => voice.name.includes(name));
-    if (match) return match;
-  }
-  return english.find((voice) => voice.localService) ?? english[0];
+function loadVoices(synth: SpeechSynthesis, signal: AbortSignal): Promise<SpeechSynthesisVoice[]> {
+  const ready = synth.getVoices();
+  if (ready.length > 0 || signal.aborted) return Promise.resolve(ready);
+  return new Promise((resolve) => {
+    const finish = () => {
+      window.clearTimeout(timer);
+      synth.removeEventListener("voiceschanged", finish);
+      resolve(synth.getVoices());
+    };
+    const timer = window.setTimeout(finish, 400);
+    synth.addEventListener("voiceschanged", finish);
+    signal.addEventListener("abort", finish, { once: true });
+  });
 }
 
 function speak(text: string, settings: Settings, signal: AbortSignal): Promise<void> {
   const synth = window.speechSynthesis;
-  if (!synth) return sleep(SILENT_BEAT_MS, signal);
+  if (!synth || !text.trim()) return sleep(SILENT_BEAT_MS, signal);
 
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -97,15 +108,9 @@ function speak(text: string, settings: Settings, signal: AbortSignal): Promise<v
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = SPEECH_RATES[settings.speed];
-    utterance.pitch = 1;
+    utterance.pitch = NATURAL_PITCH;
     utterance.volume = settings.voiceVolume;
     utterance.lang = "en-US";
-    try {
-      const voice = pickVoice(synth.getVoices());
-      if (voice) utterance.voice = voice;
-    } catch {
-      // A voice list entry the engine rejects should not stop the lesson.
-    }
     utterance.onend = () => finish();
     utterance.onerror = () => finish();
 
@@ -124,6 +129,12 @@ function speak(text: string, settings: Settings, signal: AbortSignal): Promise<v
     const start = () => {
       if (settled) return;
       try {
+        const voice = pickVoice(synth.getVoices(), settings.voiceURI);
+        if (voice) utterance.voice = voice;
+      } catch {
+        // A voice list entry the engine rejects should not stop the lesson.
+      }
+      try {
         synth.resume();
         synth.speak(utterance);
       } catch {
@@ -131,13 +142,60 @@ function speak(text: string, settings: Settings, signal: AbortSignal): Promise<v
       }
     };
 
-    if (synth.speaking) {
-      synth.cancel();
-      window.setTimeout(start, 60);
-    } else {
-      start();
-    }
+    void loadVoices(synth, signal).then(() => {
+      if (settled) return;
+      if (synth.speaking) {
+        synth.cancel();
+        window.setTimeout(start, 60);
+      } else {
+        start();
+      }
+    });
   });
+}
+
+let previewGeneration = 0;
+let previewDucked = false;
+
+function releasePreviewDuck(generation: number): void {
+  if (generation !== previewGeneration || !previewDucked) return;
+  previewDucked = false;
+  endVoice();
+}
+
+/** Hear the chosen device voice. Works even when lesson voice is off. */
+export function previewVoice(settings: Settings): void {
+  const synth = window.speechSynthesis;
+  if (!synth) return;
+  unlockAudio();
+  const generation = ++previewGeneration;
+  if (previewDucked) {
+    previewDucked = false;
+    endVoice();
+  }
+  synth.cancel();
+  const utterance = new SpeechSynthesisUtterance(PREVIEW_PHRASE);
+  utterance.rate = SPEECH_RATES[settings.speed];
+  utterance.pitch = NATURAL_PITCH;
+  utterance.volume = settings.voiceVolume;
+  utterance.lang = "en-US";
+  try {
+    const voice = pickVoice(synth.getVoices(), settings.voiceURI);
+    if (voice) utterance.voice = voice;
+  } catch {
+    // Preview still speaks with the engine default if the chosen voice is rejected.
+  }
+  const close = () => releasePreviewDuck(generation);
+  utterance.onend = close;
+  utterance.onerror = close;
+  previewDucked = true;
+  beginVoice();
+  try {
+    synth.resume();
+    synth.speak(utterance);
+  } catch {
+    close();
+  }
 }
 
 function playFile(src: string, signal: AbortSignal, volume: number): Promise<void> {
@@ -209,9 +267,34 @@ export function playLetter(
   settings: Settings,
   signal: AbortSignal,
 ): Promise<void> {
-  return playCue({ src: letter.audioSrc, text: PHONEME_TTS[letter.phoneme] }, settings, signal);
+  return playCue(
+    {
+      src: letter.audioSrc ?? recordedSrc("letters", letter.phoneme),
+      text: spokenLine("letters", letter.phoneme, letter.char),
+    },
+    settings,
+    signal,
+  );
 }
 
 export function playWord(word: DeckWord, settings: Settings, signal: AbortSignal): Promise<void> {
-  return playCue({ src: word.audioSrc, text: word.word }, settings, signal);
+  return playCue(
+    {
+      src: word.audioSrc ?? recordedSrc("words", word.id),
+      text: spokenLine("words", word.id, word.word),
+    },
+    settings,
+    signal,
+  );
+}
+
+export function playSentence(id: string, settings: Settings, signal: AbortSignal): Promise<void> {
+  return playCue(
+    {
+      src: recordedSrc("sentences", id),
+      text: spokenLine("sentences", id, ""),
+    },
+    settings,
+    signal,
+  );
 }
