@@ -13,6 +13,7 @@ import { KidCorner } from "./components/KidCorner";
 import { MilestoneCheer } from "./components/MilestoneCheer";
 import { NestView } from "./components/NestView";
 import { ParentView } from "./components/ParentPanel";
+import { LetterTrace } from "./components/LetterTrace";
 import { PlaceholderStep } from "./components/PlaceholderStep";
 import { SoundItOut } from "./components/SoundItOut";
 import { SilentHint } from "./components/SilentHint";
@@ -353,7 +354,22 @@ export default function App() {
                   onFinished={finishLetter}
                 />
               ) : null}
-              {screen === "draw" || screen === "story" || screen === "moment" ? (
+              {screen === "draw" ? (
+                <LetterTrace
+                  letters={lessonLetters}
+                  settingsRef={settingsRef}
+                  onDone={() => {
+                    const learned = (lessonLetters.length > 0 ? lessonLetters : ["a"]).map((label) => ({
+                      kind: "letter" as const,
+                      label,
+                    }));
+                    reward("draw", learned);
+                    setScreen("today");
+                    showTip("draw", "end");
+                  }}
+                />
+              ) : null}
+              {screen === "story" || screen === "moment" ? (
                 <PlaceholderStep step={screen} profile={active} onDone={() => finishStep(screen)} />
               ) : null}
               {screen === "count" ? (

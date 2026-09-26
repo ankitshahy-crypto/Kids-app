@@ -1,8 +1,7 @@
-import { lessonName, type ChildProfile, type LessonStep } from "../data/profiles";
+import { lessonName, type ChildProfile } from "../data/profiles";
 import { Hero } from "./Hero";
 
-const copy: Record<Exclude<LessonStep, "letter">, { title: string; label: string }> = {
-  draw: { title: "Draw", label: "Tracing is coming next" },
+const copy: Record<"story" | "moment", { title: string; label: string }> = {
   story: { title: "Story", label: "A story is coming next" },
   moment: { title: "Colors", label: "A color moment is coming next" },
 };
@@ -12,7 +11,7 @@ export function PlaceholderStep({
   profile,
   onDone,
 }: {
-  step: Exclude<LessonStep, "letter">;
+  step: "story" | "moment";
   profile: ChildProfile;
   onDone: () => void;
 }) {
@@ -22,7 +21,6 @@ export function PlaceholderStep({
       <span className="soon soon-large">Soon</span>
       <div className="placeholder-art" aria-hidden="true">
         {step === "story" ? <Hero animal={profile.animal} outfit={profile.outfit} /> : null}
-        {step === "draw" ? <DrawMark /> : null}
         {step === "moment" ? <ShapeMark /> : null}
       </div>
       <h1>{step === "story" ? lessonName(profile) : info.title}</h1>
@@ -31,22 +29,6 @@ export function PlaceholderStep({
         All done
       </button>
     </div>
-  );
-}
-
-function DrawMark() {
-  return (
-    <svg viewBox="0 0 160 120" className="mark-art">
-      <path
-        d="M28 78c18-28 36-28 52 0s34 28 52 0"
-        fill="none"
-        stroke="#7EA184"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <path d="M108 28 96 70" stroke="#E0A15A" strokeWidth="8" strokeLinecap="round" />
-      <path d="M92 70h20" stroke="#E07A5F" strokeWidth="8" strokeLinecap="round" />
-    </svg>
   );
 }
 

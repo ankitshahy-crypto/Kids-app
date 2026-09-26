@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { finishLetterTracing } from "./traceFlow";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -89,7 +90,7 @@ test("finishing a step earns a star and unlocks a closet item", async ({ page },
   await openApp(page, { ...mia, stars: 0 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "0");
   await page.getByRole("button", { name: "Draw" }).click();
-  await page.getByRole("button", { name: "All done" }).click();
+  await finishLetterTracing(page);
   await expect(page.locator(".star-flight")).toBeVisible();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 
@@ -144,7 +145,7 @@ test("blending a word adds a sticker", async ({ page }, testInfo) => {
 test("every 10 stars shows a cheer", async ({ page }) => {
   await openApp(page, { ...mia, stars: 9, celebrated: [] });
   await page.getByRole("button", { name: "Draw" }).click();
-  await page.getByRole("button", { name: "All done" }).click();
+  await finishLetterTracing(page);
   const cheer = page.locator("[data-milestone='10']");
   await expect(cheer).toBeVisible();
   await expect(cheer).toContainText("for trying");

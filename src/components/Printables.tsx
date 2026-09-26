@@ -11,6 +11,7 @@ import { MATH } from "../data/math";
 import { READING } from "../data/subject";
 import { blendingWords, pictureForLetter, scheduleLetters, sheetsFor } from "../data/sheets";
 import { Pictogram } from "./Pictogram";
+import { StrokeFigure } from "./StrokeFigure";
 
 function weekLettersFor(placement: PlacementDocument, child: ChildProfile | null): string[] {
   if (!child) return practiceLetters(planForWeek(0), isReviewDay());
@@ -20,7 +21,7 @@ function weekLettersFor(placement: PlacementDocument, child: ChildProfile | null
 function TraceGlyph({ char, casing }: { char: string; casing: "upper" | "lower" }) {
   const patternId = `trace-dots-${casing}-${char}`;
   return (
-    <svg className="trace-glyph" viewBox="0 0 200 200" data-case={casing} role="img" aria-label={char}>
+    <svg className="trace-glyph digit-glyph" viewBox="0 0 200 200" data-case={casing} role="img" aria-label={char}>
       <defs>
         <pattern id={patternId} width="12" height="12" patternUnits="userSpaceOnUse">
           <circle cx="4" cy="4" r="2.4" fill="var(--sage)" />
@@ -62,8 +63,8 @@ function LetterSheet({ letter, animal }: { letter: string; animal: AnimalId }) {
         </div>
       </header>
       <div className="trace-row">
-        <TraceGlyph char={upper} casing="upper" />
-        <TraceGlyph char={letter} casing="lower" />
+        <StrokeFigure letter={letter} casing="upper" />
+        <StrokeFigure letter={letter} casing="lower" />
       </div>
       <div className="trace-guides" aria-hidden="true">
         <span />
