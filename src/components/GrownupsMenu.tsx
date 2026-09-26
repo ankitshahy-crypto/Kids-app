@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
-import { appCredit, appVersion, showHelpContact } from "../config";
+import { showHelpContact } from "../config";
 import type { AnimalId } from "../data/animals";
 import { lessonName, type AgeRange, type ChildProfile } from "../data/profiles";
 import type { Settings } from "../settings";
+import { AboutWordNest } from "./AboutWordNest";
 import { ChildForm } from "./ChildForm";
 import { Chevron } from "./icons";
 import { SettingsFields } from "./SettingsFields";
@@ -259,14 +260,7 @@ export function GrownupsMenu({
         </section>
       ) : null}
 
-      {page === "about" ? (
-        <section className="adult-section" data-section="about">
-          <h2>About WordNest</h2>
-          <p className="account-status">{appCredit}</p>
-          <p className="adult-copy">Version {appVersion}</p>
-          <p className="adult-copy">Reading practice for ages 3 to 5.</p>
-        </section>
-      ) : null}
+      {page === "about" ? <AboutWordNest /> : null}
     </div>
   );
 }

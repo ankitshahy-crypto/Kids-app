@@ -133,9 +133,16 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: /About WordNest/ }).click();
-  await expect(page.getByRole("heading", { name: "About WordNest" })).toBeVisible();
-  await expect(page.getByText("WordNest by TriageDesk")).toBeVisible();
-  await expect(page.getByText("Version 0.1.0")).toBeVisible();
+  const about = page.locator("[data-section='about']");
+  await expect(about.getByRole("heading", { name: "About WordNest" })).toBeVisible();
+  await expect(about.getByText("WordNest: Learn to Read")).toBeVisible();
+  await expect(about.getByText("Reading practice for ages 3–5")).toBeVisible();
+  await expect(about.getByRole("heading", { name: "Your child is the hero" })).toBeVisible();
+  await expect(about.getByRole("heading", { name: "Drag to blend" })).toBeVisible();
+  await expect(about.getByText("WordNest is made by TriageDesk.")).toBeVisible();
+  await expect(about.getByText("Version 0.1.0")).toBeVisible();
+  await expect(about.getByText("not a therapy or diagnostic tool")).toBeVisible();
+  await expect(about.getByText(/\$\d|per month/)).toHaveCount(0);
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: "Back", exact: true }).click();

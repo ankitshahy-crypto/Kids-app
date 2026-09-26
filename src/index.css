@@ -2085,6 +2085,105 @@ button:focus-visible {
   margin: 6px 0;
 }
 
+.about-page h2 {
+  margin-bottom: 4px;
+}
+
+.about-name {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #243056;
+}
+
+.about-subtitle {
+  margin: 6px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #4f7d58;
+}
+
+.about-promo {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #fff6df;
+  color: #5c4a32;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.about-lead {
+  margin: 12px 0 0;
+  color: #3d403c;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.about-features {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.about-feature {
+  background: #fff;
+  border: 1px solid #eee6dc;
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.about-feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #4f7d58;
+}
+
+.about-feature-icon .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.about-feature h3 {
+  margin: 10px 0 4px;
+  font-size: 18px;
+}
+
+.about-feature p {
+  margin: 0;
+  color: #3d403c;
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.about-note,
+.about-credit,
+.about-version {
+  margin: 14px 0 0;
+  font-size: 16px;
+  line-height: 1.45;
+  color: #3d403c;
+}
+
+.about-credit {
+  font-weight: 700;
+  color: #243056;
+}
+
+.about-version {
+  color: #5e675f;
+}
+
 .child-select {
   width: 100%;
   text-align: left;
@@ -2533,6 +2632,27 @@ button:focus-visible {
   .grownups-row-title,
   .grownups-back {
     font-size: 22px;
+  }
+
+  .about-name {
+    font-size: 34px;
+  }
+
+  .about-subtitle,
+  .about-promo,
+  .about-lead,
+  .about-feature p,
+  .about-note {
+    font-size: 18px;
+  }
+
+  .about-features {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .about-feature h3 {
+    font-size: 20px;
   }
 
   .teacher-shell {
