@@ -1,5 +1,5 @@
 /** Sections that are in this build. Later courses are added with their own pull requests. */
-export const EXPLORE_SECTIONS = ["math", "colors", "time", "build", "games"] as const;
+export const EXPLORE_SECTIONS = ["math", "colors", "time", "build", "science", "games"] as const;
 
 export type ExploreSection = (typeof EXPLORE_SECTIONS)[number];
 
@@ -28,8 +28,17 @@ const BY_SCREEN: Record<string, ExploreSection> = {
   tower: "build",
   ramp: "build",
   machines: "build",
-  float: "build",
   balance: "build",
+  life: "science",
+  homes: "science",
+  body: "science",
+  change: "science",
+  weather: "science",
+  senses: "science",
+  float: "science",
+  predict: "science",
+  chain: "science",
+  water: "science",
   games: "games",
 };
 

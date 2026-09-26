@@ -163,15 +163,60 @@ const engineerTips: Record<string, { start: string; end: string }> = {
     start: "A lever, a pulley, and a wheel each lift or move something. The other choice just means try again.",
     end: "Ask: which machine lifted the basket?",
   },
-  float: {
-    start: "They guess sink or float, then the object drops. A miss is try again, not a score.",
-    end: "Ask: which ones floated?",
-  },
   balance: {
     start: "Ages 5 to 7 put weights on the beam. If it tips, they hear what went wrong and try again.",
     end: "Ask: which side was heavier?",
   },
 };
+
+const scienceTips: Record<string, { start: string; end: string }> = {
+  life: {
+    start: "They put the pictures in order: seed, sprout, plant, and the other life cycles. A skip just means try again.",
+    end: "Ask: what came after the seed?",
+  },
+  homes: {
+    start: "They match each animal to a home, then to a food. The pictures are the words.",
+    end: "Ask: where does the bird live?",
+  },
+  body: {
+    start: "A voice asks for a wing, a beak, or a tail. They tap the matching picture.",
+    end: "Ask: which part was the beak?",
+  },
+  change: {
+    start: "Ice melts and water turns to steam on the screen. The fizz says to do it with a grown-up and not to taste it. Then they sort solid, liquid, and gas.",
+    end: "Ask: what did the ice become?",
+  },
+  weather: {
+    start: "They dress their animal for sun, rain, or snow, then pick the season.",
+    end: "Ask: what did the animal wear in the snow?",
+  },
+  senses: {
+    start: "They listen, match a texture, and tell day from night.",
+    end: "Ask: which picture was the night?",
+  },
+  float: {
+    start: "They guess sink or float, then the object drops. A miss is try again, not a score.",
+    end: "Ask: which ones floated?",
+  },
+  predict: {
+    start: "Ages 5 to 7 say what they think will happen, then press Test. A wrong guess does not show the result.",
+    end: "Ask: what happened when they tested it?",
+  },
+  chain: {
+    start: "Ages 5 to 7 line up grass, then the rabbit, then the fox.",
+    end: "Ask: who eats the grass?",
+  },
+  water: {
+    start: "Ages 5 to 7 put the puddle, the vapor, the cloud, and the rain in order.",
+    end: "Ask: where did the rain come from?",
+  },
+};
+
+/** A short grown-up line for LittleNest Science. */
+export function scienceTip(activity: string, when: "start" | "end"): ReadTip {
+  const tip = scienceTips[activity] ?? scienceTips.life;
+  return { id: `science-${activity}-${when}`, text: tip[when] };
+}
 
 /** A short grown-up line for LittleNest Build. */
 export function engineerTip(activity: string, when: "start" | "end"): ReadTip {

@@ -6,10 +6,10 @@ import { defineSubject } from "./subject";
 /** LittleNest Build. Coding stays in Games. Reading stays `reading`. */
 export const BUILD = "build";
 
-export const buildSteps = ["bridge", "tower", "ramp", "machines", "float"] as const;
+export const buildSteps = ["bridge", "tower", "ramp", "machines"] as const;
 export type BuildStep = (typeof buildSteps)[number];
 
-export const buildActivities = ["bridge", "tower", "ramp", "machines", "float", "balance"] as const;
+export const buildActivities = ["bridge", "tower", "ramp", "machines", "balance"] as const;
 export type BuildActivity = (typeof buildActivities)[number];
 
 export const buildStages = [
@@ -17,7 +17,6 @@ export const buildStages = [
   { id: "tower", title: "Tall tower", detail: "A wide base stays up. A narrow base topples softly.", size: 1 },
   { id: "ramp", title: "Ramps and rolling", detail: "A higher ramp rolls the ball farther.", size: 1 },
   { id: "machines", title: "Simple machines", detail: "A lever, a pulley, and a wheel and axle.", size: 1 },
-  { id: "float", title: "Sink or float", detail: "Guess, then drop the object in the water.", size: 1 },
   { id: "balance", title: "Balance", detail: "Ages 5 to 7 balance weights, then test and fix.", size: 1 },
 ] as const;
 
@@ -34,7 +33,7 @@ export function engineerLevel(ageRange: AgeRange | string): LogicLevel {
 }
 
 export function activitiesFor(level: LogicLevel): BuildActivity[] {
-  const activities: BuildActivity[] = ["bridge", "tower", "ramp", "machines", "float"];
+  const activities: BuildActivity[] = ["bridge", "tower", "ramp", "machines"];
   if (level === "later") activities.push("balance");
   return activities;
 }
@@ -187,28 +186,6 @@ export function machinesReady(done: Record<MachineId, boolean>): boolean {
   return done.lever && done.pulley && done.wheel;
 }
 
-export type FloatId = "leaf" | "rock" | "boat" | "spoon";
-export type FloatGuess = "sink" | "float";
-
-export const FLOATS: Record<FloatId, boolean> = {
-  leaf: true,
-  rock: false,
-  boat: true,
-  spoon: false,
-};
-
-export function floatSet(level: LogicLevel): FloatId[] {
-  if (level === "later") return ["leaf", "rock", "boat", "spoon"];
-  return ["leaf", "rock", "boat"];
-}
-
-export function floatVerdict(id: FloatId, guess: FloatGuess): { ok: boolean; hint: string } {
-  const floats = FLOATS[id];
-  if ((guess === "float") === floats) return { ok: true, hint: "" };
-  if (id === "rock" || id === "spoon") return { ok: false, hint: "That one is heavy, so it sinks." };
-  return { ok: false, hint: "That one is light, so it floats." };
-}
-
 export type BeamPos = -2 | -1 | 1 | 2;
 export type BeamWeight = 1 | 2;
 
@@ -244,7 +221,6 @@ export function engineerManifestEntries(): { id: string; say: string }[] {
     { id: "engineer-tower", say: "Stack a tower up to the nest." },
     { id: "engineer-ramp", say: "Make the ball roll to the flag." },
     { id: "engineer-machines", say: "Lift it with a simple machine." },
-    { id: "engineer-float", say: "Will it sink or float?" },
     { id: "engineer-balance", say: "Balance the beam." },
     { id: "engineer-again", say: "Try again." },
     { id: "engineer-wrong", say: "What went wrong?" },

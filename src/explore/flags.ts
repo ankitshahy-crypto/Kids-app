@@ -8,6 +8,7 @@ export const EXPLORE_FLAGS: ExploreFlags = {
   colors: true,
   time: true,
   build: true,
+  science: true,
   games: true,
 };
 

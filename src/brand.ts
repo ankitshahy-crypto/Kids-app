@@ -15,6 +15,7 @@ export const MODULE_NUMBERS = "LittleNest Numbers";
 export const MODULE_COLORS = "LittleNest Colors";
 export const MODULE_TIME = "LittleNest Time & Money";
 export const MODULE_BUILD = "LittleNest Build";
+export const MODULE_SCIENCE = "LittleNest Science";
 
 /**
  * Planned public site. The domain is not purchased yet, so sharing still

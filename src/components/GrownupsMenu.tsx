@@ -244,11 +244,11 @@ export function GrownupsMenu({
           <h2>Help</h2>
           <h3>How the daily lesson works</h3>
           <p className="adult-copy">
-            Each day the child can choose LittleNest Words, LittleNest Numbers, LittleNest Colors, LittleNest Time & Money, or LittleNest Build. LittleNest Words
+            Each day the child can choose LittleNest Words, LittleNest Numbers, LittleNest Colors, LittleNest Time & Money, LittleNest Build, or LittleNest Science. LittleNest Words
             has four stops: Letters, Draw, Story, and Colors. LittleNest Numbers has counting, numerals, tracing, shapes,
             comparing, and adding. LittleNest Colors has color names, then mixing paints, and coloring their animal. LittleNest Time & Money
             has the parts of the day, a routine, a clock, coins, a pretend shop, save jars, and a lemonade stand. Cards stay pretend. LittleNest Build
-            is bridges, towers, ramps, simple machines, and sink or float. Ages 5 to 7 also balance weights. A
+            is bridges, towers, ramps, and simple machines. Ages 5 to 7 also balance weights. LittleNest Science is life cycles, homes, weather, senses, and sink or float. A fizz stays on the screen and says to do it with a grown-up. A
             star is for trying. The daily goal counts time on all of them. On Friday the letters from that week come
             back for a short review.
           </p>
