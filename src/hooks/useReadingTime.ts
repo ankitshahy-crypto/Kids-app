@@ -7,18 +7,20 @@ import { deviceTimeZone } from "../data/time";
  * in the last minute. Parent screens pass a null child so the clock stays off.
  */
 export function useReadingTime(
-  active: { id: string; readingMs: Record<string, number> } | null,
-  onCredit: (id: string, totals: Record<string, number>) => void,
+  active: { id: string; subject: string; seed: Record<string, number> } | null,
+  onCredit: (id: string, totals: Record<string, number>, subject: string) => void,
 ) {
   const onCreditRef = useRef(onCredit);
   onCreditRef.current = onCredit;
-  const seedRef = useRef(active?.readingMs);
-  seedRef.current = active?.readingMs;
+  const seedRef = useRef(active?.seed);
+  seedRef.current = active?.seed;
   const id = active?.id ?? null;
+  const subject = active?.subject ?? "";
 
   useEffect(() => {
     if (!id) return;
     const zone = deviceTimeZone();
+    const creditSubject = subject;
     let days = { ...(seedRef.current ?? {}) };
     let clock: ReadingClock = {
       startedAt: null,
@@ -37,7 +39,7 @@ export function useReadingTime(
       clock = settled.clock;
       if (settled.addedMs <= 0) return;
       days = settled.days;
-      onCreditRef.current(id, days);
+      onCreditRef.current(id, days, creditSubject);
     };
 
     const onInteract = () => flush({ interact: true });
@@ -56,5 +58,5 @@ export function useReadingTime(
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("pagehide", onHide);
     };
-  }, [id]);
+  }, [id, subject]);
 }

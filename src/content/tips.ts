@@ -51,6 +51,60 @@ const stepTips: Record<LessonStep, { start: string; end: string }> = {
 
 export type ReadTip = { id: string; text: string };
 
+const mathTips: Record<string, { start: string; end: string }> = {
+  count: {
+    start: "Touch each object, or drag it. Count out loud with your child.",
+    end: "Ask: can you find that many in the room?",
+  },
+  know: {
+    start: "Play the number, then let them tap it. A wrong tap is just another try.",
+    end: "Ask: what number comes next?",
+  },
+  trace: {
+    start: "Trace the dots in order. Big fingers are welcome.",
+    end: "Ask them to draw that number in the air.",
+  },
+  shape: {
+    start: "Name the shape, then let them find the match.",
+    end: "Ask: where else do you see this shape?",
+  },
+  more: {
+    start: "Look at both groups before you tap. More means the bigger group.",
+    end: "Ask: which group has fewer?",
+  },
+  add: {
+    start: "Count one group, then the other, then all of them together.",
+    end: "Ask: what if we added one more?",
+  },
+};
+
+/** A short grown-up line for a numbers activity. */
+export function mathTip(step: string, when: "start" | "end"): ReadTip {
+  const tip = mathTips[step] ?? mathTips.count;
+  return { id: `math-${step}-${when}`, text: tip[when] };
+}
+
+const colorTips: Record<string, { start: string; end: string }> = {
+  name: {
+    start: "Play the color, then let them tap the object. The word is there if the color is hard to see.",
+    end: "Ask: what else in the room is this color?",
+  },
+  mix: {
+    start: "Two paints go in the bucket. Stir with a finger until the new color shows, with its word.",
+    end: "Ask: what happens if we add white?",
+  },
+  paint: {
+    start: "Only colors they mixed can color their animal. Saving stays on this device.",
+    end: "Ask: which color did their animal like?",
+  },
+};
+
+/** A short grown-up line for a colors activity. */
+export function colorTip(step: string, when: "start" | "end"): ReadTip {
+  const tip = colorTips[step] ?? colorTips.name;
+  return { id: `colors-${step}-${when}`, text: tip[when] };
+}
+
 /** A letter end-tip wins when we have one. Otherwise the lesson step supplies the line. */
 export function readTip(step: LessonStep, when: "start" | "end", letter?: string): ReadTip {
   const key = letter?.trim().toLowerCase() ?? "";

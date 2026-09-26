@@ -110,6 +110,35 @@ function awardedFor(profile: ChildProfile, subject: SubjectId): string[] {
   return profile.practiceAwarded?.[subject] ?? [];
 }
 
+/** Minutes already saved for every subject, added together by date. */
+export function practiceTotal(profile: ChildProfile): Record<string, number> {
+  const totals: Record<string, number> = {};
+  const buckets = profile.practiceMs;
+  if (!buckets || typeof buckets !== "object") return totals;
+  for (const days of Object.values(buckets)) {
+    if (!days || typeof days !== "object") continue;
+    for (const [day, ms] of Object.entries(days)) {
+      if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) continue;
+      totals[day] = (totals[day] ?? 0) + ms;
+    }
+  }
+  return totals;
+}
+
+function awardedDays(profile: ChildProfile): Set<string> {
+  const days = new Set<string>(profile.readingAwarded ?? []);
+  const buckets = profile.practiceAwarded;
+  if (buckets && typeof buckets === "object") {
+    for (const dates of Object.values(buckets)) {
+      if (!Array.isArray(dates)) continue;
+      for (const day of dates) {
+        if (typeof day === "string") days.add(day);
+      }
+    }
+  }
+  return days;
+}
+
 function sameMs(left: Record<string, number>, right: Record<string, number>): boolean {
   const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
   for (const key of keys) {
@@ -134,8 +163,12 @@ export function applyReadingCredit(
   const current = timeFor(profile, subject);
   const nextMs = mergedMs(current, totals);
   const goalMs = Math.max(0, goalMinutes) * 60_000;
-  const already = new Set(awardedFor(profile, subject));
-  const hits = Object.keys(nextMs).filter((day) => (nextMs[day] ?? 0) >= goalMs && goalMs > 0 && !already.has(day));
+  const combined = practiceTotal(profile);
+  for (const [day, ms] of Object.entries(nextMs)) {
+    combined[day] = (combined[day] ?? 0) - (current[day] ?? 0) + ms;
+  }
+  const already = awardedDays(profile);
+  const hits = Object.keys(nextMs).filter((day) => (combined[day] ?? 0) >= goalMs && goalMs > 0 && !already.has(day));
   if (hits.length === 0 && sameMs(current, nextMs)) {
     return { profile, awardedNow: false, milestones: [] };
   }

@@ -12,10 +12,14 @@ export function ReadingChart({
   days,
   goalMinutes,
   name,
+  title = "Time reading",
+  section = "reading",
 }: {
   days: Record<string, number>;
   goalMinutes: number;
   name?: string;
+  title?: string;
+  section?: string;
 }) {
   const [range, setRange] = useState<(typeof tabs)[number]["id"]>("day");
   const now = new Date();
@@ -25,9 +29,12 @@ export function ReadingChart({
   const peak = Math.max(1, ...bars.map((bar) => bar.minutes));
 
   return (
-    <section className="read-chart" data-section="reading" data-range={range}>
-      <h2>Time reading{name ? ` · ${name}` : ""}</h2>
-      <div className="segment segment-3" role="tablist" aria-label="Time reading">
+    <section className="read-chart" data-section={section} data-range={range}>
+      <h2>
+        {title}
+        {name ? ` · ${name}` : ""}
+      </h2>
+      <div className="segment segment-3" role="tablist" aria-label={title}>
         {tabs.map((tab) => (
           <button
             key={tab.id}

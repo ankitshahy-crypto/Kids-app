@@ -1,3 +1,7 @@
+import { MODULE_COLORS, MODULE_NUMBERS, MODULE_WORDS } from "../brand";
+import { ModuleMark } from "./ModuleMark";
+import { COLORS, colorStages } from "../data/colors";
+import { MATH, mathStages } from "../data/math";
 import { pathStages } from "../data/path";
 import {
   placeForStage,
@@ -5,32 +9,36 @@ import {
   placesFor,
   resolvePlacement,
   stageTitle,
+  weekChoices,
   weekLabel,
   type LessonPlace,
   type PlacementDocument,
 } from "../data/placement";
-import { READING } from "../data/subject";
+import { READING, type SubjectId } from "../data/subject";
 import { lessonName, type ChildProfile } from "../data/profiles";
-import { letterSchedule } from "../data/schedule";
 
 function PlaceEditor({
   label,
   place,
   clearLabel,
   clearKind,
+  subject,
+  stages,
   onChange,
 }: {
   label: string;
   place: LessonPlace | null;
   clearLabel: string;
   clearKind: "class" | "child";
+  subject: SubjectId;
+  stages: readonly { id: string; title: string }[];
   onChange: (place: LessonPlace | null) => void;
 }) {
   return (
     <fieldset className="place-editor">
       <legend>{label}</legend>
       <div className="segment place-stages" role="group" aria-label={`${label} stage`}>
-        {pathStages.map((stage) => {
+        {stages.map((stage) => {
           const selected = place?.stageId === stage.id;
           return (
             <button
@@ -39,7 +47,7 @@ function PlaceEditor({
               data-stage={stage.id}
               aria-pressed={selected}
               className={selected ? "is-selected" : ""}
-              onClick={() => onChange(placeForStage(stage.id))}
+              onClick={() => onChange(placeForStage(stage.id, subject))}
             >
               {stage.title}
             </button>
@@ -53,13 +61,13 @@ function PlaceEditor({
           value={place ? String(place.weekIndex) : ""}
           onChange={(event) => {
             const value = event.target.value;
-            onChange(value === "" ? null : placeForWeek(Number(value)));
+            onChange(value === "" ? null : placeForWeek(Number(value), subject));
           }}
         >
           <option value="">{clearLabel}</option>
-          {letterSchedule.map((plan, index) => (
-            <option key={plan.week} value={index}>
-              {weekLabel(index)}
+          {weekChoices(subject).map((index) => (
+            <option key={index} value={index}>
+              {weekLabel(index, subject)}
             </option>
           ))}
         </select>
@@ -98,6 +106,10 @@ export function PlacementControls({
       data-subject={READING}
     >
       <h2>Lesson place</h2>
+      <h3 className="module-heading">
+        <ModuleMark name="words" />
+        <span>{MODULE_WORDS}</span>
+      </h3>
       <p className="adult-copy">
         Set the starting lesson for children on this device. A child can use a different lesson. Saved here only. A
         class server can use this same list later.
@@ -112,6 +124,8 @@ export function PlacementControls({
           place={reading.classDefault}
           clearLabel="Follow the calendar"
           clearKind="class"
+          subject={READING}
+          stages={pathStages}
           onChange={onClassPlace}
         />
       </div>
@@ -133,6 +147,8 @@ export function PlacementControls({
               place={override}
               clearLabel="Same as class"
               clearKind="child"
+              subject={READING}
+              stages={pathStages}
               onChange={(place) => onChildPlace(profile.id, place)}
             />
             <p className="adult-copy" data-today={resolved.letters.join("")}>
@@ -146,6 +162,136 @@ export function PlacementControls({
           </div>
         );
       })}
+      <MathPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} />
+      <ColorPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} />
     </section>
+  );
+}
+
+function MathPlacement({
+  placement,
+  profiles,
+  onClassPlace,
+  onChildPlace,
+}: {
+  placement: PlacementDocument;
+  profiles: ChildProfile[];
+  onClassPlace: (place: LessonPlace | null) => void;
+  onChildPlace: (childId: string, place: LessonPlace | null) => void;
+}) {
+  const math = placesFor(placement, MATH);
+  return (
+    <div data-subject={MATH}>
+      <h3 className="module-heading">
+        <ModuleMark name="numbers" />
+        <span>{MODULE_NUMBERS}</span>
+      </h3>
+      <p className="adult-copy">Counting, numbers, shapes, then adding. Saved on this device, the same way as reading.</p>
+      <div
+        data-place="class-math"
+        data-stage={math.classDefault?.stageId ?? "calendar"}
+        data-week={math.classDefault ? String(math.classDefault.weekIndex) : ""}
+      >
+        <PlaceEditor
+          label="Whole class numbers"
+          place={math.classDefault}
+          clearLabel="Follow the calendar"
+          clearKind="class"
+          subject={MATH}
+          stages={mathStages}
+          onChange={onClassPlace}
+        />
+      </div>
+      {profiles.map((profile) => {
+        const override = math.byChildId[profile.id] ?? null;
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH);
+        return (
+          <div
+            key={profile.id}
+            data-place="child-math"
+            data-child={profile.id}
+            data-stage={override?.stageId ?? "inherit"}
+            data-source={resolved.source}
+          >
+            <PlaceEditor
+              label={`${lessonName(profile)} numbers`}
+              place={override}
+              clearLabel="Same as class"
+              clearKind="child"
+              subject={MATH}
+              stages={mathStages}
+              onChange={(place) => onChildPlace(profile.id, place)}
+            />
+            <p className="adult-copy">
+              {stageTitle(resolved.stageId, MATH)}. {resolved.source === "child" ? "Set for this child." : resolved.source === "class" ? "Using the class lesson." : "Following this child's weeks."}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ColorPlacement({
+  placement,
+  profiles,
+  onClassPlace,
+  onChildPlace,
+}: {
+  placement: PlacementDocument;
+  profiles: ChildProfile[];
+  onClassPlace: (place: LessonPlace | null) => void;
+  onChildPlace: (childId: string, place: LessonPlace | null) => void;
+}) {
+  const colors = placesFor(placement, COLORS);
+  return (
+    <div data-subject={COLORS}>
+      <h3 className="module-heading">
+        <ModuleMark name="colors" />
+        <span>{MODULE_COLORS}</span>
+      </h3>
+      <p className="adult-copy">Color names, then mixing. Saved on this device, the same way as reading.</p>
+      <div
+        data-place="class-colors"
+        data-stage={colors.classDefault?.stageId ?? "calendar"}
+        data-week={colors.classDefault ? String(colors.classDefault.weekIndex) : ""}
+      >
+        <PlaceEditor
+          label="Whole class colors"
+          place={colors.classDefault}
+          clearLabel="Follow the calendar"
+          clearKind="class"
+          subject={COLORS}
+          stages={colorStages}
+          onChange={onClassPlace}
+        />
+      </div>
+      {profiles.map((profile) => {
+        const override = colors.byChildId[profile.id] ?? null;
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS);
+        return (
+          <div
+            key={profile.id}
+            data-place="child-colors"
+            data-child={profile.id}
+            data-stage={override?.stageId ?? "inherit"}
+            data-source={resolved.source}
+          >
+            <PlaceEditor
+              label={`${lessonName(profile)} colors`}
+              place={override}
+              clearLabel="Same as class"
+              clearKind="child"
+              subject={COLORS}
+              stages={colorStages}
+              onChange={(place) => onChildPlace(profile.id, place)}
+            />
+            <p className="adult-copy">
+              {stageTitle(resolved.stageId, COLORS)}. {resolved.source === "child" ? "Set for this child." : resolved.source === "class" ? "Using the class lesson." : "Following this child's weeks."}
+            </p>
+          </div>
+        );
+      })}
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { paintFill } from "./data/colors";
 
 function channel(hex: string, index: number): number {
   const value = parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16) / 255;
@@ -48,5 +49,30 @@ describe("pastel text tokens", () => {
   it("keeps the large wordmark at AA on the cream background", () => {
     expect(contrast(color.get("--wordmark-sage")!, color.get("--cream")!)).toBeGreaterThanOrEqual(3);
     expect(contrast(color.get("--wordmark-peach")!, color.get("--cream")!)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+function saturation(hex: string): number {
+  const channels = [0, 1, 2].map((index) => parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16) / 255);
+  const max = Math.max(...channels);
+  const min = Math.min(...channels);
+  const light = (max + min) / 2;
+  if (max === min) return 0;
+  const delta = max - min;
+  return light > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+}
+
+describe("color lesson paints", () => {
+  const color = tokens();
+
+  it("matches the saturated paint tokens and stays off the pastel gold", () => {
+    for (const [name, fill] of Object.entries(paintFill)) {
+      expect(color.get(`--paint-${name}`)).toBe(fill);
+    }
+    expect(paintFill.yellow).not.toBe(color.get("--gold"));
+    expect(paintFill.white).toBe("#ffffff");
+    for (const name of ["red", "blue", "yellow", "green", "orange", "purple", "pink"] as const) {
+      expect(saturation(paintFill[name]), name).toBeGreaterThanOrEqual(0.65);
+    }
   });
 });

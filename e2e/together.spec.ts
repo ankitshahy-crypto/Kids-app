@@ -96,7 +96,7 @@ test("read-together tips can be dismissed and turned off", async ({ page }) => {
   await page.locator("[data-setting=tips]").getByRole("button", { name: "On", exact: true }).click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "Colors" }).click();
+  await page.getByRole("button", { name: "Colors", exact: true }).click();
   await expect(page.locator(".grownup-tip")).toBeVisible();
 });
 

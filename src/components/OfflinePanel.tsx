@@ -1,4 +1,3 @@
-import { PRODUCT_SHORT } from "../brand";
 import { isNativeApp } from "../audio/platform";
 import { retryOfflineDownload, useOfflineState } from "../offline/client";
 
@@ -45,7 +44,7 @@ export function OfflinePanel() {
         <>
           <p className="adult-copy">A new version is ready. It waits here so a lesson is never interrupted.</p>
           <button type="button" className="offline-update" onClick={() => state.applyUpdate()}>
-            Update {PRODUCT_SHORT}
+            Update LittleNest
           </button>
         </>
       ) : (

@@ -18,8 +18,8 @@ export type DayRecord = Record<string, Record<string, boolean>>;
 
 export type Sticker = {
   subject: SubjectId;
-  kind: "letter" | "word";
-  /** Lowercase letter or word. Stored once per subject. */
+  kind: "letter" | "word" | "number" | "color";
+  /** Lowercase letter, word, numeral, or color. Stored once per subject. */
   label: string;
 };
 
@@ -213,7 +213,11 @@ function isStoredDay(value: unknown): boolean {
 function isSticker(value: unknown): value is Sticker {
   if (!value || typeof value !== "object") return false;
   const sticker = value as Partial<Sticker>;
-  return (sticker.kind === "letter" || sticker.kind === "word") && typeof sticker.label === "string" && sticker.label.length > 0;
+  return (
+    (sticker.kind === "letter" || sticker.kind === "word" || sticker.kind === "number" || sticker.kind === "color") &&
+    typeof sticker.label === "string" &&
+    sticker.label.length > 0
+  );
 }
 
 function isNestPiece(value: unknown): value is NestPiece {

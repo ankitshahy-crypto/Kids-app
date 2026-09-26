@@ -69,6 +69,17 @@
   --face-owl: #e7dcf4;
   --face-frog: #d7eedc;
   --face-duck: #fbe7b0;
+  /* Color-lesson paints. Saturated on purpose, separate from the pastel UI. */
+  --paint-red: #e10600;
+  --paint-blue: #1f4bff;
+  --paint-yellow: #ffe200;
+  --paint-green: #12b33a;
+  --paint-orange: #ff7a00;
+  --paint-purple: #7a2fe0;
+  --paint-pink: #ff4d8d;
+  --paint-brown: #8b4513;
+  --paint-black: #1a1a1a;
+  --paint-white: #ffffff;
   --shadow: 0 16px 40px rgba(120, 90, 60, 0.08);
   font-family: "Fredoka", "Avenir Next", "Segoe UI", "Trebuchet MS", sans-serif;
 }
@@ -1671,22 +1682,6 @@ button:focus-visible {
   height: 56px;
 }
 
-.today-module {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  align-self: flex-start;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.today-module .module-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-}
-
 .today-review {
   margin: 0;
   align-self: flex-end;
@@ -2217,6 +2212,20 @@ button:focus-visible {
   height: 24px;
 }
 
+.about-feature-icon.is-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: transparent;
+}
+
+.about-module-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: block;
+}
+
 .about-feature h3 {
   margin: 10px 0 4px;
   font-size: 18px;
@@ -2502,6 +2511,30 @@ button:focus-visible {
     font-size: 20px;
   }
 
+  .course-button {
+    min-height: 120px;
+    font-size: 28px;
+  }
+
+  .course-art,
+  .course-art .module-mark {
+    width: 64px;
+    height: 64px;
+  }
+
+  .math-activity,
+  .math-object,
+  .math-choices button,
+  .math-sides button,
+  .math-hear {
+    min-height: 112px;
+    font-size: 22px;
+  }
+
+  .trace-board {
+    width: min(420px, 70vw);
+  }
+
   .start-button {
     height: 96px;
     min-height: 96px;
@@ -2629,6 +2662,10 @@ button:focus-visible {
 
   .byline {
     font-size: 20px;
+  }
+
+  .course-brand {
+    font-size: 14px;
   }
 
   .who-card {
@@ -4060,6 +4097,566 @@ button:focus-visible {
   height: 12px;
   margin: 0 0 8px;
   accent-color: var(--sage-soft);
+}
+
+.course-pick {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: min(100%, 640px);
+  margin: 0 auto 8px;
+}
+
+.course-button,
+.math-activity,
+.math-object,
+.math-choices button,
+.math-sides button,
+.math-hear {
+  border-radius: 22px;
+  background: var(--paper);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.course-button {
+  min-height: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 3px solid transparent;
+  font-size: 20px;
+}
+
+.course-button.is-selected {
+  border-color: var(--sage-soft);
+  background: #f3faf4;
+}
+
+.course-art {
+  width: 48px;
+  height: 48px;
+  display: block;
+}
+
+.course-art .module-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.course-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+}
+
+.course-brand {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-sage);
+}
+
+.math-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+}
+
+.math-activity {
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 16px;
+}
+
+.math-activity.is-done {
+  box-shadow: inset 0 0 0 3px var(--sage-soft);
+}
+
+.math-activity-art {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+}
+
+.math-activity-art svg,
+.math-apple {
+  width: 40px;
+  height: 40px;
+}
+
+.math-numeral {
+  font-size: 28px;
+  color: #3d6b86;
+}
+
+.math-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 28px;
+}
+
+.math-play h1 {
+  margin: 0;
+  font-size: 36px;
+}
+
+.math-prompt {
+  margin: 0;
+  font-size: 18px;
+}
+
+.math-hear,
+.math-choices button,
+.math-sides button,
+.math-object {
+  min-width: 76px;
+  min-height: 76px;
+  font-size: 32px;
+}
+
+.math-objects,
+.math-choices,
+.math-sides,
+.math-sum {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  width: min(100%, 560px);
+}
+
+.math-object.is-counted {
+  opacity: 0.35;
+}
+
+.math-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  max-width: 140px;
+}
+
+.math-plus {
+  font-size: 40px;
+  align-self: center;
+}
+
+.trace-board {
+  position: relative;
+  width: min(320px, 92vw);
+  aspect-ratio: 1;
+  margin: 4px auto 12px;
+}
+
+.trace-board svg {
+  width: 100%;
+  height: 100%;
+}
+
+.trace-ghost {
+  font-size: 78px;
+  font-family: Fredoka, sans-serif;
+  fill: rgba(110, 154, 116, 0.28);
+}
+
+.trace-dot {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--sage-soft);
+  border: 3px solid var(--paper);
+}
+
+.trace-dot.is-done {
+  background: var(--gold);
+}
+
+.count-sheet {
+  list-style: none;
+  margin: 0;
+  padding: 12px 0 0;
+}
+
+.count-sheet li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 14px;
+  font-size: 28px;
+}
+
+.count-line {
+  flex: 1;
+  border-bottom: 2px solid #c4b6a6;
+  min-height: 28px;
+}
+
+.color-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: min(100%, 640px);
+  margin: 0 auto;
+}
+
+.color-activity,
+.color-choice,
+.color-hear,
+.paint-blob,
+.done-button {
+  border-radius: 22px;
+}
+
+.color-activity,
+.color-choice,
+.color-hear,
+.paint-blob {
+  background: var(--paper);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.color-activity {
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 16px;
+}
+
+.color-activity.is-done {
+  box-shadow: inset 0 0 0 3px var(--sage-soft);
+}
+
+.color-activity-art .color-swatch {
+  width: 54px;
+  min-width: 54px;
+  min-height: 54px;
+}
+
+.color-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 28px;
+  width: min(100%, 640px);
+  margin: 0 auto;
+}
+
+.color-play h1,
+.mix-said {
+  margin: 0;
+  font-size: 36px;
+  color: var(--text);
+}
+
+.color-prompt,
+.color-feedback,
+.color-note,
+.bucket-hint,
+.paint-caption {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+  text-align: center;
+}
+
+.color-hear,
+.color-choice,
+.paint-blob {
+  min-width: 76px;
+  min-height: 76px;
+}
+
+.color-choices,
+.mix-blobs,
+.bucket-paints {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.mix-blobs {
+  min-height: 120px;
+}
+
+.color-choice,
+.paint-blob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px;
+  border: 3px solid #3d4a40;
+  touch-action: none;
+}
+
+.color-choice.is-selected {
+  box-shadow: inset 0 0 0 3px var(--sage-soft);
+}
+
+.color-word,
+.color-pattern {
+  display: block;
+  background: var(--paper);
+  color: var(--text);
+  line-height: 1.2;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.color-word {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.color-pattern {
+  font-size: 13px;
+}
+
+.color-swatch,
+.color-object,
+.print-swatch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 72px;
+  min-height: 64px;
+  border-radius: 16px;
+  border: 3px solid #1c241f;
+  overflow: hidden;
+  padding: 6px 4px;
+}
+
+.color-object {
+  width: 72px;
+  height: 48px;
+  min-height: 48px;
+}
+
+.print-swatch {
+  width: 36px;
+  min-width: 36px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.pattern-stripes,
+.pattern-pale-stripes {
+  background-image: repeating-linear-gradient(90deg, transparent 0 6px, #1c241f 6px 9px);
+}
+
+.pattern-dots,
+.pattern-pale-dots {
+  background-image: radial-gradient(#1c241f 2px, transparent 2.5px);
+  background-size: 10px 10px;
+}
+
+.pattern-waves,
+.pattern-pale-waves {
+  background-image: repeating-linear-gradient(180deg, transparent 0 5px, #1c241f 5px 7px);
+}
+
+.pattern-checks,
+.pattern-pale-checks {
+  background-image:
+    linear-gradient(#1c241f 2px, transparent 2px),
+    linear-gradient(90deg, #1c241f 2px, transparent 2px);
+  background-size: 12px 12px;
+}
+
+.pattern-diagonal,
+.pattern-pale-diagonal {
+  background-image: repeating-linear-gradient(45deg, transparent 0 6px, #1c241f 6px 8px);
+}
+
+.pattern-rings,
+.pattern-pale-rings {
+  background-image: repeating-radial-gradient(circle, transparent 0 5px, #1c241f 5px 7px);
+}
+
+.pattern-hearts,
+.pattern-pale-hearts {
+  background-image: radial-gradient(circle at 30% 40%, #1c241f 3px, transparent 3.5px), radial-gradient(circle at 70% 40%, #1c241f 3px, transparent 3.5px);
+  background-size: 16px 16px;
+}
+
+.pattern-cross,
+.pattern-pale-cross {
+  background-image:
+    linear-gradient(#1c241f, #1c241f),
+    linear-gradient(#1c241f, #1c241f);
+  background-size: 100% 3px, 3px 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.pattern-solid,
+.pattern-pale-solid {
+  box-shadow: inset 0 0 0 8px #1c241f;
+}
+
+.pattern-outline,
+.pattern-pale-outline {
+  background-color: #d9d3cb;
+  box-shadow: inset 0 0 0 5px var(--paper), inset 0 0 0 8px #1c241f;
+}
+
+.pattern-pale-stripes,
+.pattern-pale-dots,
+.pattern-pale-waves,
+.pattern-pale-checks,
+.pattern-pale-diagonal,
+.pattern-pale-rings,
+.pattern-pale-hearts,
+.pattern-pale-cross,
+.pattern-pale-solid {
+  opacity: 0.72;
+}
+
+.mix-stage {
+  position: relative;
+  width: min(100%, 560px);
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.mix-bucket {
+  width: min(100%, 320px);
+  min-height: 180px;
+  border: 4px dashed #3d4a40;
+  border-radius: 28px;
+  background: var(--sand);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  touch-action: none;
+  padding: 12px;
+}
+
+.bucket-label {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.bucket-blob {
+  pointer-events: none;
+}
+
+.mix-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.painted-hero {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+.painted-hero .hero,
+.painted-hero .avatar-art {
+  width: 160px;
+  height: 160px;
+}
+
+.paint-wash {
+  position: absolute;
+  inset: 18px 28px 10px;
+  border-radius: 50%;
+  opacity: 0.45;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.coloring-outline {
+  width: min(220px, 70%);
+  height: auto;
+  margin: 8px auto;
+  display: block;
+}
+
+.coloring-key {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+
+.coloring-key li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  .course-button {
+    min-height: 120px;
+    font-size: 28px;
+  }
+
+  .course-art,
+  .course-art .module-mark {
+    width: 64px;
+    height: 64px;
+  }
+
+  .math-activity,
+  .math-object,
+  .math-choices button,
+  .math-sides button,
+  .math-hear {
+    min-height: 112px;
+    font-size: 22px;
+  }
+
+  .trace-board {
+    width: min(420px, 70vw);
+  }
+
+  .color-activity,
+  .color-choice,
+  .color-hear,
+  .paint-blob {
+    min-height: 112px;
+    font-size: 22px;
+  }
 }
 
 .sr-only {

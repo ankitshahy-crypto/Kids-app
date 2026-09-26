@@ -67,7 +67,7 @@ test("the kid progress ring does not show clock numbers", async ({ page }) => {
   await page.getByRole("button", { name: "Mia" }).click();
   const ring = page.locator(".goal-ring");
   await expect(ring).toBeVisible();
-  await expect(ring).toHaveAttribute("aria-label", "Today's reading");
+  await expect(ring).toHaveAttribute("aria-label", "Today's practice");
   await expect(ring).not.toContainText(/\d|min/i);
 });
 
