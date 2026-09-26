@@ -13,4 +13,4 @@ import { PRODUCT_NAME } from "./brand";
  */
 export const shareUrl = "https://ankitshahy-crypto.github.io/Kids-app/";
 
-export const shareMessage = `${PRODUCT_NAME} is letters, numbers, and colors for ages 3–5. Five happy minutes a day.`;
+export const shareMessage = `${PRODUCT_NAME} is reading, math, colors, games and coding, time and money, building, and science for ages 3–7. Five happy minutes a day.`;
