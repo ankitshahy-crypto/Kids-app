@@ -1,10 +1,11 @@
-import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
+import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
 import { aboutContent, type AboutFeatureId } from "../content/about";
 import { tint } from "../palette";
 import { ModuleMark } from "./ModuleMark";
 import { colorStages } from "../data/colors";
 import { mathStages } from "../data/math";
 import { timeStages } from "../data/timeMoney";
+import { buildStages } from "../data/engineer";
 import { laterPath, pathStages } from "../data/path";
 import { GrownupIcon, SpeakerIcon, StarIcon } from "./icons";
 
@@ -18,6 +19,7 @@ const tints: Record<AboutFeatureId, string> = {
   math: tint.mint,
   colors: tint.blush,
   time: tint.sky,
+  build: tint.peach,
   games: tint.peach,
   classroom: tint.sky,
   grownups: tint.mintCard,
@@ -34,6 +36,7 @@ export function AboutWordNest() {
         <ModuleMark name="numbers" />
         <ModuleMark name="colors" />
         <ModuleMark name="time" />
+        <ModuleMark name="build" />
       </div>
       <p className="about-subtitle">{about.subtitle}</p>
       <p className="about-promo">{about.promo}</p>
@@ -111,6 +114,19 @@ export function AboutWordNest() {
         ))}
       </ol>
 
+      <h3 className="module-heading">
+        <ModuleMark name="build" />
+        <span>{MODULE_BUILD}</span>
+      </h3>
+      <ol className="about-path" data-teach-subject="build">
+        {buildStages.map((stage) => (
+          <li key={stage.id} data-teach={stage.id}>
+            <strong>{stage.title}</strong>
+            <span>{stage.detail}</span>
+          </li>
+        ))}
+      </ol>
+
       <h3>{about.safetyHeading}</h3>
       <p className="about-lead">{about.safety}</p>
 
@@ -135,6 +151,7 @@ function FeatureIcon({ id }: { id: AboutFeatureId }) {
   if (id === "math") return <ModuleMark name="numbers" className="about-module-mark" />;
   if (id === "colors") return <ModuleMark name="colors" className="about-module-mark" />;
   if (id === "time") return <ModuleMark name="time" className="about-module-mark" />;
+  if (id === "build") return <ModuleMark name="build" className="about-module-mark" />;
   return <ClassIcon />;
 }
 

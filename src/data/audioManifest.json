@@ -369,7 +369,15 @@
     "build-chef": { "file": "prompts/build-chef.mp3", "say": "Make a sandwich.", "source": "neural" },
     "build-again": { "file": "prompts/build-again.mp3", "say": "Try again.", "source": "neural" },
     "build-save": { "file": "prompts/build-save.mp3", "say": "Saved on this device.", "source": "neural" },
-    "build-splash": { "file": "prompts/build-splash.mp3", "say": "The bird splashes.", "source": "neural" }
+    "build-splash": { "file": "prompts/build-splash.mp3", "say": "The bird splashes.", "source": "neural" },
+    "engineer-bridge": { "file": "prompts/engineer-bridge.mp3", "say": "Build a bridge so your animal can cross.", "source": "neural" },
+    "engineer-tower": { "file": "prompts/engineer-tower.mp3", "say": "Stack a tower up to the nest.", "source": "neural" },
+    "engineer-ramp": { "file": "prompts/engineer-ramp.mp3", "say": "Make the ball roll to the flag.", "source": "neural" },
+    "engineer-machines": { "file": "prompts/engineer-machines.mp3", "say": "Lift it with a simple machine.", "source": "neural" },
+    "engineer-float": { "file": "prompts/engineer-float.mp3", "say": "Will it sink or float?", "source": "neural" },
+    "engineer-balance": { "file": "prompts/engineer-balance.mp3", "say": "Balance the beam.", "source": "neural" },
+    "engineer-again": { "file": "prompts/engineer-again.mp3", "say": "Try again.", "source": "neural" },
+    "engineer-wrong": { "file": "prompts/engineer-wrong.mp3", "say": "What went wrong?", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },

@@ -12,7 +12,7 @@ Store and website copy. The in-app About screen reads the same words from `src/c
 
 ## Description
 
-LittleNest Learning helps young children take their first steps into letters, numbers, colors, and time and money, one small step at a time. Made for ages 3 to 5, with harder clock and money work for ages 5 to 7 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. LittleNest Words: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!" LittleNest Numbers: count objects, hear and trace numbers, match and trace shapes, and add small groups. LittleNest Colors: hear a color and tap it, mix two paints, and color their animal. LittleNest Time & Money: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills.
+LittleNest Learning helps young children take their first steps into letters, numbers, colors, time and money, and building, one small step at a time. Made for ages 3 to 5, with harder clock, money, and building work for ages 5 to 7 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. LittleNest Words: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!" LittleNest Numbers: count objects, hear and trace numbers, match and trace shapes, and add small groups. LittleNest Colors: hear a color and tap it, mix two paints, and color their animal. LittleNest Time & Money: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. LittleNest Build: bridges, towers, ramps, simple machines, and sink or float.
 
 ## What makes LittleNest Learning different
 
@@ -22,6 +22,7 @@ LittleNest Learning helps young children take their first steps into letters, nu
 - **Short daily lessons:** 5–10 minutes builds a habit without too much screen time.
 - **Stars for trying:** Effort, not perfection. No pressure, no scores.
 - **Rewards that feel great:** Stars for effort unlock outfits for your child's animal, a sticker book of letters, numbers, colors, clocks, coins, and baby animals, and a growing nest. Every reward is earned by practicing, never bought.
+- **LittleNest Build:** Build a bridge, stack a tower, roll a ball down a ramp, and try a lever, a pulley, and a wheel. Guess whether something sinks or floats. A wobbly bridge or a narrow tower just means try again. Ages 5 to 7 balance weights, use fewer pieces, and hear what went wrong.
 - **Games to play:** Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. Think and code games guide their animal home, continue a picture pattern, put morning pictures in order, and try an if-then garden. Build It stacks picture blocks that play: the animal moves, a song plays, weather grows a flower, and a robot makes a sandwich. Ages 5 to 7 use longer arrow paths, a repeat, a bug fix, a pond splash, a short line on each block, and can save a program on this device. A grown-up can turn on a Python view of that same program. A miss just means try again.
 - **LittleNest Numbers:** Count to 10, hear and trace numbers, match and trace shapes, compare groups, and add with pictures up to 5.
 - **LittleNest Colors:** Hear a color and tap it, mix paints, and color their animal with colors they made. Every swatch shows the color word.
@@ -31,7 +32,7 @@ LittleNest Learning helps young children take their first steps into letters, nu
 
 ## How LittleNest Learning teaches
 
-LittleNest Learning has four modules. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7.
+LittleNest Learning has five modules. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7. LittleNest Build starts with a bridge, a tower, a ramp, simple machines, and sink or float. Ages 5 to 7 balance weights and test a design again.
 
 LittleNest Words:
 
@@ -69,6 +70,15 @@ LittleNest Time & Money:
 12. **Choose and save:** Buy what the coins can cover, and save for the rest.
 13. **Needs and wants:** Sort needs and wants.
 14. **Cards:** A debit card uses saved money. A credit card is paid back later.
+
+LittleNest Build:
+
+1. **Build a bridge:** Blocks and planks carry their animal across the river.
+2. **Tall tower:** A wide base stays up. A narrow base topples softly.
+3. **Ramps and rolling:** A higher ramp rolls the ball farther.
+4. **Simple machines:** A lever, a pulley, and a wheel and axle.
+5. **Sink or float:** Guess, then drop the object in the water.
+6. **Balance:** Ages 5 to 7 balance weights, then test and fix.
 
 ## Safe and private by design
 

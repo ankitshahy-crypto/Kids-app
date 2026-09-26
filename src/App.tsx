@@ -24,7 +24,7 @@ import { StickerBook } from "./components/StickerBook";
 import { TeacherView } from "./components/TeacherView";
 import type { GameId } from "./components/Games";
 import { TodayPath } from "./components/TodayPath";
-import { colorTip, gameTip, mathTip, readTip, timeTip, type ReadTip } from "./content/tips";
+import { colorTip, engineerTip, gameTip, mathTip, readTip, timeTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
 import { ExploreFrame } from "./explore/frame";
 import {
@@ -35,6 +35,7 @@ import {
   CoinsActivity,
   CountActivity,
   DayActivity,
+  EngineerActivity,
   Games,
   JarsActivity,
   KnowActivity,
@@ -54,6 +55,7 @@ import { sectionForScreen } from "./explore/sections";
 import { COLORS, colorFill, colorLessonForChild, type ColorStep } from "./data/colors";
 import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { TIME, lessonForChild as timeLessonForChild, type MoneyGame, type TimeStep } from "./data/timeMoney";
+import { BUILD, type BuildActivity } from "./data/engineer";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
@@ -67,13 +69,14 @@ import { useSettings } from "./hooks/useSettings";
 import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
-type Course = "reading" | "math" | "colors" | "time";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | "word" | "my-name";
+type Course = "reading" | "math" | "colors" | "time" | "build";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | "word" | "my-name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
 const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 const timeScreens: TimeStep[] = ["day", "routine", "clock", "coins", "shop"];
+const buildScreens: BuildActivity[] = ["bridge", "tower", "ramp", "machines", "float", "balance"];
 const moneyScreens: MoneyGame[] = ["jars", "lemonade", "choose", "needs", "cards"];
 
 export default function App() {
@@ -247,7 +250,9 @@ export default function App() {
                 ? (active.practiceMs?.[COLORS] ?? {})
                 : course === "time"
                   ? (active.practiceMs?.[TIME] ?? {})
-                  : active.readingMs,
+                  : course === "build"
+                    ? (active.practiceMs?.[BUILD] ?? {})
+                    : active.readingMs,
         }
       : null,
     (id, totals, subject) => {
@@ -364,6 +369,30 @@ export default function App() {
     else setTip(null);
   };
 
+  const finishBuild = (activity: BuildActivity) => {
+    if (!active) return;
+    const learned: StickerInput[] = [{ subject: BUILD, kind: "build", label: activity }];
+    const result = giveStar(active.id, activity, learned, BUILD);
+    if (result.awarded) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduce) setFlying(true);
+      if (result.milestones.length > 0) {
+        setCheer(result.milestones[result.milestones.length - 1] ?? null);
+        playEffect("cheer", settings);
+      } else playEffect("chime", settings);
+    }
+    setScreen("today");
+    if (settingsRef.current.showTips) setTip(engineerTip(activity, "end"));
+    else setTip(null);
+  };
+
+  const openBuild = (activity: BuildActivity) => {
+    primeSpeech();
+    setScreen(activity);
+    if (settingsRef.current.showTips) setTip(engineerTip(activity, "start"));
+    else setTip(null);
+  };
+
   const finishLetter = (word: DeckWord) => {
     const learned: StickerInput[] = [
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
@@ -385,7 +414,8 @@ export default function App() {
     screen === "money-play" ||
     screen === "word" ||
     screen === "my-name" ||
-    screen === "games";
+    screen === "games" ||
+    buildScreens.includes(screen as BuildActivity);
   const exploreSection = sectionForScreen(screen);
 
   const finishGame = (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string; ladder?: boolean }) => {
@@ -519,6 +549,7 @@ export default function App() {
                   timeLesson={timeLesson}
                   onTime={openTime}
                   onMoneyPlay={openMoneyPlay}
+                  onBuild={openBuild}
                   canTraceWord={blendedWords.length > 0}
                   canTraceName={Boolean(traceName)}
                   onTraceWord={() => {
@@ -677,6 +708,16 @@ export default function App() {
                       animal={active.animal}
                       settingsRef={settingsRef}
                       onDone={(label) => finishTime("shop", label)}
+                    />
+                  ) : null}
+                  {screen === "bridge" || screen === "tower" || screen === "ramp" || screen === "machines" || screen === "float" || screen === "balance" ? (
+                    <EngineerActivity
+                      activity={screen}
+                      ageRange={active.ageRange}
+                      animal={active.animal}
+                      outfit={active.outfit}
+                      settingsRef={settingsRef}
+                      onDone={() => finishBuild(screen)}
                     />
                   ) : null}
                   {screen === "money-play" ? (
