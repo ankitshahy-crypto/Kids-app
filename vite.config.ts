@@ -30,7 +30,7 @@ export default defineConfig({
       manifest: {
         name: "LittleNest Learning",
         short_name: "LittleNest",
-        description: "Letters, numbers, and colors for ages 3–5. Works offline after the first visit.",
+        description: "Reading, math, colors, games and coding, time and money, building, and science for ages 3–7. No ads. Works offline after the first visit.",
         theme_color: "#FBF6EE",
         background_color: "#FBF6EE",
         display: "standalone",
