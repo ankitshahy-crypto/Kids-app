@@ -29,7 +29,7 @@ Step 1 only leaves a "From your teacher" placeholder card in the parent view. Th
 
 **Teacher view.** A separate teacher profile, behind the same grown-up check. A classroom shell: a class switcher, Scan QR, a class star jar, a roster of app names and avatars, and tabs for classes, roster, goals, the star jar, certificates, and notes. Step 1 shows that shell with demo data only.
 
-The start screen shows the nest, the WordNest name, and the child avatar buttons. Tapping a child opens the kid view. Parent and Teacher are smaller locked pills. One tap opens a grown-up check a 3-to-5-year-old cannot pass. Cancel closes it without opening the view.
+The start screen shows the nest, the WordNest name, and the child avatar buttons. Tapping a child opens the kid view. A labeled Grown-ups button sits in the top corner of the start screen and the child screens, away from the lesson path. Parent and Teacher stay as smaller locked pills. One tap on any of them opens a grown-up check a 3-to-5-year-old cannot pass. Cancel closes it without opening the view. Grown-ups then opens a menu: Settings, Child profiles, Account, Help, Privacy, and About.
 
 Step 1 sets up the shell and routing for all three views, builds the kid view, and builds a basic parent view that can add and edit a child. The teacher view in step 1 is a placeholder dashboard. Step 6 fills it in.
 
@@ -69,7 +69,7 @@ The lesson day resets at local midnight. "Today" is the calendar date in the dev
 
 In step 6, each school and each class stores its own IANA time zone, for example `America/New_York`. Teacher weekly goals, monthly goals, and certificates use the class time zone. Home progress stays on the child's device zone.
 
-Sound it out is the letter-game step.
+Sound it out is the letter-game step. The child drags their animal along a track so each letter lights and sounds, then the word blends at the end.
 
 ## Profile
 
@@ -100,7 +100,7 @@ The app stays quiet unless a sound is doing a job. No constant noise, and no lou
 Voice:
 
 - The pipeline is built around pre-recorded files. `src/data/audioManifest.json` maps each letter sound, word, and sentence id to a file under `public/audio/`. The app plays that file when `src/data/audioAvailable.json` lists it.
-- Device speech is only the fallback, and it must not sound robotic. It picks the best en-US voice on the phone (Enhanced, Premium, or Siri-quality by name or quality; local when possible) and skips compact and novelty voices. Rate stays near a natural pace (about 0.9, or 0.85 on the slower setting). Pitch stays at 1.0. A parent can preview and choose the voice in Settings.
+- If Web Audio cannot play a file, the app tries a plain audio element and then device speech, so a child still hears the line. Device speech is the fallback, and it must not sound robotic. It picks the best en-US voice on the phone (Enhanced, Premium, or Siri-quality by name or quality; local when possible) and skips compact and novelty voices. Rate stays near a natural pace (about 0.9, or 0.85 on the slower setting). Pitch stays at 1.0. A parent can preview and choose the voice in Settings.
 - Letter sounds do not use isolated syllables such as "buh". Play the recorded clip when it exists. Otherwise say an example phrase, such as "b, as in ball".
 - The 26 letter sounds, plus the extra phoneme ids in the manifest, are recorded by a person. They are not synthesized.
 - Words and short sentences may be pre-generated offline with `npm run generate-audio`. That Node script calls Google Cloud Text-to-Speech (Neural2, Studio, or Chirp HD en-US) using `GOOGLE_APPLICATION_CREDENTIALS`, writes MP3s into `public/audio/`, and refreshes the available-file index. The developer runs it. The app makes no network calls.
@@ -182,7 +182,7 @@ At the end of the year, the teacher archives the class.
 - No analytics and no tracking.
 - Until a classroom server exists, everything stays on the device (`localStorage`, IndexedDB, or Capacitor Preferences).
 
-Parent and Teacher open only after a grown-up check on the start screen. A correct answer takes an adult about two seconds. Cancel does not open them.
+Parent and Teacher open only after a grown-up check on the start screen. Grown-ups, on the start screen and the child screens, uses that same check and then a menu for settings, profiles, account, help, privacy, and about. A correct answer takes an adult about two seconds. Cancel does not open them.
 
 ## Build order
 

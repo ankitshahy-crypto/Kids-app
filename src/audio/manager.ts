@@ -11,7 +11,7 @@ import { isIos, isNativeApp } from "./platform";
  * logged in ASSETS.md. Tracing focus (`focus`) stays silent.
  */
 
-export type EffectName = "pop" | "chime" | "boop" | "celebrate";
+export type EffectName = "tap" | "pop" | "chime" | "boop" | "celebrate";
 
 export type MusicArea = "today" | "play" | "story" | "focus" | "none";
 
@@ -60,12 +60,63 @@ function busNode(bus: AudioBus): GainNode | null {
   return musicGain;
 }
 
-/** Call from a tap so iOS will allow later sounds. */
+function isBlocked(state: AudioContextState | string): boolean {
+  return state === "suspended" || state === "interrupted";
+}
+
+/**
+ * One silent sample. Playing it inside a tap unlocks later file playback
+ * on iOS, where play() is ignored until a gesture has started audio.
+ */
+const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+
+function startSilentBuffer(ctx: AudioContext): void {
+  try {
+    const buffer = ctx.createBuffer(1, 1, ctx.sampleRate || 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch {
+    // resume() in the same gesture is still the important call.
+  }
+}
+
+function startSilentElement(): void {
+  // A data-URI element crashes headless WebKit (no audio device). Real phones
+  // still need this play() inside the tap so later clips are allowed.
+  if (typeof navigator !== "undefined" && navigator.webdriver) return;
+  try {
+    const audio = new Audio(SILENT_WAV);
+    void audio.play().catch(() => undefined);
+  } catch {
+    // The Web Audio buffer is the other unlock path.
+  }
+}
+
+/**
+ * Call synchronously from a tap, touchend, or click. iOS only accepts
+ * resume() inside that gesture, and the context can drop back to
+ * "suspended" or "interrupted" later.
+ */
+let didUnlockGesture = false;
+
 export function unlockAudio(): void {
-  const ctx = ensure();
-  if (ctx && ctx.state === "suspended") void ctx.resume();
-  refreshGains();
-  showSilentHintOnce();
+  try {
+    const ctx = ensure();
+    if (ctx && isBlocked(ctx.state)) void ctx.resume().catch(() => undefined);
+    if (!didUnlockGesture) {
+      didUnlockGesture = true;
+      if (ctx) startSilentBuffer(ctx);
+      startSilentElement();
+    }
+    refreshGains();
+    // The hint is a small toast. Showing it in this turn can steal the gesture
+    // iOS just granted, so wait until the tap handler has finished.
+    setTimeout(showSilentHintOnce, 0);
+  } catch {
+    // Creating a context can throw when no audio device is available.
+  }
 }
 
 export function applyAudioSettings(settings: Settings): void {
@@ -177,11 +228,23 @@ export function playEffect(name: EffectName, settings?: Settings): void {
   if (!current?.effects || clampVolume(current.effectsVolume) <= 0) return;
   const ctx = ensure();
   if (!ctx) return;
-  if (ctx.state === "suspended") void ctx.resume();
-  refreshGains();
+  const run = () => {
+    if (ctx.state !== "running") return;
+    refreshGains();
+    startEffect(ctx, name);
+  };
+  if (isBlocked(ctx.state)) void ctx.resume().then(run).catch(() => undefined);
+  else run();
+}
+
+function startEffect(ctx: AudioContext, name: EffectName): void {
   const now = ctx.currentTime;
   const peak = 0.12;
   try {
+    if (name === "tap") {
+      tone(ctx, 740, 560, now, 0.035, peak * 0.22);
+      return;
+    }
     if (name === "pop") {
       tone(ctx, 520, 760, now, 0.07, peak);
       return;
@@ -207,46 +270,138 @@ function aborted(): DOMException {
   return new DOMException("aborted", "AbortError");
 }
 
+function isAbort(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function busLevel(bus: AudioBus): number {
+  if (bus === "voice") return voiceLevel();
+  if (bus === "effects") return effectsLevel();
+  return musicLevel();
+}
+
 /**
- * Play a file on one channel. Voice clips, effect files, and music all use
- * this so a GainNode, not the audio element, sets the loudness.
+ * Play a file on one channel. The GainNode sets the loudness when Web Audio
+ * can decode the file. If that fails, a plain audio element plays it so iOS
+ * still makes a sound. The caller speaks if both fail.
  */
 export async function playOnBus(src: string, bus: AudioBus, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) throw aborted();
   unlockAudio();
+  try {
+    await playBuffer(src, bus, signal);
+  } catch (error) {
+    if (signal.aborted || isAbort(error)) throw aborted();
+    await playElement(src, bus, signal);
+  }
+}
+
+async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal): Promise<void> {
   const ctx = ensure();
   if (!ctx) throw new Error("Audio is unavailable");
-  if (ctx.state === "suspended") await ctx.resume();
+  if (isBlocked(ctx.state)) {
+    try {
+      await ctx.resume();
+    } catch {
+      throw new Error("Audio context did not resume");
+    }
+  }
+  if (ctx.state !== "running") throw new Error("Audio context is not running");
+  refreshGains();
   if (signal.aborted) throw aborted();
-  const response = await fetch(src);
+  const response = await fetch(src, { signal });
   if (!response.ok) throw new Error(`Could not play ${src}`);
+  const type = response.headers?.get?.("content-type") ?? "";
+  if (type.includes("text/html")) throw new Error(`Could not play ${src}`);
   const bytes = await response.arrayBuffer();
+  if (bytes.byteLength === 0) throw new Error(`Could not play ${src}`);
   if (signal.aborted) throw aborted();
-  const buffer = await ctx.decodeAudioData(bytes.slice(0));
+  let buffer: AudioBuffer;
+  try {
+    buffer = await ctx.decodeAudioData(bytes.slice(0));
+  } catch {
+    throw new Error(`Could not decode ${src}`);
+  }
   if (signal.aborted) throw aborted();
   const source = ctx.createBufferSource();
   source.buffer = buffer;
-  const gain = busNode(bus);
-  source.connect(gain ?? ctx.destination);
+  source.connect(busNode(bus) ?? ctx.destination);
   await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const finish = (error?: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
+      if (error) reject(error instanceof Error ? error : new Error("Could not play audio"));
+      else resolve();
+    };
     const onAbort = () => {
       try {
         source.stop();
       } catch {
         // The clip already ended.
       }
-      reject(aborted());
+      finish(aborted());
     };
+    const durationMs = Math.min(15000, Math.ceil((buffer.duration || 1) * 1000) + 750);
+    const timer = setTimeout(() => finish(), durationMs);
     signal.addEventListener("abort", onAbort, { once: true });
-    source.onended = () => {
-      signal.removeEventListener("abort", onAbort);
-      resolve();
-    };
+    source.onended = () => finish();
     try {
       source.start();
     } catch (error) {
-      signal.removeEventListener("abort", onAbort);
-      reject(error instanceof Error ? error : new Error("Could not play audio"));
+      finish(error instanceof Error ? error : new Error("Could not play audio"));
     }
+  });
+}
+
+/** Plain element playback. Used when Web Audio cannot play the file. */
+function playElement(src: string, bus: AudioBus, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.reject(aborted());
+  const audio = new Audio(src);
+  try {
+    audio.volume = busLevel(bus);
+  } catch {
+    // iOS exposes HTMLAudioElement.volume as read-only.
+  }
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (error?: unknown) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener("abort", onAbort);
+      audio.onended = null;
+      audio.onerror = null;
+      if (error) reject(error instanceof Error ? error : new Error("Could not play audio"));
+      else resolve();
+    };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const done = (error?: unknown) => {
+      clearTimeout(timer);
+      finish(error);
+    };
+    const onAbort = () => {
+      audio.pause();
+      done(aborted());
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    audio.onended = () => done();
+    audio.onerror = () => done(new Error(`Could not play ${src}`));
+    let started: Promise<void>;
+    try {
+      started = audio.play();
+    } catch (error) {
+      done(error instanceof Error ? error : new Error("Could not play audio"));
+      return;
+    }
+    void started.then(
+      () => {
+        if (settled) return;
+        timer = setTimeout(() => done(), 15000);
+      },
+      (error: unknown) => done(error instanceof Error ? error : new Error("Could not play audio")),
+    );
   });
 }
 

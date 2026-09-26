@@ -4,7 +4,7 @@ WordNest is a TriageDesk product: a calm, offline reading-practice app for ages 
 
 The first activity inside Today's lesson is **Sound it out**.
 
-A picture sits in a big rounded card for about a second. The word then builds one letter at a time: each tile glows, and that letter's sound plays from a recorded clip when one is bundled. Until a person records it, the phone says an example phrase such as "b, as in ball" rather than a bare syllable. After the last letter, every tile highlights and the whole word is spoken. Tap a tile to hear that sound again, tap **Play sound** to replay the word, or use the arrows (or swipe) to change words.
+The word starts as dim letter tiles with a track underneath. The child drags their animal along the track. Each letter lights up and plays once as the drag passes it, then the whole word plays at the end and stays lit. A lit letter can still be tapped to hear it again. **Play sound** replays the word, and the arrows (or a swipe) change words. Until a person records a clip, the phone says an example phrase such as "b, as in ball" rather than a bare syllable.
 
 There are no ads, scores, timers, accounts, or network calls. Speech, pictures, and profiles stay on the device. Schools will license the app later; there is no payment code yet.
 
@@ -69,7 +69,7 @@ The installed app does not need a network connection. Everything it shows and sp
 
 ## Parent settings
 
-Parent and Teacher open from the start screen after a grown-up check, and the settings gear uses the same check. Grown-ups can add, edit, or remove a child, read letters and stars, and set music, effects, and voice separately, including volume and speech speed. The sliders set a Web Audio volume for each channel, so they work on iPhone as well as on Android and desktop. The phone's own speaking voice ignores that slider on iOS; the on/off switch still stops it, and Settings says to use the phone's volume buttons. Settings also lists the phone's clearer English voices and can preview one. Profiles and settings stay in `localStorage` on that device. Lessons play a file from `public/audio/` when that file is listed in the audio index, and use the phone's voice otherwise. A few soft effects are made in the app. Music loops are not included yet.
+A Grown-ups button in the top corner of the start screen and the child screens opens the same grown-up check, then a menu for settings, child profiles, account, help, privacy, and about. Parent and Teacher stay on the start screen and still open after that check. Grown-ups can add, edit, or remove a child, read letters and stars, and set music, effects, and voice separately, including volume and speech speed. Tap sounds and a short buzz can be turned off. The sliders set a Web Audio volume for each channel, so they work on iPhone as well as on Android and desktop. A tap resumes the audio context. If a file cannot be decoded that way, the app plays it with a normal audio element and then with the phone's voice, so a lesson still speaks. The phone's own speaking voice ignores that slider on iOS; the on/off switch still stops it, and Settings says to use the phone's volume buttons. Settings also lists the phone's clearer English voices and can preview one. Profiles and settings stay in `localStorage` on that device. Lessons play a file from `public/audio/` when that file is listed in the audio index, and use the phone's voice otherwise. A few soft effects are made in the app. Music loops are not included yet.
 
 ## Add words later
 

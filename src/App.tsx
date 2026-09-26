@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
-import { primeSpeech } from "./audio/player";
+import { primeSpeech, resumeSpeech } from "./audio/player";
 import { Background } from "./components/Background";
+import { GrownupsButton } from "./components/GrownupsButton";
+import { GrownupsMenu } from "./components/GrownupsMenu";
 import { Chevron } from "./components/icons";
 import { KidCorner } from "./components/KidCorner";
 import { ParentView } from "./components/ParentPanel";
@@ -15,8 +17,9 @@ import { isReviewDay, planForWeek, practiceLetters, weekIndex, wordsForLetters }
 import type { LessonStep } from "./data/profiles";
 import { useProfiles } from "./hooks/useProfiles";
 import { useSettings } from "./hooks/useSettings";
+import { bindPressFeedback } from "./input/press";
 
-type Mode = "start" | "kid" | "parent" | "teacher";
+type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Screen = "today" | "library" | "nest" | LessonStep;
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
@@ -26,6 +29,7 @@ export default function App() {
   const { profiles, active, select, addChild, updateChild, removeChild, giveStar } = useProfiles();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
+  const [grownupsReturn, setGrownupsReturn] = useState<"start" | "kid">("start");
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -35,9 +39,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unlock = () => unlockAudio();
-    window.addEventListener("pointerdown", unlock);
-    return () => window.removeEventListener("pointerdown", unlock);
+    // Bubble phase, after the control's own click handler. Capture-phase
+    // playback was swallowing the click in WebKit. touchend and click are the
+    // gestures iOS accepts for resume().
+    const unlock = () => {
+      try {
+        unlockAudio();
+        resumeSpeech();
+      } catch {
+        // A locked audio device must not block the tap.
+      }
+    };
+    window.addEventListener("touchend", unlock);
+    window.addEventListener("click", unlock);
+    return () => {
+      window.removeEventListener("touchend", unlock);
+      window.removeEventListener("click", unlock);
+    };
   }, []);
 
   useEffect(() => {
@@ -47,6 +65,8 @@ export default function App() {
   useEffect(() => {
     applyAudioSettings(settings);
   }, [settings]);
+
+  useEffect(() => bindPressFeedback(() => settingsRef.current), [settingsRef]);
 
   useEffect(() => {
     if (mode !== "kid") {
@@ -85,12 +105,17 @@ export default function App() {
 
   const inLesson = lessonScreens.includes(screen as LessonStep);
   const pastel = mode === "start" || mode === "kid";
+  const openGrownups = () => {
+    setGrownupsReturn(mode === "kid" ? "kid" : "start");
+    setMode("grownups");
+  };
 
   return (
     <div className={`app mode-${mode}`} data-mode={mode}>
       {pastel ? <Background /> : null}
       <SilentHint />
       <main className="stage">
+        {mode === "start" || mode === "kid" ? <GrownupsButton onOpen={openGrownups} /> : null}
         {mode === "start" ? (
           <StartScreen
             profiles={profiles}
@@ -135,6 +160,7 @@ export default function App() {
                   settingsRef={settingsRef}
                   paused={false}
                   words={lessonWords}
+                  animal={active.animal}
                   onFinished={() => reward("letter")}
                 />
               ) : null}
@@ -162,6 +188,22 @@ export default function App() {
         ) : null}
 
         {mode === "teacher" ? <TeacherView onClose={() => setMode("start")} /> : null}
+
+        {mode === "grownups" ? (
+          <div className="screen-body">
+            <GrownupsMenu
+              settings={settings}
+              onChange={update}
+              profiles={profiles}
+              active={active}
+              onSelect={select}
+              onAdd={addChild}
+              onUpdate={updateChild}
+              onRemove={removeChild}
+              onClose={() => setMode(grownupsReturn)}
+            />
+          </div>
+        ) : null}
       </main>
     </div>
   );

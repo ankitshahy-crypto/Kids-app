@@ -13,7 +13,7 @@ export function ProfilePicker({
     return (
       <div className="picker" data-screen="picker">
         <h1>Hello</h1>
-        <p className="grownup-hint">Ask a grown-up to hold the gear.</p>
+        <p className="grownup-hint">Ask a grown-up to tap Grown-ups.</p>
       </div>
     );
   }

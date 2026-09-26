@@ -10,6 +10,8 @@ export type Settings = {
   effectsVolume: number;
   music: boolean;
   musicVolume: number;
+  /** Soft tap sound and a short buzz. Dragging a word does not use this. */
+  tapFeedback: boolean;
   speed: SpeechSpeed;
   /** Device voice chosen in Settings. Null uses the best installed en-US voice. */
   voiceURI: string | null;
@@ -32,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
   effectsVolume: 0.55,
   music: true,
   musicVolume: 0.35,
+  tapFeedback: true,
   speed: "slow",
   voiceURI: null,
 };
@@ -60,6 +63,7 @@ export function loadSettings(): Settings {
       effectsVolume: clampVolume(record.effectsVolume, DEFAULT_SETTINGS.effectsVolume),
       music: record.music !== false,
       musicVolume: clampVolume(record.musicVolume, DEFAULT_SETTINGS.musicVolume),
+      tapFeedback: record.tapFeedback !== false,
       speed: record.speed === "slower" ? "slower" : "slow",
       voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
     };
