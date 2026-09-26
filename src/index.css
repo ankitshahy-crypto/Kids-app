@@ -3937,6 +3937,36 @@ button:focus-visible {
   }
 }
 
+.offline-ready {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #4f7d58;
+}
+
+.offline-ready::before {
+  content: "✓ ";
+}
+
+.offline-download,
+.offline-update {
+  width: 100%;
+  min-height: 52px;
+  margin: 8px 0;
+  border-radius: 999px;
+  background: #7eae86;
+  color: #fffdfb;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.adult-section progress {
+  width: 100%;
+  height: 12px;
+  margin: 0 0 8px;
+  accent-color: #7eae86;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

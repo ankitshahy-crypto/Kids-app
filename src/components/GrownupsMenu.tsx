@@ -9,13 +9,25 @@ import type { Settings } from "../settings";
 import { AboutWordNest } from "./AboutWordNest";
 import { ChildForm } from "./ChildForm";
 import { Chevron } from "./icons";
+import { OfflinePanel } from "./OfflinePanel";
 import { Printables } from "./Printables";
 import { SettingsFields } from "./SettingsFields";
 
-type GrownupsPage = "menu" | "settings" | "profiles" | "account" | "help" | "privacy" | "about" | "share" | "printables";
+type GrownupsPage =
+  | "menu"
+  | "settings"
+  | "profiles"
+  | "account"
+  | "help"
+  | "privacy"
+  | "about"
+  | "share"
+  | "printables"
+  | "offline";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
   { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, and the daily goal", tint: "#E7F2EA" },
+  { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: "#E4EEF8" },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: "#F8E6D4" },
   { id: "account", title: "Account", note: "School sign-in is coming", tint: "#E4EEF8" },
   { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: "#FDE7D4" },
@@ -146,6 +158,8 @@ export function GrownupsMenu({
           </ul>
         </>
       ) : null}
+
+      {page === "offline" ? <OfflinePanel /> : null}
 
       {page === "settings" ? (
         <section className="adult-section" data-section="settings">
@@ -296,6 +310,7 @@ export function GrownupsMenu({
           </button>
           {shareStatus === "shared" ? <p role="status">Shared</p> : null}
           {shareStatus === "copied" ? <p role="status">Link copied</p> : null}
+          {shareStatus === "queued" ? <p role="status">Saved to send later</p> : null}
         </section>
       ) : null}
     </div>
