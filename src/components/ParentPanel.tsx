@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
-import { previewVoice } from "../audio/player";
-import { deviceSpeechFollowsSlider } from "../audio/platform";
-import { subscribeVoices, type VoiceOption } from "../audio/voices";
-import { animals, type AnimalId } from "../data/animals";
+import { Avatar } from "../avatars";
+import type { AnimalId } from "../data/animals";
+import {
+  lessonName,
+  starsThisWeek,
+  type AgeRange,
+  type ChildProfile,
+} from "../data/profiles";
 import {
   isReviewDay,
   letterPlanSize,
@@ -11,17 +15,10 @@ import {
   practiceLetters,
   weekIndex,
 } from "../data/schedule";
-import {
-  ageRanges,
-  lessonName,
-  normalizeChildName,
-  starsThisWeek,
-  type AgeRange,
-  type ChildProfile,
-} from "../data/profiles";
-import type { Settings, SpeechSpeed } from "../settings";
-import { Avatar } from "../avatars";
+import type { Settings } from "../settings";
+import { ChildForm } from "./ChildForm";
 import { StarIcon } from "./icons";
+import { SettingsFields } from "./SettingsFields";
 
 const WEEKLY_LESSONS = 4;
 
@@ -197,60 +194,7 @@ export function ParentView({
       {page === "settings" ? (
         <section className="adult-section" data-section="settings">
           <h2>Settings</h2>
-          <MixRow
-            label="Voice"
-            on={settings.voice}
-            volume={settings.voiceVolume}
-            onToggle={(voice) => onChange({ voice })}
-            onVolume={(voiceVolume) => onChange({ voiceVolume })}
-            note={
-              deviceSpeechFollowsSlider()
-                ? undefined
-                : "Recorded clips follow this slider. The phone's own voice uses the volume buttons."
-            }
-          />
-          <VoiceField settings={settings} onChange={onChange} />
-          <MixRow
-            label="Effects"
-            on={settings.effects}
-            volume={settings.effectsVolume}
-            onToggle={(effects) => onChange({ effects })}
-            onVolume={(effectsVolume) => onChange({ effectsVolume })}
-          />
-          <MixRow
-            label="Music"
-            on={settings.music}
-            volume={settings.musicVolume}
-            onToggle={(music) => onChange({ music })}
-            onVolume={(musicVolume) => onChange({ musicVolume })}
-          />
-          <p className="adult-copy">Music loops are not in the app yet. The switch is ready for them.</p>
-          <fieldset className="setting-group" data-mix="taps">
-            <legend>Tap sounds & buzz</legend>
-            <div className="segment">
-              <button
-                type="button"
-                className={settings.tapFeedback ? "is-selected" : ""}
-                aria-pressed={settings.tapFeedback}
-                onClick={() => onChange({ tapFeedback: true })}
-              >
-                On
-              </button>
-              <button
-                type="button"
-                className={!settings.tapFeedback ? "is-selected" : ""}
-                aria-pressed={!settings.tapFeedback}
-                onClick={() => onChange({ tapFeedback: false })}
-              >
-                Off
-              </button>
-            </div>
-            <p className="adult-copy">A soft tap and a short buzz when a finger presses something. Dragging across a word stays quiet.</p>
-          </fieldset>
-          <fieldset className="setting-group">
-            <legend>Speech speed</legend>
-            <SpeedButtons speed={settings.speed} onChange={(speed) => onChange({ speed })} />
-          </fieldset>
+          <SettingsFields settings={settings} onChange={onChange} />
         </section>
       ) : null}
 
@@ -380,109 +324,6 @@ function ParentHome({ child, onOpen }: { child: ChildProfile; onOpen: (page: Par
   );
 }
 
-function MixRow({
-  label,
-  on,
-  volume,
-  onToggle,
-  onVolume,
-  note,
-}: {
-  label: string;
-  on: boolean;
-  volume: number;
-  onToggle: (on: boolean) => void;
-  onVolume: (volume: number) => void;
-  note?: string;
-}) {
-  const id = `volume-${label.toLowerCase()}`;
-  return (
-    <fieldset className="setting-group" data-mix={label.toLowerCase()}>
-      <legend>{label}</legend>
-      <div className="segment">
-        <button type="button" className={on ? "is-selected" : ""} aria-pressed={on} onClick={() => onToggle(true)}>
-          On
-        </button>
-        <button type="button" className={!on ? "is-selected" : ""} aria-pressed={!on} onClick={() => onToggle(false)}>
-          Off
-        </button>
-      </div>
-      <label className="volume-label" htmlFor={id}>
-        Volume
-        <input
-          id={id}
-          className="volume-input"
-          type="range"
-          min={0}
-          max={100}
-          value={Math.round(volume * 100)}
-          onChange={(event) => onVolume(Number(event.target.value) / 100)}
-        />
-      </label>
-      {note ? <p className="adult-copy">{note}</p> : null}
-    </fieldset>
-  );
-}
-
-function VoiceField({
-  settings,
-  onChange,
-}: {
-  settings: Settings;
-  onChange: (patch: Partial<Settings>) => void;
-}) {
-  const [options, setOptions] = useState<VoiceOption[]>([]);
-  useEffect(() => subscribeVoices(setOptions), []);
-  return (
-    <fieldset className="setting-group" data-mix="speaking-voice">
-      <legend>Speaking voice</legend>
-      <div className="voice-row">
-        <select
-          id="speaking-voice"
-          className="voice-select"
-          aria-label="Speaking voice"
-          value={settings.voiceURI ?? ""}
-          onChange={(event) => onChange({ voiceURI: event.target.value || null })}
-        >
-          <option value="">Best available</option>
-          {options.map((option) => (
-            <option key={option.voiceURI} value={option.voiceURI}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <button type="button" className="voice-preview" onClick={() => previewVoice(settings)}>
-          Preview
-        </button>
-      </div>
-      <p className="adult-copy">Preview uses this phone's voice. Lessons play a recording when one is saved.</p>
-    </fieldset>
-  );
-}
-
-function SpeedButtons({ speed, onChange }: { speed: SpeechSpeed; onChange: (speed: SpeechSpeed) => void }) {
-  return (
-    <div className="segment">
-      <button
-        type="button"
-        className={speed === "slow" ? "is-selected" : ""}
-        aria-pressed={speed === "slow"}
-        onClick={() => onChange("slow")}
-      >
-        Slow
-      </button>
-      <button
-        type="button"
-        className={speed === "slower" ? "is-selected" : ""}
-        aria-pressed={speed === "slower"}
-        onClick={() => onChange("slower")}
-      >
-        Slower
-      </button>
-    </div>
-  );
-}
-
 function ChildRow({
   profile,
   selected,
@@ -541,103 +382,5 @@ function ProgressNote({ profile }: { profile: ChildProfile }) {
         {starsThisWeek(profile, now)}.
       </p>
     </li>
-  );
-}
-
-function ChildForm({
-  initial,
-  submitLabel,
-  onSave,
-  onCancel,
-}: {
-  initial?: Pick<ChildProfile, "name" | "ageRange" | "animal">;
-  submitLabel: string;
-  onSave: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
-  onCancel?: () => void;
-}) {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [ageRange, setAgeRange] = useState<AgeRange | null>(initial?.ageRange ?? null);
-  const [animal, setAnimal] = useState<AnimalId | null>(initial?.animal ?? null);
-  const [error, setError] = useState("");
-  const droppedLastName = name.trim().includes(" ");
-
-  const save = () => {
-    if (!normalizeChildName(name)) {
-      setError("Add a first name or one letter.");
-      return;
-    }
-    if (!ageRange || !animal) {
-      setError("Choose an age and an animal.");
-      return;
-    }
-    onSave({ name, ageRange, animal });
-  };
-
-  return (
-    <form
-      className="add-form"
-      onSubmit={(event) => {
-        event.preventDefault();
-        save();
-      }}
-    >
-      <label className="field-label" htmlFor="child-name">
-        First name or initial
-      </label>
-      <input
-        id="child-name"
-        className="name-input"
-        value={name}
-        autoComplete="off"
-        autoCorrect="off"
-        spellCheck={false}
-        maxLength={24}
-        placeholder="Mia"
-        onChange={(event) => {
-          setName(event.target.value);
-          setError("");
-        }}
-      />
-      {droppedLastName ? <p className="field-hint">Only the first name is saved.</p> : null}
-      <p className="field-label">Age</p>
-      <div className="age-grid">
-        {ageRanges.map((age) => (
-          <button
-            key={age}
-            type="button"
-            className={ageRange === age ? "is-selected" : ""}
-            aria-pressed={ageRange === age}
-            onClick={() => setAgeRange(age)}
-          >
-            {age === "6-7" ? "6–7" : age}
-          </button>
-        ))}
-      </div>
-      <p className="field-label">Animal</p>
-      <div className="animal-grid">
-        {animals.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`animal-pick${animal === item.id ? " is-selected" : ""}`}
-            aria-pressed={animal === item.id}
-            data-animal={item.id}
-            onClick={() => setAnimal(item.id)}
-          >
-            <Avatar animal={item.id} />
-            <span>{item.name}</span>
-          </button>
-        ))}
-      </div>
-      {error ? <p className="field-error">{error}</p> : null}
-      <button type="submit" className="save-child">
-        {submitLabel}
-      </button>
-      {onCancel ? (
-        <button type="button" className="text-button" onClick={onCancel}>
-          Cancel
-        </button>
-      ) : null}
-    </form>
   );
 }

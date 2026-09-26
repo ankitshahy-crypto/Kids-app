@@ -29,7 +29,7 @@ Step 1 only leaves a "From your teacher" placeholder card in the parent view. Th
 
 **Teacher view.** A separate teacher profile, behind the same grown-up check. A classroom shell: a class switcher, Scan QR, a class star jar, a roster of app names and avatars, and tabs for classes, roster, goals, the star jar, certificates, and notes. Step 1 shows that shell with demo data only.
 
-The start screen shows the nest, the WordNest name, and the child avatar buttons. Tapping a child opens the kid view. Parent and Teacher are smaller locked pills. One tap opens a grown-up check a 3-to-5-year-old cannot pass. Cancel closes it without opening the view.
+The start screen shows the nest, the WordNest name, and the child avatar buttons. Tapping a child opens the kid view. A labeled Grown-ups button sits in the top corner of the start screen and the child screens, away from the lesson path. Parent and Teacher stay as smaller locked pills. One tap on any of them opens a grown-up check a 3-to-5-year-old cannot pass. Cancel closes it without opening the view. Grown-ups then opens a menu: Settings, Child profiles, Account, Help, Privacy, and About.
 
 Step 1 sets up the shell and routing for all three views, builds the kid view, and builds a basic parent view that can add and edit a child. The teacher view in step 1 is a placeholder dashboard. Step 6 fills it in.
 
@@ -182,7 +182,7 @@ At the end of the year, the teacher archives the class.
 - No analytics and no tracking.
 - Until a classroom server exists, everything stays on the device (`localStorage`, IndexedDB, or Capacitor Preferences).
 
-Parent and Teacher open only after a grown-up check on the start screen. A correct answer takes an adult about two seconds. Cancel does not open them.
+Parent and Teacher open only after a grown-up check on the start screen. Grown-ups, on the start screen and the child screens, uses that same check and then a menu for settings, profiles, account, help, privacy, and about. A correct answer takes an adult about two seconds. Cancel does not open them.
 
 ## Build order
 

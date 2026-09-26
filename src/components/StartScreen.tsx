@@ -48,7 +48,7 @@ export function StartScreen({
       </h1>
       <div className="who-card">
         {profiles.length === 0 ? (
-          <p className="who-empty">Ask a grown-up to tap Parent.</p>
+          <p className="who-empty">Ask a grown-up to tap Grown-ups.</p>
         ) : (
           <div className="who-grid">
             {profiles.map((profile) => (

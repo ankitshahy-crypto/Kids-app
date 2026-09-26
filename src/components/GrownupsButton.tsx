@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { GearIcon } from "./icons";
+import { GrownupIcon } from "./icons";
 import { ParentGate } from "./ParentGate";
 
-export function GearButton({ onOpen }: { onOpen: () => void }) {
+/** Corner control. The grown-up check opens before the menu. */
+export function GrownupsButton({ onOpen }: { onOpen: () => void }) {
   const [ask, setAsk] = useState(false);
   return (
     <>
-      <button type="button" className="gear-button" aria-label="Parent settings" onClick={() => setAsk(true)}>
-        <span className="gear-face">
-          <GearIcon />
-        </span>
+      <button type="button" className="grownups-launch" onClick={() => setAsk(true)}>
+        <GrownupIcon />
+        <span>Grown-ups</span>
       </button>
       {ask ? (
         <ParentGate

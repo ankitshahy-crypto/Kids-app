@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
 import { primeSpeech, resumeSpeech } from "./audio/player";
 import { Background } from "./components/Background";
+import { GrownupsButton } from "./components/GrownupsButton";
+import { GrownupsMenu } from "./components/GrownupsMenu";
 import { Chevron } from "./components/icons";
 import { KidCorner } from "./components/KidCorner";
 import { ParentView } from "./components/ParentPanel";
@@ -17,7 +19,7 @@ import { useProfiles } from "./hooks/useProfiles";
 import { useSettings } from "./hooks/useSettings";
 import { bindPressFeedback } from "./input/press";
 
-type Mode = "start" | "kid" | "parent" | "teacher";
+type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Screen = "today" | "library" | "nest" | LessonStep;
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
@@ -27,6 +29,7 @@ export default function App() {
   const { profiles, active, select, addChild, updateChild, removeChild, giveStar } = useProfiles();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
+  const [grownupsReturn, setGrownupsReturn] = useState<"start" | "kid">("start");
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -102,12 +105,17 @@ export default function App() {
 
   const inLesson = lessonScreens.includes(screen as LessonStep);
   const pastel = mode === "start" || mode === "kid";
+  const openGrownups = () => {
+    setGrownupsReturn(mode === "kid" ? "kid" : "start");
+    setMode("grownups");
+  };
 
   return (
     <div className={`app mode-${mode}`} data-mode={mode}>
       {pastel ? <Background /> : null}
       <SilentHint />
       <main className="stage">
+        {mode === "start" || mode === "kid" ? <GrownupsButton onOpen={openGrownups} /> : null}
         {mode === "start" ? (
           <StartScreen
             profiles={profiles}
@@ -180,6 +188,22 @@ export default function App() {
         ) : null}
 
         {mode === "teacher" ? <TeacherView onClose={() => setMode("start")} /> : null}
+
+        {mode === "grownups" ? (
+          <div className="screen-body">
+            <GrownupsMenu
+              settings={settings}
+              onChange={update}
+              profiles={profiles}
+              active={active}
+              onSelect={select}
+              onAdd={addChild}
+              onUpdate={updateChild}
+              onRemove={removeChild}
+              onClose={() => setMode(grownupsReturn)}
+            />
+          </div>
+        ) : null}
       </main>
     </div>
   );
