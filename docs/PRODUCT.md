@@ -74,6 +74,8 @@ Option B comes first and is the one to pilot. The home app transfers progress to
 
 Option A comes after that. A class code is a random picture plus a word, for example "Blue Fox 7." The teacher keeps the list of which code belongs to which child offline, and can print, export, and reissue codes. The server, when one exists, stores only the code, the avatar, the stars, and the letters practiced.
 
+Teacher profile: the classroom teacher has a separate teacher profile, behind a parent or teacher gate, that can hold multiple classrooms. Each class roster shows children only by their in-app profile name (the animal hero's name, or an initial) and avatar, never real names. Any mapping to real names stays with the teacher offline, on their own printed or exported list, and never in the app data synced anywhere.
+
 Also later, for the classroom:
 
 - The teacher sets a weekly or monthly effort goal.
