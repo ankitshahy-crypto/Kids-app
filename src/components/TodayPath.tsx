@@ -1,6 +1,6 @@
-import { Avatar } from "../avatars";
 import { isReviewDay, planForWeek, practiceLetters, weekIndex } from "../data/schedule";
 import { dayProgress, type ChildProfile, type LessonStep } from "../data/profiles";
+import { Hero } from "./Hero";
 import { StarIcon } from "./icons";
 import { BookMark, EggNest, Hills, PencilMark, ShapesMark, ToyBox } from "./sceneArt";
 
@@ -17,12 +17,16 @@ export function TodayPath({
   onLeave,
   onLibrary,
   onNest,
+  onCloset,
+  onStickers,
 }: {
   profile: ChildProfile;
   onOpen: (step: LessonStep) => void;
   onLeave: () => void;
   onLibrary: () => void;
   onNest: () => void;
+  onCloset: () => void;
+  onStickers: () => void;
 }) {
   const now = new Date();
   const review = isReviewDay(now);
@@ -35,7 +39,7 @@ export function TodayPath({
     <div className="today" data-screen="today" data-review={review ? "true" : "false"}>
       <div className="today-top">
         <button type="button" className="today-avatar" aria-label="Switch child" onClick={onLeave}>
-          <Avatar animal={profile.animal} />
+          <Hero animal={profile.animal} outfit={profile.outfit} />
         </button>
         <p className="star-count" data-stars={profile.stars}>
           <StarIcon />
@@ -83,11 +87,19 @@ export function TodayPath({
           style={{ left: current.left, top: current.top }}
           aria-hidden="true"
         >
-          <Avatar animal={profile.animal} />
+          <Hero animal={profile.animal} outfit={profile.outfit} />
         </span>
       </div>
 
       <div className="today-dock">
+        <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>
+          <span className="dock-art dock-dress" aria-hidden="true" />
+          <span>Dress up</span>
+        </button>
+        <button type="button" className="dock-button" data-dock="stickers" onClick={onStickers}>
+          <span className="dock-art dock-stickers" aria-hidden="true" />
+          <span>Stickers</span>
+        </button>
         <button type="button" className="dock-button" data-dock="library" onClick={onLibrary}>
           <span className="dock-art">
             <ToyBox />

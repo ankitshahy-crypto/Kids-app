@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
+import type { AnimalId } from "../data/animals";
 import {
-  awardStar,
   createChild,
-  dayProgress,
   editChild,
-  lessonSteps,
   loadStore,
   saveStore,
   type AgeRange,
   type ChildProfile,
   type LessonStep,
+  type Sticker,
 } from "../data/profiles";
-import type { AnimalId } from "../data/animals";
+import { applyEffort, wearItem, type EffortResult } from "../data/rewards";
 
 export function useProfiles() {
   const [store, setStore] = useState(() => loadStore());
@@ -50,21 +49,36 @@ export function useProfiles() {
     });
   };
 
-  const giveStar = (id: string, step: LessonStep) => {
-    let awarded = false;
-    let lessonComplete = false;
+  const giveStar = (id: string, step: LessonStep, learned: Sticker[] = []): EffortResult => {
+    const profile = store.profiles.find((item) => item.id === id);
+    if (!profile) {
+      return {
+        profile: createChild({ name: "A", ageRange: "4", animal: "fox" }),
+        awarded: false,
+        lessonComplete: false,
+        milestones: [],
+        stickersAdded: 0,
+      };
+    }
+    // Read the award from this render. The updater repeats the same step, so a
+    // second pass in development cannot add another star or hide the cheer.
+    const result = applyEffort(profile, step, learned);
+    if (result.awarded) {
+      setStore((current) => ({
+        ...current,
+        profiles: current.profiles.map((item) =>
+          item.id === id ? applyEffort(item, step, learned).profile : item,
+        ),
+      }));
+    }
+    return result;
+  };
+
+  const wear = (id: string, itemId: string) => {
     setStore((current) => ({
       ...current,
-      profiles: current.profiles.map((profile) => {
-        if (profile.id !== id) return profile;
-        const next = awardStar(profile, step);
-        awarded = next.stars !== profile.stars;
-        const day = dayProgress(next);
-        lessonComplete = lessonSteps.every((item) => day[item]);
-        return next;
-      }),
+      profiles: current.profiles.map((profile) => (profile.id === id ? wearItem(profile, itemId) : profile)),
     }));
-    return { awarded, lessonComplete };
   };
 
   return {
@@ -75,6 +89,7 @@ export function useProfiles() {
     updateChild,
     removeChild,
     giveStar,
+    wear,
   };
 }
 
