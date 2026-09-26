@@ -12,9 +12,11 @@ Market it as reading practice. Never market it as therapy, and never describe a 
 
 ## Pricing
 
-$0.99 once. That purchase unlocks the whole app.
+Pricing: to be decided after the Kids Villa pilot; no ads, no in-app purchases, no payment code for now.
 
-No ads. No subscription. No in-app purchases. No store code is needed yet.
+## Go-to-market
+
+Start with a free pilot at Kids Villa, a preschool in Urbana, MD. Earn the school's and families' trust, then expand to other schools.
 
 ## Learning focus
 
