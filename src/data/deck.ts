@@ -7,8 +7,8 @@ export type LetterTile = {
   /** Key into the phoneme map. Played when this tile is tapped or revealed. */
   phoneme: PhonemeId;
   /**
-   * Optional recorded clip (for example "/audio/p.mp3" in public/).
-   * When this is set, it is played instead of speech synthesis.
+   * Optional clip that overrides the manifest (a parent recording, for example).
+   * Otherwise the app plays `public/audio/` when that file is indexed, then device speech.
    */
   audioSrc?: string;
 };
@@ -17,7 +17,7 @@ export type DeckWord = {
   id: string;
   word: string;
   letters: LetterTile[];
-  /** Optional recorded whole-word clip. Replaces speech synthesis for the word. */
+  /** Optional clip that overrides the word file in the audio manifest. */
   audioSrc?: string;
   illustration: IllustrationName;
   /** Optional parent photo. When set, shown instead of the built-in illustration. */

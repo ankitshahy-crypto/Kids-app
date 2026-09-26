@@ -11,7 +11,12 @@ export function useSettings() {
   }, [settings]);
 
   const update = (patch: Partial<Settings>) => {
-    setSettings((current) => ({ ...current, ...patch }));
+    setSettings((current) => {
+      const next = { ...current, ...patch };
+      if (patch.voice !== undefined) next.sound = patch.voice;
+      else if (patch.sound !== undefined) next.voice = patch.sound;
+      return next;
+    });
   };
 
   return { settings, update, settingsRef };

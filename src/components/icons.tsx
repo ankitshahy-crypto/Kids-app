@@ -1,3 +1,14 @@
+export function HomeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
+      <path
+        fill="currentColor"
+        d="M12 3.2 3 11h2.2v8.2c0 .7.5 1.2 1.2 1.2H10v-5.2h4V20.4h3.6c.7 0 1.2-.5 1.2-1.2V11H21L12 3.2Z"
+      />
+    </svg>
+  );
+}
+
 export function GearIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
@@ -45,6 +56,31 @@ export function Chevron({ direction }: { direction: "left" | "right" }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+export function StarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
+      <path
+        fill="currentColor"
+        d="M12 2.8 14.7 9l6.6.5-5 4.2 1.6 6.4L12 16.6 6.1 20.1 7.7 13.7 2.7 9.5 9.3 9 12 2.8Z"
+      />
+    </svg>
+  );
+}
+
+export function ReviewBadge() {
+  return (
+    <svg viewBox="0 0 72 72" aria-hidden="true" className="badge-art">
+      <circle cx="36" cy="32" r="22" fill="#F8E6D4" stroke="#E7C39A" strokeWidth="4" />
+      <path
+        fill="#E2A15A"
+        d="M36 16.5 39.4 25.4 48.8 26.2 41.6 32.2 43.8 41.2 36 36.2 28.2 41.2 30.4 32.2 23.2 26.2 32.6 25.4 36 16.5Z"
+      />
+      <path d="M24 48 18 64l12-6" fill="#F2C1C4" />
+      <path d="M48 48 54 64 42 58" fill="#F2C1C4" />
     </svg>
   );
 }
