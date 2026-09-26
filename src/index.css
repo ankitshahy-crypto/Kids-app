@@ -1962,3 +1962,457 @@ button:focus-visible {
     transform: none;
   }
 }
+
+/*
+ * Tablet column. Phone rules stay in place under 768px.
+ * Portrait and landscape both keep a centered max width so art and tiles
+ * grow without stretching across a 12.9-inch screen.
+ */
+@media (min-width: 768px) {
+  .stage {
+    width: min(760px, calc(100% - 48px));
+    padding-right: calc(28px + env(safe-area-inset-right));
+    padding-left: calc(28px + env(safe-area-inset-left));
+  }
+
+  .back-button,
+  .top-spacer,
+  .gear-button,
+  .hold-ring,
+  .today-avatar,
+  .nav-button {
+    width: 80px;
+    height: 80px;
+  }
+
+  .gear-face {
+    width: 58px;
+    height: 58px;
+  }
+
+  .gear-face .icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .hold-value {
+    transform-origin: center;
+  }
+
+  .nav-button .icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .play-button,
+  .done-button {
+    height: 80px;
+    min-height: 80px;
+    font-size: 20px;
+  }
+
+  .start-button {
+    height: 96px;
+    min-height: 96px;
+    max-width: 460px;
+    font-size: 26px;
+  }
+
+  .controls {
+    grid-template-columns: 80px minmax(0, 1fr) 80px;
+    gap: 16px;
+  }
+
+  .picture-card {
+    width: min(100%, 560px);
+    min-height: 300px;
+    max-height: 520px;
+    border-radius: 40px;
+  }
+
+  .art {
+    width: min(82%, 440px);
+    max-height: 82%;
+  }
+
+  .photo {
+    width: min(76%, 400px);
+    max-height: 78%;
+  }
+
+  .letters,
+  .letter-slot {
+    min-height: 120px;
+    gap: 14px;
+  }
+
+  .tile-wrap {
+    max-width: 128px;
+  }
+
+  .tile {
+    border-radius: 28px;
+    font-size: 52px;
+  }
+
+  .placeholder-art {
+    width: min(72%, 320px);
+  }
+
+  .placeholder[data-step="draw"] .placeholder-art,
+  .placeholder[data-step="story"] .placeholder-art {
+    width: min(84%, 460px);
+  }
+
+  .placeholder .start-button {
+    margin-top: 28px;
+  }
+
+  .trail {
+    width: min(100%, 560px);
+    height: min(62dvh, 640px);
+    min-height: 420px;
+    flex: 0 0 auto;
+    margin-inline: auto;
+  }
+
+  .trail-stop {
+    width: 96px;
+    height: 96px;
+  }
+
+  .trail-stop .mark {
+    width: 60px;
+    height: 60px;
+  }
+
+  .trail-letter {
+    font-size: 44px;
+  }
+
+  .trail-animal,
+  .trail-animal .avatar-art {
+    width: 88px;
+    height: 88px;
+  }
+
+  .today-avatar .avatar-art {
+    width: 68px;
+    height: 68px;
+  }
+
+  .dock-button {
+    width: 148px;
+    min-height: 132px;
+    font-size: 18px;
+    gap: 8px;
+  }
+
+  .dock-art {
+    width: 116px;
+    height: 116px;
+  }
+
+  .dock-art .mark {
+    width: 78px;
+    height: 78px;
+  }
+
+  .mode-art {
+    width: min(280px, 34vw);
+  }
+
+  .wordmark {
+    font-size: 72px;
+  }
+
+  .who-card {
+    width: min(100%, 480px);
+    border-radius: 32px;
+    padding: 20px 16px 16px;
+  }
+
+  .who-pick {
+    min-height: 188px;
+    font-size: 24px;
+  }
+
+  .who-face {
+    width: 120px;
+    height: 120px;
+  }
+
+  .who-face .avatar-art {
+    width: 104px;
+    height: 104px;
+  }
+
+  .gate-button {
+    min-width: 160px;
+    min-height: 64px;
+    padding: 16px 24px;
+    font-size: 18px;
+  }
+
+  .kid-enter {
+    width: min(100%, 380px);
+    min-height: 120px;
+    font-size: 48px;
+  }
+
+  .kid-corner-art {
+    width: min(70%, 360px);
+  }
+
+  .parent-view {
+    width: min(720px, 100%);
+    align-self: center;
+  }
+
+  .teacher-shell {
+    width: min(960px, 100%);
+    align-self: center;
+  }
+
+  .parent-row,
+  .quiet-back,
+  .scan-button,
+  .class-menu button,
+  .class-list button {
+    min-height: 56px;
+  }
+
+  .app.mode-parent .segment button,
+  .app.mode-parent .age-grid button,
+  .app.mode-parent .add-child,
+  .app.mode-parent .edit-child,
+  .app.mode-parent .remove-child,
+  .app.mode-parent .save-child,
+  .app.mode-parent .text-button,
+  .app.mode-parent .name-input,
+  .voice-select,
+  .voice-preview {
+    min-height: 52px;
+  }
+
+  .app.mode-parent .name-input,
+  .voice-select {
+    height: 52px;
+  }
+
+  .letter-chip {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+
+  .animal-pick {
+    min-height: 120px;
+  }
+
+  .animal-pick .avatar-art {
+    width: 80px;
+    height: 80px;
+  }
+
+  .roster-grid {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    justify-items: center;
+  }
+
+  .roster-face,
+  .roster-face .avatar-art {
+    width: 80px;
+    height: 80px;
+  }
+
+  .roster-face .avatar-art {
+    width: 68px;
+    height: 68px;
+  }
+
+  .teacher-tabs button {
+    min-height: 64px;
+    font-size: 12px;
+  }
+
+  .teacher-tabs .icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .settings-card {
+    width: min(640px, 100%);
+  }
+}
+
+@media (min-width: 1000px) and (orientation: portrait) {
+  .stage {
+    width: min(840px, calc(100% - 80px));
+  }
+
+  .picture-card {
+    width: min(100%, 600px);
+    max-height: 600px;
+  }
+
+  .art {
+    width: min(80%, 500px);
+  }
+
+  .tile-wrap {
+    max-width: 140px;
+  }
+
+  .tile {
+    font-size: 58px;
+  }
+
+  .placeholder[data-step="draw"] .placeholder-art,
+  .placeholder[data-step="story"] .placeholder-art {
+    width: min(78%, 540px);
+  }
+
+  .trail {
+    width: min(100%, 620px);
+    height: min(64dvh, 760px);
+  }
+}
+
+@media (min-width: 768px) and (orientation: landscape) {
+  .stage {
+    width: min(1080px, calc(100% - 48px));
+  }
+
+  .today {
+    display: grid;
+    grid-template-columns: minmax(280px, 520px) 180px;
+    grid-template-areas:
+      "top top"
+      "review review"
+      "trail dock";
+    justify-content: center;
+    align-items: center;
+    column-gap: 36px;
+    row-gap: 8px;
+  }
+
+  .today-top {
+    grid-area: top;
+  }
+
+  .today-review {
+    grid-area: review;
+  }
+
+  .trail {
+    grid-area: trail;
+    width: min(100%, 500px);
+    height: min(70dvh, 520px);
+    min-height: 0;
+  }
+
+  .today-dock {
+    grid-area: dock;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    padding-top: 0;
+  }
+
+  .activity {
+    display: grid;
+    grid-template-columns: minmax(0, 560px) minmax(280px, 420px);
+    grid-template-rows: auto auto auto;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    column-gap: 32px;
+    row-gap: 12px;
+  }
+
+  .picture-card {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    width: min(100%, 520px);
+    height: min(68dvh, 480px);
+    max-height: 480px;
+    min-height: 0;
+  }
+
+  .sound-label {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .letters {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .controls {
+    grid-column: 2;
+    grid-row: 3;
+    margin-top: 0;
+  }
+
+  .art {
+    width: min(78%, 420px);
+  }
+
+  .placeholder[data-step="draw"],
+  .placeholder[data-step="story"] {
+    display: grid;
+    grid-template-columns: minmax(240px, 480px) minmax(240px, 400px);
+    grid-template-areas:
+      "art badge"
+      "art title"
+      "art copy"
+      "art action";
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    column-gap: 40px;
+    row-gap: 8px;
+  }
+
+  .placeholder[data-step="draw"] .soon,
+  .placeholder[data-step="story"] .soon {
+    grid-area: badge;
+    justify-self: start;
+  }
+
+  .placeholder[data-step="draw"] .placeholder-art,
+  .placeholder[data-step="story"] .placeholder-art {
+    grid-area: art;
+    width: min(100%, 440px);
+  }
+
+  .placeholder[data-step="draw"] h1,
+  .placeholder[data-step="story"] h1 {
+    grid-area: title;
+    justify-self: start;
+    text-align: left;
+  }
+
+  .placeholder[data-step="draw"] p,
+  .placeholder[data-step="story"] p {
+    grid-area: copy;
+    justify-self: start;
+    text-align: left;
+    margin: 0;
+  }
+
+  .placeholder[data-step="draw"] .start-button,
+  .placeholder[data-step="story"] .start-button {
+    grid-area: action;
+    justify-self: start;
+    width: min(100%, 360px);
+    margin-top: 12px;
+  }
+
+  .parent-view {
+    width: min(880px, 100%);
+  }
+}
