@@ -1,0 +1,108 @@
+import { describe, expect, it } from "vitest";
+import {
+  DEVICE_CLASS_ID,
+  PLACEMENT_STORAGE_KEY,
+  emptyPlacement,
+  loadPlacement,
+  placeForStage,
+  resolvePlacement,
+  savePlacement,
+  withChildPlace,
+  withClassPlace,
+} from "./placement";
+import { isReviewDay, planForWeek, practiceLetters, weekIndex } from "./schedule";
+import { blendingWords, pictureForLetter, scheduleLetters } from "./sheets";
+
+function memory() {
+  const data = new Map<string, string>();
+  return {
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      data.set(key, value);
+    },
+  };
+}
+
+const created = "2026-09-01T15:00:00.000Z";
+const now = new Date("2026-09-26T15:00:00.000Z");
+
+describe("lesson placement", () => {
+  it("starts each stage on the lesson week after the previous stage", () => {
+    expect(placeForStage("letters")).toEqual({ stageId: "letters", weekIndex: 0 });
+    expect(placeForStage("blending")).toEqual({ stageId: "blending", weekIndex: 4 });
+    expect(placeForStage("words")).toEqual({ stageId: "words", weekIndex: 8 });
+    expect(placeForStage("stories")).toEqual({ stageId: "stories", weekIndex: 11 });
+  });
+
+  it("saves a class place and a per-child override", () => {
+    const storage = memory();
+    const start = loadPlacement(storage);
+    expect(start.classDefault).toBeNull();
+    expect(start.classId).toBe(DEVICE_CLASS_ID);
+    const placed = withChildPlace(
+      withClassPlace({ ...start, origin: "server", classId: "class-room" }, placeForStage("blending"), now),
+      "mia",
+      placeForStage("words"),
+      now,
+    );
+    savePlacement(placed, storage);
+    const loaded = loadPlacement(storage);
+    expect(loaded.origin).toBe("server");
+    expect(loaded.classId).toBe("class-room");
+    expect(loaded.classDefault).toEqual({ stageId: "blending", weekIndex: 4 });
+    expect(loaded.byChildId.mia).toEqual({ stageId: "words", weekIndex: 8 });
+    expect(storage.getItem(PLACEMENT_STORAGE_KEY)).toContain("class-room");
+
+    const child = resolvePlacement(loaded, "mia", created, now, "UTC");
+    expect(child.source).toBe("child");
+    expect(child.stageId).toBe("words");
+    expect(child.letters[0]).toBe("f");
+
+    const classmate = resolvePlacement(withChildPlace(loaded, "mia", null, now), "leo", created, now, "UTC");
+    expect(classmate.source).toBe("class");
+    expect(classmate.letters[0]).toBe("o");
+
+    const calendar = resolvePlacement(emptyPlacement(), "mia", created, now, "UTC");
+    expect(calendar.source).toBe("calendar");
+    expect(calendar.weekIndex).toBe(weekIndex(created, now, "UTC"));
+    expect(calendar.letters).toEqual(practiceLetters(planForWeek(calendar.weekIndex), isReviewDay(now, "UTC")));
+  });
+
+  it("trusts the lesson week when a saved stage does not match", () => {
+    const storage = memory();
+    storage.setItem(
+      PLACEMENT_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        origin: "device",
+        classId: DEVICE_CLASS_ID,
+        updatedAt: now.toISOString(),
+        classDefault: { stageId: "letters", weekIndex: 4 },
+        byChildId: { mia: { stageId: "stories", weekIndex: 99 } },
+      }),
+    );
+    const loaded = loadPlacement(storage);
+    expect(loaded.classDefault).toEqual({ stageId: "blending", weekIndex: 4 });
+    expect(loaded.byChildId.mia.stageId).toBe("stories");
+    expect(loaded.byChildId.mia.weekIndex).toBe(13);
+  });
+
+  it("ignores a broken save", () => {
+    const storage = memory();
+    storage.setItem(PLACEMENT_STORAGE_KEY, "{");
+    expect(loadPlacement(storage).classDefault).toBeNull();
+  });
+});
+
+describe("printable sheets", () => {
+  it("has a picture word for every scheduled letter and a blending list", () => {
+    for (const letter of scheduleLetters()) {
+      const picture = pictureForLetter(letter);
+      expect(picture.word.length).toBeGreaterThan(1);
+      expect(picture.illustration || picture.pictogram).toBeTruthy();
+    }
+    const blends = blendingWords(["c", "a", "t"]);
+    expect(blends.map((word) => word.word)).toContain("cat");
+    expect(blends.every((word) => word.word.length === 3)).toBe(true);
+  });
+});

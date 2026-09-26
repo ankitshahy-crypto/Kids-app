@@ -3639,6 +3639,304 @@ button:focus-visible {
   font-weight: 700;
 }
 
+.place-editor {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+}
+
+.place-editor legend {
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.place-stages {
+  margin-bottom: 8px;
+}
+
+.place-week-label {
+  display: block;
+  margin: 8px 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.place-week,
+.place-clear,
+.week-letters,
+.print-button {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 14px;
+  font: inherit;
+  font-weight: 700;
+}
+
+.place-week {
+  display: block;
+  margin-top: 6px;
+  padding: 0 10px;
+  border: 1px solid #e7efe8;
+  background: #fff;
+  color: var(--ink);
+}
+
+.place-clear,
+.week-letters {
+  background: #f6efe6;
+  color: var(--ink);
+}
+
+.place-clear.is-selected {
+  background: #e5f4ea;
+  box-shadow: inset 0 0 0 3px #b7e0c2;
+}
+
+.letter-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.letter-picks button {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 12px;
+  background: #f6efe6;
+  font-weight: 700;
+}
+
+.letter-picks button[aria-pressed="true"] {
+  background: #e5f4ea;
+  box-shadow: inset 0 0 0 2px #7eae86;
+}
+
+.print-paper {
+  margin: 8px 0;
+}
+
+.print-button {
+  margin-top: 8px;
+  background: #7eae86;
+  color: #fffdfb;
+}
+
+.print-sheet {
+  background: #fff;
+  color: #2c2a26;
+  border: 1px solid #e7efe8;
+  border-radius: 16px;
+  padding: 16px;
+  margin: 0 0 16px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sheet-kicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6e9a74;
+}
+
+.sheet-head h3,
+.sheet-word,
+.color-stars p,
+.blend-word {
+  margin: 0;
+}
+
+.sheet-head h3 {
+  font-size: 22px;
+}
+
+.sheet-animal .avatar-art {
+  width: 72px;
+  height: 72px;
+}
+
+.trace-row {
+  display: flex;
+  justify-content: center;
+  gap: 4%;
+}
+
+.trace-glyph {
+  width: 46%;
+  height: auto;
+}
+
+.trace-glyph text {
+  font-family: Fredoka, "Avenir Next", sans-serif;
+  font-size: 168px;
+  font-weight: 600;
+}
+
+.trace-guides span {
+  display: block;
+  height: 28px;
+  border-bottom: 3px dotted #c4b4a4;
+}
+
+.sheet-picture {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.sheet-art {
+  width: 120px;
+  flex: 0 0 auto;
+}
+
+.sheet-art .art,
+.sheet-art .pictogram {
+  width: 120px;
+  height: 90px;
+  max-height: 90px;
+}
+
+.sheet-word {
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.color-stars {
+  margin-top: 12px;
+  padding: 10px;
+  border: 3px dashed #e7c39a;
+  border-radius: 16px;
+}
+
+.color-stars p {
+  font-weight: 700;
+}
+
+.color-stars-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.color-star {
+  width: 42px;
+  height: 42px;
+  color: #e0a03a;
+}
+
+.blend-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.blend-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.blend-boxes {
+  display: flex;
+  gap: 8px;
+}
+
+.blend-box {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 2px dotted #6e9a74;
+  border-radius: 12px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.blend-word {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+@page wordnest-a4 {
+  size: A4;
+  margin: 12mm;
+}
+
+@page wordnest-letter {
+  size: letter;
+  margin: 0.5in;
+}
+
+.print-root[data-paper="a4"] .print-sheet {
+  page: wordnest-a4;
+}
+
+.print-root[data-paper="letter"] .print-sheet {
+  page: wordnest-letter;
+}
+
+@media print {
+  body:has(.print-root) {
+    background: #fff !important;
+  }
+
+  body:has(.print-root) * {
+    visibility: hidden;
+  }
+
+  body:has(.print-root) .print-root,
+  body:has(.print-root) .print-root * {
+    visibility: visible;
+  }
+
+  body:has(.print-root) .app,
+  body:has(.print-root) .stage,
+  body:has(.print-root) .screen-body,
+  body:has(.print-root) .grownups-view,
+  body:has(.print-root) .teacher-shell,
+  body:has(.print-root) .teacher-scroll,
+  body:has(.print-root) .print-root {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    display: block !important;
+    background: #fff !important;
+  }
+
+  body:has(.print-root) .no-print {
+    display: none !important;
+  }
+
+  .print-sheet {
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

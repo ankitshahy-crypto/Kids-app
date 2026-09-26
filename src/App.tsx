@@ -25,7 +25,9 @@ import { readTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
 import { todayKey, type LessonStep, type Sticker } from "./data/profiles";
 import type { ReadingCredit } from "./data/reading";
-import { isReviewDay, planForWeek, practiceLetters, weekIndex, wordsForLetters } from "./data/schedule";
+import { resolvePlacement } from "./data/placement";
+import { wordsForLetters } from "./data/schedule";
+import { usePlacement } from "./hooks/usePlacement";
 import { useProfiles } from "./hooks/useProfiles";
 import { useReadingTime } from "./hooks/useReadingTime";
 import { useSettings } from "./hooks/useSettings";
@@ -39,6 +41,7 @@ const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
   const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading } = useProfiles();
+  const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
   const [grownupsReturn, setGrownupsReturn] = useState<"start" | "kid">("start");
@@ -95,11 +98,12 @@ export default function App() {
     else setMusicArea("today");
   }, [mode, screen]);
 
-  const lessonLetters = useMemo(() => {
-    if (!active) return [];
-    const now = new Date();
-    return practiceLetters(planForWeek(weekIndex(active.createdAt, now)), isReviewDay(now));
-  }, [active]);
+  const lessonPlace = useMemo(() => {
+    if (!active) return null;
+    return resolvePlacement(placement, active.id, active.createdAt);
+  }, [active, placement]);
+
+  const lessonLetters = lessonPlace?.letters ?? [];
 
   const lessonWords = useMemo(() => wordsForLetters(lessonLetters), [lessonLetters]);
 
@@ -218,6 +222,10 @@ export default function App() {
               {screen === "today" ? (
                 <TodayPath
                   profile={active}
+                  letters={lessonLetters}
+                  placementSource={lessonPlace?.source ?? "calendar"}
+                  stageId={lessonPlace?.stageId ?? "letters"}
+                  weekIndex={lessonPlace?.weekIndex ?? 0}
                   onLeave={() => setMode("start")}
                   onOpen={openStep}
                   onLibrary={() => setScreen("library")}
@@ -257,6 +265,7 @@ export default function App() {
               onChange={update}
               profiles={profiles}
               active={active}
+              placement={placement}
               onSelect={select}
               onAdd={addChild}
               onUpdate={updateChild}
@@ -267,7 +276,15 @@ export default function App() {
         ) : null}
 
         {mode === "teacher" ? (
-          <TeacherView profiles={profiles} goalMinutes={settings.readingGoal} onClose={() => setMode("start")} />
+          <TeacherView
+            profiles={profiles}
+            goalMinutes={settings.readingGoal}
+            placement={placement}
+            activeId={active?.id ?? null}
+            onClassPlace={setClassPlace}
+            onChildPlace={setChildPlace}
+            onClose={() => setMode("start")}
+          />
         ) : null}
         {mode === "kid" && flying ? <StarFlight onDone={() => setFlying(false)} /> : null}
         {mode === "kid" && cheer !== null ? <MilestoneCheer stars={cheer} onDone={() => setCheer(null)} /> : null}
@@ -280,6 +297,7 @@ export default function App() {
               onChange={update}
               profiles={profiles}
               active={active}
+              placement={placement}
               onSelect={select}
               onAdd={addChild}
               onUpdate={updateChild}

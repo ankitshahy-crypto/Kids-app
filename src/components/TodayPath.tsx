@@ -1,4 +1,6 @@
-import { isReviewDay, planForWeek, practiceLetters, weekIndex } from "../data/schedule";
+import type { PathStageId } from "../data/path";
+import type { PlacementSource } from "../data/placement";
+import { isReviewDay } from "../data/schedule";
 import { dayProgress, todayKey, type ChildProfile, type LessonStep } from "../data/profiles";
 import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
@@ -14,6 +16,10 @@ const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
 
 export function TodayPath({
   profile,
+  letters,
+  placementSource,
+  stageId,
+  weekIndex,
   onOpen,
   onLeave,
   onLibrary,
@@ -23,6 +29,10 @@ export function TodayPath({
   goalMinutes,
 }: {
   profile: ChildProfile;
+  letters: string[];
+  placementSource: PlacementSource;
+  stageId: PathStageId;
+  weekIndex: number;
   onOpen: (step: LessonStep) => void;
   onLeave: () => void;
   onLibrary: () => void;
@@ -33,13 +43,20 @@ export function TodayPath({
 }) {
   const now = new Date();
   const review = isReviewDay(now);
-  const letters = practiceLetters(planForWeek(weekIndex(profile.createdAt, now)), review);
   const done = dayProgress(profile, now);
   const current = stops.find((stop) => !done[stop.id]) ?? stops[stops.length - 1];
   const letter = (letters[0] ?? "a").toUpperCase();
 
   return (
-    <div className="today" data-screen="today" data-review={review ? "true" : "false"}>
+    <div
+      className="today"
+      data-screen="today"
+      data-review={review ? "true" : "false"}
+      data-source={placementSource}
+      data-stage={stageId}
+      data-week={weekIndex}
+      data-letters={letters.join("")}
+    >
       <div className="today-top">
         <button type="button" className="today-avatar" aria-label="Switch child" onClick={onLeave}>
           <Hero animal={profile.animal} outfit={profile.outfit} />

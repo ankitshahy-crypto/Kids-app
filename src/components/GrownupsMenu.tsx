@@ -3,14 +3,16 @@ import { Avatar } from "../avatars";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
 import { shareWordNest, type ShareResult } from "../share";
 import type { AnimalId } from "../data/animals";
+import type { PlacementDocument } from "../data/placement";
 import { lessonName, type AgeRange, type ChildProfile } from "../data/profiles";
 import type { Settings } from "../settings";
 import { AboutWordNest } from "./AboutWordNest";
 import { ChildForm } from "./ChildForm";
 import { Chevron } from "./icons";
+import { Printables } from "./Printables";
 import { SettingsFields } from "./SettingsFields";
 
-type GrownupsPage = "menu" | "settings" | "profiles" | "account" | "help" | "privacy" | "about" | "share";
+type GrownupsPage = "menu" | "settings" | "profiles" | "account" | "help" | "privacy" | "about" | "share" | "printables";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
   { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, and the daily goal", tint: "#E7F2EA" },
@@ -20,6 +22,7 @@ const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; ti
   { id: "privacy", title: "Privacy", note: "What stays on this device", tint: "#E5F4EA" },
   { id: "about", title: "About WordNest", note: "Version and who makes the app", tint: "#E4EEF8" },
   { id: "share", title: "Tell a friend or your school", note: "Share the WordNest link", tint: "#F8E6D4" },
+  { id: "printables", title: "Printables", note: "Letter tracing and blending sheets", tint: "#E4EEF8" },
 ];
 
 function ProfileRow({
@@ -71,6 +74,7 @@ export function GrownupsMenu({
   onChange,
   profiles,
   active,
+  placement,
   onSelect,
   onAdd,
   onUpdate,
@@ -81,6 +85,7 @@ export function GrownupsMenu({
   onChange: (patch: Partial<Settings>) => void;
   profiles: ChildProfile[];
   active: ChildProfile | null;
+  placement: PlacementDocument;
   onSelect: (id: string) => void;
   onAdd: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
   onUpdate: (id: string, input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
@@ -264,6 +269,13 @@ export function GrownupsMenu({
       ) : null}
 
       {page === "about" ? <AboutWordNest /> : null}
+
+      {page === "printables" ? (
+        <section className="adult-section" data-section="printables">
+          <h2>Printables</h2>
+          <Printables profiles={profiles} activeId={active?.id ?? null} placement={placement} />
+        </section>
+      ) : null}
 
       {page === "share" ? (
         <section className="adult-section" data-section="share">
