@@ -1,5 +1,5 @@
 import { version } from "../../package.json";
-import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS, PRODUCT_NAME, STORE_NAME, STORE_SUBTITLE, TAGLINE } from "../brand";
+import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME, MODULE_WORDS, PRODUCT_NAME, STORE_NAME, STORE_SUBTITLE, TAGLINE } from "../brand";
 
 /** Marketing copy for About and for docs/store-listing.md. Edit it here. */
 export const aboutContent = {
@@ -9,7 +9,7 @@ export const aboutContent = {
   promo:
     "Five happy minutes a day. Your child's own animal is the hero of every story, with no ads, no tricks, and no surprise charges.",
   description:
-    `${PRODUCT_NAME} helps young children take their first steps into letters, numbers, colors, time and money, and building, one small step at a time. Made for ages 3 to 5, with harder clock, money, and building work for ages 5 to 7 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. ${MODULE_WORDS}: kids learn letters and their sounds, then drag their finger across a word to hear it come together: “c… a… t… cat!” ${MODULE_NUMBERS}: count objects, hear and trace numbers, match and trace shapes, and add small groups. ${MODULE_COLORS}: hear a color and tap it, mix two paints, and color their animal. ${MODULE_TIME}: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. ${MODULE_BUILD}: bridges, towers, ramps, simple machines, and sink or float.`,
+    `${PRODUCT_NAME} helps young children take their first steps into letters, numbers, colors, time and money, building, and science, one small step at a time. Made for ages 3 to 5, with harder clock, money, building, and science work for ages 5 to 7 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. ${MODULE_WORDS}: kids learn letters and their sounds, then drag their finger across a word to hear it come together: “c… a… t… cat!” ${MODULE_NUMBERS}: count objects, hear and trace numbers, match and trace shapes, and add small groups. ${MODULE_COLORS}: hear a color and tap it, mix two paints, and color their animal. ${MODULE_TIME}: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. ${MODULE_BUILD}: bridges, towers, ramps, and simple machines. ${MODULE_SCIENCE}: life cycles, homes, weather, senses, and sink or float. A pretend fizz stays on the screen and says to do it with a grown-up.`,
   differentHeading: `What makes ${PRODUCT_NAME} different`,
   features: [
     {
@@ -60,7 +60,12 @@ export const aboutContent = {
     {
       id: "build",
       title: MODULE_BUILD,
-      body: "Build a bridge, stack a tower, roll a ball down a ramp, and try a lever, a pulley, and a wheel. Guess whether something sinks or floats. A wobbly bridge or a narrow tower just means try again. Ages 5 to 7 balance weights, use fewer pieces, and hear what went wrong.",
+      body: "Build a bridge, stack a tower, roll a ball down a ramp, and try a lever, a pulley, and a wheel. A wobbly bridge or a narrow tower just means try again. Ages 5 to 7 balance weights, use fewer pieces, and hear what went wrong.",
+    },
+    {
+      id: "science",
+      title: MODULE_SCIENCE,
+      body: "Put a seed, a sprout, and a plant in order, match animals to homes and foods, and find a wing or a beak. On the screen, ice melts, water turns to steam, and baking soda meets vinegar. Sort a solid, a liquid, and a gas. Dress their animal for sun, rain, or snow, and notice a sound, a texture, and day or night. Guess whether something sinks or floats. Ages 5 to 7 say what they think will happen, then test it, line up a food chain, and follow the water cycle. A real fizz is with a grown-up, and nothing is for tasting.",
     },
     {
       id: "games",
@@ -80,14 +85,14 @@ export const aboutContent = {
   ],
   teachesHeading: `How ${PRODUCT_NAME} teaches`,
   teaches:
-    `${PRODUCT_NAME} has five modules. ${MODULE_WORDS} starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. ${MODULE_NUMBERS} starts with counting, then numerals, then shapes, then adding small groups. ${MODULE_COLORS} starts with color names, then mixing paints. ${MODULE_TIME} starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7. ${MODULE_BUILD} starts with a bridge, a tower, a ramp, simple machines, and sink or float. Ages 5 to 7 balance weights and test a design again.`,
+    `${PRODUCT_NAME} has six modules. ${MODULE_WORDS} starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. ${MODULE_NUMBERS} starts with counting, then numerals, then shapes, then adding small groups. ${MODULE_COLORS} starts with color names, then mixing paints. ${MODULE_TIME} starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7. ${MODULE_BUILD} starts with a bridge, a tower, a ramp, and simple machines. Ages 5 to 7 balance weights and test a design again. ${MODULE_SCIENCE} starts with life cycles, homes, body parts, on-screen changes, weather, senses, and sink or float. Ages 5 to 7 predict a result, then test it, and follow a food chain and the water cycle.`,
   safetyHeading: "Safe and private by design",
   safety:
     "No ads, no tracking, no in-app purchase tricks. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.",
   affordableHeading: "Affordable for every family",
   affordable:
     `Learning to read shouldn't be expensive. ${PRODUCT_NAME} is priced so every family can use it, and through partner schools it's included for families at little or no extra cost. No creeping subscriptions or endless add-ons.`,
-  disclaimer: `${PRODUCT_NAME} is letters, numbers, colors, and time and money practice for young children. It is not a therapy or diagnostic tool.`,
+  disclaimer: `${PRODUCT_NAME} is letters, numbers, colors, time and money, building, and science practice for young children. It is not a therapy or diagnostic tool.`,
   maker: TAGLINE,
   /** Matches package.json. The About screen shows this number. */
   version,

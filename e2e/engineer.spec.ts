@@ -42,7 +42,8 @@ test("Build sits on the home screen and a bridge can cross", async ({ page }, te
   await expect(board.locator("[data-activity=balance]")).toHaveCount(0);
   await expect(board.locator("[data-activity=bridge]")).toBeVisible();
   const dock = await page.locator(".today-dock").boundingBox();
-  const tile = await board.locator("[data-activity=float]").boundingBox();
+  const tile = await board.locator("[data-activity=machines]").boundingBox();
+  await expect(board.locator("[data-activity=float]")).toHaveCount(0);
   const overlaps = Boolean(
     dock &&
       tile &&
@@ -120,26 +121,6 @@ test("a higher ramp rolls farther and simple machines lift", async ({ page }, te
   await expect(machines).toHaveAttribute("data-ready", "true");
   await machines.locator("[data-finish=machines]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "2");
-});
-
-test("a guess drops an object in the water", async ({ page }, testInfo) => {
-  await install(page);
-  await page.locator("[data-course=build]").click();
-  await page.locator("[data-activity=float]").click();
-  const play = page.locator("[data-engineer=float]");
-  await play.locator("[data-guess=sink]").click();
-  await expect(play.locator(".build-again")).toHaveText("Try again.");
-  await play.locator("[data-guess=float]").click();
-  await expect(play).toHaveAttribute("data-object", "rock");
-  await play.locator("[data-guess=sink]").click();
-  await expect(play).toHaveAttribute("data-object", "boat");
-  await play.locator("[data-guess=float]").click();
-  await expect(play.locator("[data-finish=float]")).toBeVisible();
-  if (testInfo.project.name === "chromium") {
-    await play.screenshot({ path: "/opt/cursor/artifacts/build_float.png" });
-  }
-  await play.locator("[data-finish=float]").click();
-  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
 test("ages 5 to 7 hear what went wrong, then balance the beam", async ({ page }, testInfo) => {

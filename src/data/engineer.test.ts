@@ -8,8 +8,6 @@ import {
   bridgeVerdict,
   engineerLevel,
   engineerManifestEntries,
-  floatSet,
-  floatVerdict,
   leverLifts,
   leverWeight,
   machinesReady,
@@ -33,7 +31,8 @@ describe("LittleNest Build", () => {
     expect(engineerLevel("4")).toBe("early");
     expect(engineerLevel("5")).toBe("later");
     expect(engineerLevel("6-7")).toBe("later");
-    expect(activitiesFor("early")).toEqual(["bridge", "tower", "ramp", "machines", "float"]);
+    expect(activitiesFor("early")).toEqual(["bridge", "tower", "ramp", "machines"]);
+    expect(activitiesFor("early")).not.toContain("float");
     expect(activitiesFor("later")).toContain("balance");
   });
 
@@ -89,15 +88,6 @@ describe("LittleNest Build", () => {
     expect(machinesReady({ lever: true, pulley: true, wheel: true })).toBe(true);
   });
 
-  it("checks a sink or float guess", () => {
-    expect(floatSet("early")).toEqual(["leaf", "rock", "boat"]);
-    expect(floatSet("later")).toContain("spoon");
-    expect(floatVerdict("leaf", "float").ok).toBe(true);
-    expect(floatVerdict("rock", "float")).toMatchObject({ ok: false, hint: "That one is heavy, so it sinks." });
-    expect(floatVerdict("boat", "sink").hint).toBe("That one is light, so it floats.");
-    expect(floatVerdict("spoon", "sink").ok).toBe(true);
-  });
-
   it("balances when weight times distance matches", () => {
     const spots = placeBeam(placeBeam({}, -1, 2), 2, 1);
     expect(beamTorque(spots)).toBe(0);
@@ -110,7 +100,7 @@ describe("LittleNest Build", () => {
   });
 
   it("can earn a star without finishing the reading lesson", () => {
-    for (const id of ["bridge", "tower", "ramp", "machines", "float", "balance"]) {
+    for (const id of ["bridge", "tower", "ramp", "machines", "balance"]) {
       expect(isSubjectKey(id)).toBe(true);
       expect((readingSteps as readonly string[]).includes(id)).toBe(false);
     }

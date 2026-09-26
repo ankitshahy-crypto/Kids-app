@@ -4169,14 +4169,14 @@ button:focus-visible {
 
 @media (min-width: 900px) {
   .course-pick {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 768px) and (orientation: landscape) {
   .course-pick {
     grid-column: 1 / -1;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     width: min(100%, 720px);
     justify-self: center;
   }
@@ -5967,6 +5967,11 @@ input.is-pressed,
     font-size: 16px;
   }
 
+  .course-name span:last-child {
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
   .course-art,
   .course-art .module-mark {
     width: 40px;
@@ -6263,4 +6268,73 @@ input.is-pressed,
   .math-activity {
     min-height: 76px;
   }
+
+  [data-science="menu"] {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  [data-science="menu"] .math-activity {
+    flex: 0 0 84px;
+    width: 84px;
+    min-width: 84px;
+    min-height: 72px;
+  }
 }
+
+@media (min-width: 768px) and (orientation: landscape) {
+  [data-science="menu"] {
+    grid-area: trail;
+    align-self: start;
+  }
+}
+
+.sci-grownup,
+.sci-ask {
+  margin: 0;
+  max-width: 420px;
+  text-align: center;
+  font-weight: 800;
+}
+
+.sci-bit {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: inline-block;
+  background: #d7f3ea;
+}
+
+.sci-seed, .sci-rock, .sci-rough { background: #c4a574; border-radius: 50%; }
+.sci-sprout, .sci-plant, .sci-grass, .sci-leaf { background: #7dba8f; }
+.sci-egg, .sci-chick { background: #f6e7a8; border-radius: 50%; }
+.sci-bird, .sci-wing, .sci-tweet { background: #9ec9e8; border-radius: 50% 50% 40% 40%; }
+.sci-caterpillar { background: #8fce6a; border-radius: 18px; }
+.sci-chrysalis, .sci-vapor { background: #d7c4e8; }
+.sci-butterfly { background: #f7c9d4; border-radius: 50%; }
+.sci-fox, .sci-den { background: #e7b089; border-radius: 50%; }
+.sci-nest, .sci-worm { background: #e4c7a4; }
+.sci-fish, .sci-pond, .sci-drip, .sci-liquid, .sci-water { background: #8eb4d6; border-radius: 50%; }
+.sci-berries, .sci-beak { background: #e07a5f; border-radius: 50%; }
+.sci-tail, .sci-paw, .sci-bunny, .sci-soft { background: #f7c9d4; border-radius: 50%; }
+.sci-ice, .sci-smooth, .sci-solid { background: #d7eef8; }
+.sci-juice { background: #f6c1a8; border-radius: 0 0 16px 16px; }
+.sci-steam, .sci-gas, .sci-cloud { background: #eef6fb; border: 2px solid #c5d5e0; }
+.sci-sun, .sci-summer, .sci-day, .sci-heat { background: #f6e7a8; border-radius: 50%; }
+.sci-rain, .sci-spring { background: #9ec9e8; }
+.sci-snow, .sci-winter, .sci-scarf { background: #f4f7fb; border: 2px solid #d7e4ee; }
+.sci-hat, .sci-coat { background: #f4a4b4; }
+.sci-moon, .sci-night { background: #d7c4e8; border-radius: 50%; }
+.sci-boom, .sci-drum { background: #e4b08a; border-radius: 50%; }
+.sci-fizz, .sci-bubbles { background: #d7f3ea; border-radius: 50%; }
+.sci-melt, .sci-grow { background: #7dba8f; border-radius: 50%; }
+.sci-stay, .sci-shrink, .sci-still { background: #d7dee8; }
+.sci-rabbit { background: #f7e1c8; border-radius: 50%; }
+.sci-puddle { background: #8eb4d6; border-radius: 50%; }
+.sci-listen { background: #6d5b86; border-radius: 50%; }
+.sci-mark { width: 28px; height: 28px; border-radius: 8px; background: #b7e6d8; display: block; }

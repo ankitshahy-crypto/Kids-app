@@ -24,8 +24,9 @@ import { StickerBook } from "./components/StickerBook";
 import { TeacherView } from "./components/TeacherView";
 import { Games, type GameId } from "./components/Games";
 import { EngineerActivity } from "./components/NestBuild";
+import { ScienceActivity } from "./components/SciencePlay";
 import { TodayPath } from "./components/TodayPath";
-import { colorTip, engineerTip, gameTip, mathTip, readTip, timeTip, type ReadTip } from "./content/tips";
+import { colorTip, engineerTip, gameTip, mathTip, readTip, scienceTip, timeTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
 import { MixActivity, NameActivity, PaintActivity } from "./components/ColorPlay";
 import { AddActivity, CountActivity, KnowActivity, MoreActivity, ShapeActivity, TraceActivity } from "./components/MathPlay";
@@ -35,6 +36,7 @@ import { COLORS, colorFill, colorLessonForChild, type ColorStep } from "./data/c
 import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { TIME, lessonForChild as timeLessonForChild, type MoneyGame, type TimeStep } from "./data/timeMoney";
 import { BUILD, type BuildActivity } from "./data/engineer";
+import { SCIENCE, type ScienceActivity as ScienceId } from "./data/science";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
@@ -48,14 +50,15 @@ import { useSettings } from "./hooks/useSettings";
 import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
-type Course = "reading" | "math" | "colors" | "time" | "build";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | "word" | "my-name";
+type Course = "reading" | "math" | "colors" | "time" | "build" | "science";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
 const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 const timeScreens: TimeStep[] = ["day", "routine", "clock", "coins", "shop"];
-const buildScreens: BuildActivity[] = ["bridge", "tower", "ramp", "machines", "float", "balance"];
+const buildScreens: BuildActivity[] = ["bridge", "tower", "ramp", "machines", "balance"];
+const scienceScreens: ScienceId[] = ["life", "homes", "body", "change", "weather", "senses", "float", "predict", "chain", "water"];
 const moneyScreens: MoneyGame[] = ["jars", "lemonade", "choose", "needs", "cards"];
 
 export default function App() {
@@ -225,7 +228,9 @@ export default function App() {
                   ? (active.practiceMs?.[TIME] ?? {})
                   : course === "build"
                     ? (active.practiceMs?.[BUILD] ?? {})
-                    : active.readingMs,
+                    : course === "science"
+                      ? (active.practiceMs?.[SCIENCE] ?? {})
+                      : active.readingMs,
         }
       : null,
     (id, totals, subject) => {
@@ -366,6 +371,30 @@ export default function App() {
     else setTip(null);
   };
 
+  const finishScience = (activity: ScienceId) => {
+    if (!active) return;
+    const learned: StickerInput[] = [{ subject: SCIENCE, kind: "science", label: activity }];
+    const result = giveStar(active.id, activity, learned, SCIENCE);
+    if (result.awarded) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduce) setFlying(true);
+      if (result.milestones.length > 0) {
+        setCheer(result.milestones[result.milestones.length - 1] ?? null);
+        playEffect("cheer", settings);
+      } else playEffect("chime", settings);
+    }
+    setScreen("today");
+    if (settingsRef.current.showTips) setTip(scienceTip(activity, "end"));
+    else setTip(null);
+  };
+
+  const openScience = (activity: ScienceId) => {
+    primeSpeech();
+    setScreen(activity);
+    if (settingsRef.current.showTips) setTip(scienceTip(activity, "start"));
+    else setTip(null);
+  };
+
   const finishLetter = (word: DeckWord) => {
     const learned: StickerInput[] = [
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
@@ -386,7 +415,8 @@ export default function App() {
     screen === "word" ||
     screen === "my-name" ||
     screen === "games" ||
-    buildScreens.includes(screen as BuildActivity);
+    buildScreens.includes(screen as BuildActivity) ||
+    scienceScreens.includes(screen as ScienceId);
 
   const finishGame = (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string; ladder?: boolean }) => {
     if (!active) return;
@@ -507,6 +537,7 @@ export default function App() {
                   onTime={openTime}
                   onMoneyPlay={openMoneyPlay}
                   onBuild={openBuild}
+                  onScience={openScience}
                   canTraceWord={blendedWords.length > 0}
                   canTraceName={Boolean(traceName)}
                   onTraceWord={() => {
@@ -539,14 +570,24 @@ export default function App() {
                   <MoneyBoard done={active.days[todayKey()]?.[TIME] ?? {}} onOpen={openMoney} />
                 </div>
               ) : null}
-              {screen === "bridge" || screen === "tower" || screen === "ramp" || screen === "machines" || screen === "float" || screen === "balance" ? (
+              {buildScreens.includes(screen as BuildActivity) ? (
                 <EngineerActivity
-                  activity={screen}
+                  activity={screen as BuildActivity}
                   ageRange={active.ageRange}
                   animal={active.animal}
                   outfit={active.outfit}
                   settingsRef={settingsRef}
-                  onDone={() => finishBuild(screen)}
+                  onDone={() => finishBuild(screen as BuildActivity)}
+                />
+              ) : null}
+              {scienceScreens.includes(screen as ScienceId) ? (
+                <ScienceActivity
+                  activity={screen as ScienceId}
+                  ageRange={active.ageRange}
+                  animal={active.animal}
+                  outfit={active.outfit}
+                  settingsRef={settingsRef}
+                  onDone={() => finishScience(screen as ScienceId)}
                 />
               ) : null}
               {screen === "games" ? (
