@@ -5,6 +5,10 @@ dist
 .idea
 .vscode
 coverage
+e2e-results.json
+test-results
+playwright-report
+blob-report
 
 # iOS build output. The Xcode project itself is committed.
 ios/App/Pods
