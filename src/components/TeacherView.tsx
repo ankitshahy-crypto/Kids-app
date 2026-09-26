@@ -8,7 +8,9 @@ import { resolvePlacement, type LessonPlace, type PlacementDocument } from "../d
 import { lessonName, type ChildProfile } from "../data/profiles";
 import type { ScaffoldLevel } from "../data/scaffold";
 import type { HatchLevel } from "../data/games";
+import type { LadderStep } from "../data/ladder";
 import { HatchLevelControl } from "./HatchLevel";
+import { WordLadder } from "./WordLadder";
 import { WritingLevels } from "./WritingLevels";
 import { Avatar } from "../avatars";
 import { LearningPath } from "./LearningPath";
@@ -70,12 +72,14 @@ function DeviceRewards({
   placement,
   onWritingLevel,
   onHatchLevel,
+  onLadderStep,
 }: {
   profiles: ChildProfile[];
   goalMinutes: number;
   placement: PlacementDocument;
   onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
   onHatchLevel: (childId: string, level: HatchLevel) => void;
+  onLadderStep: (childId: string, step: LadderStep) => void;
 }) {
   return (
     <section className="teacher-card" data-card="device">
@@ -116,6 +120,7 @@ function DeviceRewards({
               onSetLevel={(itemId, level) => onWritingLevel(profile.id, itemId, level)}
             />
             <HatchLevelControl games={profile.games} editable onSetLevel={(level) => onHatchLevel(profile.id, level)} />
+            <WordLadder ladder={profile.ladder} editable onSetStep={(step) => onLadderStep(profile.id, step)} />
             <LearningPath profile={profile} name={lessonName(profile)} placedIntroduced={placedIntroduced} />
             <LearningPath
               profile={profile}
@@ -169,6 +174,7 @@ export function TeacherView({
   onChildPlace,
   onWritingLevel,
   onHatchLevel,
+  onLadderStep,
   onClose,
 }: {
   profiles: ChildProfile[];
@@ -179,6 +185,7 @@ export function TeacherView({
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
   onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
   onHatchLevel: (childId: string, level: HatchLevel) => void;
+  onLadderStep: (childId: string, step: LadderStep) => void;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("roster");
@@ -210,6 +217,7 @@ export function TeacherView({
           placement={placement}
           onWritingLevel={onWritingLevel}
           onHatchLevel={onHatchLevel}
+          onLadderStep={onLadderStep}
         />
         <p className="demo-flag">Demo data. Not a real class. Filled in during step 6.</p>
         <header className="teacher-top">

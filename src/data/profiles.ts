@@ -3,6 +3,7 @@ import { animalById, isAnimalId, type AnimalId } from "./animals";
 import { READING, isSubjectKey, readingSteps, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
 import { emptyGames, normalizeGames, type GameProgress } from "./games";
+import { emptyLadder, normalizeLadder, type LadderProgress } from "./ladder";
 import { normalizeWriting, type WritingMap } from "./scaffold";
 import { emptyOutfit, isWardrobeId, itemForSlot, type Outfit } from "./wardrobe";
 
@@ -72,6 +73,8 @@ export type ChildProfile = {
   writing: WritingMap;
   /** Hatch the Egg grows here. Missing saves start at the first sound. */
   games: GameProgress;
+  /** Word length for blending, tracing, and word games. Missing saves start at one letter. */
+  ladder: LadderProgress;
   /** Dress-up items from the wheel. They can be worn before their star cost. */
   gifts: string[];
 };
@@ -212,6 +215,7 @@ export function createChild(input: { name: string; ageRange: AgeRange; animal: A
     days: {},
     writing: {},
     games: emptyGames(),
+    ladder: emptyLadder(),
     gifts: [],
     ...emptyRewards(),
   };
@@ -262,6 +266,7 @@ function withRewards(profile: ChildProfile): ChildProfile {
     ...practiceTime(profile),
     writing: normalizeWriting((profile as { writing?: unknown }).writing),
     games: normalizeGames((profile as { games?: unknown }).games),
+    ladder: normalizeLadder((profile as { ladder?: unknown }).ladder),
     gifts: normalizeGifts((profile as { gifts?: unknown }).gifts),
   };
 }

@@ -33,8 +33,9 @@ import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
-import { lettersIntroduced, wordsForLetters } from "./data/schedule";
-import { blendedCvcWords, nameToTrace } from "./data/tracePractice";
+import { blendList, phonicsOpen, wordsToTrace } from "./data/ladder";
+import { lettersIntroduced } from "./data/schedule";
+import { nameToTrace } from "./data/tracePractice";
 import { usePlacement } from "./hooks/usePlacement";
 import { useProfiles } from "./hooks/useProfiles";
 import { useReadingTime } from "./hooks/useReadingTime";
@@ -51,7 +52,7 @@ const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
-  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteSpin, giveGift } = useProfiles();
+  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteLadder, setLadderStep, noteSpin, giveGift } = useProfiles();
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
@@ -136,8 +137,10 @@ export default function App() {
   }, [active, colorPlace]);
 
   const introducedLetters = useMemo(() => lettersIntroduced(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
-  const lessonWords = useMemo(() => wordsForLetters(lessonLetters), [lessonLetters]);
-  const blendedWords = useMemo(() => blendedCvcWords(active?.stickers ?? []), [active]);
+  const ladderStep = active?.ladder.step ?? 1;
+  const lessonWords = useMemo(() => blendList(ladderStep, lessonLetters), [ladderStep, lessonLetters]);
+  const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
+  const phonicsReady = phonicsOpen(introducedLetters.length);
   const traceName = nameToTrace(active?.name ?? "");
 
   const showTip = (step: LessonStep, when: "start" | "end", letter?: string) => {
@@ -266,6 +269,7 @@ export default function App() {
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
       { kind: "word" as const, label: word.word },
     ];
+    if (active) noteLadder(active.id, phonicsReady);
     reward("letter", learned);
     showTip("letter", "end", word.letters[0]?.char ?? word.word);
   };
@@ -278,10 +282,11 @@ export default function App() {
     screen === "my-name" ||
     screen === "games";
 
-  const finishGame = (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string }) => {
+  const finishGame = (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string; ladder?: boolean }) => {
     if (!active) return;
     if (game === "hatch") noteHatch(active.id);
     if (game === "spin") noteSpin(active.id);
+    if (game === "hatch" || game === "rhyme" || extra?.ladder) noteLadder(active.id, phonicsReady);
     if (extra?.gift) giveGift(active.id, extra.gift);
     const result = giveStar(active.id, extra?.step ?? `game-${game}`, learned);
     if (result.awarded) {
@@ -298,6 +303,7 @@ export default function App() {
 
   const practiceReward = (step: "word" | "name", learned: StickerInput[]) => {
     if (!active) return;
+    if (step === "word") noteLadder(active.id, phonicsReady);
     const result = giveStar(active.id, step, learned);
     if (result.awarded) {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -433,6 +439,7 @@ export default function App() {
                   words={lessonWords}
                   animal={active.animal}
                   outfit={active.outfit}
+                  ladderStep={ladderStep}
                   onFinished={finishLetter}
                 />
               ) : null}
@@ -543,6 +550,7 @@ export default function App() {
             onChildPlace={setChildPlace}
             onWritingLevel={setWritingLevel}
             onHatchLevel={setHatchLevel}
+            onLadderStep={setLadderStep}
             onClose={() => setMode("start")}
           />
         ) : null}

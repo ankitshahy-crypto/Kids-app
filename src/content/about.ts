@@ -25,7 +25,7 @@ export const aboutContent = {
     {
       id: "blend",
       title: "Drag to blend",
-      body: "Slide across a word and hear each sound join into the whole word, the way blending is taught in classrooms.",
+      body: "Slide across a word and hear each sound join into the whole word. Words grow on a ladder: one letter, then two, then short words, then four-letter words.",
     },
     {
       id: "lesson",
@@ -70,7 +70,7 @@ export const aboutContent = {
   ],
   teachesHeading: `How ${PRODUCT_NAME} teaches`,
   teaches:
-    `${PRODUCT_NAME} has three modules. ${MODULE_WORDS} starts with letter sounds, then blending, then short words, then tiny stories. Phonics for ages 5 to 7 comes after that. ${MODULE_NUMBERS} starts with counting, then numerals, then shapes, then adding small groups. ${MODULE_COLORS} starts with color names, then mixing paints.`,
+    `${PRODUCT_NAME} has three modules. ${MODULE_WORDS} starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. ${MODULE_NUMBERS} starts with counting, then numerals, then shapes, then adding small groups. ${MODULE_COLORS} starts with color names, then mixing paints.`,
   safetyHeading: "Safe and private by design",
   safety:
     "No ads, no tracking, no in-app purchase tricks. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.",

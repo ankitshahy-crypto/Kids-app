@@ -18,6 +18,7 @@ import {
   type MemoryCard,
   type RhymeCard,
 } from "../data/games";
+import { wordsForStep, type LadderStep } from "../data/ladder";
 import type { ChildProfile, StickerInput } from "../data/profiles";
 import { Hero } from "./Hero";
 import { SpinSay } from "./SpinSay";
@@ -50,7 +51,7 @@ export function Games({
   color: string;
   colorOptions: string[];
   onEnter: (game: GameId) => void;
-  onDone: (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string }) => void;
+  onDone: (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string; ladder?: boolean }) => void;
 }) {
   const [game, setGame] = useState<GameId | "home">("home");
   const open = (next: GameId) => {
@@ -81,10 +82,12 @@ export function Games({
         <HatchGame
           knownLetters={knownLetters}
           level={profile.games.hatch}
+          ladderStep={profile.ladder.step}
+          words={wordsForStep(profile.ladder.step)}
           baby={nextBaby(profile.stickers.filter((sticker) => sticker.kind === "animal").map((sticker) => sticker.label))}
           settingsRef={settingsRef}
           onDone={(learned) => {
-            onDone("hatch", learned);
+            onDone("hatch", learned, { ladder: true });
             setGame("home");
           }}
         />
@@ -103,6 +106,7 @@ export function Games({
         <FeedGame
           profile={profile}
           knownLetters={knownLetters}
+          ladderStep={profile.ladder.step}
           settingsRef={settingsRef}
           onDone={() => {
             onDone("feed", []);
@@ -113,9 +117,10 @@ export function Games({
       {game === "rhyme" ? (
         <RhymeGame
           knownLetters={knownLetters}
+          ladderStep={profile.ladder.step}
           settingsRef={settingsRef}
           onDone={() => {
-            onDone("rhyme", []);
+            onDone("rhyme", [], { ladder: true });
             setGame("home");
           }}
         />
@@ -134,6 +139,7 @@ export function Games({
         <SpinSay
           knownLetters={knownLetters}
           hatchLevel={profile.games.hatch}
+          ladderStep={profile.ladder.step}
           spins={profile.games.spins}
           stars={profile.stars}
           writing={profile.writing}
@@ -143,7 +149,9 @@ export function Games({
           gifts={profile.gifts}
           babies={profile.stickers.filter((sticker) => sticker.kind === "animal").map((sticker) => sticker.label)}
           settingsRef={settingsRef}
-          onAttempt={(attempt) => onDone("spin", attempt.stickers, { step: attempt.step, gift: attempt.gift })}
+          onAttempt={(attempt) =>
+            onDone("spin", attempt.stickers, { step: attempt.step, gift: attempt.gift, ladder: attempt.ladder })
+          }
         />
       ) : null}
     </div>
@@ -164,17 +172,21 @@ function useCue() {
 function HatchGame({
   knownLetters,
   level,
+  ladderStep,
+  words,
   baby,
   settingsRef,
   onDone,
 }: {
   knownLetters: string[];
   level: HatchRound["level"];
+  ladderStep: LadderStep;
+  words: ReturnType<typeof wordsForStep>;
   baby: BabyAnimal;
   settingsRef: { current: Settings };
   onDone: (learned: StickerInput[]) => void;
 }) {
-  const round = hatchRound(knownLetters, level);
+  const round = hatchRound(knownLetters, level, words);
   const [filled, setFilled] = useState<number[]>([]);
   const [misses, setMisses] = useState(0);
   const [wiggle, setWiggle] = useState<string | null>(null);
@@ -224,6 +236,7 @@ function HatchGame({
     <div
       className="game-board"
       data-level={round.level}
+      data-ladder-step={ladderStep}
       data-word={round.word.word}
       data-misses={misses}
       data-cracks={filled.length}
@@ -392,15 +405,17 @@ function PopGame({
 function FeedGame({
   profile,
   knownLetters,
+  ladderStep,
   settingsRef,
   onDone,
 }: {
   profile: ChildProfile;
   knownLetters: string[];
+  ladderStep: LadderStep;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const round = feedRound(knownLetters);
+  const round = feedRound(knownLetters, ladderStep);
   const [fed, setFed] = useState<string[]>([]);
   const [wiggle, setWiggle] = useState<string | null>(null);
   const play = useCue();
@@ -491,14 +506,16 @@ function FeedGame({
 
 function RhymeGame({
   knownLetters,
+  ladderStep,
   settingsRef,
   onDone,
 }: {
   knownLetters: string[];
+  ladderStep: LadderStep;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const cards = rhymeRound(knownLetters, 0);
+  const cards = rhymeRound(knownLetters, 0, ladderStep);
   const [picked, setPicked] = useState<string | null>(null);
   const [matched, setMatched] = useState<string[]>([]);
   const [wiggle, setWiggle] = useState<string | null>(null);

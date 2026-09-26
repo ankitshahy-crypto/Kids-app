@@ -13,6 +13,7 @@ const profile = {
       stars: 0,
       days: {},
       stickers: [{ subject: "reading", kind: "word", label: "cat" }],
+      ladder: { step: 3, successes: 0 },
     },
   ],
 };

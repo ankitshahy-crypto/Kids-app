@@ -433,6 +433,21 @@ button:focus-visible {
   display: flex;
 }
 
+.letters.chunks {
+  flex-wrap: wrap;
+}
+
+.tile-wrap.is-chunk {
+  max-width: 112px;
+  min-width: 64px;
+  aspect-ratio: auto;
+}
+
+.tile-wrap.is-chunk .tile {
+  min-height: 72px;
+  font-size: clamp(20px, 4.5vw, 28px);
+}
+
 .tile {
   width: 100%;
   height: 100%;

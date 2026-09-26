@@ -21,6 +21,7 @@ import {
   type SpinPrize,
 } from "../data/games";
 import { letterForm, type TracePoint } from "../data/handwriting";
+import { wordsForStep, type LadderStep } from "../data/ladder";
 import type { StickerInput } from "../data/profiles";
 import { guideFor, letterItemId, writingLevel, type WritingMap } from "../data/scaffold";
 import { followStroke, stationsAttribute, strokeComplete } from "../data/trace";
@@ -33,6 +34,7 @@ const labels = ["Sound", "Word", "Count", "Color", "Trace", "Bonus"];
 export function SpinSay({
   knownLetters,
   hatchLevel,
+  ladderStep,
   spins,
   stars,
   writing,
@@ -46,6 +48,7 @@ export function SpinSay({
 }: {
   knownLetters: string[];
   hatchLevel: HatchLevel;
+  ladderStep: LadderStep;
   spins: number;
   stars: number;
   writing?: WritingMap;
@@ -55,7 +58,7 @@ export function SpinSay({
   gifts: string[];
   babies: string[];
   settingsRef: { current: Settings };
-  onAttempt: (attempt: { step: string; stickers: StickerInput[]; gift?: string }) => void;
+  onAttempt: (attempt: { step: string; stickers: StickerInput[]; gift?: string; ladder?: boolean }) => void;
 }) {
   const [index, setIndex] = useState(spins);
   const [rotation, setRotation] = useState(0);
@@ -152,7 +155,8 @@ export function SpinSay({
   };
 
   const collect = (stickers: StickerInput[] = [], gift?: string) => {
-    onAttempt({ step: `spin-${index + 1}`, stickers, gift });
+    const wordTry = (kind || spinTurn(index)) === "word";
+    onAttempt({ step: `spin-${index + 1}`, stickers, gift, ladder: wordTry });
     setIndex((current) => current + 1);
     setPhase("ready");
     setKind("");
@@ -198,6 +202,7 @@ export function SpinSay({
           kind={kind || spinTurn(index)}
           knownLetters={knownLetters}
           hatchLevel={hatchLevel}
+          ladderStep={ladderStep}
           writing={writing}
           count={count}
           color={color}
@@ -251,6 +256,7 @@ function Challenge({
   kind,
   knownLetters,
   hatchLevel,
+  ladderStep,
   writing,
   count,
   color,
@@ -267,6 +273,7 @@ function Challenge({
   kind: SpinKind;
   knownLetters: string[];
   hatchLevel: HatchLevel;
+  ladderStep: LadderStep;
   writing?: WritingMap;
   count: number;
   color: string;
@@ -302,7 +309,7 @@ function Challenge({
     );
   }
   if (kind === "word") {
-    const round = wordBlank(knownLetters, hatchLevel);
+    const round = wordBlank(knownLetters, hatchLevel, wordsForStep(ladderStep));
     const answer = round.word.letters[round.blank]?.char.toLowerCase() ?? "a";
     return (
       <div className="spin-challenge" data-target={answer} data-word={round.word.word}>

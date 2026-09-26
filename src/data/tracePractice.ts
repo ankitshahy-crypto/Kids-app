@@ -1,5 +1,6 @@
-import { starterDeck, type DeckWord } from "./deck";
+import type { DeckWord } from "./deck";
 import { letterForm, type LetterCase, type TracePoint } from "./handwriting";
+import { wordsToTrace } from "./ladder";
 
 export type TraceGlyph = {
   label: string;
@@ -12,8 +13,9 @@ export function letterGlyph(letter: string, casing: LetterCase): TraceGlyph {
   return { label: form.letter, strokes: form.strokes };
 }
 
-/** Lowercase letters of a short word, in order. */
+/** Letters of a short word, in order. The word "I" stays a capital. */
 export function wordGlyphs(word: string): TraceGlyph[] {
+  if (word === "I") return [letterGlyph("i", "upper")];
   return [...word.toLowerCase()]
     .filter((char) => /[a-z]/.test(char))
     .map((char) => letterGlyph(char, "lower"));
@@ -36,6 +38,5 @@ export function nameToTrace(name: string): string | null {
 
 /** Three-letter words the child has already blended. Blending leaves a word sticker. */
 export function blendedCvcWords(stickers: { kind: string; label: string }[]): DeckWord[] {
-  const known = new Set(stickers.filter((sticker) => sticker.kind === "word").map((sticker) => sticker.label.trim().toLowerCase()));
-  return starterDeck.words.filter((word) => word.word.length === 3 && word.letters.length === 3 && known.has(word.word));
+  return wordsToTrace(stickers, 3).filter((word) => word.word.length === 3);
 }

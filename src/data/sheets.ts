@@ -1,6 +1,6 @@
 import type { IllustrationName } from "../illustrations";
 import type { DeckWord } from "./deck";
-import { starterDeck } from "./deck";
+import { blendList, type LadderStep } from "./ladder";
 import { letterSchedule } from "./schedule";
 import { COLORS } from "./colors";
 import { MATH } from "./math";
@@ -97,11 +97,7 @@ export function pictureForLetter(letter: string): PictureWord {
   return pictureWords[key] ?? { letter: key, word: key, pictogram: "moon" };
 }
 
-/** Short CVC words. Prefer words built from the chosen letters when there are enough. */
-export function blendingWords(letters: string[]): DeckWord[] {
-  const cvc = starterDeck.words.filter((word) => word.word.length === 3 && word.letters.length === 3);
-  const wanted = new Set(letters.map((letter) => letter.toLowerCase()));
-  const matched = cvc.filter((word) => word.letters.every((letter) => wanted.has(letter.char)));
-  const picked = matched.length >= 3 ? matched : cvc;
-  return picked.slice(0, 6);
+/** Words on the ladder step. Prefer words built from the chosen letters when there are enough. */
+export function blendingWords(letters: string[], step: LadderStep = 3): DeckWord[] {
+  return blendList(step, letters).filter((word) => !word.sentenceId);
 }
