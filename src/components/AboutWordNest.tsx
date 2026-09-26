@@ -1,7 +1,9 @@
+import { MODULE_WORDS } from "../brand";
 import { aboutContent, type AboutFeatureId } from "../content/about";
 import { tint } from "../palette";
 import { laterPath, pathStages } from "../data/path";
 import { GrownupIcon, SpeakerIcon, StarIcon } from "./icons";
+import { ModuleMark } from "./ModuleMark";
 
 const tints: Record<AboutFeatureId, string> = {
   hero: tint.peach,
@@ -20,6 +22,9 @@ export function AboutWordNest() {
     <section className="about-page" data-section="about">
       <h2>{about.screenTitle}</h2>
       <p className="about-name">{about.name}</p>
+      <div className="about-modules">
+        <ModuleMark name="words" />
+      </div>
       <p className="about-subtitle">{about.subtitle}</p>
       <p className="about-promo">{about.promo}</p>
       <p className="about-lead">{about.description}</p>
@@ -39,6 +44,10 @@ export function AboutWordNest() {
 
       <h3>{about.teachesHeading}</h3>
       <p className="about-lead">{about.teaches}</p>
+      <h3 className="module-heading">
+        <ModuleMark name="words" />
+        <span>{MODULE_WORDS}</span>
+      </h3>
       <ol className="about-path">
         {pathStages.map((stage) => (
           <li key={stage.id} data-teach={stage.id}>

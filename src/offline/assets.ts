@@ -40,6 +40,9 @@ export function offlineUrls(): string[] {
   add(`${base}icons/icon-512.png`);
   add(`${base}icons/icon-maskable-512.png`);
   add(`${base}icons/apple-touch-icon.png`);
+  add(`${base}icons/module-words.png`);
+  add(`${base}icons/module-numbers.png`);
+  add(`${base}icons/module-colors.png`);
   for (const font of fontUrls()) add(font);
   for (const file of lessonAudioFiles()) add(`${base}audio/${file}`);
   for (const entry of performance.getEntriesByType("resource")) {
