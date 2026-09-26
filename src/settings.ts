@@ -21,6 +21,8 @@ export type Settings = {
   readingGoal: 5 | 10 | 15;
   /** Short grown-up prompts at the start or end of a lesson. */
   showTips: boolean;
+  /** Python for the same Build It program. Off until a grown-up turns it on. */
+  showCode: boolean;
 };
 
 /**
@@ -45,6 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   voiceURI: null,
   readingGoal: 10,
   showTips: true,
+  showCode: false,
 };
 
 function clampVolume(value: unknown, fallback: number): number {
@@ -76,6 +79,7 @@ export function loadSettings(): Settings {
       voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
       readingGoal: record.readingGoal === 5 || record.readingGoal === 15 ? record.readingGoal : 10,
       showTips: record.showTips !== false,
+      showCode: record.showCode === true,
     };
   } catch {
     return DEFAULT_SETTINGS;

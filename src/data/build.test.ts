@@ -6,10 +6,14 @@ import {
   buildLevel,
   buildManifestEntries,
   chefResult,
+  compile,
   loadBuild,
   moveResult,
   palette,
   playSteps,
+  pseudoCode,
+  pseudoLine,
+  pythonCode,
   saveBuild,
   sceneResult,
 } from "./build";
@@ -56,6 +60,34 @@ describe("picture blocks", () => {
     expect(loadBuild("mia", "move", raw)).toEqual(["walk", "jump"]);
     expect(loadBuild("mia", "music", raw)).toEqual([]);
     expect(loadBuild("mia", "move", "{")).toEqual([]);
+  });
+});
+
+describe("one program, three views", () => {
+  it("matches the block run, the pseudo line, and the Python", () => {
+    const script = ["walk", "repeat", "pond"] as const;
+    expect(compile([...script])).toEqual([
+      { type: "repeat", times: 3, index: 1, body: { type: "do", action: "walk", index: 0 } },
+      { type: "if", when: "at-pond", index: 2, body: { type: "do", action: "splash", index: 2 } },
+    ]);
+    expect(pseudoCode([...script])).toBe("repeat 3 times: walk\nif at pond: splash");
+    expect(pythonCode([...script])).toBe("for i in range(3):\n    bird.walk()\nif bird.at_pond():\n    bird.splash()");
+    expect(playSteps([...script]).map((step) => step.block)).toEqual(["walk", "repeat", "walk", "walk", "pond"]);
+    expect(moveResult([...script])).toMatchObject({ steps: 3, splashed: true });
+  });
+
+  it("uses the sample lines for a jump loop and a pond splash", () => {
+    expect(pseudoLine(["jump", "repeat"], 1)).toBe("repeat 3 times: jump");
+    expect(pythonCode(["jump", "repeat"])).toBe("for i in range(3):\n    bird.jump()");
+    expect(pseudoLine(["pond"], 0)).toBe("if at pond: splash");
+    expect(pythonCode(["pond"])).toBe("if bird.at_pond():\n    bird.splash()");
+    expect(pseudoCode(["pond", "repeat"])).toBe("repeat 3 times: if at pond: splash");
+    expect(pythonCode(["pond", "repeat"])).toBe("for i in range(3):\n    if bird.at_pond():\n        bird.splash()");
+    expect(playSteps(["drum", "repeat", "repeat"]).map((step) => step.block)).toEqual(["drum", "repeat", "drum", "drum"]);
+    expect(pseudoCode(["drum", "repeat", "repeat"])).toBe("repeat 3 times: drum");
+    expect(pseudoLine(["drum", "repeat", "repeat"], 2)).toBe("repeat 3 times");
+    expect(pythonCode(["drum", "repeat", "repeat"])).toBe("for i in range(3):\n    play.drum()");
+    expect(pythonCode(["repeat"])).toBe("");
   });
 });
 

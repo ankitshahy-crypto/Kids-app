@@ -85,6 +85,28 @@ export function SettingsFields({
         </div>
         <p className="adult-copy">A short tip for you at a lesson. Your child can keep going without reading it.</p>
       </fieldset>
+      <fieldset className="setting-group" data-setting="code">
+        <legend>See the real code</legend>
+        <div className="segment">
+          <button
+            type="button"
+            className={settings.showCode ? "is-selected" : ""}
+            aria-pressed={settings.showCode}
+            onClick={() => onChange({ showCode: true })}
+          >
+            On
+          </button>
+          <button
+            type="button"
+            className={!settings.showCode ? "is-selected" : ""}
+            aria-pressed={!settings.showCode}
+            onClick={() => onChange({ showCode: false })}
+          >
+            Off
+          </button>
+        </div>
+        <p className="adult-copy">Shows the same Build It program as Python. It stays off until you turn it on. Children cannot edit it.</p>
+      </fieldset>
       <fieldset className="setting-group" data-setting="reading-goal">
         <legend>Daily reading goal</legend>
         <div className="segment segment-3">

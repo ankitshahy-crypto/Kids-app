@@ -11,6 +11,8 @@ import {
   moveResult,
   palette,
   playSteps,
+  pseudoLine,
+  pythonCode,
   removeBlock,
   saveBuild,
   sceneResult,
@@ -77,6 +79,7 @@ export function BuildIt({
   animal,
   outfit,
   settingsRef,
+  showCode,
   onDone,
 }: {
   childId: string;
@@ -84,6 +87,7 @@ export function BuildIt({
   animal: AnimalId;
   outfit: Outfit;
   settingsRef: { current: Settings };
+  showCode: boolean;
   onDone: (step: string) => void;
 }) {
   const [activity, setActivity] = useState<BuildActivity | null>(null);
@@ -112,6 +116,7 @@ export function BuildIt({
       animal={animal}
       outfit={outfit}
       settingsRef={settingsRef}
+      showCode={showCode}
       onBack={() => setActivity(null)}
       onDone={() => onDone(`game-build-${activity}`)}
     />
@@ -125,6 +130,7 @@ function Builder({
   animal,
   outfit,
   settingsRef,
+  showCode,
   onBack,
   onDone,
 }: {
@@ -134,6 +140,7 @@ function Builder({
   animal: AnimalId;
   outfit: Outfit;
   settingsRef: { current: Settings };
+  showCode: boolean;
   onBack: () => void;
   onDone: () => void;
 }) {
@@ -147,6 +154,7 @@ function Builder({
   const [frame, setFrame] = useState({ steps: 0, pose: "rest", splash: false, flower: "bud" as "bud" | "grown", sky: "clear" as "clear" | "rain" | "sun" });
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [said, setSaid] = useState("");
   const drag = useRef<{ kind: BuildBlock; x: number; y: number; moved: boolean } | null>(null);
   const runId = useRef(0);
   const finished = useRef(false);
@@ -271,6 +279,9 @@ function Builder({
       data-result={activity === "chef" ? chef : "wait"}
       data-saved={saved ? "true" : "false"}
       data-loaded={loaded ? "true" : "false"}
+      data-lines={level === "later" ? "on" : "off"}
+      data-python={showCode ? "on" : "off"}
+      data-said={said}
     >
       <button type="button" className="game-back" onClick={onBack}>
         Build It
@@ -279,26 +290,75 @@ function Builder({
       <Stage activity={activity} animal={animal} outfit={outfit} script={script} played={played} playing={playing} frame={frame} />
       <div className="build-script" data-drop="script" aria-label="Program">
         {script.length === 0 ? <span className="build-empty">+</span> : null}
-        {script.map((kind, index) => (
-          <button
-            key={`${kind}-${index}`}
-            type="button"
-            className="build-chip"
-            data-index={index}
-            data-kind={kind}
-            data-on={playing === index ? "true" : "false"}
-            aria-label={NAMES[kind]}
-            onClick={() => {
-              if (playing >= 0) return;
-              setScript((current) => removeBlock(current, index));
-              setPlayed(false);
-              setSaved(false);
-            }}
-          >
-            <BlockArt kind={kind} />
-          </button>
-        ))}
+        {script.map((kind, index) => {
+          const line = pseudoLine(script, index);
+          const drop = () => {
+            if (playing >= 0) return;
+            setScript((current) => removeBlock(current, index));
+            setPlayed(false);
+            setSaved(false);
+          };
+          if (level !== "later") {
+            return (
+              <button
+                key={`${kind}-${index}`}
+                type="button"
+                className="build-chip"
+                data-index={index}
+                data-kind={kind}
+                data-on={playing === index ? "true" : "false"}
+                aria-label={NAMES[kind]}
+                onClick={drop}
+              >
+                <BlockArt kind={kind} />
+              </button>
+            );
+          }
+          return (
+            <div
+              key={`${kind}-${index}`}
+              className="build-chip"
+              data-index={index}
+              data-kind={kind}
+              data-line={line}
+              data-on={playing === index ? "true" : "false"}
+              role="button"
+              tabIndex={0}
+              aria-label={line}
+              onClick={() => {
+                if (playing >= 0) return;
+                setSaid(line);
+                speak.words(line);
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                event.currentTarget.click();
+              }}
+            >
+              <BlockArt kind={kind} />
+              <span className="build-line">{line}</span>
+              <button
+                type="button"
+                className="build-remove"
+                data-remove={index}
+                aria-label="Remove"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  drop();
+                }}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
       </div>
+      {showCode ? (
+        <pre className="build-python" data-python="on" aria-readonly="true">
+          {pythonCode(script)}
+        </pre>
+      ) : null}
       <div className="build-palette" role="group" aria-label="Blocks">
         {blocks.map((kind) => (
           <button

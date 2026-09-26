@@ -20,12 +20,13 @@ const older = {
   profiles: [{ ...profile.profiles[0], ageRange: "6-7" }],
 };
 
-async function install(page: Page, saved: unknown = profile) {
-  await page.addInitScript((saved) => {
-    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+async function install(page: Page, saved: unknown = profile, settings?: unknown) {
+  await page.addInitScript((payload) => {
+    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(payload.saved));
     localStorage.removeItem("kids-app-silent-hint-v1");
     localStorage.removeItem("littlenest-build-v1");
-  }, saved);
+    if (payload.settings) localStorage.setItem("littlenest-settings-v1", JSON.stringify(payload.settings));
+  }, { saved, settings });
   await page.goto("./");
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
@@ -40,6 +41,9 @@ test("tapped and dragged blocks play on the animal", async ({ page }, testInfo) 
   await page.locator("[data-build-tile=move]").click();
   const board = page.locator("[data-build=move]");
   await expect(board).toHaveAttribute("data-level", "early");
+  await expect(board).toHaveAttribute("data-lines", "off");
+  await expect(board).toHaveAttribute("data-python", "off");
+  await expect(board.locator(".build-line")).toHaveCount(0);
   await expect(board.locator("[data-block=pond]")).toHaveCount(0);
   await expect(page.locator("[data-tip=game-build-start]")).toBeVisible();
   await board.locator("[data-block=walk]").click();
@@ -151,4 +155,33 @@ test("ages 5 to 7 splash at the pond and save on this device", async ({ page }, 
   await page.locator("[data-build-tile=move]").click();
   await expect(page.locator("[data-build=move]")).toHaveAttribute("data-script", "walk,repeat,pond");
   await expect(page.locator("[data-build=move]")).toHaveAttribute("data-loaded", "true");
+});
+
+test("the same program shows a spoken line and read-only Python", async ({ page }, testInfo) => {
+  await install(page, older, { showCode: true });
+  await page.locator("[data-build-tile=move]").click();
+  const board = page.locator("[data-build=move]");
+  await expect(board).toHaveAttribute("data-lines", "on");
+  await expect(board).toHaveAttribute("data-python", "on");
+  await board.locator("[data-block=walk]").click();
+  await board.locator("[data-block=repeat]").click();
+  await board.locator("[data-block=pond]").click();
+  await expect(board.locator("[data-index='1']")).toHaveAttribute("data-line", "repeat 3 times: walk");
+  await expect(board.locator("[data-index='2']")).toHaveAttribute("data-line", "if at pond: splash");
+  const python = await board.locator(".build-python").innerText();
+  expect(python).toContain("for i in range(3):\n    bird.walk()");
+  expect(python).toContain("if bird.at_pond():\n    bird.splash()");
+  await board.locator("[data-index='1']").click();
+  await expect(board).toHaveAttribute("data-said", "repeat 3 times: walk");
+  await expect(board).toHaveAttribute("data-script", "walk,repeat,pond");
+  await board.locator("[data-remove='2']").click();
+  await expect(board).toHaveAttribute("data-script", "walk,repeat");
+  await board.locator("[data-block=pond]").click();
+  await expect(board).toHaveAttribute("data-script", "walk,repeat,pond");
+  if (testInfo.project.name === "chromium") {
+    await board.screenshot({ path: "/opt/cursor/artifacts/build_code.png" });
+  }
+  await board.locator("[data-play=run]").click();
+  await expect(board).toHaveAttribute("data-splash", "true");
+  await expect(board).toHaveAttribute("data-steps", "3");
 });

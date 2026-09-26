@@ -47,6 +47,7 @@ export function Games({
   profile,
   knownLetters,
   settingsRef,
+  showCode,
   count,
   color,
   colorOptions,
@@ -56,6 +57,7 @@ export function Games({
   profile: ChildProfile;
   knownLetters: string[];
   settingsRef: { current: Settings };
+  showCode: boolean;
   count: number;
   color: string;
   colorOptions: string[];
@@ -180,6 +182,7 @@ export function Games({
           animal={profile.animal}
           outfit={profile.outfit}
           settingsRef={settingsRef}
+          showCode={showCode}
           onDone={(step) => onDone("build", [], { step })}
         />
       ) : null}
