@@ -77,6 +77,6 @@ describe("numbers and math", () => {
     const resolved = resolvePlacement(placed, child.id, child.createdAt, now, zone, MATH);
     expect(resolved.subject).toBe("math");
     expect(resolved.letters).toEqual([]);
-    expect(sheetsFor(MATH).map((sheet) => sheet.id)).toEqual(["trace", "count"]);
+    expect(sheetsFor(MATH).map((sheet) => sheet.id)).toEqual(["trace", "count", "shape"]);
   });
 });

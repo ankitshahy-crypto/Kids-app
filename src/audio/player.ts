@@ -261,6 +261,14 @@ export function playLetter(
   );
 }
 
+/** Speak with the device voice only. Nothing is fetched and nothing leaves the device. */
+export function playOnDevice(text: string, settings: Settings, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.reject(abortError());
+  if (!settings.voice || !text.trim()) return sleep(SILENT_BEAT_MS, signal);
+  beginVoice();
+  return speak(text, settings, signal).finally(() => endVoice());
+}
+
 export function playWord(word: DeckWord, settings: Settings, signal: AbortSignal): Promise<void> {
   return playCue(
     {

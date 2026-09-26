@@ -9,7 +9,7 @@ export const aboutContent = {
   promo:
     "Five happy minutes a day. Your child's own animal is the hero of every story, with no ads, no tricks, and no surprise charges.",
   description:
-    `${PRODUCT_NAME} helps young children take their first steps into letters, numbers, and colors, one small step at a time. Made for ages 3 to 5 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. ${MODULE_WORDS}: kids learn letters and their sounds, then drag their finger across a word to hear it come together: “c… a… t… cat!” ${MODULE_NUMBERS}: count objects, hear and trace numbers, match shapes, and add small groups. ${MODULE_COLORS}: hear a color and tap it, mix two paints, and color their animal.`,
+    `${PRODUCT_NAME} helps young children take their first steps into letters, numbers, and colors, one small step at a time. Made for ages 3 to 5 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. ${MODULE_WORDS}: kids learn letters and their sounds, then drag their finger across a word to hear it come together: “c… a… t… cat!” ${MODULE_NUMBERS}: count objects, hear and trace numbers, match and trace shapes, and add small groups. ${MODULE_COLORS}: hear a color and tap it, mix two paints, and color their animal.`,
   differentHeading: `What makes ${PRODUCT_NAME} different`,
   features: [
     {
@@ -45,7 +45,7 @@ export const aboutContent = {
     {
       id: "math",
       title: MODULE_NUMBERS,
-      body: "Count to 10, hear and trace numbers, match shapes, compare groups, and add with pictures up to 5.",
+      body: "Count to 10, hear and trace numbers, match and trace shapes, compare groups, and add with pictures up to 5.",
     },
     {
       id: "colors",

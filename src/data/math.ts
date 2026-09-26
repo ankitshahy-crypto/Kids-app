@@ -12,7 +12,7 @@ export type MathStep = (typeof mathSteps)[number];
 export const mathStages = [
   { id: "counting", title: "Counting", detail: "Count objects from 1 to 10.", size: 10 },
   { id: "numbers", title: "Numbers", detail: "Hear a number and tap it. Trace 0 to 9.", size: 10 },
-  { id: "shapes", title: "Shapes", detail: "Find and match a shape.", size: 6 },
+  { id: "shapes", title: "Shapes", detail: "Find a shape, then trace it.", size: 6 },
   { id: "adding", title: "Adding", detail: "Put two groups together, up to 5.", size: 5 },
 ] as const;
 

@@ -65,7 +65,7 @@ const mathTips: Record<string, { start: string; end: string }> = {
     end: "Ask them to draw that number in the air.",
   },
   shape: {
-    start: "Name the shape, then let them find the match.",
+    start: "Find the shape, then trace around it. Big fingers are welcome.",
     end: "Ask: where else do you see this shape?",
   },
   more: {

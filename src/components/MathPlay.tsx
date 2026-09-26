@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { playNumber, playPrompt } from "../audio/player";
+import { PathTrace } from "./PathTrace";
 import {
   numberWord,
   shapeTitles,
@@ -8,6 +9,7 @@ import {
   type MathStep,
   type ShapeId,
 } from "../data/math";
+import { shapeStrokes } from "../data/shapeStrokes";
 import type { Settings } from "../settings";
 
 function useSpeaker(settingsRef: { current: Settings }) {
@@ -286,6 +288,7 @@ export function ShapeActivity({
 }) {
   const speak = useSpeaker(settingsRef);
   const [tries, setTries] = useState(0);
+  const [tracing, setTracing] = useState(false);
   const finished = useRef(false);
 
   const choose = (id: ShapeId) => {
@@ -296,11 +299,26 @@ export function ShapeActivity({
       return;
     }
     finished.current = true;
-    onDone("");
+    setTracing(true);
   };
 
+  if (tracing) {
+    return (
+      <PathTrace
+        screen="shape"
+        title={shapeTitles[lesson.shape]}
+        glyphs={[{ label: shapeTitles[lesson.shape], strokes: shapeStrokes(lesson.shape) }]}
+        settingsRef={settingsRef}
+        ruled={false}
+        marker={{ prompt: lesson.shape, tries: String(tries) }}
+        onSpeak={() => speak.prompt(lesson.shape)}
+        onDone={() => onDone(lesson.shape)}
+      />
+    );
+  }
+
   return (
-    <div className="math-play" data-screen="shape" data-prompt={lesson.shape} data-tries={tries}>
+    <div className="math-play" data-screen="shape" data-phase="match" data-prompt={lesson.shape} data-tries={tries}>
       <h1>Shapes</h1>
       <button type="button" className="math-hear" onClick={() => speak.prompt(lesson.shape)}>
         <ShapeGlyph id={lesson.shape} />
