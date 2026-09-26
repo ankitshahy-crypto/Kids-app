@@ -23,7 +23,7 @@ import { TeacherView } from "./components/TeacherView";
 import { TodayPath } from "./components/TodayPath";
 import { readTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
-import { todayKey, type LessonStep, type Sticker } from "./data/profiles";
+import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import type { ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
 import { wordsForLetters } from "./data/schedule";
@@ -127,7 +127,7 @@ export default function App() {
     if (!settings.showTips) setTip(null);
   }, [settings.showTips]);
 
-  const reward = (step: LessonStep, learned: Sticker[] = []) => {
+  const reward = (step: LessonStep, learned: StickerInput[] = []) => {
     if (!active) return;
     const result = giveStar(active.id, step, learned);
     if (!result.awarded) return;
@@ -164,7 +164,7 @@ export default function App() {
   });
 
   const finishLetter = (word: DeckWord) => {
-    const learned: Sticker[] = [
+    const learned: StickerInput[] = [
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
       { kind: "word" as const, label: word.word },
     ];

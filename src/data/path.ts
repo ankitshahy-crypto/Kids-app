@@ -1,26 +1,22 @@
 import { lettersIntroduced, letterPlanSize, weekIndex } from "./schedule";
+import {
+  READING,
+  readingLater,
+  readingStages,
+  subjectDefinition,
+  type SubjectId,
+  type SubjectLater,
+} from "./subject";
 import { deviceTimeZone } from "./time";
 
-/** Ages 3–5, in teaching order. Sizes add up to the letter plan. */
-export const pathStages = [
-  { id: "letters", title: "Letters", detail: "Hear each letter sound.", size: 8 },
-  { id: "blending", title: "Blending", detail: "Slide sounds together into a word.", size: 8 },
-  { id: "words", title: "Words", detail: "Read short words.", size: 6 },
-  { id: "stories", title: "Stories", detail: "A tiny story with their animal.", size: 4 },
-] as const;
-
-/** Shown on the path, not started in this app yet. */
-export const laterPath = {
-  id: "phonics",
-  title: "Phonics 5–7",
-  detail: "Comes after this path, for ages 5 to 7.",
-} as const;
+export const pathStages = readingStages;
+export const laterPath = readingLater;
 
 export type PathStageId = (typeof pathStages)[number]["id"];
 export type PathState = "done" | "current" | "upcoming";
 
 export type PathStageView = {
-  id: PathStageId;
+  id: string;
   title: string;
   detail: string;
   state: PathState;
@@ -29,36 +25,44 @@ export type PathStageView = {
 };
 
 export type LearningPlace = {
-  currentId: PathStageId;
+  subject: SubjectId;
+  currentId: string;
   introduced: number;
   stages: PathStageView[];
+  later?: SubjectLater;
 };
 
-const pathTotal = pathStages.reduce((sum, stage) => sum + stage.size, 0);
-
-/** Where a child is on Letters → Blending → Words → Stories. */
-export function learningPlace(introduced: number): LearningPlace {
-  const count = Math.max(0, Math.min(pathTotal, Math.floor(introduced)));
+/** Where a child is on a subject's stages. An unknown subject has an empty path. */
+export function learningPlace(subject: SubjectId, introduced: number): LearningPlace {
+  const definition = subjectDefinition(subject);
+  const stages = definition?.stages ?? [];
+  const total = stages.reduce((sum, stage) => sum + stage.size, 0);
+  const count = Math.max(0, Math.min(total, Math.floor(introduced)));
+  if (stages.length === 0) {
+    return { subject, currentId: "", introduced: 0, stages: [], later: definition?.later };
+  }
   let cursor = count;
-  let currentIndex = pathStages.length - 1;
+  let currentIndex = stages.length - 1;
   let progress = 1;
-  for (let index = 0; index < pathStages.length; index += 1) {
-    const size = pathStages[index].size;
+  for (let index = 0; index < stages.length; index += 1) {
+    const size = stages[index].size;
     if (cursor < size) {
       currentIndex = index;
-      progress = cursor / size;
+      progress = size === 0 ? 0 : cursor / size;
       break;
     }
     cursor -= size;
-    if (index === pathStages.length - 1) {
+    if (index === stages.length - 1) {
       currentIndex = index;
       progress = 1;
     }
   }
   return {
-    currentId: pathStages[currentIndex].id,
+    subject,
+    currentId: stages[currentIndex].id,
     introduced: count,
-    stages: pathStages.map((stage, index) => ({
+    later: definition?.later,
+    stages: stages.map((stage, index) => ({
       id: stage.id,
       title: stage.title,
       detail: stage.detail,
@@ -68,12 +72,14 @@ export function learningPlace(introduced: number): LearningPlace {
   };
 }
 
+/** Reading place from the letter plan. Other subjects bring their own units. */
 export function placeForChild(createdAt: string, now = new Date(), timeZone = deviceTimeZone()): LearningPlace {
   const introduced = lettersIntroduced(weekIndex(createdAt, now, timeZone)).length;
-  return learningPlace(introduced);
+  return learningPlace(READING, introduced);
 }
 
-/** Guard so the stage sizes stay aligned with the letter plan. */
+/** Guard so the reading stage sizes stay aligned with the letter plan. */
 export function pathCoversLetterPlan(): boolean {
-  return pathTotal === letterPlanSize();
+  const total = pathStages.reduce((sum, stage) => sum + stage.size, 0);
+  return total === letterPlanSize();
 }

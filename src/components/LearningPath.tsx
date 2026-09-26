@@ -1,5 +1,6 @@
 import { laterPath, learningPlace, placeForChild } from "../data/path";
 import type { ChildProfile } from "../data/profiles";
+import { READING } from "../data/subject";
 
 export function LearningPath({
   profile,
@@ -11,11 +12,11 @@ export function LearningPath({
   /** When a teacher placed the lesson, the path uses that letter count. */
   placedIntroduced?: number;
 }) {
-  const place = placedIntroduced === undefined ? placeForChild(profile.createdAt) : learningPlace(placedIntroduced);
+  const place = placedIntroduced === undefined ? placeForChild(profile.createdAt) : learningPlace(READING, placedIntroduced);
   const current = place.stages.find((stage) => stage.state === "current");
 
   return (
-    <section className="learn-path" data-section="path" data-current-stage={place.currentId}>
+    <section className="learn-path" data-section="path" data-subject={place.subject} data-current-stage={place.currentId}>
       <h2>Learning path{name ? ` · ${name}` : ""}</h2>
       <ol className="path-stages">
         {place.stages.map((stage) => (

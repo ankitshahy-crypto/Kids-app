@@ -1,12 +1,12 @@
 import {
   awardStar,
-  dayProgress,
-  lessonSteps,
   todayKey,
   type ChildProfile,
   type LessonStep,
   type Sticker,
+  type StickerInput,
 } from "./profiles";
+import { READING, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone } from "./time";
 import { wardrobe, wardrobeItem, type WardrobeId } from "./wardrobe";
 
@@ -44,16 +44,17 @@ export function wearItem(profile: ChildProfile, itemId: string): ChildProfile {
   };
 }
 
-export function addStickers(profile: ChildProfile, incoming: Sticker[]): ChildProfile {
-  const have = new Set(profile.stickers.map((sticker) => `${sticker.kind}:${sticker.label}`));
+export function addStickers(profile: ChildProfile, incoming: StickerInput[], subject: SubjectId = READING): ChildProfile {
+  const have = new Set(profile.stickers.map((sticker) => `${sticker.subject}:${sticker.kind}:${sticker.label}`));
   const added: Sticker[] = [];
   for (const sticker of incoming) {
     const label = sticker.label.trim().toLowerCase();
     if (!label) continue;
-    const key = `${sticker.kind}:${label}`;
+    const stickerSubject = sticker.subject ?? subject;
+    const key = `${stickerSubject}:${sticker.kind}:${label}`;
     if (have.has(key)) continue;
     have.add(key);
-    added.push({ kind: sticker.kind, label });
+    added.push({ subject: stickerSubject, kind: sticker.kind, label });
   }
   if (added.length === 0) return profile;
   return { ...profile, stickers: [...profile.stickers, ...added] };
@@ -73,18 +74,22 @@ export function addNestPiece(profile: ChildProfile, now = new Date(), timeZone =
  */
 export function applyEffort(
   profile: ChildProfile,
-  step: LessonStep,
-  learned: Sticker[] = [],
+  step: LessonStep | string,
+  learned: StickerInput[] = [],
   now = new Date(),
   timeZone = deviceTimeZone(),
+  subject: SubjectId = READING,
 ): EffortResult {
+  const definition = subjectDefinition(subject);
+  if (!definition) return { profile, awarded: false, lessonComplete: false, milestones: [], stickersAdded: 0 };
   const before = profile.stars;
-  let next = awardStar(profile, step, now, timeZone);
+  let next = awardStar(profile, step, now, timeZone, subject);
   const awarded = next.stars !== before;
   const beforeStickers = next.stickers.length;
-  if (awarded && step === "letter") next = addStickers(next, learned);
+  if (awarded && subject === READING && step === "letter") next = addStickers(next, learned, subject);
   const stickersAdded = next.stickers.length - beforeStickers;
-  const lessonComplete = lessonSteps.every((item) => dayProgress(next, now, timeZone)[item]);
+  const steps = next.days[todayKey(now, timeZone)]?.[subject] ?? {};
+  const lessonComplete = definition.steps.every((item) => steps[item] === true);
   if (awarded && lessonComplete) next = addNestPiece(next, now, timeZone);
   const milestones = awarded ? milestonesBetween(before, next.stars, next.celebrated) : [];
   if (milestones.length > 0) next = { ...next, celebrated: [...next.celebrated, ...milestones] };

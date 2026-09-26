@@ -2,6 +2,23 @@ import type { IllustrationName } from "../illustrations";
 import type { DeckWord } from "./deck";
 import { starterDeck } from "./deck";
 import { letterSchedule } from "./schedule";
+import { READING, type SubjectId } from "./subject";
+
+export type SheetKind = {
+  subject: SubjectId;
+  id: string;
+  title: string;
+};
+
+/** Printable kinds a subject can offer. Reading has letter tracing and blending. */
+const sheetCatalog: SheetKind[] = [
+  { subject: READING, id: "letter", title: "Letter tracing" },
+  { subject: READING, id: "blending", title: "Blending" },
+];
+
+export function sheetsFor(subject: SubjectId): SheetKind[] {
+  return sheetCatalog.filter((sheet) => sheet.subject === subject);
+}
 
 export const pictogramKinds = [
   "moon",

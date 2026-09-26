@@ -255,6 +255,7 @@ function PlacementSummary({ child, placement }: { child: ChildProfile; placement
     <section
       className="dash-card"
       data-section="placement"
+      data-subject={resolved.subject}
       data-source={resolved.source}
       data-stage={resolved.stageId}
       data-week={resolved.weekIndex}

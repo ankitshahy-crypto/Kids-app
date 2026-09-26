@@ -1,11 +1,13 @@
-import { learningPlace, pathStages, type PathStageId } from "./path";
+import { learningPlace, type PathStageId } from "./path";
 import { isReviewDay, letterSchedule, lettersIntroduced, planForWeek, practiceLetters, weekIndex } from "./schedule";
+import { READING, isSubjectKey, readingStages, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone } from "./time";
 
 /**
  * Device copy of a class lesson placement.
  * The same JSON is what a class server can store later. This app only reads
  * and writes it on the device. `origin` stays "device" until a server owns it.
+ * Each subject has its own place. Reading is the only subject filled in today.
  */
 export type PlacementDocument = {
   version: 1;
@@ -14,26 +16,33 @@ export type PlacementDocument = {
   classId: string;
   /** ISO-8601 time of the last edit. Empty when nothing has been set. */
   updatedAt: string;
-  /** Starting lesson for every child who has no override. Null follows the calendar. */
+  /** Subject id → class default and per-child overrides. */
+  subjects: Record<string, SubjectPlacement>;
+};
+
+export type SubjectPlacement = {
+  /** Starting lesson for every child who has no override. Null follows that subject's calendar. */
   classDefault: LessonPlace | null;
   /** Child profile id → place. Wins over `classDefault`. */
   byChildId: Record<string, LessonPlace>;
 };
 
-/** A starting stage and the letter-plan week that lesson uses. */
+/** A starting stage and the lesson week that subject uses. */
 export type LessonPlace = {
-  stageId: PathStageId;
-  /** Index into `letterSchedule`. Today's practice letters come from this week. */
+  subject: SubjectId;
+  stageId: string;
+  /** Index into that subject's lesson plan. Reading uses `letterSchedule`. */
   weekIndex: number;
 };
 
 export type PlacementSource = "child" | "class" | "calendar";
 
 export type ResolvedPlacement = {
+  subject: SubjectId;
   source: PlacementSource;
   weekIndex: number;
-  stageId: PathStageId;
-  /** Letters the child practices today, including Friday review when that applies. */
+  stageId: string;
+  /** Reading: letters the child practices today, including Friday review when that applies. */
   letters: string[];
 };
 
@@ -48,7 +57,7 @@ type KeyValueStore = {
 };
 
 /**
- * Introduced-letter count where each stage begins.
+ * Introduced-letter count where each reading stage begins.
  * The lesson week is the first week that moves past that count, so Blending
  * starts on the week after the last Letters week, not on the week that finishes it.
  */
@@ -59,15 +68,22 @@ const stageStartIntroduced: Record<PathStageId, number> = {
   stories: 22,
 };
 
+function emptySubjectPlacement(): SubjectPlacement {
+  return { classDefault: null, byChildId: {} };
+}
+
 export function emptyPlacement(): PlacementDocument {
   return {
     version: 1,
     origin: "device",
     classId: DEVICE_CLASS_ID,
     updatedAt: "",
-    classDefault: null,
-    byChildId: {},
+    subjects: { [READING]: emptySubjectPlacement() },
   };
+}
+
+export function placesFor(doc: PlacementDocument, subject: SubjectId = READING): SubjectPlacement {
+  return doc.subjects[subject] ?? emptySubjectPlacement();
 }
 
 export function clampWeek(index: number): number {
@@ -76,14 +92,15 @@ export function clampWeek(index: number): number {
 }
 
 export function isPathStageId(value: string): value is PathStageId {
-  return pathStages.some((stage) => stage.id === value);
+  return readingStages.some((stage) => stage.id === value);
 }
 
-export function stageTitle(stageId: PathStageId): string {
-  return pathStages.find((stage) => stage.id === stageId)?.title ?? stageId;
+export function stageTitle(stageId: string, subject: SubjectId = READING): string {
+  const stages = subjectDefinition(subject)?.stages ?? [];
+  return stages.find((stage) => stage.id === stageId)?.title ?? stageId;
 }
 
-/** First lesson week of a stage. Letters are the new letters for that week. */
+/** First reading lesson week of a stage. Letters are the new letters for that week. */
 export function firstWeekForStage(stageId: PathStageId): number {
   const need = stageStartIntroduced[stageId];
   if (need <= 0) return 0;
@@ -93,15 +110,19 @@ export function firstWeekForStage(stageId: PathStageId): number {
   return letterSchedule.length - 1;
 }
 
-export function placeForStage(stageId: PathStageId): LessonPlace {
+export function placeForStage(stageId: PathStageId, subject: SubjectId = READING): LessonPlace {
+  if (subject !== READING) {
+    return { subject, stageId, weekIndex: 0 };
+  }
   return placeForWeek(firstWeekForStage(stageId));
 }
 
-/** Week chooses the lesson. The stage is the path stage that week sits in. */
-export function placeForWeek(index: number): LessonPlace {
+/** Week chooses the reading lesson. The stage is the path stage that week sits in. */
+export function placeForWeek(index: number, subject: SubjectId = READING): LessonPlace {
   const week = clampWeek(index);
   return {
-    stageId: learningPlace(lettersIntroduced(week).length).currentId,
+    subject,
+    stageId: learningPlace(subject, lettersIntroduced(week).length).currentId,
     weekIndex: week,
   };
 }
@@ -113,11 +134,21 @@ export function weekLabel(index: number): string {
   return `Week ${week + 1} · ${letters}`;
 }
 
-export function withClassPlace(doc: PlacementDocument, place: LessonPlace | null, now = new Date()): PlacementDocument {
+export function withClassPlace(
+  doc: PlacementDocument,
+  place: LessonPlace | null,
+  now = new Date(),
+  subject: SubjectId = place?.subject ?? READING,
+): PlacementDocument {
+  const current = placesFor(doc, subject);
+  const nextPlace = place ? { ...place, subject } : null;
   return {
     ...doc,
-    classDefault: place,
     updatedAt: now.toISOString(),
+    subjects: {
+      ...doc.subjects,
+      [subject]: { ...current, classDefault: nextPlace },
+    },
   };
 }
 
@@ -126,29 +157,51 @@ export function withChildPlace(
   childId: string,
   place: LessonPlace | null,
   now = new Date(),
+  subject: SubjectId = place?.subject ?? READING,
 ): PlacementDocument {
-  const byChildId = { ...doc.byChildId };
-  if (place) byChildId[childId] = place;
+  const current = placesFor(doc, subject);
+  const byChildId = { ...current.byChildId };
+  if (place) byChildId[childId] = { ...place, subject };
   else delete byChildId[childId];
-  return { ...doc, byChildId, updatedAt: now.toISOString() };
+  return {
+    ...doc,
+    updatedAt: now.toISOString(),
+    subjects: {
+      ...doc.subjects,
+      [subject]: { ...current, byChildId },
+    },
+  };
 }
 
-function parsePlace(value: unknown): LessonPlace | null {
+function parsePlace(value: unknown, fallbackSubject: SubjectId = READING): LessonPlace | null {
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
-  if (typeof record.weekIndex !== "number") return null;
-  return placeForWeek(record.weekIndex);
+  if (typeof record.weekIndex !== "number" || !Number.isFinite(record.weekIndex)) return null;
+  const subject = typeof record.subject === "string" && isSubjectKey(record.subject) ? record.subject : fallbackSubject;
+  if (subject === READING) return placeForWeek(record.weekIndex);
+  const stageId = typeof record.stageId === "string" && record.stageId ? record.stageId : "";
+  if (!stageId) return null;
+  return { subject, stageId, weekIndex: Math.max(0, Math.floor(record.weekIndex)) };
 }
 
-function parsePlaces(value: unknown): Record<string, LessonPlace> {
+function parsePlaces(value: unknown, fallbackSubject: SubjectId = READING): Record<string, LessonPlace> {
   if (!value || typeof value !== "object") return {};
   const places: Record<string, LessonPlace> = {};
   for (const [key, item] of Object.entries(value)) {
     if (!key || key === "__proto__" || key === "constructor") continue;
-    const place = parsePlace(item);
+    const place = parsePlace(item, fallbackSubject);
     if (place) places[key] = place;
   }
   return places;
+}
+
+function parseSubjectPlacement(value: unknown, fallbackSubject: SubjectId): SubjectPlacement {
+  if (!value || typeof value !== "object") return emptySubjectPlacement();
+  const record = value as Record<string, unknown>;
+  return {
+    classDefault: parsePlace(record.classDefault, fallbackSubject),
+    byChildId: parsePlaces(record.byChildId, fallbackSubject),
+  };
 }
 
 export function parsePlacement(value: unknown): PlacementDocument | null {
@@ -158,14 +211,20 @@ export function parsePlacement(value: unknown): PlacementDocument | null {
   const classId = typeof record.classId === "string" && record.classId.trim() ? record.classId : DEVICE_CLASS_ID;
   const origin = record.origin === "server" ? "server" : "device";
   const updatedAt = typeof record.updatedAt === "string" ? record.updatedAt : "";
-  return {
-    version: 1,
-    origin,
-    classId,
-    updatedAt,
-    classDefault: parsePlace(record.classDefault),
-    byChildId: parsePlaces(record.byChildId),
-  };
+  const subjects: Record<string, SubjectPlacement> = {};
+  if (record.subjects && typeof record.subjects === "object") {
+    for (const [key, item] of Object.entries(record.subjects)) {
+      if (!isSubjectKey(key) || key === "__proto__" || key === "constructor") continue;
+      subjects[key] = parseSubjectPlacement(item, key);
+    }
+  } else {
+    subjects[READING] = {
+      classDefault: parsePlace(record.classDefault, READING),
+      byChildId: parsePlaces(record.byChildId, READING),
+    };
+  }
+  if (!subjects[READING]) subjects[READING] = emptySubjectPlacement();
+  return { version: 1, origin, classId, updatedAt, subjects };
 }
 
 export function loadPlacement(storage: KeyValueStore = localStorage): PlacementDocument {
@@ -182,23 +241,21 @@ export function savePlacement(doc: PlacementDocument, storage: KeyValueStore = l
   storage.setItem(PLACEMENT_STORAGE_KEY, JSON.stringify(doc));
 }
 
-/** Child override, then the class place, then the calendar week since the profile was created. */
+/** Child override, then the class place, then that subject's calendar. Reading uses weeks since the profile was created. */
 export function resolvePlacement(
   doc: PlacementDocument,
   childId: string,
   createdAt: string,
   now = new Date(),
   timeZone = deviceTimeZone(),
+  subject: SubjectId = READING,
 ): ResolvedPlacement {
-  const childPlace = doc.byChildId[childId] ?? null;
-  const chosen = childPlace ?? doc.classDefault;
-  const source: PlacementSource = childPlace ? "child" : doc.classDefault ? "class" : "calendar";
+  const slot = placesFor(doc, subject);
+  const childPlace = slot.byChildId[childId] ?? null;
+  const chosen = childPlace ?? slot.classDefault;
+  const source: PlacementSource = childPlace ? "child" : slot.classDefault ? "class" : "calendar";
   const index = chosen ? chosen.weekIndex : weekIndex(createdAt, now, timeZone);
-  const stageId = chosen ? chosen.stageId : learningPlace(lettersIntroduced(index).length).currentId;
-  return {
-    source,
-    weekIndex: index,
-    stageId,
-    letters: practiceLetters(planForWeek(index), isReviewDay(now, timeZone)),
-  };
+  const stageId = chosen ? chosen.stageId : learningPlace(subject, lettersIntroduced(index).length).currentId;
+  const letters = subject === READING ? practiceLetters(planForWeek(index), isReviewDay(now, timeZone)) : [];
+  return { subject, source, weekIndex: index, stageId, letters };
 }

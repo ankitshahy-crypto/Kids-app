@@ -1,18 +1,30 @@
 import { animalById, isAnimalId, type AnimalId } from "./animals";
+import { READING, isSubjectKey, readingSteps, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
 import { emptyOutfit, itemForSlot, type Outfit } from "./wardrobe";
 
 export const ageRanges = ["3", "4", "5", "6-7"] as const;
 export type AgeRange = (typeof ageRanges)[number];
 
-export const lessonSteps = ["letter", "draw", "story", "moment"] as const;
+export const lessonSteps = readingSteps;
 export type LessonStep = (typeof lessonSteps)[number];
 
+/** Today's reading steps. Other subjects keep their own step map on the day. */
 export type DayProgress = Record<LessonStep, boolean>;
 
+/** Subject id → step id → finished. One day can hold reading and, later, another subject. */
+export type DayRecord = Record<string, Record<string, boolean>>;
+
 export type Sticker = {
+  subject: SubjectId;
   kind: "letter" | "word";
-  /** Lowercase letter or word. Stored once. */
+  /** Lowercase letter or word. Stored once per subject. */
+  label: string;
+};
+
+export type StickerInput = {
+  subject?: SubjectId;
+  kind: Sticker["kind"];
   label: string;
 };
 
@@ -36,7 +48,7 @@ export type ChildProfile = {
    * Progress keyed by the local calendar date (`YYYY-MM-DD`) in the device
    * zone when the star was awarded. The same date is never awarded twice.
    */
-  days: Record<string, DayProgress>;
+  days: Record<string, DayRecord>;
   /** What the animal is wearing. Empty until the child picks something already earned. */
   outfit: Outfit;
   /** Letters and words learned. Only added, never removed. */
@@ -45,10 +57,14 @@ export type ChildProfile = {
   nest: NestPiece[];
   /** Star totals already celebrated, such as 10 and 20. */
   celebrated: number[];
-  /** Active reading milliseconds, keyed by local date. Only increases. */
+  /** Active reading milliseconds, keyed by local date. Mirror of `practiceMs.reading`. */
   readingMs: Record<string, number>;
-  /** Dates whose reading goal already gave the one bonus star. */
+  /** Dates whose reading goal already gave the one bonus star. Mirror of `practiceAwarded.reading`. */
   readingAwarded: string[];
+  /** Active milliseconds by subject, then local date. Reading is `practiceMs.reading`. */
+  practiceMs: Record<string, Record<string, number>>;
+  /** Dates whose goal already gave the one bonus star, per subject. */
+  practiceAwarded: Record<string, string[]>;
 };
 
 type ProfileStore = {
@@ -57,13 +73,6 @@ type ProfileStore = {
 };
 
 const STORAGE_KEY = "kids-app-profiles-v1";
-
-const emptyDay = (): DayProgress => ({
-  letter: false,
-  draw: false,
-  story: false,
-  moment: false,
-});
 
 /** Local calendar date in the device zone. The lesson day resets at local midnight. */
 export function todayKey(now = new Date(), timeZone = deviceTimeZone()): string {
@@ -92,36 +101,53 @@ export function lessonName(profile: Pick<ChildProfile, "name" | "animal">): stri
   return profile.name.trim();
 }
 
-export function dayProgress(profile: ChildProfile, now = new Date(), timeZone = deviceTimeZone()): DayProgress {
-  return profile.days[todayKey(now, timeZone)] ?? emptyDay();
-}
-
-export function awardStar(
+export function dayProgress(
   profile: ChildProfile,
-  step: LessonStep,
   now = new Date(),
   timeZone = deviceTimeZone(),
+  subject: SubjectId = READING,
+): DayProgress {
+  const steps = profile.days[todayKey(now, timeZone)]?.[subject] ?? {};
+  return {
+    letter: Boolean(steps.letter),
+    draw: Boolean(steps.draw),
+    story: Boolean(steps.story),
+    moment: Boolean(steps.moment),
+  };
+}
+
+/** One star for a finished step of a known subject. The same step on that day is not awarded twice. */
+export function awardStar(
+  profile: ChildProfile,
+  step: string,
+  now = new Date(),
+  timeZone = deviceTimeZone(),
+  subject: SubjectId = READING,
 ): ChildProfile {
+  if (!subjectDefinition(subject) || !isSubjectKey(step)) return profile;
   const key = todayKey(now, timeZone);
-  const day = profile.days[key] ?? emptyDay();
-  if (day[step]) return profile;
+  const day = profile.days[key] ?? {};
+  const steps = day[subject] ?? {};
+  if (steps[step]) return profile;
   return {
     ...profile,
     stars: profile.stars + 1,
     days: {
       ...profile.days,
-      [key]: { ...day, [step]: true },
+      [key]: { ...day, [subject]: { ...steps, [step]: true } },
     },
   };
 }
 
-/** Stars whose local dates fall in the current Monday–Sunday week. */
+/** Stars whose local dates fall in the current Monday–Sunday week, across every subject. */
 export function starsThisWeek(profile: ChildProfile, now = new Date(), timeZone = deviceTimeZone()): number {
   const keys = new Set(weekDateKeys(now, timeZone));
   let stars = 0;
   for (const [key, day] of Object.entries(profile.days)) {
     if (!keys.has(key)) continue;
-    stars += lessonSteps.filter((step) => day[step]).length;
+    for (const steps of Object.values(day)) {
+      stars += Object.values(steps).filter(Boolean).length;
+    }
   }
   return stars;
 }
@@ -148,8 +174,20 @@ export function editChild(
   };
 }
 
-function emptyRewards(): Pick<ChildProfile, "outfit" | "stickers" | "nest" | "celebrated" | "readingMs" | "readingAwarded"> {
-  return { outfit: emptyOutfit(), stickers: [], nest: [], celebrated: [], readingMs: {}, readingAwarded: [] };
+function emptyRewards(): Pick<
+  ChildProfile,
+  "outfit" | "stickers" | "nest" | "celebrated" | "readingMs" | "readingAwarded" | "practiceMs" | "practiceAwarded"
+> {
+  return {
+    outfit: emptyOutfit(),
+    stickers: [],
+    nest: [],
+    celebrated: [],
+    readingMs: {},
+    readingAwarded: [],
+    practiceMs: { [READING]: {} },
+    practiceAwarded: { [READING]: [] },
+  };
 }
 
 export function createChild(input: { name: string; ageRange: AgeRange; animal: AnimalId }): ChildProfile {
@@ -167,10 +205,8 @@ export function createChild(input: { name: string; ageRange: AgeRange; animal: A
   };
 }
 
-function isDayProgress(value: unknown): value is DayProgress {
-  if (!value || typeof value !== "object") return false;
-  const day = value as Partial<DayProgress>;
-  return lessonSteps.every((step) => typeof day[step] === "boolean");
+function isStoredDay(value: unknown): boolean {
+  return normalizeDay(value) !== null;
 }
 
 function isSticker(value: unknown): value is Sticker {
@@ -196,15 +232,88 @@ function withRewards(profile: ChildProfile): ChildProfile {
       glasses: itemForSlot(raw.outfit?.glasses ?? null, "glasses"),
       color: itemForSlot(raw.outfit?.color ?? null, "color"),
     },
-    stickers: Array.isArray(profile.stickers) ? profile.stickers.filter(isSticker) : [],
+    stickers: Array.isArray(profile.stickers) ? profile.stickers.filter(isSticker).map(withStickerSubject) : [],
+    days: normalizeDays(profile.days),
     nest: Array.isArray(profile.nest) ? profile.nest.filter(isNestPiece) : [],
     celebrated: Array.isArray(profile.celebrated)
       ? profile.celebrated.filter((value) => typeof value === "number" && value > 0 && value % 10 === 0)
       : [],
-    readingMs: readingMap(profile.readingMs),
-    readingAwarded: Array.isArray(profile.readingAwarded)
-      ? profile.readingAwarded.filter((value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value))
-      : [],
+    ...practiceTime(profile),
+  };
+}
+
+function withStickerSubject(sticker: Sticker): Sticker {
+  const subject = typeof sticker.subject === "string" && isSubjectKey(sticker.subject) ? sticker.subject : READING;
+  return { ...sticker, subject };
+}
+
+function normalizeDays(value: unknown): Record<string, DayRecord> {
+  if (!value || typeof value !== "object") return {};
+  const days: Record<string, DayRecord> = {};
+  for (const [key, day] of Object.entries(value as Record<string, unknown>)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
+    const normalized = normalizeDay(day);
+    if (normalized) days[key] = normalized;
+  }
+  return days;
+}
+
+/** Older saves store reading steps on the day itself. Newer saves nest them under `reading`. */
+function normalizeDay(value: unknown): DayRecord | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  if (lessonSteps.every((step) => typeof record[step] === "boolean")) {
+    const steps: Record<string, boolean> = {};
+    for (const step of lessonSteps) steps[step] = Boolean(record[step]);
+    return { [READING]: steps };
+  }
+  const next: DayRecord = {};
+  for (const [subject, steps] of Object.entries(record)) {
+    if (!isSubjectKey(subject) || !steps || typeof steps !== "object" || Array.isArray(steps)) continue;
+    const flags: Record<string, boolean> = {};
+    for (const [step, done] of Object.entries(steps as Record<string, unknown>)) {
+      if (typeof done === "boolean" && isSubjectKey(step)) flags[step] = done;
+    }
+    if (Object.keys(flags).length > 0) next[subject] = flags;
+  }
+  return Object.keys(next).length > 0 ? next : null;
+}
+
+function dateList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => typeof item === "string" && /^\d{4}-\d{2}-\d{2}$/.test(item));
+}
+
+function practiceTime(profile: ChildProfile): Pick<ChildProfile, "readingMs" | "readingAwarded" | "practiceMs" | "practiceAwarded"> {
+  const readingMs = readingMap(profile.readingMs);
+  const readingAwarded = dateList(profile.readingAwarded);
+  const practiceMs: Record<string, Record<string, number>> = {};
+  const rawMs = profile.practiceMs;
+  if (rawMs && typeof rawMs === "object") {
+    for (const [subject, days] of Object.entries(rawMs)) {
+      if (!isSubjectKey(subject)) continue;
+      practiceMs[subject] = readingMap(days);
+    }
+  }
+  practiceMs[READING] = { ...readingMs, ...(practiceMs[READING] ?? {}) };
+  for (const [key, ms] of Object.entries(readingMs)) {
+    practiceMs[READING][key] = Math.max(practiceMs[READING][key] ?? 0, ms);
+  }
+  const practiceAwarded: Record<string, string[]> = {};
+  const rawAwarded = profile.practiceAwarded;
+  if (rawAwarded && typeof rawAwarded === "object") {
+    for (const [subject, dates] of Object.entries(rawAwarded)) {
+      if (!isSubjectKey(subject)) continue;
+      practiceAwarded[subject] = dateList(dates);
+    }
+  }
+  const readingDates = new Set([...(practiceAwarded[READING] ?? []), ...readingAwarded]);
+  practiceAwarded[READING] = [...readingDates];
+  return {
+    readingMs: practiceMs[READING],
+    readingAwarded: practiceAwarded[READING],
+    practiceMs,
+    practiceAwarded,
   };
 }
 
@@ -226,7 +335,7 @@ function isProfile(value: unknown): value is ChildProfile {
   if (!isAgeRange(String(profile.ageRange)) || !isAnimalId(String(profile.animal))) return false;
   if (profile.stars < 0 || !Number.isFinite(profile.stars)) return false;
   if (!profile.days || typeof profile.days !== "object") return false;
-  return Object.values(profile.days).every(isDayProgress);
+  return Object.values(profile.days).every(isStoredDay);
 }
 
 export function loadStore(): ProfileStore {

@@ -5,7 +5,8 @@ import type { AnimalId } from "../data/animals";
 import { resolvePlacement, type PlacementDocument } from "../data/placement";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { isReviewDay, planForWeek, practiceLetters } from "../data/schedule";
-import { blendingWords, pictureForLetter, scheduleLetters } from "../data/sheets";
+import { READING } from "../data/subject";
+import { blendingWords, pictureForLetter, scheduleLetters, sheetsFor } from "../data/sheets";
 import { Pictogram } from "./Pictogram";
 
 function weekLettersFor(placement: PlacementDocument, child: ChildProfile | null): string[] {
@@ -101,8 +102,11 @@ export function Printables({
   const animal: AnimalId = child?.animal ?? "fox";
   const weekLetters = weekLettersFor(placement, child);
   const [picked, setPicked] = useState<string[]>(() => weekLettersFor(placement, child));
-  const letters = scheduleLetters().filter((letter) => picked.includes(letter));
-  const blends = blendingWords(letters);
+  const sheets = sheetsFor(READING);
+  const showLetters = sheets.some((sheet) => sheet.id === "letter");
+  const showBlending = sheets.some((sheet) => sheet.id === "blending");
+  const letters = showLetters ? scheduleLetters().filter((letter) => picked.includes(letter)) : [];
+  const blends = showBlending ? blendingWords(letters.length > 0 ? letters : picked) : [];
 
   const chooseChild = (id: string) => {
     setChildId(id);
@@ -115,7 +119,7 @@ export function Printables({
   };
 
   return (
-    <div className="printables">
+    <div className="printables" data-subject={READING}>
       <div className="print-controls no-print">
         <p className="adult-copy">
           Pick letters, or use the letters from this week. The page fits A4 and US Letter. Printing stays in this
@@ -181,6 +185,7 @@ export function Printables({
         {letters.map((letter) => (
           <LetterSheet key={letter} letter={letter} animal={animal} />
         ))}
+        {showBlending ? (
         <article className="print-sheet" data-sheet="blend">
           <header className="sheet-head">
             <div>
@@ -206,6 +211,7 @@ export function Printables({
             ))}
           </ul>
         </article>
+        ) : null}
       </div>
     </div>
   );

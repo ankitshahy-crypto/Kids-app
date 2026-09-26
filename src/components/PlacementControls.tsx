@@ -2,12 +2,14 @@ import { pathStages } from "../data/path";
 import {
   placeForStage,
   placeForWeek,
+  placesFor,
   resolvePlacement,
   stageTitle,
   weekLabel,
   type LessonPlace,
   type PlacementDocument,
 } from "../data/placement";
+import { READING } from "../data/subject";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { letterSchedule } from "../data/schedule";
 
@@ -86,8 +88,15 @@ export function PlacementControls({
   onClassPlace: (place: LessonPlace | null) => void;
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
 }) {
+  const reading = placesFor(placement, READING);
   return (
-    <section className="teacher-card" data-card="placement" data-demo="false" data-class-id={placement.classId}>
+    <section
+      className="teacher-card"
+      data-card="placement"
+      data-demo="false"
+      data-class-id={placement.classId}
+      data-subject={READING}
+    >
       <h2>Lesson place</h2>
       <p className="adult-copy">
         Set the starting lesson for children on this device. A child can use a different lesson. Saved here only. A
@@ -95,12 +104,12 @@ export function PlacementControls({
       </p>
       <div
         data-place="class"
-        data-stage={placement.classDefault?.stageId ?? "calendar"}
-        data-week={placement.classDefault ? String(placement.classDefault.weekIndex) : ""}
+        data-stage={reading.classDefault?.stageId ?? "calendar"}
+        data-week={reading.classDefault ? String(reading.classDefault.weekIndex) : ""}
       >
         <PlaceEditor
           label="Whole class"
-          place={placement.classDefault}
+          place={reading.classDefault}
           clearLabel="Follow the calendar"
           clearKind="class"
           onChange={onClassPlace}
@@ -108,7 +117,7 @@ export function PlacementControls({
       </div>
       {profiles.length === 0 ? <p className="adult-copy">Add a child to set a different lesson for them.</p> : null}
       {profiles.map((profile) => {
-        const override = placement.byChildId[profile.id] ?? null;
+        const override = reading.byChildId[profile.id] ?? null;
         const resolved = resolvePlacement(placement, profile.id, profile.createdAt);
         return (
           <div

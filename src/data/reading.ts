@@ -1,5 +1,6 @@
 import { milestonesBetween } from "./rewards";
 import type { ChildProfile } from "./profiles";
+import { READING, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone, localDateKey, monthKey, startOfLocalDay, weekDateKeys, zonedWallTimeToUtc } from "./time";
 
 /** Time counts only when the last tap or key was inside this window. */
@@ -90,13 +91,23 @@ export function advanceReading(
   };
 }
 
-function mergedMs(profile: ChildProfile, totals: Record<string, number>): Record<string, number> {
-  const readingMs = { ...profile.readingMs };
+function mergedMs(current: Record<string, number>, totals: Record<string, number>): Record<string, number> {
+  const next = { ...current };
   for (const [key, value] of Object.entries(totals)) {
     if (!Number.isFinite(value) || value < 0) continue;
-    readingMs[key] = Math.max(readingMs[key] ?? 0, Math.floor(value));
+    next[key] = Math.max(next[key] ?? 0, Math.floor(value));
   }
-  return readingMs;
+  return next;
+}
+
+function timeFor(profile: ChildProfile, subject: SubjectId): Record<string, number> {
+  if (subject === READING) return profile.readingMs ?? {};
+  return profile.practiceMs?.[subject] ?? {};
+}
+
+function awardedFor(profile: ChildProfile, subject: SubjectId): string[] {
+  if (subject === READING) return profile.readingAwarded ?? [];
+  return profile.practiceAwarded?.[subject] ?? [];
 }
 
 function sameMs(left: Record<string, number>, right: Record<string, number>): boolean {
@@ -117,12 +128,15 @@ export function applyReadingCredit(
   goalMinutes: number,
   now = new Date(),
   timeZone = deviceTimeZone(),
+  subject: SubjectId = READING,
 ): ReadingCredit {
-  const readingMs = mergedMs(profile, totals);
+  if (!subjectDefinition(subject)) return { profile, awardedNow: false, milestones: [] };
+  const current = timeFor(profile, subject);
+  const nextMs = mergedMs(current, totals);
   const goalMs = Math.max(0, goalMinutes) * 60_000;
-  const already = new Set(profile.readingAwarded);
-  const hits = Object.keys(readingMs).filter((day) => (readingMs[day] ?? 0) >= goalMs && goalMs > 0 && !already.has(day));
-  if (hits.length === 0 && sameMs(profile.readingMs, readingMs)) {
+  const already = new Set(awardedFor(profile, subject));
+  const hits = Object.keys(nextMs).filter((day) => (nextMs[day] ?? 0) >= goalMs && goalMs > 0 && !already.has(day));
+  if (hits.length === 0 && sameMs(current, nextMs)) {
     return { profile, awardedNow: false, milestones: [] };
   }
   let stars = profile.stars;
@@ -141,14 +155,21 @@ export function applyReadingCredit(
     }
   }
   const today = localDateKey(now, timeZone);
+  const practiceMs = { ...profile.practiceMs, [subject]: nextMs };
+  const practiceAwarded = { ...profile.practiceAwarded, [subject]: [...awardedFor(profile, subject), ...hits] };
+  const reading =
+    subject === READING
+      ? { readingMs: nextMs, readingAwarded: practiceAwarded[subject] }
+      : { readingMs: profile.readingMs, readingAwarded: profile.readingAwarded };
   return {
     profile: {
       ...profile,
       stars,
       celebrated,
       nest,
-      readingMs,
-      readingAwarded: [...profile.readingAwarded, ...hits],
+      ...reading,
+      practiceMs,
+      practiceAwarded,
     },
     awardedNow: hits.includes(today),
     milestones,

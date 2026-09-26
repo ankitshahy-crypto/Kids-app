@@ -28,16 +28,16 @@ const now = new Date("2026-09-26T15:00:00.000Z");
 
 describe("lesson placement", () => {
   it("starts each stage on the lesson week after the previous stage", () => {
-    expect(placeForStage("letters")).toEqual({ stageId: "letters", weekIndex: 0 });
-    expect(placeForStage("blending")).toEqual({ stageId: "blending", weekIndex: 4 });
-    expect(placeForStage("words")).toEqual({ stageId: "words", weekIndex: 8 });
-    expect(placeForStage("stories")).toEqual({ stageId: "stories", weekIndex: 11 });
+    expect(placeForStage("letters")).toEqual({ subject: "reading", stageId: "letters", weekIndex: 0 });
+    expect(placeForStage("blending")).toEqual({ subject: "reading", stageId: "blending", weekIndex: 4 });
+    expect(placeForStage("words")).toEqual({ subject: "reading", stageId: "words", weekIndex: 8 });
+    expect(placeForStage("stories")).toEqual({ subject: "reading", stageId: "stories", weekIndex: 11 });
   });
 
   it("saves a class place and a per-child override", () => {
     const storage = memory();
     const start = loadPlacement(storage);
-    expect(start.classDefault).toBeNull();
+    expect(start.subjects.reading.classDefault).toBeNull();
     expect(start.classId).toBe(DEVICE_CLASS_ID);
     const placed = withChildPlace(
       withClassPlace({ ...start, origin: "server", classId: "class-room" }, placeForStage("blending"), now),
@@ -49,8 +49,8 @@ describe("lesson placement", () => {
     const loaded = loadPlacement(storage);
     expect(loaded.origin).toBe("server");
     expect(loaded.classId).toBe("class-room");
-    expect(loaded.classDefault).toEqual({ stageId: "blending", weekIndex: 4 });
-    expect(loaded.byChildId.mia).toEqual({ stageId: "words", weekIndex: 8 });
+    expect(loaded.subjects.reading.classDefault).toEqual({ subject: "reading", stageId: "blending", weekIndex: 4 });
+    expect(loaded.subjects.reading.byChildId.mia).toEqual({ subject: "reading", stageId: "words", weekIndex: 8 });
     expect(storage.getItem(PLACEMENT_STORAGE_KEY)).toContain("class-room");
 
     const child = resolvePlacement(loaded, "mia", created, now, "UTC");
@@ -82,15 +82,15 @@ describe("lesson placement", () => {
       }),
     );
     const loaded = loadPlacement(storage);
-    expect(loaded.classDefault).toEqual({ stageId: "blending", weekIndex: 4 });
-    expect(loaded.byChildId.mia.stageId).toBe("stories");
-    expect(loaded.byChildId.mia.weekIndex).toBe(13);
+    expect(loaded.subjects.reading.classDefault).toEqual({ subject: "reading", stageId: "blending", weekIndex: 4 });
+    expect(loaded.subjects.reading.byChildId.mia.stageId).toBe("stories");
+    expect(loaded.subjects.reading.byChildId.mia.weekIndex).toBe(13);
   });
 
   it("ignores a broken save", () => {
     const storage = memory();
     storage.setItem(PLACEMENT_STORAGE_KEY, "{");
-    expect(loadPlacement(storage).classDefault).toBeNull();
+    expect(loadPlacement(storage).subjects.reading.classDefault).toBeNull();
   });
 });
 
