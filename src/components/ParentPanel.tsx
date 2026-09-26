@@ -273,6 +273,9 @@ function PlacementSummary({ child, placement }: { child: ChildProfile; placement
         {stageTitle(resolved.stageId)}. {weekLabel(resolved.weekIndex)}.
       </p>
       <p className="adult-copy">Today: {resolved.letters.map((letter) => letter.toUpperCase()).join(" ")}</p>
+      <p className="adult-copy" data-tracing={resolved.letters.join("")}>
+        Traces big and little {resolved.letters.map((letter) => `${letter.toUpperCase()} ${letter}`).join(", ")}.
+      </p>
       <p className="adult-copy">{source}</p>
       <p className="adult-copy" data-math-stage={mathResolved.stageId} data-math-source={mathResolved.source}>
         {MODULE_NUMBERS}: {stageTitle(mathResolved.stageId, MATH)}.

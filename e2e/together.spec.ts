@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { shareUrl } from "../src/config";
+import { finishLetterTracing } from "./traceFlow";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -69,11 +70,11 @@ test("read-together tips can be dismissed and turned off", async ({ page }) => {
   const tip = page.locator(".grownup-tip");
   await expect(tip).toBeVisible();
   await expect(tip).toContainText("Grown-up tip");
-  await expect(page.getByRole("button", { name: "All done" })).toBeVisible();
+  await expect(page.locator("[data-screen=draw]")).toBeVisible();
   await page.getByRole("button", { name: "Dismiss tip" }).click();
   await expect(tip).toHaveCount(0);
 
-  await page.getByRole("button", { name: "All done" }).click();
+  await finishLetterTracing(page);
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await expect(page.locator(".grownup-tip")).toBeVisible();
 

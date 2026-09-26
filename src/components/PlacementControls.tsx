@@ -152,7 +152,8 @@ export function PlacementControls({
               onChange={(place) => onChildPlace(profile.id, place)}
             />
             <p className="adult-copy" data-today={resolved.letters.join("")}>
-              Today: {resolved.letters.map((letter) => letter.toUpperCase()).join(" ")} · {stageTitle(resolved.stageId)}.{" "}
+              Today: {resolved.letters.map((letter) => letter.toUpperCase()).join(" ")} · {stageTitle(resolved.stageId)}. Traces
+              big and little together.{" "}
               {resolved.source === "child"
                 ? "Set for this child."
                 : resolved.source === "class"
