@@ -21,7 +21,7 @@ export type DayRecord = Record<string, Record<string, boolean>>;
 
 export type Sticker = {
   subject: SubjectId;
-  kind: "letter" | "word" | "number" | "color" | "shape" | "animal";
+  kind: "letter" | "word" | "number" | "color" | "shape" | "animal" | "time" | "coin";
   /** Lowercase letter, word, numeral, or color. Stored once per subject. */
   label: string;
 };
@@ -234,7 +234,9 @@ function isSticker(value: unknown): value is Sticker {
       sticker.kind === "number" ||
       sticker.kind === "color" ||
       sticker.kind === "shape" ||
-      sticker.kind === "animal") &&
+      sticker.kind === "animal" ||
+      sticker.kind === "time" ||
+      sticker.kind === "coin") &&
     typeof sticker.label === "string" &&
     sticker.label.length > 0
   );

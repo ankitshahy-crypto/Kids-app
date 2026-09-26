@@ -1,9 +1,10 @@
-import { MODULE_COLORS, MODULE_NUMBERS, MODULE_WORDS } from "../brand";
+import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
 import { aboutContent, type AboutFeatureId } from "../content/about";
 import { tint } from "../palette";
 import { ModuleMark } from "./ModuleMark";
 import { colorStages } from "../data/colors";
 import { mathStages } from "../data/math";
+import { timeStages } from "../data/timeMoney";
 import { laterPath, pathStages } from "../data/path";
 import { GrownupIcon, SpeakerIcon, StarIcon } from "./icons";
 
@@ -16,6 +17,7 @@ const tints: Record<AboutFeatureId, string> = {
   rewards: tint.blush,
   math: tint.mint,
   colors: tint.blush,
+  time: tint.sky,
   games: tint.peach,
   classroom: tint.sky,
   grownups: tint.mintCard,
@@ -31,6 +33,7 @@ export function AboutWordNest() {
         <ModuleMark name="words" />
         <ModuleMark name="numbers" />
         <ModuleMark name="colors" />
+        <ModuleMark name="time" />
       </div>
       <p className="about-subtitle">{about.subtitle}</p>
       <p className="about-promo">{about.promo}</p>
@@ -41,7 +44,7 @@ export function AboutWordNest() {
         {about.features.map((feature) => (
           <li key={feature.id} className="about-feature" data-feature={feature.id}>
             <span
-              className={`about-feature-icon${feature.id === "math" || feature.id === "colors" ? " is-mark" : ""}`}
+              className={`about-feature-icon${feature.id === "math" || feature.id === "colors" || feature.id === "time" ? " is-mark" : ""}`}
               style={{ background: tints[feature.id] }}
               aria-hidden="true"
             >
@@ -95,6 +98,18 @@ export function AboutWordNest() {
           </li>
         ))}
       </ol>
+      <h3 className="module-heading">
+        <ModuleMark name="time" />
+        <span>{MODULE_TIME}</span>
+      </h3>
+      <ol className="about-path" data-teach-subject="time">
+        {timeStages.map((stage) => (
+          <li key={stage.id} data-teach={stage.id}>
+            <strong>{stage.title}</strong>
+            <span>{stage.detail}</span>
+          </li>
+        ))}
+      </ol>
 
       <h3>{about.safetyHeading}</h3>
       <p className="about-lead">{about.safety}</p>
@@ -119,6 +134,7 @@ function FeatureIcon({ id }: { id: AboutFeatureId }) {
   if (id === "rewards") return <RewardIcon />;
   if (id === "math") return <ModuleMark name="numbers" className="about-module-mark" />;
   if (id === "colors") return <ModuleMark name="colors" className="about-module-mark" />;
+  if (id === "time") return <ModuleMark name="time" className="about-module-mark" />;
   return <ClassIcon />;
 }
 

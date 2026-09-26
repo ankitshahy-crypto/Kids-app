@@ -24,12 +24,14 @@ import { StickerBook } from "./components/StickerBook";
 import { TeacherView } from "./components/TeacherView";
 import { Games, type GameId } from "./components/Games";
 import { TodayPath } from "./components/TodayPath";
-import { colorTip, gameTip, mathTip, readTip, type ReadTip } from "./content/tips";
+import { colorTip, gameTip, mathTip, readTip, timeTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
 import { MixActivity, NameActivity, PaintActivity } from "./components/ColorPlay";
 import { AddActivity, CountActivity, KnowActivity, MoreActivity, ShapeActivity, TraceActivity } from "./components/MathPlay";
+import { ClockActivity, CoinsActivity, DayActivity, RoutineActivity, ShopActivity } from "./components/TimePlay";
 import { COLORS, colorFill, colorLessonForChild, type ColorStep } from "./data/colors";
 import { MATH, lessonForChild, type MathStep } from "./data/math";
+import { TIME, lessonForChild as timeLessonForChild, type TimeStep } from "./data/timeMoney";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
@@ -43,12 +45,13 @@ import { useSettings } from "./hooks/useSettings";
 import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
-type Course = "reading" | "math" | "colors";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | LessonStep | MathStep | ColorStep | "word" | "my-name";
+type Course = "reading" | "math" | "colors" | "time";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | LessonStep | MathStep | ColorStep | TimeStep | "word" | "my-name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
 const colorScreens: ColorStep[] = ["name", "mix", "paint"];
+const timeScreens: TimeStep[] = ["day", "routine", "clock", "coins", "shop"];
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
@@ -136,6 +139,15 @@ export default function App() {
     return colorLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, colorPlace?.weekIndex);
   }, [active, colorPlace]);
 
+  const timePlace = useMemo(() => {
+    if (!active) return null;
+    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, TIME);
+  }, [active, placement]);
+
+  const timeLesson = useMemo(() => {
+    return timeLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, timePlace?.weekIndex);
+  }, [active, timePlace]);
+
   const introducedLetters = useMemo(() => lettersIntroduced(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
   const ladderStep = active?.ladder.step ?? 1;
   const lessonWords = useMemo(() => blendList(ladderStep, lessonLetters), [ladderStep, lessonLetters]);
@@ -204,7 +216,9 @@ export default function App() {
               ? (active.practiceMs?.[MATH] ?? {})
               : course === "colors"
                 ? (active.practiceMs?.[COLORS] ?? {})
-                : active.readingMs,
+                : course === "time"
+                  ? (active.practiceMs?.[TIME] ?? {})
+                  : active.readingMs,
         }
       : null,
     (id, totals, subject) => {
@@ -264,6 +278,32 @@ export default function App() {
     else setTip(null);
   };
 
+  const finishTime = (step: TimeStep, label: string) => {
+    if (!active) return;
+    const kind = step === "coins" || step === "shop" ? ("coin" as const) : ("time" as const);
+    const learned: StickerInput[] = label ? [{ subject: TIME, kind, label }] : [];
+    const result = giveStar(active.id, step, learned, TIME);
+    if (result.awarded) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduce) setFlying(true);
+      if (result.milestones.length > 0) {
+        setCheer(result.milestones[result.milestones.length - 1] ?? null);
+        playEffect("cheer", settings);
+      } else if (result.lessonComplete) playEffect("celebrate", settings);
+      else playEffect("chime", settings);
+    }
+    setScreen("today");
+    if (settingsRef.current.showTips) setTip(timeTip(step, "end"));
+    else setTip(null);
+  };
+
+  const openTime = (step: TimeStep) => {
+    primeSpeech();
+    setScreen(step);
+    if (settingsRef.current.showTips) setTip(timeTip(step, "start"));
+    else setTip(null);
+  };
+
   const finishLetter = (word: DeckWord) => {
     const learned: StickerInput[] = [
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
@@ -278,6 +318,7 @@ export default function App() {
     lessonScreens.includes(screen as LessonStep) ||
     mathScreens.includes(screen as MathStep) ||
     colorScreens.includes(screen as ColorStep) ||
+    timeScreens.includes(screen as TimeStep) ||
     screen === "word" ||
     screen === "my-name" ||
     screen === "games";
@@ -392,6 +433,8 @@ export default function App() {
                   onMath={openMath}
                   colorLesson={colorLesson}
                   onColor={openColor}
+                  timeLesson={timeLesson}
+                  onTime={openTime}
                   canTraceWord={blendedWords.length > 0}
                   canTraceName={Boolean(traceName)}
                   onTraceWord={() => {
@@ -509,6 +552,26 @@ export default function App() {
                 <NameActivity lesson={colorLesson} settingsRef={settingsRef} onDone={(label) => finishColor("name", label)} />
               ) : null}
               {screen === "mix" ? <MixActivity settingsRef={settingsRef} onDone={(label) => finishColor("mix", label)} /> : null}
+              {screen === "day" ? (
+                <DayActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishTime("day", label)} />
+              ) : null}
+              {screen === "routine" ? (
+                <RoutineActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishTime("routine", label)} />
+              ) : null}
+              {screen === "clock" ? (
+                <ClockActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishTime("clock", label)} />
+              ) : null}
+              {screen === "coins" ? (
+                <CoinsActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishTime("coins", label)} />
+              ) : null}
+              {screen === "shop" ? (
+                <ShopActivity
+                  lesson={timeLesson}
+                  animal={active.animal}
+                  settingsRef={settingsRef}
+                  onDone={(label) => finishTime("shop", label)}
+                />
+              ) : null}
               {screen === "paint" ? (
                 <PaintActivity
                   animal={active.animal}

@@ -13,6 +13,13 @@ import {
   mathIntroduced,
   mathWeekCount,
 } from "./math";
+import {
+  TIME,
+  clampTimeWeek,
+  firstTimeWeekForStage,
+  timeIntroduced,
+  timeWeekCount,
+} from "./timeMoney";
 import { learningPlace, type PathStageId } from "./path";
 import { isReviewDay, letterSchedule, lettersIntroduced, planForWeek, practiceLetters, weekIndex } from "./schedule";
 import { READING, isSubjectKey, readingStages, subjectDefinition, type SubjectId } from "./subject";
@@ -97,6 +104,7 @@ export function emptyPlacement(): PlacementDocument {
       [READING]: emptySubjectPlacement(),
       [MATH]: emptySubjectPlacement(),
       [COLORS]: emptySubjectPlacement(),
+      [TIME]: emptySubjectPlacement(),
     },
   };
 }
@@ -132,6 +140,7 @@ export function firstWeekForStage(stageId: PathStageId): number {
 export function placeForStage(stageId: string, subject: SubjectId = READING): LessonPlace {
   if (subject === MATH) return placeForWeek(firstMathWeekForStage(stageId), MATH);
   if (subject === COLORS) return placeForWeek(firstColorWeekForStage(stageId), COLORS);
+  if (subject === TIME) return placeForWeek(firstTimeWeekForStage(stageId), TIME);
   if (isPathStageId(stageId)) return placeForWeek(firstWeekForStage(stageId), READING);
   return { subject, stageId, weekIndex: 0 };
 }
@@ -139,12 +148,20 @@ export function placeForStage(stageId: string, subject: SubjectId = READING): Le
 function introducedFor(subject: SubjectId, week: number): number {
   if (subject === MATH) return mathIntroduced(week);
   if (subject === COLORS) return colorIntroduced(week);
+  if (subject === TIME) return timeIntroduced(week);
   return lettersIntroduced(week).length;
 }
 
 /** Week chooses the lesson. The stage is the path stage that week sits in. */
 export function placeForWeek(index: number, subject: SubjectId = READING): LessonPlace {
-  const week = subject === MATH ? clampMathWeek(index) : subject === COLORS ? clampColorWeek(index) : clampWeek(index);
+  const week =
+    subject === MATH
+      ? clampMathWeek(index)
+      : subject === COLORS
+        ? clampColorWeek(index)
+        : subject === TIME
+          ? clampTimeWeek(index)
+          : clampWeek(index);
   return {
     subject,
     stageId: learningPlace(subject, introducedFor(subject, week)).currentId,
@@ -163,6 +180,11 @@ export function weekLabel(index: number, subject: SubjectId = READING): string {
     const stageId = learningPlace(COLORS, colorIntroduced(week)).currentId;
     return `Week ${week + 1} · ${stageTitle(stageId, COLORS)}`;
   }
+  if (subject === TIME) {
+    const week = clampTimeWeek(index);
+    const stageId = learningPlace(TIME, timeIntroduced(week)).currentId;
+    return `Week ${week + 1} · ${stageTitle(stageId, TIME)}`;
+  }
   const week = clampWeek(index);
   const plan = letterSchedule[week];
   const letters = plan.newLetters.map((letter) => letter.toUpperCase()).join(" ");
@@ -170,7 +192,8 @@ export function weekLabel(index: number, subject: SubjectId = READING): string {
 }
 
 export function weekChoices(subject: SubjectId = READING): number[] {
-  const count = subject === MATH ? mathWeekCount() : subject === COLORS ? colorWeekCount() : letterSchedule.length;
+  const count =
+    subject === MATH ? mathWeekCount() : subject === COLORS ? colorWeekCount() : subject === TIME ? timeWeekCount() : letterSchedule.length;
   return Array.from({ length: count }, (_, index) => index);
 }
 
@@ -266,6 +289,7 @@ export function parsePlacement(value: unknown): PlacementDocument | null {
   if (!subjects[READING]) subjects[READING] = emptySubjectPlacement();
   if (!subjects[MATH]) subjects[MATH] = emptySubjectPlacement();
   if (!subjects[COLORS]) subjects[COLORS] = emptySubjectPlacement();
+  if (!subjects[TIME]) subjects[TIME] = emptySubjectPlacement();
   return { version: 1, origin, classId, updatedAt, subjects };
 }
 

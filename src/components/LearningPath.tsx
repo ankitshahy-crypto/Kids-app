@@ -1,6 +1,7 @@
 import { ModuleMark, type ModuleMarkName } from "./ModuleMark";
 import { COLORS, colorIntroduced } from "../data/colors";
 import { MATH, mathIntroduced } from "../data/math";
+import { TIME, timeIntroduced } from "../data/timeMoney";
 import { ladderDetail, ladderTitle } from "../data/ladder";
 import { laterPath, learningPlace, placeForChild } from "../data/path";
 import type { ChildProfile } from "../data/profiles";
@@ -27,10 +28,12 @@ export function LearningPath({
         ? learningPlace(MATH, mathIntroduced(weekIndex(profile.createdAt)))
         : subject === COLORS
           ? learningPlace(COLORS, colorIntroduced(weekIndex(profile.createdAt)))
-          : placeForChild(profile.createdAt)
+          : subject === TIME
+            ? learningPlace(TIME, timeIntroduced(weekIndex(profile.createdAt)))
+            : placeForChild(profile.createdAt)
       : learningPlace(subject, placedIntroduced);
   const current = place.stages.find((stage) => stage.state === "current");
-  const mark: ModuleMarkName = subject === MATH ? "numbers" : subject === COLORS ? "colors" : "words";
+  const mark: ModuleMarkName = subject === MATH ? "numbers" : subject === COLORS ? "colors" : subject === TIME ? "time" : "words";
   const ladderStep = profile.ladder?.step ?? 1;
 
   return (

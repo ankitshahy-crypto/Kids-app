@@ -1,8 +1,10 @@
-import { MODULE_COLORS, MODULE_NUMBERS, MODULE_WORDS } from "../brand";
+import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
+import { TimeBoard } from "./TimePlay";
 import { COLORS, type ColorLesson, type ColorStep } from "../data/colors";
 import { MATH, type MathLesson, type MathStep } from "../data/math";
+import { TIME, type TimeLesson, type TimeStep } from "../data/timeMoney";
 import { READING } from "../data/subject";
 import type { PlacementSource } from "../data/placement";
 import { isReviewDay } from "../data/schedule";
@@ -41,6 +43,8 @@ export function TodayPath({
   onMath,
   colorLesson,
   onColor,
+  timeLesson,
+  onTime,
   canTraceWord,
   canTraceName,
   onTraceWord,
@@ -59,12 +63,14 @@ export function TodayPath({
   onStickers: () => void;
   onGames: () => void;
   goalMinutes: number;
-  course: "reading" | "math" | "colors";
-  onCourse: (course: "reading" | "math" | "colors") => void;
+  course: "reading" | "math" | "colors" | "time";
+  onCourse: (course: "reading" | "math" | "colors" | "time") => void;
   mathLesson: MathLesson;
   onMath: (step: MathStep) => void;
   colorLesson: ColorLesson;
   onColor: (step: ColorStep) => void;
+  timeLesson: TimeLesson;
+  onTime: (step: TimeStep) => void;
   canTraceWord: boolean;
   canTraceName: boolean;
   onTraceWord: () => void;
@@ -75,6 +81,7 @@ export function TodayPath({
   const done = dayProgress(profile, now);
   const mathDone = profile.days[todayKey(now)]?.[MATH] ?? {};
   const colorDone = profile.days[todayKey(now)]?.[COLORS] ?? {};
+  const timeDone = profile.days[todayKey(now)]?.[TIME] ?? {};
   const current = stops.find((stop) => !done[stop.id]) ?? stops[stops.length - 1];
   const letter = (letters[0] ?? "a").toUpperCase();
 
@@ -82,10 +89,12 @@ export function TodayPath({
     <div
       className="today"
       data-screen="today"
-      data-subject={course === "math" ? MATH : course === "colors" ? COLORS : READING}
+      data-subject={course === "math" ? MATH : course === "colors" ? COLORS : course === "time" ? TIME : READING}
       data-review={review ? "true" : "false"}
       data-source={placementSource}
-      data-stage={course === "math" ? mathLesson.stageId : course === "colors" ? colorLesson.stageId : stageId}
+      data-stage={
+        course === "math" ? mathLesson.stageId : course === "colors" ? colorLesson.stageId : course === "time" ? timeLesson.stageId : stageId
+      }
       data-week={weekIndex}
       data-letters={letters.join("")}
     >
@@ -152,10 +161,27 @@ export function TodayPath({
             <span>Colors</span>
           </span>
         </button>
+        <button
+          type="button"
+          className={`course-button${course === "time" ? " is-selected" : ""}`}
+          data-course="time"
+          aria-pressed={course === "time"}
+          aria-label={MODULE_TIME}
+          onClick={() => onCourse("time")}
+        >
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="time" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Time & Money</span>
+          </span>
+        </button>
       </div>
 
       {course === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
       {course === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
+      {course === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} /> : null}
 
       {course === "reading" ? <div className="trail">
         <Hills />

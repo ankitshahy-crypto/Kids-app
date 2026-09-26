@@ -1,7 +1,8 @@
-import { MODULE_COLORS, MODULE_NUMBERS, MODULE_WORDS } from "../brand";
+import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
 import { ModuleMark } from "./ModuleMark";
 import { COLORS, colorStages } from "../data/colors";
 import { MATH, mathStages } from "../data/math";
+import { TIME, timeStages } from "../data/timeMoney";
 import { pathStages } from "../data/path";
 import {
   placeForStage,
@@ -165,6 +166,7 @@ export function PlacementControls({
       })}
       <MathPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} />
       <ColorPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} />
+      <TimePlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} />
     </section>
   );
 }
@@ -289,6 +291,70 @@ function ColorPlacement({
             />
             <p className="adult-copy">
               {stageTitle(resolved.stageId, COLORS)}. {resolved.source === "child" ? "Set for this child." : resolved.source === "class" ? "Using the class lesson." : "Following this child's weeks."}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TimePlacement({
+  placement,
+  profiles,
+  onClassPlace,
+  onChildPlace,
+}: {
+  placement: PlacementDocument;
+  profiles: ChildProfile[];
+  onClassPlace: (place: LessonPlace | null) => void;
+  onChildPlace: (childId: string, place: LessonPlace | null) => void;
+}) {
+  const time = placesFor(placement, TIME);
+  return (
+    <div data-subject={TIME}>
+      <h3 className="module-heading">
+        <ModuleMark name="time" />
+        <span>{MODULE_TIME}</span>
+      </h3>
+      <p className="adult-copy">Parts of the day, the clock, coins, and a pretend shop. Saved on this device, the same way as reading.</p>
+      <div
+        data-place="class-time"
+        data-stage={time.classDefault?.stageId ?? "calendar"}
+        data-week={time.classDefault ? String(time.classDefault.weekIndex) : ""}
+      >
+        <PlaceEditor
+          label="Whole class time"
+          place={time.classDefault}
+          clearLabel="Follow the calendar"
+          clearKind="class"
+          subject={TIME}
+          stages={timeStages}
+          onChange={onClassPlace}
+        />
+      </div>
+      {profiles.map((profile) => {
+        const override = time.byChildId[profile.id] ?? null;
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, TIME);
+        return (
+          <div
+            key={profile.id}
+            data-place="child-time"
+            data-child={profile.id}
+            data-stage={override?.stageId ?? "inherit"}
+            data-source={resolved.source}
+          >
+            <PlaceEditor
+              label={`${lessonName(profile)} time`}
+              place={override}
+              clearLabel="Same as class"
+              clearKind="child"
+              subject={TIME}
+              stages={timeStages}
+              onChange={(place) => onChildPlace(profile.id, place)}
+            />
+            <p className="adult-copy">
+              {stageTitle(resolved.stageId, TIME)}. {resolved.source === "child" ? "Set for this child." : resolved.source === "class" ? "Using the class lesson." : "Following this child's weeks."}
             </p>
           </div>
         );
