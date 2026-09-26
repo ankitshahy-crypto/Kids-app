@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { resumeSpeech } from "../audio/player";
-import { starterDeck } from "../data/deck";
+import { starterDeck, type DeckWord } from "../data/deck";
 import { usePlayback } from "../hooks/usePlayback";
 import type { Settings } from "../settings";
 import { Illustration } from "../illustrations";
@@ -11,19 +11,23 @@ import { SoundLabel } from "./SoundLabel";
 export function SoundItOut({
   settingsRef,
   paused,
+  words = starterDeck.words,
+  onFinished,
 }: {
   settingsRef: { current: Settings };
   paused: boolean;
+  words?: DeckWord[];
+  onFinished?: () => void;
 }) {
-  const words = starterDeck.words;
+  const deck = words.length > 0 ? words : starterDeck.words;
   const [index, setIndex] = useState(0);
-  const word = words[index];
-  const { revealed, active, replay, replayLetter } = usePlayback(word, settingsRef, paused);
+  const word = deck[index % deck.length];
+  const { revealed, active, replay, replayLetter } = usePlayback(word, settingsRef, paused, onFinished);
   const gesture = useRef<{ x: number; y: number; interactive: boolean } | null>(null);
 
   const go = (direction: 1 | -1) => {
     resumeSpeech();
-    setIndex((current) => (current + direction + words.length) % words.length);
+    setIndex((current) => (current + direction + deck.length) % deck.length);
   };
 
   return (

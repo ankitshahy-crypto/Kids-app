@@ -9,7 +9,9 @@ Everything visual or audible in Kids App is listed here. There are no analytics 
 | Fredoka Bold (latin, weight 700) | `src/assets/fonts/fredoka-latin-700-normal.woff2` | Same as above | SIL Open Font License 1.1 |
 | Fredoka license | `src/assets/fonts/OFL.txt` | Upstream OFL text from [google/fonts ofl/fredoka](https://github.com/google/fonts/tree/main/ofl/fredoka) | SIL Open Font License 1.1 |
 | Cat, dog, sun, hat, pig, bus, cup, bed, fox, apple | `src/illustrations.tsx` | Original flat drawings made for this project | Original. No third-party artwork. |
-| Gear, speaker, play, and arrow icons | `src/components/icons.tsx` | Original simple SVG icons made for this project | Original. No third-party artwork. |
+| Gear, speaker, play, arrow, star, and review badge icons | `src/components/icons.tsx` | Original simple SVG icons made for this project | Original. No third-party artwork. |
+| Profile animals: cat, dog, fox, bear, bunny, owl, frog, duck | `src/avatars.tsx` | Original flat animal portraits made for this project | Original. No third-party artwork. |
+| Draw and color placeholder marks | `src/components/PlaceholderStep.tsx` | Original simple shapes made for this project | Original. No third-party artwork. |
 | Blob background, tiles, buttons | `src/index.css` | Original styling made for this project | Original. |
 | Browser tab icon | `public/favicon.svg` | Original simple apple mark made for this project | Original. |
 | iOS app icon | `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png` | Original apple drawn for this project (flat shapes, not a third-party logo) | Original. |

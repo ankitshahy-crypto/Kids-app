@@ -14,12 +14,15 @@ export function usePlayback(
   word: DeckWord,
   settingsRef: { current: Settings },
   paused: boolean,
+  onFinished?: () => void,
 ) {
   const [revealed, setRevealed] = useState(0);
   const [active, setActive] = useState<ActiveLetter>(null);
   const abortRef = useRef<AbortController | null>(null);
   const wordRef = useRef(word);
   wordRef.current = word;
+  const onFinishedRef = useRef(onFinished);
+  onFinishedRef.current = onFinished;
 
   const begin = useCallback((cancel = true) => {
     abortRef.current?.abort();
@@ -59,6 +62,7 @@ export function usePlayback(
         }
         if (signal.aborted) return;
         setActive(null);
+        onFinishedRef.current?.();
       } catch (error) {
         if (!isAbortError(error)) setActive(null);
       }

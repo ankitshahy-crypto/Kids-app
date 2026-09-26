@@ -1,10 +1,12 @@
 # Kids App
 
-A calm, offline phonics app for young children (about ages 2–6). The first activity is **Sound it out**.
+A calm, offline reading-practice app for ages 3–5 first (and phonics as children grow toward 6–7). The child is the hero. It is reading practice, not therapy. The product direction lives in `docs/PRODUCT.md`.
+
+The first activity inside Today's lesson is **Sound it out**.
 
 A picture sits in a big rounded card for about a second. The word then builds one letter at a time: each tile glows, and that letter's sound plays (a phonics sound such as /k/, not the letter name "see"). After the last letter, every tile highlights and the whole word is spoken. Tap a tile to hear that sound again, tap **Play sound** to replay the word, or use the arrows (or swipe) to change words.
 
-There are no ads, scores, timers, accounts, or network calls. Speech and pictures stay on the device.
+There are no ads, scores, timers, accounts, or network calls. Speech, pictures, and profiles stay on the device. The planned price is $0.99 once, with everything unlocked. No store code is in the app yet.
 
 ## Run in a browser
 
@@ -15,7 +17,15 @@ npm run dev
 
 Open the address Vite prints. The layout is a portrait phone screen, centered on a wide window.
 
-The first screen is a large **Tap to start** button. Phones (and some browsers) will not speak until there has been a tap.
+Phones (and some browsers) will not speak until there has been a tap. Choosing a child, or opening the letter game, is that tap.
+
+## Today
+
+A grown-up holds the gear for about 2 seconds, then adds a child: a first name or a single initial, an age range (3, 4, 5, or 6–7), and one of eight animals. The animal is the profile and the story hero. A single initial uses the animal's name in lessons. The app never asks for a last name, birthdate, or school.
+
+The child picks a profile from the big animal buttons, then sees **Today**: letters, draw, story, and a color moment. Letters opens Sound it out, using this week's letters when those words exist. The other three steps are marked **Soon** and can be marked done so the path and stars work. Each finished step adds one effort star for that day. Stars are not removed.
+
+The letter plan is 1–2 new letters a week, plus review. Friday is review day: a badge on Today, and a short note in the grown-up screen.
 
 ## Run on an iPhone
 
@@ -41,7 +51,7 @@ The installed app does not need a network connection. Everything it shows and sp
 
 ## Parent settings
 
-The gear in the top corner opens only after a press-and-hold of about 2 seconds (a ring fills while you hold). Settings can turn sound off and switch speech between slow and slower. The choice is stored in `localStorage` on that device.
+The gear in the top corner opens only after a press-and-hold of about 2 seconds (a ring fills while you hold). Grown-ups can add or remove a child, read the week's letters and stars, turn sound off, and switch speech between slow and slower. Profiles and settings stay in `localStorage` on that device.
 
 ## Add words later
 
@@ -49,7 +59,7 @@ Decks live in `src/data/deck.ts`. A word has letters, a phoneme key for each let
 
 ## Audio limits
 
-Sounds use the browser **Web Speech API**. It cannot make a pure phoneme, so stops are short approximations (`buh`, `kuh`) and vowels are near-misses (`aah` for short a). The same spelling can be a different sound in a longer word: apple's second **p** repeats /p/, and the final **e** is a soft "uh". The **x** in fox is approximated as "kss". Voices differ by phone, and the iPhone silent switch mutes speech. This is a first version, not speech-therapy audio.
+Sounds use the browser **Web Speech API**. It cannot make a pure phoneme, so stops are short approximations (`buh`, `kuh`) and vowels are near-misses (`aah` for short a). The same spelling can be a different sound in a longer word: apple's second **p** repeats /p/, and the final **e** is a soft "uh". The **x** in fox is approximated as "kss". Voices differ by phone, and the iPhone silent switch mutes speech. This is a first version of the letter sounds.
 
 ## Privacy
 
