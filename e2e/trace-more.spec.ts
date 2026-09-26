@@ -28,7 +28,7 @@ async function openToday(page: Page) {
   if (await hint.count()) await hint.click();
 }
 
-test("tracing a blended word plays the word and keeps the name on this device", async ({ page }) => {
+test("tracing a blended word plays the word and keeps the name on this device", async ({ page }, testInfo) => {
   const requested: string[] = [];
   page.on("request", (request) => requested.push(request.url()));
   await openToday(page);
@@ -37,6 +37,9 @@ test("tracing a blended word plays the word and keeps the name on this device", 
   await expect(word).toHaveAttribute("data-word", "cat");
   await word.getByRole("button", { name: "Your turn" }).click();
   await scribbleCorner(page, "word");
+  if (testInfo.project.name === "chromium") {
+    await page.screenshot({ path: "/opt/cursor/artifacts/word_trace_board.png" });
+  }
   await finishPathTrace(page, "word");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
   expect(requested.join(" ")).not.toMatch(/mia/i);
@@ -47,15 +50,15 @@ test("tracing the child's name uses the profile and does not send the name", asy
   page.on("request", (request) => requested.push(request.url()));
   await openToday(page);
   await page.getByRole("button", { name: "Trace my name" }).click();
-  const name = page.locator("[data-screen=name]");
+  const name = page.locator("[data-screen=my-name]");
   await expect(name).toHaveAttribute("data-name", "Mia");
   await expect(name.locator("[data-glyph-label=M]")).toHaveAttribute("data-current", "true");
   await name.getByRole("button", { name: "Your turn" }).click();
-  await scribbleCorner(page, "name");
+  await scribbleCorner(page, "my-name");
   if (testInfo.project.name === "chromium") {
     await page.screenshot({ path: "/opt/cursor/artifacts/name_trace_board.png" });
   }
-  await finishPathTrace(page, "name");
+  await finishPathTrace(page, "my-name");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "Stickers" }).click();
   await expect(page.locator("[data-sticker=mia][data-kind=word]")).toBeVisible();
