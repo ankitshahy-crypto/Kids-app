@@ -67,7 +67,7 @@ test("arrows take the animal home, then a plan can be tried again", async ({ pag
   await board.locator("[data-go=run]").click();
   await expect(board).toHaveAttribute("data-again", "true");
   await expect(board).toHaveAttribute("data-home", "false");
-  await board.locator("[data-queued=0]").click();
+  await board.locator('[data-queued="0"]').click();
   await runPath(board);
   await board.locator("[data-finish=bird]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
