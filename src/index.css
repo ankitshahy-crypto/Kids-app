@@ -6265,6 +6265,11 @@ input.is-pressed,
 }
 
 @media (max-width: 767px) {
+  .course-button {
+    min-height: 64px;
+    height: 64px;
+  }
+
   .math-activity {
     min-height: 76px;
   }

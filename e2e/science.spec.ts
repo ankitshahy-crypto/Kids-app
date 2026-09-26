@@ -232,15 +232,15 @@ test("the home dock stays on screen with Science", async ({ page }, testInfo) =>
   await install(page);
   for (const course of ["reading", "math", "colors", "time", "build", "science"]) {
     await page.locator(`[data-course=${course}]`).click();
-    const bottom = await page.locator(".today-dock").evaluate((el) => el.getBoundingClientRect().bottom);
+    const bottom = await page.locator("[data-dock=nest]").evaluate((el) => el.getBoundingClientRect().bottom);
     const height = page.viewportSize()?.height ?? 0;
-    expect(bottom).toBeLessThanOrEqual(height - 2);
+    expect(bottom, course).toBeLessThanOrEqual(height - 2);
   }
   await install(page, older);
   await page.locator("[data-course=science]").click();
-  const bottom = await page.locator(".today-dock").evaluate((el) => el.getBoundingClientRect().bottom);
+  const bottom = await page.locator("[data-dock=nest]").evaluate((el) => el.getBoundingClientRect().bottom);
   const height = page.viewportSize()?.height ?? 0;
-  expect(bottom).toBeLessThanOrEqual(height - 2);
+  expect(bottom, "science later").toBeLessThanOrEqual(height - 2);
   const dock = await page.locator(".today-dock").boundingBox();
   const menu = await page.locator("[data-science=menu]").boundingBox();
   expect(overlaps(menu, dock)).toBe(false);
