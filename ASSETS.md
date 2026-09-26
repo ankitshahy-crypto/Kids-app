@@ -1,6 +1,6 @@
 # Asset provenance
 
-Everything visual or audible in Kids App is listed here. There are no analytics scripts, font CDNs, stock photos, or audio files downloaded at runtime.
+Everything visual or audible in WordNest is listed here. There are no analytics scripts, font CDNs, stock photos, or audio files downloaded at runtime.
 
 | Asset | Path | Source | License |
 | --- | --- | --- | --- |
@@ -13,9 +13,10 @@ Everything visual or audible in Kids App is listed here. There are no analytics 
 | Profile animals: cat, dog, fox, bear, bunny, owl, frog, duck | `src/avatars.tsx` | Original flat animal portraits made for this project | Original. No third-party artwork. |
 | Draw and color placeholder marks | `src/components/PlaceholderStep.tsx` | Original simple shapes made for this project | Original. No third-party artwork. |
 | Blob background, tiles, buttons | `src/index.css` | Original styling made for this project | Original. |
-| Browser tab icon | `public/favicon.svg` | Original simple apple mark made for this project | Original. |
-| iOS app icon | `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png` | Original apple drawn for this project (flat shapes, not a third-party logo) | Original. |
-| iOS launch image | `ios/App/App/Assets.xcassets/Splash.imageset/` | Same original apple on a cream field | Original. |
+| WordNest nest logo | `src/assets/nest-logo.svg` | Original pastel nest with a small animal peeking out, drawn for this project | Original. No third-party artwork. |
+| Browser tab icon | `public/favicon.svg` | Same original nest logo on a cream field | Original. |
+| iOS app icon | `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png` | Same original nest logo on a cream field | Original. |
+| iOS launch image | `ios/App/App/Assets.xcassets/Splash.imageset/` | Same original nest logo on a cream field | Original. |
 | Letter and word audio | none shipped | Device Web Speech API (`speechSynthesis`). No audio files are bundled. | Not an asset. System voice, varies by phone. |
 
 Fredoka's Latin letters were designed by Milena Brandão. The project is led by Ben Nathan. Copyright 2016 The Fredoka Project Authors. The full license is in `src/assets/fonts/OFL.txt`. The font files are unmodified subset builds (not renamed, not redrawn).

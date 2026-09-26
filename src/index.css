@@ -1024,7 +1024,7 @@ button:focus-visible {
   width: min(52vw, 200px);
 }
 
-.mode-art .art {
+.mode-art .nest-logo {
   width: 100%;
   height: auto;
   display: block;

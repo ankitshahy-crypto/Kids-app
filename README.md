@@ -1,6 +1,6 @@
-# Kids App
+# WordNest
 
-A calm, offline reading-practice app for ages 3–5 first (and phonics as children grow toward 6–7). The child is the hero. It is reading practice, not therapy. The product direction lives in `docs/PRODUCT.md`.
+WordNest is a TriageDesk product: a calm, offline reading-practice app for ages 3–5 first (and phonics as children grow toward 6–7). The child is the hero. It is reading practice, not therapy. The product direction lives in `docs/PRODUCT.md`.
 
 The first activity inside Today's lesson is **Sound it out**.
 
@@ -37,7 +37,7 @@ Teacher opens a classroom placeholder: more than one class, a roster that shows 
 
 ## Run on an iPhone
 
-The native project is the `ios/` folder (app id `com.fsdvibe.kidsapp`, display name Kids App). It is portrait-only. From a Mac with Xcode:
+The native project is the `ios/` folder (app id `com.triagedesk.wordnest`, display name WordNest). It is portrait-only. From a Mac with Xcode:
 
 ```bash
 git clone <this-repo>

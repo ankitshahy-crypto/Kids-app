@@ -1,10 +1,10 @@
-# Kids App product spec
+# WordNest product spec
 
 This document is the product direction for every later step. Build only what the current step calls for, and keep later steps compatible with the rules here.
 
 ## What it is
 
-A pre-reading and early-reading app. Ages 3–5 come first. It grows into phonics for ages 5–7.
+WordNest is a TriageDesk product. It is a pre-reading and early-reading app. Ages 3–5 come first. It grows into phonics for ages 5–7.
 
 Reading is the only subject. The child is the hero of the stories.
 

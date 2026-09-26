@@ -1,4 +1,4 @@
-import { Illustration } from "../illustrations";
+import nestLogo from "../assets/nest-logo.svg";
 import { HoldButton } from "./HoldButton";
 
 export function StartScreen({
@@ -12,8 +12,8 @@ export function StartScreen({
 }) {
   return (
     <div className="mode-switch" data-screen="start">
-      <div className="mode-art" aria-hidden="true">
-        <Illustration name="apple" />
+      <div className="mode-art">
+        <img className="nest-logo" src={nestLogo} alt="WordNest" />
       </div>
       <button type="button" className="kid-enter" onClick={onKid}>
         Kid

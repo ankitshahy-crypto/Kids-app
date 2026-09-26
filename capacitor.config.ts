@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.fsdvibe.kidsapp",
-  appName: "Kids App",
+  appId: "com.triagedesk.wordnest",
+  appName: "WordNest",
   webDir: "dist",
   backgroundColor: "#fbf6ee",
   ios: {
