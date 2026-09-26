@@ -1,6 +1,6 @@
 import { useState } from "react";
-import nestLogo from "../assets/nest-logo.svg";
 import { TAGLINE } from "../brand";
+import { ModuleMark } from "./ModuleMark";
 import { face } from "../palette";
 import type { AnimalId } from "../data/animals";
 import { lessonName, type ChildProfile } from "../data/profiles";
@@ -33,7 +33,7 @@ export function StartScreen({
   return (
     <div className="mode-switch" data-screen="start">
       <div className="mode-art">
-        <img className="nest-logo" src={nestLogo} alt="" />
+        <ModuleMark name="app" className="nest-logo" />
       </div>
       <h1 className="wordmark">
         <span className="wordmark-nest">LittleNest</span>

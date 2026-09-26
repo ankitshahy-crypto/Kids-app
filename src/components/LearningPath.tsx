@@ -1,6 +1,7 @@
 import { laterPath, learningPlace, placeForChild } from "../data/path";
 import type { ChildProfile } from "../data/profiles";
 import { READING } from "../data/subject";
+import { ModuleMark } from "./ModuleMark";
 
 export function LearningPath({
   profile,
@@ -17,7 +18,10 @@ export function LearningPath({
 
   return (
     <section className="learn-path" data-section="path" data-subject={place.subject} data-current-stage={place.currentId}>
-      <h2>Learning path{name ? ` · ${name}` : ""}</h2>
+      <h2 className="module-heading">
+        <ModuleMark name="words" />
+        <span>Learning path{name ? ` · ${name}` : ""}</span>
+      </h2>
       <ol className="path-stages">
         {place.stages.map((stage) => (
           <li key={stage.id} data-stage={stage.id} data-state={stage.state}>

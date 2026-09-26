@@ -1305,6 +1305,7 @@ button:focus-visible {
   width: 100%;
   height: auto;
   display: block;
+  border-radius: 22%;
 }
 
 .kid-enter {
@@ -1668,6 +1669,22 @@ button:focus-visible {
 .today-avatar .avatar-art {
   width: 56px;
   height: 56px;
+}
+
+.today-module {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  align-self: flex-start;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.today-module .module-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
 }
 
 .today-review {
@@ -3599,6 +3616,33 @@ button:focus-visible {
 .learn-path h2 {
   margin: 0 0 8px;
   font-size: 18px;
+}
+
+.module-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.module-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: block;
+  object-fit: cover;
+}
+
+.about-modules {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 4px 0 8px;
+}
+
+.about-modules .module-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
 }
 
 .path-stages,

@@ -5,6 +5,7 @@ import { dayProgress, todayKey, type ChildProfile, type LessonStep } from "../da
 import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
 import { StarIcon } from "./icons";
+import { ModuleMark } from "./ModuleMark";
 import { BookMark, EggNest, Hills, PencilMark, ShapesMark, ToyBox } from "./sceneArt";
 
 const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
@@ -71,6 +72,11 @@ export function TodayPath({
         </div>
       </div>
       {review ? <p className="today-review">Review</p> : null}
+
+      <p className="today-module">
+        <ModuleMark name="words" />
+        <span>Words</span>
+      </p>
 
       <div className="trail">
         <Hills />
