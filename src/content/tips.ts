@@ -140,6 +140,10 @@ const gameTips: Record<string, { start: string; end: string }> = {
     start: "Rain grows the flower. Sun melts the ice. The other picture asks them to try again.",
     end: "Ask: what else happens when it rains?",
   },
+  build: {
+    start: "They stack picture blocks and press Play. Their animal, a song, the weather, or a sandwich follows the stack. A mixed-up sandwich is silly, then they try again. Ages 5 to 7 can repeat, splash at the pond, and save on this device.",
+    end: "Ask: what should happen next in the program?",
+  },
 };
 
 /** A short grown-up line for a game. */

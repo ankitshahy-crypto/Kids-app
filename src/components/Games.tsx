@@ -22,9 +22,10 @@ import { wordsForStep, type LadderStep } from "../data/ladder";
 import type { ChildProfile, StickerInput } from "../data/profiles";
 import { Hero } from "./Hero";
 import { SpinSay } from "./SpinSay";
+import { BuildIt } from "./BuildIt";
 import { ThinkGame } from "./ThinkCode";
 
-export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory" | "spin" | "bird" | "pattern" | "morning" | "garden";
+export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory" | "spin" | "bird" | "pattern" | "morning" | "garden" | "build";
 
 const tiles: { id: GameId; label: string }[] = [
   { id: "hatch", label: "Hatch the Egg" },
@@ -88,6 +89,13 @@ export function Games({
                 <span>{tile.label}</span>
               </button>
             ))}
+          </div>
+          <h2 className="game-section">Build It</h2>
+          <div className="game-tiles">
+            <button type="button" className="game-tile" data-game-tile="build" onClick={() => open("build")}>
+              <TileArt id="build" />
+              <span>Build It</span>
+            </button>
           </div>
         </div>
       ) : (
@@ -163,6 +171,16 @@ export function Games({
             onDone(game, []);
             setGame("home");
           }}
+        />
+      ) : null}
+      {game === "build" ? (
+        <BuildIt
+          childId={profile.id}
+          ageRange={profile.ageRange}
+          animal={profile.animal}
+          outfit={profile.outfit}
+          settingsRef={settingsRef}
+          onDone={(step) => onDone("build", [], { step })}
         />
       ) : null}
       {game === "spin" ? (
@@ -791,6 +809,15 @@ function TileArt({ id }: { id: GameId }) {
         <circle cx="40" cy="32" r="8" fill="#F6D56B" />
         <circle cx="28" cy="38" r="8" fill="#F4A4B4" />
         <circle cx="52" cy="38" r="8" fill="#F4A4B4" />
+      </svg>
+    );
+  }
+  if (id === "build") {
+    return (
+      <svg viewBox="0 0 80 80" aria-hidden="true">
+        <rect x="14" y="18" width="22" height="16" rx="4" fill="#F6D56B" />
+        <rect x="40" y="18" width="22" height="16" rx="4" fill="#B7D7F2" />
+        <rect x="27" y="40" width="22" height="16" rx="4" fill="#F4A4B4" />
       </svg>
     );
   }
