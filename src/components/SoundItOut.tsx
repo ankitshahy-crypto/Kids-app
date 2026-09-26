@@ -1,11 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { unlockAudio } from "../audio/manager";
 import { resumeSpeech } from "../audio/player";
+import type { AnimalId } from "../data/animals";
 import { starterDeck, type DeckWord } from "../data/deck";
 import { usePlayback } from "../hooks/usePlayback";
 import type { Settings } from "../settings";
+import { Avatar } from "../avatars";
 import { Illustration } from "../illustrations";
-import { Chevron, SpeakerIcon } from "./icons";
+import { Chevron, SpeakerIcon, StarIcon } from "./icons";
 import { PictureCard } from "./PictureCard";
 import { SoundLabel } from "./SoundLabel";
 
@@ -13,43 +15,172 @@ export function SoundItOut({
   settingsRef,
   paused,
   words = starterDeck.words,
+  animal = null,
   onFinished,
 }: {
   settingsRef: { current: Settings };
   paused: boolean;
   words?: DeckWord[];
+  animal?: AnimalId | null;
   onFinished?: () => void;
 }) {
   const deck = words.length > 0 ? words : starterDeck.words;
   const [index, setIndex] = useState(0);
   const word = deck[index % deck.length];
-  const { revealed, active, replay, replayLetter } = usePlayback(word, settingsRef, paused, onFinished);
+  const { revealed, active, replay, soundLetter, soundWord } = usePlayback(word, settingsRef, paused, onFinished);
+  const [lit, setLit] = useState<boolean[]>(() => word.letters.map(() => false));
+  const [litOrder, setLitOrder] = useState<number[]>([]);
+  const [blended, setBlended] = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
+  const [progress, setProgress] = useState(0.06);
+  const [dragging, setDragging] = useState(false);
   const gesture = useRef<{ x: number; y: number; interactive: boolean } | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const tileRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const draggingRef = useRef(false);
+  const sounded = useRef(new Set<number>());
+  const blendedPass = useRef(false);
+  const rewarded = useRef(false);
   const touchHandled = useRef(false);
 
-  const tapLetter = (letterIndex: number) => {
-    unlockAudio();
-    resumeSpeech();
-    replayLetter(letterIndex);
-  };
+  useEffect(() => {
+    sounded.current = new Set();
+    blendedPass.current = false;
+    rewarded.current = false;
+    setLit(word.letters.map(() => false));
+    setLitOrder([]);
+    setBlended(false);
+    setCelebrating(false);
+    setProgress(0.06);
+  }, [word]);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const block = (event: TouchEvent) => {
+      if (draggingRef.current) event.preventDefault();
+    };
+    track.addEventListener("touchmove", block, { passive: false });
+    return () => track.removeEventListener("touchmove", block);
+  }, [word]);
 
   const go = (direction: 1 | -1) => {
     resumeSpeech();
     setIndex((current) => (current + direction + deck.length) % deck.length);
   };
 
+  const light = (indexes: number[]) => {
+    const fresh = indexes.filter((item) => !sounded.current.has(item));
+    if (fresh.length === 0) return;
+    fresh.forEach((item) => sounded.current.add(item));
+    setLit((current) => {
+      const next = current.slice();
+      fresh.forEach((item) => {
+        next[item] = true;
+      });
+      return next;
+    });
+    setLitOrder((current) => {
+      const next = current.slice();
+      fresh.forEach((item) => {
+        if (!next.includes(item)) next.push(item);
+      });
+      return next;
+    });
+    fresh.forEach((item) => soundLetter(item));
+  };
+
+  const tilesCrossed = (fromX: number, toX: number) => {
+    const left = Math.min(fromX, toX);
+    const right = Math.max(fromX, toX);
+    const hits: number[] = [];
+    tileRefs.current.forEach((element, tileIndex) => {
+      if (!element) return;
+      const rect = element.getBoundingClientRect();
+      const center = rect.left + rect.width / 2;
+      const inside = toX >= rect.left && toX <= rect.right;
+      if ((center >= left && center <= right) || inside) hits.push(tileIndex);
+    });
+    const movingRight = toX >= fromX;
+    return hits.sort((a, b) => (movingRight ? a - b : b - a));
+  };
+
+  const moveToken = (clientX: number, fromX: number) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const clamped = Math.min(rect.right - 8, Math.max(rect.left + 8, clientX));
+    setProgress((clamped - rect.left) / rect.width);
+    light(tilesCrossed(fromX, clientX));
+    const allSounded = word.letters.every((_, tileIndex) => sounded.current.has(tileIndex));
+    if (clientX >= rect.right - 28 && allSounded && !blendedPass.current) {
+      blendedPass.current = true;
+      setBlended(true);
+      setCelebrating(true);
+      window.setTimeout(() => setCelebrating(false), 900);
+      soundWord();
+      if (!rewarded.current) {
+        rewarded.current = true;
+        onFinished?.();
+      }
+    }
+  };
+
+  const onTrackDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const track = event.currentTarget;
+    try {
+      track.setPointerCapture(event.pointerId);
+    } catch {
+      // The pointer can end before capture if the browser cancels the gesture.
+    }
+    draggingRef.current = true;
+    setDragging(true);
+    sounded.current = new Set();
+    blendedPass.current = false;
+    unlockAudio();
+    resumeSpeech();
+    moveToken(event.clientX, event.clientX);
+  };
+
+  const onTrackMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return;
+    event.preventDefault();
+    const previous = Number(trackRef.current?.dataset.lastX ?? event.clientX);
+    if (trackRef.current) trackRef.current.dataset.lastX = String(event.clientX);
+    moveToken(event.clientX, previous);
+  };
+
+  const onTrackUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    draggingRef.current = false;
+    setDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const tapLetter = (letterIndex: number) => {
+    if (!lit[letterIndex] && letterIndex >= revealed && active !== "all") return;
+    unlockAudio();
+    resumeSpeech();
+    soundLetter(letterIndex);
+  };
+
   return (
     <div
       className="activity"
       data-word={word.id}
-      data-revealed={revealed}
+      data-revealed={Math.max(revealed, lit.filter(Boolean).length)}
       data-active={active === null ? "" : String(active)}
+      data-blended={blended ? "true" : "false"}
       onPointerDown={(event) => {
         const target = event.target as HTMLElement;
         gesture.current = {
           x: event.clientX,
           y: event.clientY,
-          interactive: Boolean(target.closest("button")),
+          interactive: Boolean(target.closest("button, .blend-track")),
         };
       }}
       onPointerUp={(event) => {
@@ -73,40 +204,74 @@ export function SoundItOut({
         )}
       </PictureCard>
       <SoundLabel />
-      <div className="letters" role="group" aria-label={word.word}>
-        {word.letters.map((letter, letterIndex) => {
-          const highlighted = active === "all" || active === letterIndex;
-          const sounding = active === letterIndex;
-          return (
-            <div
-              key={`${word.id}-${letterIndex}`}
-              className={`tile-wrap${highlighted ? " is-active" : ""}`}
-              data-letter={letterIndex}
-            >
-              {sounding ? <SoundWaves /> : null}
-              <button
-                type="button"
-                className="tile"
-                aria-label={`${letter.char.toUpperCase()} sound`}
-                onPointerDown={(event) => event.stopPropagation()}
-                onPointerUp={(event) => {
-                  if (event.pointerType === "mouse") return;
-                  touchHandled.current = true;
-                  tapLetter(letterIndex);
+      <div className={`blend${celebrating ? " is-celebrating" : ""}${dragging ? " is-dragging" : ""}`} data-lit-order={litOrder.join(",")}>
+        <div className="letters" role="group" aria-label={word.word}>
+          {word.letters.map((letter, letterIndex) => {
+            const shown = lit[letterIndex] || letterIndex < revealed || active === "all";
+            const highlighted = shown && (active === "all" || active === letterIndex);
+            const sounding = active === letterIndex;
+            return (
+              <div
+                key={`${word.id}-${letterIndex}`}
+                ref={(element) => {
+                  tileRefs.current[letterIndex] = element;
                 }}
-                onClick={() => {
-                  if (touchHandled.current) {
-                    touchHandled.current = false;
-                    return;
-                  }
-                  tapLetter(letterIndex);
-                }}
+                className={`tile-wrap${shown ? " is-lit" : " is-dim"}${highlighted ? " is-active" : ""}`}
+                data-letter={letterIndex}
+                data-lit={shown ? "true" : "false"}
               >
-                {letter.char.toUpperCase()}
-              </button>
-            </div>
-          );
-        })}
+                {sounding ? <SoundWaves /> : null}
+                <button
+                  type="button"
+                  className="tile"
+                  disabled={!shown}
+                  aria-label={`${letter.char.toUpperCase()} sound`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onPointerUp={(event) => {
+                    if (event.pointerType === "mouse" || !shown) return;
+                    touchHandled.current = true;
+                    tapLetter(letterIndex);
+                  }}
+                  onClick={() => {
+                    if (touchHandled.current) {
+                      touchHandled.current = false;
+                      return;
+                    }
+                    tapLetter(letterIndex);
+                  }}
+                >
+                  {shown ? letter.char.toUpperCase() : <span className="tile-mark" />}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        <div
+          ref={trackRef}
+          className="blend-track"
+          role="slider"
+          aria-label="Drag across the letters"
+          aria-valuemin={0}
+          aria-valuemax={word.letters.length}
+          aria-valuenow={lit.filter(Boolean).length}
+          aria-valuetext={blended ? word.word : "Drag from left to right"}
+          style={{ touchAction: "none" }}
+          onPointerDown={(event) => {
+            if (trackRef.current) trackRef.current.dataset.lastX = String(event.clientX);
+            onTrackDown(event);
+          }}
+          onPointerMove={onTrackMove}
+          onPointerUp={onTrackUp}
+          onPointerCancel={onTrackUp}
+        >
+          <svg className="blend-arrow" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+            <line x1="2" y1="12" x2="90" y2="12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            <path d="M86 5 L97 12 L86 19" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+          <div className="blend-token" style={{ left: `${progress * 100}%` }} data-blend-token>
+            {animal ? <Avatar animal={animal} /> : <StarIcon />}
+          </div>
+        </div>
       </div>
       <div className="controls">
         <button type="button" className="nav-button" aria-label="Previous word" onClick={() => go(-1)}>
@@ -116,6 +281,7 @@ export function SoundItOut({
           type="button"
           className="play-button"
           onClick={() => {
+            unlockAudio();
             resumeSpeech();
             replay();
           }}

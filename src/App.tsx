@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
 import { primeSpeech, resumeSpeech } from "./audio/player";
-import { spokenLine } from "./data/audioCatalog";
 import { Background } from "./components/Background";
 import { Chevron } from "./components/icons";
 import { KidCorner } from "./components/KidCorner";
@@ -82,12 +81,7 @@ export default function App() {
   }, [active]);
 
   const openStep = (step: LessonStep) => {
-    if (step === "letter") {
-      const letter = lessonWords[0]?.letters[0];
-      primeSpeech(letter ? spokenLine("letters", letter.phoneme, letter.char) : undefined);
-    } else {
-      primeSpeech();
-    }
+    primeSpeech();
     setScreen(step);
   };
 
@@ -155,6 +149,7 @@ export default function App() {
                   settingsRef={settingsRef}
                   paused={false}
                   words={lessonWords}
+                  animal={active.animal}
                   onFinished={() => reward("letter")}
                 />
               ) : null}

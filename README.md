@@ -4,7 +4,7 @@ WordNest is a TriageDesk product: a calm, offline reading-practice app for ages 
 
 The first activity inside Today's lesson is **Sound it out**.
 
-A picture sits in a big rounded card for about a second. The word then builds one letter at a time: each tile glows, and that letter's sound plays from a recorded clip when one is bundled. Until a person records it, the phone says an example phrase such as "b, as in ball" rather than a bare syllable. After the last letter, every tile highlights and the whole word is spoken. Tap a tile to hear that sound again, tap **Play sound** to replay the word, or use the arrows (or swipe) to change words.
+The word starts as dim letter tiles with a track underneath. The child drags their animal along the track. Each letter lights up and plays once as the drag passes it, then the whole word plays at the end and stays lit. A lit letter can still be tapped to hear it again. **Play sound** replays the word, and the arrows (or a swipe) change words. Until a person records a clip, the phone says an example phrase such as "b, as in ball" rather than a bare syllable.
 
 There are no ads, scores, timers, accounts, or network calls. Speech, pictures, and profiles stay on the device. Schools will license the app later; there is no payment code yet.
 

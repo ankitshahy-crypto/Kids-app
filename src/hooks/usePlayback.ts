@@ -17,7 +17,7 @@ export function usePlayback(
   paused: boolean,
   onFinished?: () => void,
 ) {
-  const [revealed, setRevealed] = useState(() => word.letters.length);
+  const [revealed, setRevealed] = useState(0);
   const [active, setActive] = useState<ActiveLetter>(null);
   const abortRef = useRef<AbortController | null>(null);
   const tokenRef = useRef(0);
@@ -46,14 +46,14 @@ export function usePlayback(
       const current = wordRef.current;
       const live = () => token === tokenRef.current && !signal.aborted;
       if (live()) {
-        setRevealed(current.letters.length);
+        setRevealed(0);
         setActive(null);
       }
       try {
         await sleep(hasFreshPrimedSpeech() ? 280 : PICTURE_BEAT_MS, signal);
         for (let index = 0; index < current.letters.length; index += 1) {
           if (!live()) return;
-          setRevealed(current.letters.length);
+          setRevealed(index + 1);
           setActive(index);
           playEffect("pop", settingsRef.current);
           const started = Date.now();
@@ -85,13 +85,10 @@ export function usePlayback(
   );
 
   useEffect(() => {
-    const run = begin(false);
-    void playThrough(run);
-    return () => {
-      run.controller.abort();
-      cancelSpeech();
-    };
-  }, [word, begin, playThrough]);
+    setRevealed(0);
+    setActive(null);
+    abortRef.current?.abort();
+  }, [word]);
 
   useEffect(() => {
     if (!paused) return;
@@ -105,11 +102,45 @@ export function usePlayback(
     void playThrough(run);
   }, [begin, playThrough]);
 
+  const soundLetter = useCallback(
+    (index: number) => {
+      const current = wordRef.current;
+      const letter = current.letters[index];
+      if (!letter) return;
+      const { controller, token } = begin();
+      setActive(index);
+      playEffect("pop", settingsRef.current);
+      void (async () => {
+        try {
+          await playLetter(letter, settingsRef.current, controller.signal);
+          if (token === tokenRef.current && !controller.signal.aborted) setActive(null);
+        } catch (error) {
+          if (!isAbortError(error) && token === tokenRef.current) setActive(null);
+        }
+      })();
+    },
+    [begin, settingsRef],
+  );
+
+  const soundWord = useCallback(() => {
+    const current = wordRef.current;
+    const { controller, token } = begin();
+    setActive("all");
+    playEffect("celebrate", settingsRef.current);
+    void (async () => {
+      try {
+        await playWord(current, settingsRef.current, controller.signal);
+        if (token === tokenRef.current && !controller.signal.aborted) setActive(null);
+      } catch (error) {
+        if (!isAbortError(error) && token === tokenRef.current) setActive(null);
+      }
+    })();
+  }, [begin, settingsRef]);
+
   const replayLetter = useCallback(
     (index: number) => {
       const current = wordRef.current;
       const { controller, token } = begin();
-      setRevealed(current.letters.length);
       setActive(index);
       playEffect("pop", settingsRef.current);
       const started = Date.now();
@@ -127,5 +158,5 @@ export function usePlayback(
     [begin, settingsRef],
   );
 
-  return { revealed, active, replay, replayLetter };
+  return { revealed, active, replay, replayLetter, soundLetter, soundWord };
 }

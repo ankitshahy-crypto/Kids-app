@@ -69,7 +69,7 @@ The lesson day resets at local midnight. "Today" is the calendar date in the dev
 
 In step 6, each school and each class stores its own IANA time zone, for example `America/New_York`. Teacher weekly goals, monthly goals, and certificates use the class time zone. Home progress stays on the child's device zone.
 
-Sound it out is the letter-game step.
+Sound it out is the letter-game step. The child drags their animal along a track so each letter lights and sounds, then the word blends at the end.
 
 ## Profile
 
