@@ -2189,6 +2189,94 @@ button:focus-visible {
   background: #fff;
 }
 
+.school-card {
+  background: #fff;
+  border: 1px solid #e7efe8;
+  border-radius: 18px;
+  padding: 14px;
+  margin: 12px 0;
+}
+
+.school-card h3,
+.school-form h3 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.school-code {
+  margin: 4px 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.school-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.school-form label {
+  font-weight: 700;
+}
+
+.school-form input[type="text"],
+.school-form input[type="email"],
+.school-form input:not([type]) {
+  min-height: 52px;
+  border-radius: 14px;
+  border: 2px solid #e4ddd4;
+  padding: 0 14px;
+  font-size: 18px;
+  background: #fff;
+}
+
+.school-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.school-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.school-row button {
+  min-height: 56px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 2px solid #e4ddd4;
+}
+
+.school-link {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  word-break: break-all;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.school-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.school-check input {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
 .grownups-view h3 {
   margin: 16px 0 4px;
   font-size: 16px;
@@ -3611,6 +3699,14 @@ button:focus-visible {
 
 .segment.segment-3 {
   grid-template-columns: 1fr 1fr 1fr;
+}
+
+.segment.segment-3 button {
+  font-size: 15px;
+  line-height: 1.15;
+  min-height: 56px;
+  padding: 8px 6px;
+  white-space: normal;
 }
 
 .read-chart {

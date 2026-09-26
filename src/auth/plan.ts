@@ -56,11 +56,13 @@ export function friendlyAuthError(error: unknown): string {
   return "Sign-in did not finish. LittleNest still works on this device.";
 }
 
-export type PreviewMode = "ready" | "signed-in";
+export type PreviewMode = "ready" | "signed-in" | "school-admin" | "school-teacher" | "school-parent";
+
+const PREVIEW_MODES: readonly PreviewMode[] = ["ready", "signed-in", "school-admin", "school-teacher", "school-parent"];
 
 /** A local preview for the dev server only. Production builds ignore it. */
 export function readPreview(dev: boolean, stored: string | null): PreviewMode | null {
   if (!dev) return null;
-  if (stored === "ready" || stored === "signed-in") return stored;
+  if (stored && (PREVIEW_MODES as readonly string[]).includes(stored)) return stored as PreviewMode;
   return null;
 }

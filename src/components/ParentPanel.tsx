@@ -233,8 +233,8 @@ export function ParentView({
         <section className="adult-section" data-section="join">
           <h2>Join a class</h2>
           <p className="adult-copy">
-            Only a parent can link a child. The consent screen and the class QR scan arrive in step 6. Nothing is
-            shared yet. A child cannot join a class.
+            Only a parent can link a child. Open Account, enter the join code from the teacher, and agree before
+            anything is shared. A child cannot join a class. Kids never log in.
           </p>
         </section>
       ) : null}
@@ -243,8 +243,8 @@ export function ParentView({
         <section className="adult-section" data-section="consent">
           <h2>Privacy</h2>
           <p className="adult-copy">
-            Before a class link, consent is asked here. You can unlink or delete at any time. Class linking is not
-            available yet. Delete a profile with Remove under Children. Photos and names stay on this device.
+            A school is optional. A parent agrees in Account before a child is linked, and can remove a profile at
+            any time. A teacher sees only their own classes. Photos stay on this device.
           </p>
         </section>
       ) : null}

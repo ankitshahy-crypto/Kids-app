@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function memberDoc(schoolId) {
+      return get(/databases/$(database)/documents/schools/$(schoolId)/members/$(request.auth.uid)).data;
+    }
+
+    function member(schoolId) {
+      return signedIn() && exists(/databases/$(database)/documents/schools/$(schoolId)/members/$(request.auth.uid));
+    }
+
+    function isAdmin(schoolId) {
+      return member(schoolId) && memberDoc(schoolId).role == 'admin';
+    }
+
+    function isTeacher(schoolId) {
+      return member(schoolId) && memberDoc(schoolId).role == 'teacher';
+    }
+
+    function classData(schoolId, classId) {
+      return get(/databases/$(database)/documents/schools/$(schoolId)/classes/$(classId)).data;
+    }
+
+    function teaches(schoolId, classId) {
+      return isTeacher(schoolId) && classData(schoolId, classId).teacherUid == request.auth.uid;
+    }
+
+    function noPhoto() {
+      return !request.resource.data.keys().hasAny(['photo', 'photoSrc', 'image', 'picture', 'avatarUrl', 'lastName', 'email']);
+    }
+
+    match /grownups/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /directory/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['schoolId'])
+        && request.resource.data.schoolId is string;
+    }
+
+    match /schools/{schoolId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['name', 'createdBy', 'createdAt'])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() < 80;
+      allow read: if isAdmin(schoolId) || isTeacher(schoolId)
+        || exists(/databases/$(database)/documents/schools/$(schoolId)/parents/$(request.auth.uid));
+      allow update, delete: if isAdmin(schoolId);
+    }
+
+    match /schools/{schoolId}/parents/{parentUid} {
+      allow read: if signedIn() && (request.auth.uid == parentUid || isAdmin(schoolId) || isTeacher(schoolId));
+      allow create, update: if signedIn() && request.auth.uid == parentUid && request.resource.data.consented == true;
+      allow delete: if signedIn() && request.auth.uid == parentUid;
+    }
+
+    match /schools/{schoolId}/members/{uid} {
+      allow read: if isAdmin(schoolId) || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.role == 'admin'
+          && request.resource.data.status == 'active'
+          && get(/databases/$(database)/documents/schools/$(schoolId)).data.createdBy == request.auth.uid
+        || signedIn() && request.auth.uid == uid && request.resource.data.role == 'teacher'
+          && request.resource.data.status == 'active'
+          && request.resource.data.email == request.auth.token.email
+          && exists(/databases/$(database)/documents/schools/$(schoolId)/invites/$(request.resource.data.inviteId))
+          && get(/databases/$(database)/documents/schools/$(schoolId)/invites/$(request.resource.data.inviteId)).data.email == request.auth.token.email;
+      allow update: if isAdmin(schoolId);
+      allow delete: if isAdmin(schoolId) && request.auth.uid != uid;
+    }
+
+    match /schools/{schoolId}/invites/{inviteId} {
+      allow read: if isAdmin(schoolId) || (signedIn() && resource.data.email == request.auth.token.email);
+      allow create: if isAdmin(schoolId)
+        && request.resource.data.keys().hasOnly(['email', 'createdBy'])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.email is string;
+      allow delete: if isAdmin(schoolId) || (signedIn() && resource.data.email == request.auth.token.email);
+      allow update: if false;
+    }
+
+    match /schools/{schoolId}/classes/{classId} {
+      allow read: if isAdmin(schoolId) || teaches(schoolId, classId)
+        || exists(/databases/$(database)/documents/schools/$(schoolId)/classes/$(classId)/parents/$(request.auth.uid));
+      allow create: if isTeacher(schoolId)
+        && request.resource.data.teacherUid == request.auth.uid
+        && request.resource.data.schoolId == schoolId
+        && noPhoto();
+      allow update: if teaches(schoolId, classId) && noPhoto();
+      allow delete: if teaches(schoolId, classId);
+    }
+
+    match /schools/{schoolId}/classes/{classId}/children/{childId} {
+      allow read: if teaches(schoolId, classId)
+        || (signedIn() && resource.data.parentUid == request.auth.uid && resource.data.consented == true);
+      allow write: if teaches(schoolId, classId) && noPhoto();
+    }
+
+    match /schools/{schoolId}/classes/{classId}/parents/{parentUid} {
+      allow read: if teaches(schoolId, classId) || isAdmin(schoolId) || (signedIn() && request.auth.uid == parentUid);
+      allow create, update: if signedIn() && request.auth.uid == parentUid && request.resource.data.consented == true;
+      allow delete: if signedIn() && request.auth.uid == parentUid || teaches(schoolId, classId);
+    }
+
+    match /classCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['schoolId', 'classId', 'teacherUid'])
+        && request.resource.data.teacherUid == request.auth.uid
+        && teaches(request.resource.data.schoolId, request.resource.data.classId);
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.teacherUid == request.auth.uid;
+    }
+
+    match /parentCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['schoolId', 'classId', 'teacherUid'])
+        && request.resource.data.teacherUid == request.auth.uid
+        && teaches(request.resource.data.schoolId, request.resource.data.classId);
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.teacherUid == request.auth.uid;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

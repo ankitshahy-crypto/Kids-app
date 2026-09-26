@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { PRODUCT_NAME } from "../brand";
-import { ACCOUNT_OFF, ACCOUNT_ON_NOTE, BACKUP_NOTE, KIDS_NEVER_LOGIN, SYNC_LABEL, TEACHER_NOTE } from "../auth/copy";
+import { ACCOUNT_OFF, ACCOUNT_ON_NOTE, ADMIN_NOTE, BACKUP_NOTE, KIDS_NEVER_LOGIN, PARENT_NOTE, SYNC_LABEL, TEACHER_NOTE } from "../auth/copy";
 import type { GrownupUser } from "../auth/client";
-import type { AccountRole } from "../auth/prefs";
+import { activeProviders, providerLabel, signInWithProvider, type Stage1Adapter } from "../auth/providers";
+import type { SchoolDesk, SchoolRole } from "../auth/school";
+import type { ChildProfile } from "../data/profiles";
+import { SchoolPanel } from "./SchoolPanel";
 
 export function AccountPanel({
   configured,
   user,
-  role,
+  schoolRole,
+  desk,
+  profiles,
   sync,
   busy,
   error,
@@ -18,14 +23,23 @@ export function AccountPanel({
   onEmailCreate,
   onMagicLink,
   onSignOut,
-  onRole,
+  onSchoolRole,
+  onCreateSchool,
+  onInvite,
+  onRemoveTeacher,
+  onCancelInvite,
+  onCreateClass,
+  onLinkDevice,
+  onJoin,
   onSync,
   onDeleteData,
   onDeleteAccount,
 }: {
   configured: boolean;
   user: GrownupUser | null;
-  role: AccountRole;
+  schoolRole: SchoolRole;
+  desk: SchoolDesk;
+  profiles: ChildProfile[];
   sync: boolean;
   busy: boolean;
   error: string | null;
@@ -36,7 +50,14 @@ export function AccountPanel({
   onEmailCreate: (email: string, password: string) => void;
   onMagicLink: (email: string) => void;
   onSignOut: () => void;
-  onRole: (role: AccountRole) => void;
+  onSchoolRole: (role: SchoolRole) => void;
+  onCreateSchool: (name: string) => void;
+  onInvite: (email: string) => void;
+  onRemoveTeacher: (uid: string) => void;
+  onCancelInvite: (inviteId: string) => void;
+  onCreateClass: (name: string) => void;
+  onLinkDevice: (code: string) => void;
+  onJoin: (code: string, consent: boolean, childIds: string[]) => void;
   onSync: (on: boolean) => void;
   onDeleteData: () => void;
   onDeleteAccount: () => void;
@@ -44,9 +65,15 @@ export function AccountPanel({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState<"data" | "account" | null>(null);
+  const providers = activeProviders();
+  const adapters: Stage1Adapter[] = [
+    { id: "apple", label: providerLabel("apple"), signIn: async () => onApple() },
+    { id: "google", label: providerLabel("google"), signIn: async () => onGoogle() },
+    { id: "email", label: providerLabel("email"), signIn: async () => onEmailSignIn(email, password) },
+  ];
 
   return (
-    <section className="adult-section" data-section="account" data-auth={configured ? "on" : "off"} data-signed-in={user ? "true" : "false"} data-role={role} data-sync={sync ? "on" : "off"}>
+    <section className="adult-section" data-section="account" data-auth={configured ? "on" : "off"} data-signed-in={user ? "true" : "false"} data-role={schoolRole} data-sync={sync ? "on" : "off"} data-providers={providers.join(",")}>
       <h2>Account</h2>
       <p className="account-status">{user ? "Signed in" : "Not signed in"}</p>
       {user?.email ? <p className="adult-copy">{user.email}</p> : null}
@@ -67,18 +94,22 @@ export function AccountPanel({
           <p className="adult-copy">{KIDS_NEVER_LOGIN}</p>
           <p className="adult-copy">{PRODUCT_NAME} does not ask for a card or a payment.</p>
           <div className="account-actions">
-            <button type="button" className="account-apple" disabled={busy} onClick={onApple}>
-              Sign in with Apple
-            </button>
-            <button type="button" className="account-google" disabled={busy} onClick={onGoogle}>
-              Sign in with Google
-            </button>
+            {providers.includes("apple") ? (
+              <button type="button" className="account-apple" disabled={busy} onClick={() => void signInWithProvider("apple", adapters)}>
+                {providerLabel("apple")}
+              </button>
+            ) : null}
+            {providers.includes("google") ? (
+              <button type="button" className="account-google" disabled={busy} onClick={() => void signInWithProvider("google", adapters)}>
+                {providerLabel("google")}
+              </button>
+            ) : null}
           </div>
           <form
             className="account-email"
             onSubmit={(event) => {
               event.preventDefault();
-              onEmailSignIn(email, password);
+              void signInWithProvider("email", adapters);
             }}
           >
             <label htmlFor="grownup-email">Email</label>
@@ -115,16 +146,33 @@ export function AccountPanel({
           <p className="adult-copy">{KIDS_NEVER_LOGIN}</p>
           <fieldset className="setting-group">
             <legend>Account type</legend>
-            <div className="segment">
-              <button type="button" className={role === "grownup" ? "is-selected" : ""} aria-pressed={role === "grownup"} onClick={() => onRole("grownup")}>
-                Grown-up
+            <div className="segment segment-3">
+              <button type="button" className={schoolRole === "parent" ? "is-selected" : ""} aria-pressed={schoolRole === "parent"} onClick={() => onSchoolRole("parent")}>
+                Parent
               </button>
-              <button type="button" className={role === "teacher" ? "is-selected" : ""} aria-pressed={role === "teacher"} onClick={() => onRole("teacher")}>
+              <button type="button" className={schoolRole === "teacher" ? "is-selected" : ""} aria-pressed={schoolRole === "teacher"} onClick={() => onSchoolRole("teacher")}>
                 Teacher
               </button>
+              <button type="button" className={schoolRole === "admin" ? "is-selected" : ""} aria-pressed={schoolRole === "admin"} onClick={() => onSchoolRole("admin")}>
+                School Admin
+              </button>
             </div>
-            <p className="adult-copy">{TEACHER_NOTE}</p>
+            <p className="adult-copy">{schoolRole === "teacher" ? TEACHER_NOTE : schoolRole === "admin" ? ADMIN_NOTE : PARENT_NOTE}</p>
           </fieldset>
+          <SchoolPanel
+            role={schoolRole}
+            desk={desk}
+            uid={user.uid}
+            email={user.email}
+            profiles={profiles}
+            onCreateSchool={onCreateSchool}
+            onInvite={onInvite}
+            onRemoveTeacher={onRemoveTeacher}
+            onCancelInvite={onCancelInvite}
+            onCreateClass={onCreateClass}
+            onLinkDevice={onLinkDevice}
+            onJoin={onJoin}
+          />
           <fieldset className="setting-group">
             <legend>{SYNC_LABEL}</legend>
             <div className="segment">

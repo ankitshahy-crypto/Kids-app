@@ -231,7 +231,9 @@ export function GrownupsMenu({
         <AccountPanel
           configured={account.configured}
           user={account.user}
-          role={account.role}
+          schoolRole={account.schoolRole}
+          desk={account.desk}
+          profiles={profiles}
           sync={account.sync}
           busy={account.busy}
           error={account.error}
@@ -242,7 +244,14 @@ export function GrownupsMenu({
           onEmailCreate={(email, password) => void account.createWithEmail(email, password)}
           onMagicLink={(email) => void account.sendMagicLink(email)}
           onSignOut={() => void account.signOut()}
-          onRole={(role) => void account.setRole(role)}
+          onSchoolRole={(role) => void account.setSchoolRole(role)}
+          onCreateSchool={(name) => account.createSchool(name)}
+          onInvite={(email) => account.inviteTeacher(email)}
+          onRemoveTeacher={(uid) => account.removeTeacher(uid)}
+          onCancelInvite={(inviteId) => account.cancelInvite(inviteId)}
+          onCreateClass={(name) => account.createClass(name)}
+          onLinkDevice={(code) => account.linkDevice(code)}
+          onJoin={(code, consent, childIds) => account.joinClass(code, consent, childIds)}
           onSync={(on) => void account.setSync(on)}
           onDeleteData={() => void account.deleteData()}
           onDeleteAccount={() => void account.deleteAccount()}

@@ -55,25 +55,20 @@ You need an Apple **Services ID** for the website, and the iPhone app's bundle i
 4. Create a **Key**, enable Sign in with Apple, and download the `.p8` file once. Note the Key ID and your Team ID.
 5. Back in Firebase → Apple, paste the Services ID, Team ID, Key ID, and the contents of the `.p8` file. Save.
 
-## 3. Tell Firestore who may read the backup
+## 3. Tell Firestore who may read what
 
-Open Firestore → **Rules**, replace the rules with the block below, and publish.
+Open Firestore → **Rules**, replace everything with the contents of `firestore.rules` in this project, and publish.
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /grownups/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
-}
-```
+That file is the source of truth. In short:
 
-A grown-up can read and write only their own backup. Nobody else can. The backup holds a first name or initial, an animal, an age range, stars, lesson progress, and grown-up settings. It does not hold photos.
+- A grown-up can read and write only their own backup at `grownups/{uid}`.
+- A school admin can create a school (a name) and invite teachers. An admin sees school totals: how many children, stars, and reading time. An admin cannot open an individual child.
+- A teacher can read and write children only in classes they teach.
+- A parent can read a child only after they agree, and only when that child is linked to them.
+- Class codes and parent join codes can be looked up one at a time. Nobody can list every code.
+- Child documents cannot store a photo, a picture, a last name, or an email.
+
+The backup and the class record hold a first name or initial, an animal, and progress. They do not hold photos.
 
 ## 4. Add the website to Firebase
 
@@ -137,15 +132,29 @@ Desktop Chrome, Safari, Firefox, and Edge use a sign-in window. A narrow phone b
 2. A grown-up opens **Grown-ups** and passes the number check.
 3. **Account** offers Sign in with Apple, Sign in with Google, email and password, or an email link.
 4. **Back up & sync progress** stays off until they turn it on.
-5. **Teacher** is only a flag. Class sign-in with Google, Clever, or ClassLink is not built yet.
+5. **Parent**, **Teacher**, and **School Admin** are the school roles. See the schools section below. Clever, ClassLink, and district sign-in are not built yet.
 6. **Delete all data** removes profiles and progress on this device and the backup.
 7. **Delete account** removes the sign-in and the backup. Apple requires this button.
 
 Signing out leaves the profiles on the phone. It stops new backups.
 
-## 9. Check that it stayed private
+## 9. Schools, stage 1
+
+Schools use the same Firebase project and the same sign-in flag. If the four values are missing, Account does not offer a school. Nothing is created in the cloud by the app itself. You paste `firestore.rules` and publish them. You do not need a second Firebase project.
+
+Roles live in the database, on the school, not as a password in the app:
+
+- **School Admin** (the director) signs in with Google or email, creates a school (a name only, such as Kids Villa), and invites a teacher by email. The app shows an invite link. It does not send mail. The teacher opens that link and signs in with the same email. An admin can remove a teacher. An admin cannot remove themselves.
+- **Teacher** signs in with Google or email, creates classes, and each class gets a short code such as `BUNNY-42` plus a separate parent join code such as `NEST-18`. On a classroom device, the teacher enters the class code in **Grown-ups → Account**. That links the device to the class. Children still tap an animal. They never log in.
+- **Parent** is optional. The parent enters the join code and checks the consent box. Until they agree, they see none of the class. After they agree, they see only their own children. A class code does not show the roster.
+
+A teacher sees reading time, stars, the learning path, and the starting lesson for their own classes. A director sees the school totals only. Progress stored for a class is a first name or initial, an animal, stars, reading time, the path, and the starting lesson.
+
+Sign-in methods go through one provider list. Apple, Google, and email are stage 1. Clever, ClassLink, Microsoft, and district SAML are named for later and do not sign anyone in. Adding stage 2 means a new adapter in that list. This version does not build it.
+
+## 10. Check that it stayed private
 
 - The child screen has no Sign in button.
-- With `.env` empty, Account says sign-in is not set up and does not show Apple or Google.
-- Firestore has one document per grown-up under `grownups`, and no other collections.
+- With `.env` empty, Account says sign-in is not set up and does not show Apple, Google, or Create school.
+- A teacher cannot open another teacher's class. A director cannot open a child. A parent cannot open a child they did not agree to link.
 - Analytics is off. There is no ads SDK.
