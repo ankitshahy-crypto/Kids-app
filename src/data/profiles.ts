@@ -2,6 +2,7 @@ import { PROFILES_KEY, corruptKey, readStored, stashCorrupt, writeStored, type K
 import { animalById, isAnimalId, type AnimalId } from "./animals";
 import { READING, isSubjectKey, readingSteps, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
+import { emptyGames, normalizeGames, type GameProgress } from "./games";
 import { normalizeWriting, type WritingMap } from "./scaffold";
 import { emptyOutfit, itemForSlot, type Outfit } from "./wardrobe";
 
@@ -19,7 +20,7 @@ export type DayRecord = Record<string, Record<string, boolean>>;
 
 export type Sticker = {
   subject: SubjectId;
-  kind: "letter" | "word" | "number" | "color" | "shape";
+  kind: "letter" | "word" | "number" | "color" | "shape" | "animal";
   /** Lowercase letter, word, numeral, or color. Stored once per subject. */
   label: string;
 };
@@ -69,6 +70,8 @@ export type ChildProfile = {
   practiceAwarded: Record<string, string[]>;
   /** Tracing help for each letter, shape, word, or name. Missing items start at a full guide. */
   writing: WritingMap;
+  /** Hatch the Egg grows here. Missing saves start at the first sound. */
+  games: GameProgress;
 };
 
 type ProfileStore = {
@@ -134,6 +137,11 @@ export const activitySteps = [
   "spin-bonus",
   "word",
   "name",
+  "game-hatch",
+  "game-pop",
+  "game-feed",
+  "game-rhyme",
+  "game-memory",
 ] as const;
 
 const activityStepSet = new Set<string>(activitySteps);
@@ -230,6 +238,7 @@ export function createChild(input: { name: string; ageRange: AgeRange; animal: A
     stars: 0,
     days: {},
     writing: {},
+    games: emptyGames(),
     ...emptyRewards(),
   };
 }
@@ -242,7 +251,8 @@ function isSticker(value: unknown): value is Sticker {
       sticker.kind === "word" ||
       sticker.kind === "number" ||
       sticker.kind === "color" ||
-      sticker.kind === "shape") &&
+      sticker.kind === "shape" ||
+      sticker.kind === "animal") &&
     typeof sticker.label === "string" &&
     sticker.label.length > 0
   );
@@ -273,6 +283,7 @@ function withRewards(profile: ChildProfile): ChildProfile {
       : [],
     ...practiceTime(profile),
     writing: normalizeWriting((profile as { writing?: unknown }).writing),
+    games: normalizeGames((profile as { games?: unknown }).games),
   };
 }
 

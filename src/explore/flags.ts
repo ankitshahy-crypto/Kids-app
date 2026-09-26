@@ -6,6 +6,7 @@ export type ExploreFlags = Partial<Record<ExploreSection, boolean>>;
 export const EXPLORE_FLAGS: ExploreFlags = {
   math: true,
   colors: true,
+  games: true,
 };
 
 export function sectionVisible(section: ExploreSection, flags: ExploreFlags = EXPLORE_FLAGS, showExplore = true): boolean {

@@ -1,5 +1,5 @@
 /** Sections that are in this build. Later courses are added with their own pull requests. */
-export const EXPLORE_SECTIONS = ["math", "colors"] as const;
+export const EXPLORE_SECTIONS = ["math", "colors", "games"] as const;
 
 export type ExploreSection = (typeof EXPLORE_SECTIONS)[number];
 
@@ -13,6 +13,7 @@ const BY_SCREEN: Record<string, ExploreSection> = {
   name: "colors",
   mix: "colors",
   paint: "colors",
+  games: "games",
 };
 
 export function isExploreSection(value: string): value is ExploreSection {
