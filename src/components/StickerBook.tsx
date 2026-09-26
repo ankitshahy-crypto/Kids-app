@@ -24,7 +24,12 @@ export function StickerBook({ profile, onBack }: { profile: ChildProfile; onBack
         ) : (
           <ul className="sticker-grid">
             {slice.map((sticker) => (
-              <li key={`${sticker.kind}:${sticker.label}`} data-sticker={sticker.label} data-kind={sticker.kind}>
+              <li
+                key={`${sticker.subject}:${sticker.kind}:${sticker.label}`}
+                data-sticker={sticker.label}
+                data-kind={sticker.kind}
+                data-subject={sticker.subject}
+              >
                 <span>{sticker.kind === "letter" ? sticker.label.toUpperCase() : sticker.label}</span>
               </li>
             ))}

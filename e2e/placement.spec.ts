@@ -73,7 +73,11 @@ test("a class place and a child override stay on this device", async ({ page }, 
 
   await page.reload();
   const saved = await page.evaluate(() => localStorage.getItem("kids-app-placement-v1"));
-  expect(JSON.parse(saved ?? "{}").classDefault).toMatchObject({ stageId: "blending", weekIndex: 4 });
+  expect(JSON.parse(saved ?? "{}").subjects.reading.classDefault).toMatchObject({
+    subject: "reading",
+    stageId: "blending",
+    weekIndex: 4,
+  });
   await openTeacher(page);
   await expect(page.locator("[data-place=class]")).toHaveAttribute("data-stage", "blending");
 

@@ -8,7 +8,7 @@ import {
   type AgeRange,
   type ChildProfile,
   type LessonStep,
-  type Sticker,
+  type StickerInput,
 } from "../data/profiles";
 import { applyReadingCredit, type ReadingCredit } from "../data/reading";
 import { applyEffort, wearItem, type EffortResult } from "../data/rewards";
@@ -50,7 +50,7 @@ export function useProfiles() {
     });
   };
 
-  const giveStar = (id: string, step: LessonStep, learned: Sticker[] = []): EffortResult => {
+  const giveStar = (id: string, step: LessonStep, learned: StickerInput[] = []): EffortResult => {
     const profile = store.profiles.find((item) => item.id === id);
     if (!profile) {
       return {

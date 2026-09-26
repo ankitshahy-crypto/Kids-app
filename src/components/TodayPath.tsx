@@ -1,4 +1,4 @@
-import type { PathStageId } from "../data/path";
+import { READING } from "../data/subject";
 import type { PlacementSource } from "../data/placement";
 import { isReviewDay } from "../data/schedule";
 import { dayProgress, todayKey, type ChildProfile, type LessonStep } from "../data/profiles";
@@ -31,7 +31,7 @@ export function TodayPath({
   profile: ChildProfile;
   letters: string[];
   placementSource: PlacementSource;
-  stageId: PathStageId;
+  stageId: string;
   weekIndex: number;
   onOpen: (step: LessonStep) => void;
   onLeave: () => void;
@@ -51,6 +51,7 @@ export function TodayPath({
     <div
       className="today"
       data-screen="today"
+      data-subject={READING}
       data-review={review ? "true" : "false"}
       data-source={placementSource}
       data-stage={stageId}
