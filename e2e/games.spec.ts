@@ -204,7 +204,7 @@ test("memory flip matches letters and a number with its dots", async ({ page }, 
   await install(page);
   await openGames(page);
   await page.locator("[data-game-tile=memory]").click();
-  const board = page.locator("[data-game=memory]");
+  const board = page.locator("[data-game=memory] .game-board");
   await expect(board).toHaveAttribute("data-mode", "letters");
   if (testInfo.project.name === "chromium") {
     await board.screenshot({ path: "/opt/cursor/artifacts/games_memory.png" });
