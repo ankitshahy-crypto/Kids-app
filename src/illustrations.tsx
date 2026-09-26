@@ -1,3 +1,5 @@
+import { ladderScenes } from "./wordScenes";
+
 /**
  * Original flat illustrations for the starter deck.
  * Each drawing is simple geometry made for this app. Nothing here is traced
@@ -284,6 +286,7 @@ export const illustrations = {
   bed: Bed,
   fox: Fox,
   apple: Apple,
+  ...ladderScenes,
 };
 
 export type IllustrationName = keyof typeof illustrations;

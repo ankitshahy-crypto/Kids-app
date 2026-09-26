@@ -18,7 +18,7 @@ LittleNest Learning helps young children take their first steps into letters, nu
 
 - **Your child is the hero:** Stories star the animal they chose.
 - **Real, warm voices:** Natural voices, not a robot.
-- **Drag to blend:** Slide across a word and hear each sound join into the whole word, the way blending is taught in classrooms.
+- **Drag to blend:** Slide across a word and hear each sound join into the whole word. Words grow on a ladder: one letter, then two, then short words, then four-letter words.
 - **Short daily lessons:** 5–10 minutes builds a habit without too much screen time.
 - **Stars for trying:** Effort, not perfection. No pressure, no scores.
 - **Rewards that feel great:** Stars for effort unlock outfits for your child's animal, a sticker book of letters, numbers, colors, and baby animals, and a growing nest. Every reward is earned by practicing, never bought.
@@ -30,7 +30,7 @@ LittleNest Learning helps young children take their first steps into letters, nu
 
 ## How LittleNest Learning teaches
 
-LittleNest Learning has three modules. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. Phonics for ages 5 to 7 comes after that. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints.
+LittleNest Learning has three modules. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints.
 
 LittleNest Words:
 

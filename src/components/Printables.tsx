@@ -118,7 +118,7 @@ export function Printables({
   const tracedName = nameToTrace(child?.name ?? "");
   const showShapes = sheetsFor(MATH).some((sheet) => sheet.id === "shape");
   const letters = showLetters ? scheduleLetters().filter((letter) => picked.includes(letter)) : [];
-  const blends = showBlending ? blendingWords(letters.length > 0 ? letters : picked) : [];
+  const blends = showBlending ? blendingWords(letters.length > 0 ? letters : picked, child?.ladder.step ?? 1) : [];
 
   const chooseChild = (id: string) => {
     setChildId(id);
