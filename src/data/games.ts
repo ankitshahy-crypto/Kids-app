@@ -1,5 +1,6 @@
 import { starterDeck, type DeckWord, type LetterTile } from "./deck";
 import type { PhonemeId } from "./phonemes";
+import { isWardrobeId, wardrobe, wardrobeItem } from "./wardrobe";
 
 /** 1 is the first sound. 2 is a short word. 3 is a longer word. */
 export const HATCH_LEVELS = [1, 2, 3] as const;
@@ -12,6 +13,8 @@ export const GLOW_AFTER_MISSES = 2;
 export type GameProgress = {
   hatch: HatchLevel;
   hatches: number;
+  /** Finished spins. The next tap lands on the next challenge. */
+  spins: number;
 };
 
 export const BABY_ANIMALS = ["kitten", "puppy", "fawn", "owlet", "duckling", "cub"] as const;
@@ -56,7 +59,7 @@ export function isHatchLevel(value: number): value is HatchLevel {
 }
 
 export function emptyGames(): GameProgress {
-  return { hatch: 1, hatches: 0 };
+  return { hatch: 1, hatches: 0, spins: 0 };
 }
 
 export function normalizeGames(value: unknown): GameProgress {
@@ -67,27 +70,39 @@ export function normalizeGames(value: unknown): GameProgress {
     typeof raw.hatches === "number" && Number.isFinite(raw.hatches) && raw.hatches > 0
       ? Math.min(HATCHES_TO_ADVANCE, Math.floor(raw.hatches))
       : 0;
-  return { hatch, hatches };
+  const spins =
+    typeof raw.spins === "number" && Number.isFinite(raw.spins) && raw.spins > 0
+      ? Math.min(10000, Math.floor(raw.spins))
+      : 0;
+  return { hatch, hatches, spins };
 }
 
 export function assignHatchLevel(progress: GameProgress | undefined, level: HatchLevel): GameProgress {
   const current = normalizeGames(progress);
   if (current.hatch === level) return current;
-  return { hatch: level, hatches: 0 };
+  return { ...current, hatch: level, hatches: 0 };
 }
 
 /** Count a finished egg. Two finishes move up one level and never go backward. */
 export function recordHatch(progress: GameProgress | undefined): { games: GameProgress; advanced: boolean } {
   const current = normalizeGames(progress);
   if (current.hatch >= 3) {
-    return { games: { hatch: 3, hatches: Math.min(HATCHES_TO_ADVANCE, current.hatches + 1) }, advanced: false };
+    return {
+      games: { ...current, hatch: 3, hatches: Math.min(HATCHES_TO_ADVANCE, current.hatches + 1) },
+      advanced: false,
+    };
   }
   const hatches = current.hatches + 1;
   if (hatches >= HATCHES_TO_ADVANCE) {
     const next = (current.hatch + 1) as HatchLevel;
-    return { games: { hatch: next, hatches: 0 }, advanced: true };
+    return { games: { ...current, hatch: next, hatches: 0 }, advanced: true };
   }
-  return { games: { hatch: current.hatch, hatches }, advanced: false };
+  return { games: { ...current, hatches }, advanced: false };
+}
+
+export function recordSpin(progress: GameProgress | undefined): GameProgress {
+  const current = normalizeGames(progress);
+  return { ...current, spins: Math.min(10000, current.spins + 1) };
 }
 
 export function nextBaby(collected: readonly string[]): BabyAnimal {
@@ -263,4 +278,127 @@ export function memoryRound(known: readonly string[], mode: "letters" | "numbers
     { id: `lower-${letter}`, pair: letter, face: "lower" as const, value: letter },
   ]);
   return mix(cards, salt);
+}
+
+/** Challenges on the wheel, in tap order. Bonus is a prize, never a loss. */
+export const SPIN_KINDS = ["sound", "word", "count", "color", "trace", "bonus"] as const;
+export type SpinKind = (typeof SPIN_KINDS)[number];
+
+const SEGMENT = 360 / SPIN_KINDS.length;
+
+export function spinTurn(index: number): SpinKind {
+  const count = SPIN_KINDS.length;
+  const safe = ((Math.floor(index) % count) + count) % count;
+  return SPIN_KINDS[safe];
+}
+
+/** Degrees clockwise from the top to the middle of this segment when the wheel has not turned. */
+function segmentCenter(index: number): number {
+  return index * SEGMENT + SEGMENT / 2;
+}
+
+/** Which segment sits under the pointer after this clockwise rotation. */
+export function kindAtRotation(rotation: number): SpinKind {
+  const normalized = ((rotation % 360) + 360) % 360;
+  const atTop = (360 - normalized) % 360;
+  const index = Math.floor(atTop / SEGMENT) % SPIN_KINDS.length;
+  return SPIN_KINDS[index];
+}
+
+/**
+ * A tap spins forward at least `turns` times and stops on the challenge for `index`.
+ * `from` is the wheel's current angle so it never jerks backward.
+ */
+export function wheelRotation(index: number, from = 0, turns = 4): number {
+  const segment = SPIN_KINDS.indexOf(spinTurn(index));
+  const landing = (360 - segmentCenter(segment) + 360) % 360;
+  let target = (Math.floor(from / 360) + turns) * 360 + landing;
+  if (target < from + 360) target += 360;
+  return target;
+}
+
+/** A flick coasts forward and settles on the nearest segment. */
+export function snapForward(raw: number, from: number): number {
+  const normalized = ((raw % 360) + 360) % 360;
+  const atTop = (360 - normalized) % 360;
+  const segment = Math.floor(atTop / SEGMENT) % SPIN_KINDS.length;
+  const landing = (360 - segmentCenter(segment) + 360) % 360;
+  let target = Math.floor(raw / 360) * 360 + landing;
+  if (target < from) target += 360;
+  return target;
+}
+
+export function soundChoices(known: readonly string[], salt = 0): { target: string; choices: string[] } {
+  const pool = [...knownSet(known)];
+  const letters = pool.length > 0 ? pool : ["m", "a", "s"];
+  const target = letters[Math.abs(Math.floor(salt)) % letters.length] ?? "m";
+  const others = letters.filter((letter) => letter !== target);
+  const alphabet = "abcdefghijklmnopqrstuvwxyz".split("").filter((letter) => letter !== target && !others.includes(letter));
+  return { target, choices: [target, ...others, ...alphabet].slice(0, 3) };
+}
+
+export type WordBlank = {
+  word: DeckWord;
+  blank: number;
+  choices: string[];
+};
+
+/** One missing letter in a picture word. Level 1 hides the first sound, like “_ a t”. */
+export function wordBlank(known: readonly string[], level: HatchLevel, words: readonly DeckWord[] = starterDeck.words): WordBlank {
+  const round = hatchRound(known, level, words);
+  const blank = level === 2 && round.blanks.includes(1) ? 1 : (round.blanks[0] ?? 0);
+  const answer = round.word.letters[blank]?.char.toLowerCase() ?? "a";
+  const rest = round.choices.filter((letter) => letter !== answer);
+  return { word: round.word, blank, choices: [answer, ...rest].slice(0, 3) };
+}
+
+export function countChoices(total: number): { total: number; choices: number[] } {
+  const count = Math.max(1, Math.min(10, Math.floor(total) || 1));
+  const choices = [count];
+  if (count > 1) choices.push(count - 1);
+  if (count < 10) choices.push(count + 1);
+  while (choices.length < 3) {
+    const next = (choices[choices.length - 1] ?? count) + 1;
+    if (!choices.includes(next)) choices.push(next);
+    else break;
+  }
+  return { total: count, choices: choices.slice(0, 3) };
+}
+
+export function colorChoices(target: string, options: readonly string[]): { target: string; choices: string[] } {
+  const hear = target.trim().toLowerCase() || "red";
+  const rest = options.map((color) => color.toLowerCase()).filter((color) => color !== hear);
+  const fallback = ["red", "blue", "yellow", "green"].filter((color) => color !== hear && !rest.includes(color));
+  return { target: hear, choices: [hear, ...rest, ...fallback].slice(0, 3) };
+}
+
+export function traceLetter(known: readonly string[]): string {
+  const letters = [...knownSet(known)];
+  return letters[0] ?? "m";
+}
+
+export type SpinPrize =
+  | { kind: "sticker"; label: string }
+  | { kind: "outfit"; id: string; name: string };
+
+/**
+ * Bonus prizes alternate. A sticker comes first. The dress-up item is one the
+ * child cannot buy with the star this spin will add.
+ */
+export function bonusPrize(
+  spinIndex: number,
+  gifts: readonly string[],
+  babies: readonly string[],
+  stars = 0,
+): SpinPrize {
+  const visit = Math.floor(Math.max(0, Math.floor(spinIndex)) / SPIN_KINDS.length);
+  const owned = new Set(gifts);
+  const upcomingStars = stars + 1;
+  const outfit =
+    wardrobe.find((item) => !owned.has(item.id) && upcomingStars < item.stars) ??
+    wardrobe.find((item) => !owned.has(item.id));
+  if (visit % 2 === 1 && outfit && isWardrobeId(outfit.id)) {
+    return { kind: "outfit", id: outfit.id, name: wardrobeItem(outfit.id)?.name ?? outfit.id };
+  }
+  return { kind: "sticker", label: nextBaby(babies) };
 }

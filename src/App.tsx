@@ -63,7 +63,7 @@ const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
-  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel } = useProfiles();
+  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteSpin, giveGift } = useProfiles();
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
@@ -291,11 +291,12 @@ export default function App() {
     screen === "games";
   const exploreSection = sectionForScreen(screen);
 
-  const finishGame = (game: GameId, learned: StickerInput[]) => {
+  const finishGame = (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string }) => {
     if (!active) return;
-    if (!requestReward({ section: "games", reason: "finished" }).granted) return;
     if (game === "hatch") noteHatch(active.id);
-    const result = giveStar(active.id, `game-${game}`, learned);
+    if (game === "spin") noteSpin(active.id);
+    if (extra?.gift) giveGift(active.id, extra.gift);
+    const result = giveStar(active.id, extra?.step ?? `game-${game}`, learned);
     if (result.awarded) {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (!reduce) setFlying(true);
@@ -515,6 +516,9 @@ export default function App() {
                     <Games
                       profile={active}
                       knownLetters={introducedLetters}
+                      count={mathLesson.count}
+                      color={colorLesson.hear}
+                      colorOptions={colorLesson.choices}
                       settingsRef={settingsRef}
                       onEnter={(game) => {
                         if (settingsRef.current.showTips) setTip(gameTip(game, "start"));

@@ -11,8 +11,8 @@ import {
   type StickerInput,
 } from "../data/profiles";
 import { applyReadingCredit, type ReadingCredit } from "../data/reading";
-import { applyEffort, wearItem, type EffortResult } from "../data/rewards";
-import { assignHatchLevel, recordHatch, type HatchLevel } from "../data/games";
+import { applyEffort, grantGift, wearItem, type EffortResult } from "../data/rewards";
+import { assignHatchLevel, recordHatch, recordSpin, type HatchLevel } from "../data/games";
 import { assignWritingLevel, recordWritingAttempt, type ScaffoldLevel, type WritingOutcome } from "../data/scaffold";
 import { READING, type SubjectId } from "../data/subject";
 
@@ -135,6 +135,20 @@ export function useProfiles() {
     return outcome;
   };
 
+  const noteSpin = (id: string) => {
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) => (item.id === id ? { ...item, games: recordSpin(item.games) } : item)),
+    }));
+  };
+
+  const giveGift = (id: string, itemId: string) => {
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) => (item.id === id ? grantGift(item, itemId) : item)),
+    }));
+  };
+
   const setHatchLevel = (id: string, level: HatchLevel) => {
     setStore((current) => ({
       ...current,
@@ -173,6 +187,8 @@ export function useProfiles() {
     setWritingLevel,
     noteHatch,
     setHatchLevel,
+    noteSpin,
+    giveGift,
     wear,
   };
 }
