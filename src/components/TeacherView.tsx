@@ -10,6 +10,8 @@ type DemoChild = { animal: AnimalId; name: string; met: boolean };
 type DemoClass = {
   id: string;
   name: string;
+  /** IANA zone for this class. Weekly goals and certificates follow it in step 6. */
+  timeZone: string;
   jar: number;
   goal: number;
   roster: DemoChild[];
@@ -19,6 +21,7 @@ const demoClasses: DemoClass[] = [
   {
     id: "sunflower",
     name: "Sunflower Class",
+    timeZone: "America/New_York",
     jar: 142,
     goal: 200,
     roster: [
@@ -35,6 +38,7 @@ const demoClasses: DemoClass[] = [
   {
     id: "maple",
     name: "Maple Class",
+    timeZone: "America/New_York",
     jar: 40,
     goal: 200,
     roster: [
@@ -64,7 +68,7 @@ export function TeacherView({ onClose }: { onClose: () => void }) {
   const pct = Math.round((classroom.jar / classroom.goal) * 100);
 
   return (
-    <div className="teacher-shell" data-screen="teacher" data-demo="true">
+    <div className="teacher-shell" data-screen="teacher" data-demo="true" data-timezone={classroom.timeZone}>
       <div className="teacher-scroll">
         <button type="button" className="quiet-back" onClick={onClose}>
           Back
@@ -166,14 +170,20 @@ export function TeacherView({ onClose }: { onClose: () => void }) {
         {tab === "goals" ? (
           <section className="teacher-card" data-card="goals">
             <h2>Goals</h2>
-            <p>A weekly effort goal is set here in step 6. The check marks on the roster are sample only.</p>
+            <p>
+              A weekly or monthly effort goal is set here in step 6. It uses this class time zone (
+              {classroom.timeZone}), not the teacher's phone. The check marks on the roster are sample only.
+            </p>
           </section>
         ) : null}
 
         {tab === "certificates" ? (
           <section className="teacher-card" data-card="certificates">
             <h2>Certificates</h2>
-            <p>A certificate is made on this device and can be printed. It is not stored on a server. Step 6.</p>
+            <p>
+              A certificate uses this class time zone ({classroom.timeZone}) for its week or month. It is made on this
+              device and can be printed. It is not stored on a server. Step 6.
+            </p>
           </section>
         ) : null}
 

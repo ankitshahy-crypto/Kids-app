@@ -1,4 +1,5 @@
 import { animalById, isAnimalId, type AnimalId } from "./animals";
+import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
 
 export const ageRanges = ["3", "4", "5", "6-7"] as const;
 export type AgeRange = (typeof ageRanges)[number];
@@ -14,9 +15,14 @@ export type ChildProfile = {
   name: string;
   ageRange: AgeRange;
   animal: AnimalId;
+  /** UTC instant, ISO-8601. */
   createdAt: string;
   /** Lifetime effort stars. Only ever increases. */
   stars: number;
+  /**
+   * Progress keyed by the local calendar date (`YYYY-MM-DD`) in the device
+   * zone when the star was awarded. The same date is never awarded twice.
+   */
   days: Record<string, DayProgress>;
 };
 
@@ -34,10 +40,9 @@ const emptyDay = (): DayProgress => ({
   moment: false,
 });
 
-export function todayKey(now = new Date()): string {
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
+/** Local calendar date in the device zone. The lesson day resets at local midnight. */
+export function todayKey(now = new Date(), timeZone = deviceTimeZone()): string {
+  return localDateKey(now, timeZone);
 }
 
 export function isAgeRange(value: string): value is AgeRange {
@@ -62,12 +67,17 @@ export function lessonName(profile: Pick<ChildProfile, "name" | "animal">): stri
   return profile.name.trim();
 }
 
-export function dayProgress(profile: ChildProfile, now = new Date()): DayProgress {
-  return profile.days[todayKey(now)] ?? emptyDay();
+export function dayProgress(profile: ChildProfile, now = new Date(), timeZone = deviceTimeZone()): DayProgress {
+  return profile.days[todayKey(now, timeZone)] ?? emptyDay();
 }
 
-export function awardStar(profile: ChildProfile, step: LessonStep, now = new Date()): ChildProfile {
-  const key = todayKey(now);
+export function awardStar(
+  profile: ChildProfile,
+  step: LessonStep,
+  now = new Date(),
+  timeZone = deviceTimeZone(),
+): ChildProfile {
+  const key = todayKey(now, timeZone);
   const day = profile.days[key] ?? emptyDay();
   if (day[step]) return profile;
   return {
@@ -80,24 +90,12 @@ export function awardStar(profile: ChildProfile, step: LessonStep, now = new Dat
   };
 }
 
-function localDayNumber(year: number, monthIndex: number, day: number): number {
-  return Math.floor(Date.UTC(year, monthIndex, day) / 86400000);
-}
-
-export function starsThisWeek(profile: ChildProfile, now = new Date()): number {
-  const created = new Date(profile.createdAt);
-  if (Number.isNaN(created.getTime())) return 0;
-  const createdNum = localDayNumber(created.getFullYear(), created.getMonth(), created.getDate());
-  const nowNum = localDayNumber(now.getFullYear(), now.getMonth(), now.getDate());
-  const index = Math.max(0, Math.floor((nowNum - createdNum) / 7));
-  const start = createdNum + index * 7;
-  const end = start + 7;
+/** Stars whose local dates fall in the current Monday–Sunday week. */
+export function starsThisWeek(profile: ChildProfile, now = new Date(), timeZone = deviceTimeZone()): number {
+  const keys = new Set(weekDateKeys(now, timeZone));
   let stars = 0;
   for (const [key, day] of Object.entries(profile.days)) {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
-    if (!match) continue;
-    const num = localDayNumber(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-    if (num < start || num >= end) continue;
+    if (!keys.has(key)) continue;
     stars += lessonSteps.filter((step) => day[step]).length;
   }
   return stars;
@@ -133,7 +131,7 @@ export function createChild(input: { name: string; ageRange: AgeRange; animal: A
     name,
     ageRange: input.ageRange,
     animal: input.animal,
-    createdAt: new Date().toISOString(),
+    createdAt: utcTimestamp(),
     stars: 0,
     days: {},
   };

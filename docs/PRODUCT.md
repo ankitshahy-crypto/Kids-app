@@ -63,7 +63,11 @@ Order:
 3. A personalized story, or sentence tiles.
 4. One color, shape, or number moment.
 
-Pace: 1–2 new letters a week, plus review of letters already introduced. Friday is review day. Friday shows a badge and a short parent progress note.
+Pace: 1–2 new letters a week, plus review of letters already introduced. A week is Monday through Sunday in the child's device time zone. The week the profile is created is the first lesson week, and the next Monday starts the next set of letters. Friday is review day in that same zone. Friday shows a badge and a short parent progress note.
+
+The lesson day resets at local midnight. "Today" is the calendar date in the device time zone, read with `Intl.DateTimeFormat().resolvedOptions().timeZone`. Stored instants, such as when a profile was created, are UTC ISO-8601 strings. Progress for a day is stored under that local date. A daylight-saving change does not skip a day or award the same day twice: a short spring day and a long fall day are still one calendar date, and the repeated hour in the fall uses the date already awarded. Travel uses the zone the device is in now. A new local date can be awarded once. Returning to a date that already has progress keeps that progress and does not award it again. Stars are never removed.
+
+In step 6, each school and each class stores its own IANA time zone, for example `America/New_York`. Teacher weekly goals, monthly goals, and certificates use the class time zone. Home progress stays on the child's device zone.
 
 Sound it out is the letter-game step.
 
@@ -143,10 +147,10 @@ Teacher profile: the classroom teacher has a separate teacher profile, behind a 
 
 Also later, for the classroom:
 
-- The teacher sets a weekly or monthly effort goal.
+- The teacher sets a weekly or monthly effort goal. The week is Monday–Sunday and the month is the calendar month, both in the class time zone.
 - A class view shows who met the goal.
 - The school chooses the prizes.
-- A certificate is generated on the teacher's device and can be printed. It is not stored on a server.
+- A certificate is generated on the teacher's device and can be printed. It is not stored on a server. Its week or month follows the class time zone.
 - The class can share one star-jar goal.
 
 ## Class assignment process
@@ -187,6 +191,6 @@ Parent and Teacher open only after a press-and-hold of about 2 seconds on the st
 3. Sentence tiles, rhyming, and the color, shape, and number moments.
 4. Home stars and parent-written rewards on the device. Cosmetic unlocks.
 5. Parent progress view: letters learned, lessons done, stars, and Friday notes.
-6. Classroom connection, in the teacher view, including the class assignment process. QR first, picture-word codes later, then goals, certificates, and the class star jar. Teacher inputs travel back to the parent view by QR when there is no server, and through the minimal server once class codes exist.
+6. Classroom connection, in the teacher view, including the class assignment process. QR first, picture-word codes later, then goals, certificates, and the class star jar. Each school and class stores an IANA time zone, and weekly or monthly goals and certificates use that zone. Teacher inputs travel back to the parent view by QR when there is no server, and through the minimal server once class codes exist.
 
 Each step should keep the soft pastel look, big tap targets, very little text, original artwork only, and the privacy rules above.

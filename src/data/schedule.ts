@@ -1,4 +1,5 @@
 import { starterDeck, type DeckWord } from "./deck";
+import { calendarWeeksBetween, deviceTimeZone, isFriday } from "./time";
 
 export type WeekPlan = {
   week: number;
@@ -29,16 +30,14 @@ export const letterSchedule: WeekPlan[] = [
   { week: 14, newLetters: ["x", "q"], reviewLetters: ["z"] },
 ];
 
-function localDayNumber(date: Date): number {
-  return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
-}
-
-/** Lesson weeks start the day the profile was created, seven days each. */
-export function weekIndex(createdAt: string, now = new Date()): number {
+/**
+ * Lesson weeks are Monday–Sunday in `timeZone` (the device zone by default).
+ * Week 0 is the week the profile was created. The next Monday starts week 1.
+ */
+export function weekIndex(createdAt: string, now = new Date(), timeZone = deviceTimeZone()): number {
   const created = new Date(createdAt);
   if (Number.isNaN(created.getTime())) return 0;
-  const days = localDayNumber(now) - localDayNumber(created);
-  return Math.max(0, Math.floor(days / 7));
+  return calendarWeeksBetween(created, now, timeZone);
 }
 
 /** New letters from the first lesson week through this one. */
@@ -66,9 +65,9 @@ export function planForWeek(index: number): WeekPlan {
   return letterSchedule[safe];
 }
 
-/** Friday is review day on the device calendar. */
-export function isReviewDay(now = new Date()): boolean {
-  return now.getDay() === 5;
+/** Friday is review day on the device calendar, or in `timeZone` when one is passed. */
+export function isReviewDay(now = new Date(), timeZone = deviceTimeZone()): boolean {
+  return isFriday(now, timeZone);
 }
 
 export function practiceLetters(plan: WeekPlan, reviewDay: boolean): string[] {
