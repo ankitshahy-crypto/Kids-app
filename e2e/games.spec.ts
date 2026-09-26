@@ -15,11 +15,11 @@ const profile = {
   ],
 };
 
-async function install(page: Page) {
+async function install(page: Page, saved: unknown = profile) {
   await page.addInitScript((saved) => {
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
     localStorage.removeItem("kids-app-silent-hint-v1");
-  }, profile);
+  }, saved);
   await page.goto("./");
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
@@ -242,4 +242,132 @@ test("a teacher sets the hatch level and the egg follows it", async ({ page }) =
   await expect(board).toHaveAttribute("data-level", "2");
   await expect(board.locator('[data-blank="shown"]')).toHaveCount(1);
   await expect(board.locator('[data-blank="open"]')).toHaveCount(2);
+});
+
+async function traceWheel(page: Page, board: Locator) {
+  for (let guard = 0; guard < 6; guard += 1) {
+    if ((await board.getAttribute("data-phase")) !== "challenge") return;
+    if ((await board.getAttribute("data-kind")) !== "trace") return;
+    const pad = board.locator(".spin-trace");
+    await pad.scrollIntoViewIfNeeded();
+    const raw = (await pad.getAttribute("data-stations")) ?? "";
+    const box = await pad.locator("svg").boundingBox();
+    const points = raw
+      .split(" ")
+      .filter(Boolean)
+      .map((pair) => {
+        const [x, y] = pair.split(",").map(Number);
+        return { x: (box?.x ?? 0) + (x / 100) * (box?.width ?? 0), y: (box?.y ?? 0) + (y / 100) * (box?.height ?? 0) };
+      });
+    if (!box || points.length < 2) throw new Error("The mini letter has no stroke");
+    await page.mouse.move(points[0].x, points[0].y);
+    await page.mouse.down();
+    for (const point of points) await page.mouse.move(point.x, point.y);
+    await page.mouse.up();
+  }
+  if ((await board.getAttribute("data-phase")) === "challenge") throw new Error("The mini letter did not finish");
+}
+
+test("spin and say lands on learned challenges and keeps a star after a hint", async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await install(page);
+  await openGames(page);
+  await page.locator("[data-game-tile=spin]").click();
+  const board = page.locator("[data-game=spin] .game-board");
+  await expect(page.locator("[data-tip=game-spin-start]")).toBeVisible();
+  if (testInfo.project.name === "chromium") {
+    await board.screenshot({ path: "/opt/cursor/artifacts/games_spin.png" });
+  }
+  await board.locator("[data-wheel]").click();
+  await expect(board).toHaveAttribute("data-phase", "challenge");
+  await expect(board).toHaveAttribute("data-kind", "sound");
+  await expect(board).toHaveAttribute("data-flick", "false");
+  await expect(board).toHaveAttribute("data-reduced", "true");
+  await board.locator('[data-choice][data-answer="false"]').first().click();
+  await expect(board).toHaveAttribute("data-hint", "Try again.");
+  await expect(board.locator('[data-glow="true"]')).toHaveCount(1);
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "0");
+  await board.locator('[data-answer="true"]').click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+  await expect(board).toHaveAttribute("data-phase", "ready");
+
+  const kinds = ["word", "count", "color", "trace", "bonus"] as const;
+  for (const [offset, kind] of kinds.entries()) {
+    await board.locator("[data-wheel]").click();
+    await expect(board).toHaveAttribute("data-kind", kind);
+    if (kind === "word") await expect(board.locator('[data-blank="open"]')).toHaveCount(1);
+    if (kind === "count") {
+      const total = Number(await board.locator("[data-target]").getAttribute("data-target"));
+      await expect(board.locator(".spin-object")).toHaveCount(total);
+    }
+    if (kind === "trace") {
+      const svg = board.locator(".spin-trace svg");
+      const box = await svg.boundingBox();
+      if (!box) throw new Error("The tracing board has no box");
+      await page.mouse.move(box.x + 4, box.y + 4);
+      await page.mouse.down();
+      await page.mouse.move(box.x + 14, box.y + 8);
+      await page.mouse.up();
+      await expect(board).toHaveAttribute("data-hint", "Try again.");
+      await expect(page.locator(".star-count")).toHaveAttribute("data-stars", String(1 + offset));
+      await traceWheel(page, board);
+    } else if (kind === "bonus") {
+      await expect(board.locator("[data-prize-kind]")).toHaveAttribute("data-prize-kind", "sticker");
+      if (testInfo.project.name === "chromium") {
+        await board.screenshot({ path: "/opt/cursor/artifacts/games_spin_bonus.png" });
+      }
+      await board.getByRole("button", { name: "Done" }).click();
+    } else {
+      await board.locator('[data-answer="true"]').click();
+    }
+    await expect(board).toHaveAttribute("data-phase", "ready");
+    await expect(page.locator(".star-count")).toHaveAttribute("data-stars", String(2 + offset));
+  }
+
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator("[data-step=letter]")).toHaveAttribute("data-current", "true");
+  await page.locator("[data-dock=stickers]").click();
+  await expect(page.locator("[data-kind=animal]")).toHaveCount(1);
+});
+
+test("a flick spins the wheel and a bonus can gift a dress-up item", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await install(page, {
+    ...profile,
+    profiles: [
+      {
+        ...profile.profiles[0],
+        games: { hatch: 1, hatches: 0, spins: 11 },
+      },
+    ],
+  });
+  await openGames(page);
+  await page.locator("[data-game-tile=spin]").click();
+  const board = page.locator("[data-game=spin] .game-board");
+  await board.locator("[data-wheel]").click();
+  await expect(board).toHaveAttribute("data-kind", "bonus");
+  await expect(board.locator("[data-prize-kind]")).toHaveAttribute("data-prize-kind", "outfit");
+  await expect(board.locator("[data-prize]")).toHaveAttribute("data-prize", "scarf-stripe");
+  await board.getByRole("button", { name: "Done" }).click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.locator("[data-dock=closet]").click();
+  await expect(page.locator('[data-item="scarf-stripe"]')).toHaveAttribute("data-unlocked", "true");
+});
+
+test("flicking the wheel starts a challenge", async ({ page }) => {
+  await install(page);
+  await openGames(page);
+  await page.locator("[data-game-tile=spin]").click();
+  const wheel = page.locator("[data-wheel]");
+  const box = await wheel.boundingBox();
+  if (!box) throw new Error("The wheel has no box");
+  await page.mouse.move(box.x + box.width * 0.32, box.y + box.height * 0.5);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.78, box.y + box.height * 0.28, { steps: 8 });
+  await page.mouse.up();
+  const board = page.locator("[data-game=spin] .game-board");
+  await expect(board).toHaveAttribute("data-phase", "challenge");
+  await expect(board).toHaveAttribute("data-flick", "true");
+  await expect(board).toHaveAttribute("data-kind", /sound|word|count|color|trace|bonus/);
 });

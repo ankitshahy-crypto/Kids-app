@@ -120,6 +120,10 @@ const gameTips: Record<string, { start: string; end: string }> = {
     start: "Flip two cards. A big letter matches its little letter, or a number matches its dots.",
     end: "Ask: which pair did you find first?",
   },
+  spin: {
+    start: "Flick the wheel or tap it. Each slice is something they already know. A miss only shows a hint.",
+    end: "Ask: which slice do you want to spin next?",
+  },
 };
 
 /** A short grown-up line for a game. */

@@ -3,14 +3,22 @@ import { lettersIntroduced } from "./schedule";
 import { isSubjectKey, readingSteps } from "./subject";
 import {
   assignHatchLevel,
+  bonusPrize,
+  colorChoices,
+  countChoices,
   feedRound,
   glowLetter,
   hatchRound,
+  kindAtRotation,
   memoryRound,
   nextBaby,
   popRound,
   recordHatch,
   rhymeRound,
+  soundChoices,
+  spinTurn,
+  wheelRotation,
+  wordBlank,
 } from "./games";
 
 const taught = lettersIntroduced(3);
@@ -48,18 +56,18 @@ describe("hatch rounds follow taught letters", () => {
 
 describe("hatch level", () => {
   it("moves up after two eggs and never moves back", () => {
-    const once = recordHatch({ hatch: 1, hatches: 0 });
+    const once = recordHatch({ hatch: 1, hatches: 0, spins: 0 });
     expect(once.advanced).toBe(false);
-    expect(once.games).toEqual({ hatch: 1, hatches: 1 });
+    expect(once.games).toEqual({ hatch: 1, hatches: 1, spins: 0 });
     const twice = recordHatch(once.games);
     expect(twice.advanced).toBe(true);
-    expect(twice.games).toEqual({ hatch: 2, hatches: 0 });
-    const stayed = recordHatch({ hatch: 1, hatches: 1 });
+    expect(twice.games).toEqual({ hatch: 2, hatches: 0, spins: 0 });
+    const stayed = recordHatch({ hatch: 1, hatches: 1, spins: 0 });
     expect(stayed.games.hatch).toBeGreaterThanOrEqual(1);
   });
 
   it("lets a teacher set the level", () => {
-    expect(assignHatchLevel({ hatch: 1, hatches: 1 }, 3)).toEqual({ hatch: 3, hatches: 0 });
+    expect(assignHatchLevel({ hatch: 1, hatches: 1, spins: 2 }, 3)).toEqual({ hatch: 3, hatches: 0, spins: 2 });
   });
 });
 
@@ -96,10 +104,29 @@ describe("the other games", () => {
   });
 
   it("keeps game stars off the daily lesson", () => {
-    for (const id of ["game-hatch", "game-pop", "game-feed", "game-rhyme", "game-memory"]) {
+    for (const id of ["game-hatch", "game-pop", "game-feed", "game-rhyme", "game-memory", "spin-1"]) {
       expect(isSubjectKey(id)).toBe(true);
       expect((readingSteps as readonly string[]).includes(id)).toBe(false);
     }
+  });
+
+  it("spins onto the next learned challenge and keeps a bonus kind", () => {
+    expect(spinTurn(0)).toBe("sound");
+    expect(spinTurn(5)).toBe("bonus");
+    expect(kindAtRotation(wheelRotation(2, 40))).toBe("count");
+    expect(wheelRotation(1, wheelRotation(0))).toBeGreaterThan(wheelRotation(0));
+    const sound = soundChoices(taught, 0);
+    expect(sound.target).toBe("m");
+    expect(sound.choices).toContain("m");
+    const blank = wordBlank(taught, 1);
+    expect(blank.word.word).toBe("dog");
+    expect(blank.blank).toBe(0);
+    expect(countChoices(6).choices).toContain(6);
+    expect(colorChoices("green", ["green", "red", "blue"]).target).toBe("green");
+    expect(bonusPrize(5, [], []).kind).toBe("sticker");
+    const outfit = bonusPrize(11, [], [], 0);
+    expect(outfit.kind).toBe("outfit");
+    if (outfit.kind === "outfit") expect(outfit.id).toBe("scarf-stripe");
   });
 
   it("picks the next baby animal that is not in the sticker book", () => {

@@ -22,7 +22,7 @@ LittleNest Learning helps young children take their first steps into letters, nu
 - **Short daily lessons:** 5–10 minutes builds a habit without too much screen time.
 - **Stars for trying:** Effort, not perfection. No pressure, no scores.
 - **Rewards that feel great:** Stars for effort unlock outfits for your child's animal, a sticker book of letters, numbers, colors, and baby animals, and a growing nest. Every reward is earned by practicing, never bought.
-- **Games to play:** Hatch an egg, pop letter balloons, feed their animal, match rhymes, and flip memory cards. A miss just means try again.
+- **Games to play:** Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. A miss just means try again.
 - **LittleNest Numbers:** Count to 10, hear and trace numbers, match and trace shapes, compare groups, and add with pictures up to 5.
 - **LittleNest Colors:** Hear a color and tap it, mix paints, and color their animal with colors they made. Every swatch shows the color word.
 - **Made for classrooms too:** Teachers can follow a class and share goals with parents.

@@ -55,7 +55,7 @@ export const aboutContent = {
     {
       id: "games",
       title: "Games to play",
-      body: "Hatch an egg, pop letter balloons, feed their animal, match rhymes, and flip memory cards. A miss just means try again.",
+      body: "Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. A miss just means try again.",
     },
     {
       id: "classroom",

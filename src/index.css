@@ -5352,4 +5352,97 @@ input.is-pressed,
     animation: none;
     outline: 3px solid #c9846a;
   }
+
+  .spin-wheel {
+    transition: none;
+  }
+}
+
+.spin-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.spin-pointer {
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 22px solid var(--ink);
+  margin-bottom: -6px;
+  z-index: 1;
+}
+
+.spin-wheel {
+  width: min(78vw, 300px);
+  height: min(78vw, 300px);
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  touch-action: none;
+}
+
+.spin-wheel svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.spin-challenge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.spin-objects {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 280px;
+}
+
+.spin-object {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f6b07a;
+}
+
+.spin-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: inline-block;
+}
+
+.spin-prize {
+  margin: 0;
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.spin-trace {
+  width: min(70vw, 280px);
+  touch-action: none;
+}
+
+.spin-trace svg {
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .spin-wheel {
+    width: min(46vw, 380px);
+    height: min(46vw, 380px);
+  }
 }

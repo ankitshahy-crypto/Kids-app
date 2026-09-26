@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createChild } from "./profiles";
-import { addNestPiece, addStickers, applyEffort, milestonesBetween, wearItem } from "./rewards";
+import { addNestPiece, addStickers, applyEffort, grantGift, milestonesBetween, wearItem } from "./rewards";
 
 const now = new Date("2026-09-26T15:00:00.000Z");
 const zone = "UTC";
@@ -69,5 +69,7 @@ describe("effort rewards", () => {
     expect(earned.outfit.hat).toBe("hat-leaf");
     expect(wearItem(earned, "hat-leaf").outfit.hat).toBeNull();
     expect(addStickers(child(), []).stickers).toEqual([]);
+    const gifted = grantGift(child(0), "scarf-stripe");
+    expect(wearItem(gifted, "scarf-stripe").outfit.scarf).toBe("scarf-stripe");
   });
 });

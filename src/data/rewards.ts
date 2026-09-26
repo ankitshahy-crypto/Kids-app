@@ -33,10 +33,24 @@ export function unlocked(stars: number, itemId: WardrobeId): boolean {
   return Boolean(item && stars >= item.stars);
 }
 
+/** A star cost or a wheel gift opens the item. */
+export function itemUnlocked(profile: Pick<ChildProfile, "stars" | "gifts">, itemId: string): boolean {
+  const item = wardrobeItem(itemId);
+  if (!item) return false;
+  return profile.stars >= item.stars || (profile.gifts ?? []).includes(item.id);
+}
+
+/** Keep a dress-up item the wheel awarded. Stars are not required. */
+export function grantGift(profile: ChildProfile, itemId: string): ChildProfile {
+  const item = wardrobeItem(itemId);
+  if (!item || profile.gifts.includes(item.id)) return profile;
+  return { ...profile, gifts: [...profile.gifts, item.id] };
+}
+
 /** Wear an earned item, or take it off. A locked item stays in the closet. */
 export function wearItem(profile: ChildProfile, itemId: string): ChildProfile {
   const item = wardrobeItem(itemId);
-  if (!item || profile.stars < item.stars) return profile;
+  if (!item || !itemUnlocked(profile, item.id)) return profile;
   const wearing = profile.outfit[item.slot] === item.id;
   return {
     ...profile,

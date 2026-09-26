@@ -20,8 +20,9 @@ import {
 } from "../data/games";
 import type { ChildProfile, StickerInput } from "../data/profiles";
 import { Hero } from "./Hero";
+import { SpinSay } from "./SpinSay";
 
-export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory";
+export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory" | "spin";
 
 const tiles: { id: GameId; label: string }[] = [
   { id: "hatch", label: "Hatch the Egg" },
@@ -29,20 +30,27 @@ const tiles: { id: GameId; label: string }[] = [
   { id: "feed", label: "Feed the Animal" },
   { id: "rhyme", label: "Rhyme Match" },
   { id: "memory", label: "Memory Flip" },
+  { id: "spin", label: "Spin & Say" },
 ];
 
 export function Games({
   profile,
   knownLetters,
   settingsRef,
+  count,
+  color,
+  colorOptions,
   onEnter,
   onDone,
 }: {
   profile: ChildProfile;
   knownLetters: string[];
   settingsRef: { current: Settings };
+  count: number;
+  color: string;
+  colorOptions: string[];
   onEnter: (game: GameId) => void;
-  onDone: (game: GameId, learned: StickerInput[]) => void;
+  onDone: (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string }) => void;
 }) {
   const [game, setGame] = useState<GameId | "home">("home");
   const open = (next: GameId) => {
@@ -120,6 +128,22 @@ export function Games({
             onDone("memory", []);
             setGame("home");
           }}
+        />
+      ) : null}
+      {game === "spin" ? (
+        <SpinSay
+          knownLetters={knownLetters}
+          hatchLevel={profile.games.hatch}
+          spins={profile.games.spins}
+          stars={profile.stars}
+          writing={profile.writing}
+          count={count}
+          color={color}
+          colorOptions={colorOptions}
+          gifts={profile.gifts}
+          babies={profile.stickers.filter((sticker) => sticker.kind === "animal").map((sticker) => sticker.label)}
+          settingsRef={settingsRef}
+          onAttempt={(attempt) => onDone("spin", attempt.stickers, { step: attempt.step, gift: attempt.gift })}
         />
       ) : null}
     </div>
@@ -679,6 +703,16 @@ function TileArt({ id }: { id: GameId }) {
       <svg viewBox="0 0 80 80" aria-hidden="true">
         <rect x="14" y="22" width="22" height="28" rx="4" fill="#C9E6D4" />
         <rect x="44" y="22" width="22" height="28" rx="4" fill="#F6E3B4" />
+      </svg>
+    );
+  }
+  if (id === "spin") {
+    return (
+      <svg viewBox="0 0 80 80" aria-hidden="true">
+        <circle cx="40" cy="40" r="26" fill="#F6C3CB" />
+        <path d="M40 14 A26 26 0 0 1 66 40 L40 40 Z" fill="#B7D7F2" />
+        <path d="M40 66 A26 26 0 0 1 14 40 L40 40 Z" fill="#F6E3B4" />
+        <circle cx="40" cy="40" r="8" fill="#fffdfb" />
       </svg>
     );
   }
