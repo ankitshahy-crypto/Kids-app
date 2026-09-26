@@ -121,6 +121,56 @@ function tone(
   osc.stop(start + seconds + 0.02);
 }
 
+/**
+ * A soft two-note cue scheduled while the finger is still down, so iOS will
+ * play it when a press-and-hold finishes. Call the returned function if the
+ * hold is released early. Safari on iPhone has no vibration API.
+ */
+export function armUnlockCue(delayMs: number): () => void {
+  unlockAudio();
+  const ctx = ensure();
+  if (!ctx) return () => undefined;
+  const start = ctx.currentTime + delayMs / 1000;
+  const nodes: OscillatorNode[] = [];
+  const make = (hz: number, at: number, seconds: number, peak: number) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(hz, at);
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), at + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + seconds);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(at);
+    osc.stop(at + seconds + 0.03);
+    nodes.push(osc);
+  };
+  try {
+    make(698, start, 0.14, 0.05);
+    make(880, start + 0.1, 0.18, 0.04);
+  } catch {
+    return () => undefined;
+  }
+  return () => {
+    for (const osc of nodes) {
+      try {
+        osc.stop();
+      } catch {
+        // The cue already finished.
+      }
+    }
+  };
+}
+
+export function pulseUnlock(): void {
+  try {
+    navigator.vibrate?.(16);
+  } catch {
+    // iOS Safari does not implement vibration. The scheduled cue is the sound.
+  }
+}
+
 /** Short, soft effects. Never a buzzer. */
 export function playEffect(name: EffectName, settings?: Settings): void {
   if (settings) latest = settings;
