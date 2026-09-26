@@ -9,6 +9,7 @@ import {
   type MathStep,
   type ShapeId,
 } from "../data/math";
+import { memoryPrompt, shapeItemId, writingLevel, type WritingMap, type WritingOutcome } from "../data/scaffold";
 import { shapeStrokes } from "../data/shapeStrokes";
 import type { Settings } from "../settings";
 
@@ -280,10 +281,14 @@ export function TraceActivity({
 export function ShapeActivity({
   lesson,
   settingsRef,
+  writing,
+  onAttempt,
   onDone,
 }: {
   lesson: MathLesson;
   settingsRef: { current: Settings };
+  writing?: WritingMap;
+  onAttempt?: (id: string, success: boolean) => WritingOutcome;
   onDone: (label: string) => void;
 }) {
   const speak = useSpeaker(settingsRef);
@@ -303,6 +308,7 @@ export function ShapeActivity({
   };
 
   if (tracing) {
+    const id = shapeItemId(lesson.shape);
     return (
       <PathTrace
         screen="shape"
@@ -311,6 +317,11 @@ export function ShapeActivity({
         settingsRef={settingsRef}
         ruled={false}
         marker={{ prompt: lesson.shape, tries: String(tries) }}
+        level={writingLevel(writing, id)}
+        writing={writing}
+        itemId={id}
+        memoryLine={memoryPrompt("shape", shapeTitles[lesson.shape])}
+        onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
         onSpeak={() => speak.prompt(lesson.shape)}
         onDone={() => onDone(lesson.shape)}
       />

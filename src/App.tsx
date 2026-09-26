@@ -50,7 +50,7 @@ const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
-  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading } = useProfiles();
+  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel } = useProfiles();
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
@@ -391,6 +391,8 @@ export default function App() {
                 <LetterTrace
                   letters={lessonLetters}
                   settingsRef={settingsRef}
+                  writing={active.writing}
+                  onAttempt={(itemId, success) => recordWriting(active.id, itemId, success)}
                   onDone={() => {
                     const learned = (lessonLetters.length > 0 ? lessonLetters : ["a"]).map((label) => ({
                       kind: "letter" as const,
@@ -406,6 +408,8 @@ export default function App() {
                 <WordTrace
                   words={blendedWords}
                   settingsRef={settingsRef}
+                  writing={active.writing}
+                  onAttempt={(itemId, success) => recordWriting(active.id, itemId, success)}
                   onDone={(word) => practiceReward("word", [{ kind: "word", label: word }])}
                 />
               ) : null}
@@ -413,6 +417,8 @@ export default function App() {
                 <NameTrace
                   name={active.name}
                   settingsRef={settingsRef}
+                  writing={active.writing}
+                  onAttempt={(itemId, success) => recordWriting(active.id, itemId, success)}
                   onDone={() => practiceReward("name", [{ kind: "word", label: traceName }])}
                 />
               ) : null}
@@ -429,7 +435,13 @@ export default function App() {
                 <TraceActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("trace", label)} />
               ) : null}
               {screen === "shape" ? (
-                <ShapeActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("shape", label)} />
+                <ShapeActivity
+                  lesson={mathLesson}
+                  settingsRef={settingsRef}
+                  writing={active.writing}
+                  onAttempt={(itemId, success) => recordWriting(active.id, itemId, success)}
+                  onDone={(label) => finishMath("shape", label)}
+                />
               ) : null}
               {screen === "more" ? (
                 <MoreActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("more", label)} />
@@ -480,6 +492,7 @@ export default function App() {
             activeId={active?.id ?? null}
             onClassPlace={setClassPlace}
             onChildPlace={setChildPlace}
+            onWritingLevel={setWritingLevel}
             onClose={() => setMode("start")}
           />
         ) : null}

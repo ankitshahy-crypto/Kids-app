@@ -2,6 +2,7 @@ import { PROFILES_KEY, readStored, writeStored } from "../storage";
 import { animalById, isAnimalId, type AnimalId } from "./animals";
 import { READING, isSubjectKey, readingSteps, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
+import { normalizeWriting, type WritingMap } from "./scaffold";
 import { emptyOutfit, itemForSlot, type Outfit } from "./wardrobe";
 
 export const ageRanges = ["3", "4", "5", "6-7"] as const;
@@ -66,6 +67,8 @@ export type ChildProfile = {
   practiceMs: Record<string, Record<string, number>>;
   /** Dates whose goal already gave the one bonus star, per subject. */
   practiceAwarded: Record<string, string[]>;
+  /** Tracing help for each letter, shape, word, or name. Missing items start at a full guide. */
+  writing: WritingMap;
 };
 
 type ProfileStore = {
@@ -202,6 +205,7 @@ export function createChild(input: { name: string; ageRange: AgeRange; animal: A
     createdAt: utcTimestamp(),
     stars: 0,
     days: {},
+    writing: {},
     ...emptyRewards(),
   };
 }
@@ -248,6 +252,7 @@ function withRewards(profile: ChildProfile): ChildProfile {
       ? profile.celebrated.filter((value) => typeof value === "number" && value > 0 && value % 10 === 0)
       : [],
     ...practiceTime(profile),
+    writing: normalizeWriting((profile as { writing?: unknown }).writing),
   };
 }
 

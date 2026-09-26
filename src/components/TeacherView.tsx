@@ -6,6 +6,8 @@ import { practiceTotal } from "../data/reading";
 import { lettersIntroduced } from "../data/schedule";
 import { resolvePlacement, type LessonPlace, type PlacementDocument } from "../data/placement";
 import { lessonName, type ChildProfile } from "../data/profiles";
+import type { ScaffoldLevel } from "../data/scaffold";
+import { WritingLevels } from "./WritingLevels";
 import { Avatar } from "../avatars";
 import { LearningPath } from "./LearningPath";
 import { PlacementControls } from "./PlacementControls";
@@ -64,10 +66,12 @@ function DeviceRewards({
   profiles,
   goalMinutes,
   placement,
+  onWritingLevel,
 }: {
   profiles: ChildProfile[];
   goalMinutes: number;
   placement: PlacementDocument;
+  onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
 }) {
   return (
     <section className="teacher-card" data-card="device">
@@ -99,6 +103,14 @@ function DeviceRewards({
         const colorResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS);
         return (
           <div key={profile.id}>
+            <WritingLevels
+              writing={profile.writing}
+              weekLetters={resolved.letters}
+              childName={profile.name}
+              stickers={profile.stickers}
+              editable
+              onSetLevel={(itemId, level) => onWritingLevel(profile.id, itemId, level)}
+            />
             <LearningPath profile={profile} name={lessonName(profile)} placedIntroduced={placedIntroduced} />
             <LearningPath
               profile={profile}
@@ -150,6 +162,7 @@ export function TeacherView({
   activeId,
   onClassPlace,
   onChildPlace,
+  onWritingLevel,
   onClose,
 }: {
   profiles: ChildProfile[];
@@ -158,6 +171,7 @@ export function TeacherView({
   activeId: string | null;
   onClassPlace: (place: LessonPlace | null) => void;
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
+  onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("roster");
@@ -183,7 +197,7 @@ export function TeacherView({
           <h2>Printables</h2>
           <Printables profiles={profiles} activeId={activeId} placement={placement} />
         </section>
-        <DeviceRewards profiles={profiles} goalMinutes={goalMinutes} placement={placement} />
+        <DeviceRewards profiles={profiles} goalMinutes={goalMinutes} placement={placement} onWritingLevel={onWritingLevel} />
         <p className="demo-flag">Demo data. Not a real class. Filled in during step 6.</p>
         <header className="teacher-top">
           <div className="class-switch-wrap">

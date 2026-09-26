@@ -33,7 +33,7 @@ LittleNest Learning has three modules. LittleNest Words starts with letter sound
 
 LittleNest Words:
 
-1. **Letters:** Hear each letter sound and trace big and little.
+1. **Letters:** Hear each letter sound and trace big and little. The guide fades with practice, from a full path to writing from memory.
 2. **Blending:** Slide sounds together into a word.
 3. **Words:** Read short words, then trace the ones they blended.
 4. **Stories:** A tiny story with their animal.
@@ -43,7 +43,7 @@ LittleNest Numbers:
 
 1. **Counting:** Count objects from 1 to 10.
 2. **Numbers:** Hear a number and tap it. Trace 0 to 9.
-3. **Shapes:** Find a shape, then trace it.
+3. **Shapes:** Find a shape, then trace it. The same writing levels apply.
 4. **Adding:** Put two groups together, up to 5.
 
 LittleNest Colors:
