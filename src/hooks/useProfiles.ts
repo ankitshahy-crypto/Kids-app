@@ -11,6 +11,7 @@ import {
 } from "../data/profiles";
 import { applyReadingCredit, type ReadingCredit } from "../data/reading";
 import { applyEffort, wearItem, type EffortResult } from "../data/rewards";
+import { assignHatchLevel, recordHatch, type HatchLevel } from "../data/games";
 import { assignWritingLevel, recordWritingAttempt, type ScaffoldLevel, type WritingOutcome } from "../data/scaffold";
 import { READING, type SubjectId } from "../data/subject";
 
@@ -113,6 +114,26 @@ export function useProfiles() {
     return outcome;
   };
 
+  const noteHatch = (id: string) => {
+    const profile = store.profiles.find((item) => item.id === id);
+    const outcome = recordHatch(profile?.games);
+    if (!profile) return outcome;
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) => (item.id === id ? { ...item, games: outcome.games } : item)),
+    }));
+    return outcome;
+  };
+
+  const setHatchLevel = (id: string, level: HatchLevel) => {
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) =>
+        item.id === id ? { ...item, games: assignHatchLevel(item.games, level) } : item,
+      ),
+    }));
+  };
+
   const setWritingLevel = (id: string, itemId: string, level: ScaffoldLevel) => {
     setStore((current) => ({
       ...current,
@@ -140,6 +161,8 @@ export function useProfiles() {
     recordReading,
     recordWriting,
     setWritingLevel,
+    noteHatch,
+    setHatchLevel,
     wear,
   };
 }

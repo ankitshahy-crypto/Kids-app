@@ -7,6 +7,8 @@ import { lettersIntroduced } from "../data/schedule";
 import { resolvePlacement, type LessonPlace, type PlacementDocument } from "../data/placement";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import type { ScaffoldLevel } from "../data/scaffold";
+import type { HatchLevel } from "../data/games";
+import { HatchLevelControl } from "./HatchLevel";
 import { WritingLevels } from "./WritingLevels";
 import { Avatar } from "../avatars";
 import { LearningPath } from "./LearningPath";
@@ -67,11 +69,13 @@ function DeviceRewards({
   goalMinutes,
   placement,
   onWritingLevel,
+  onHatchLevel,
 }: {
   profiles: ChildProfile[];
   goalMinutes: number;
   placement: PlacementDocument;
   onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
+  onHatchLevel: (childId: string, level: HatchLevel) => void;
 }) {
   return (
     <section className="teacher-card" data-card="device">
@@ -111,6 +115,7 @@ function DeviceRewards({
               editable
               onSetLevel={(itemId, level) => onWritingLevel(profile.id, itemId, level)}
             />
+            <HatchLevelControl games={profile.games} editable onSetLevel={(level) => onHatchLevel(profile.id, level)} />
             <LearningPath profile={profile} name={lessonName(profile)} placedIntroduced={placedIntroduced} />
             <LearningPath
               profile={profile}
@@ -163,6 +168,7 @@ export function TeacherView({
   onClassPlace,
   onChildPlace,
   onWritingLevel,
+  onHatchLevel,
   onClose,
 }: {
   profiles: ChildProfile[];
@@ -172,6 +178,7 @@ export function TeacherView({
   onClassPlace: (place: LessonPlace | null) => void;
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
   onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
+  onHatchLevel: (childId: string, level: HatchLevel) => void;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("roster");
@@ -197,7 +204,13 @@ export function TeacherView({
           <h2>Printables</h2>
           <Printables profiles={profiles} activeId={activeId} placement={placement} />
         </section>
-        <DeviceRewards profiles={profiles} goalMinutes={goalMinutes} placement={placement} onWritingLevel={onWritingLevel} />
+        <DeviceRewards
+          profiles={profiles}
+          goalMinutes={goalMinutes}
+          placement={placement}
+          onWritingLevel={onWritingLevel}
+          onHatchLevel={onHatchLevel}
+        />
         <p className="demo-flag">Demo data. Not a real class. Filled in during step 6.</p>
         <header className="teacher-top">
           <div className="class-switch-wrap">

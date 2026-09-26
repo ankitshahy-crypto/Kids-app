@@ -33,6 +33,7 @@ export function TodayPath({
   onNest,
   onCloset,
   onStickers,
+  onGames,
   goalMinutes,
   course,
   onCourse,
@@ -56,6 +57,7 @@ export function TodayPath({
   onNest: () => void;
   onCloset: () => void;
   onStickers: () => void;
+  onGames: () => void;
   goalMinutes: number;
   course: "reading" | "math" | "colors";
   onCourse: (course: "reading" | "math" | "colors") => void;
@@ -223,6 +225,14 @@ export function TodayPath({
             <ToyBox />
           </span>
           <span>Play library</span>
+        </button>
+        <button type="button" className="dock-button" data-dock="games" onClick={onGames}>
+          <span className="dock-art dock-games" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <ellipse cx="32" cy="36" rx="16" ry="20" fill="#FFF6E4" stroke="#E4C7A4" strokeWidth="3" />
+            </svg>
+          </span>
+          <span>Games</span>
         </button>
         <button type="button" className="dock-button" data-dock="nest" onClick={onNest}>
           <span className="dock-art dock-nest">

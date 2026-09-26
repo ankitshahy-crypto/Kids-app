@@ -23,6 +23,7 @@ import { COLORS, colorIntroduced } from "../data/colors";
 import { MATH, mathIntroduced } from "../data/math";
 import { practiceTotal } from "../data/reading";
 import { LearningPath } from "./LearningPath";
+import { HatchLevelControl } from "./HatchLevel";
 import { WritingLevels } from "./WritingLevels";
 import { ReadingChart } from "./ReadingChart";
 import { SettingsFields } from "./SettingsFields";
@@ -383,6 +384,7 @@ function ParentHome({
       </section>
 
       <WritingLevels writing={child.writing} weekLetters={weekLetters} childName={child.name} stickers={child.stickers} />
+      <HatchLevelControl games={child.games} />
 
       <div className="dash-split">
         <section className="dash-card" data-section="lessons">

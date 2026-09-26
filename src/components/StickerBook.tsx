@@ -20,7 +20,7 @@ export function StickerBook({ profile, onBack }: { profile: ChildProfile; onBack
       <h1>Sticker book</h1>
       <div className="sticker-page" data-page={safe + 1} data-pages={pages}>
         {slice.length === 0 ? (
-          <p className="sticker-empty">New letters, words, numbers, and colors leave a sticker here.</p>
+          <p className="sticker-empty">New letters, words, numbers, colors, and baby animals leave a sticker here.</p>
         ) : (
           <ul className="sticker-grid">
             {slice.map((sticker) => (
