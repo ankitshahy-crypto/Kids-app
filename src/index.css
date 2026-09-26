@@ -4185,15 +4185,46 @@ button:focus-visible {
 
 @media (max-width: 767px) {
   .course-button {
-    min-height: 64px;
-    font-size: 14px;
+    min-height: 58px;
+    height: 64px;
+    font-size: 12px;
     padding: 4px 2px;
+  }
+
+  .course-brand {
+    display: none;
+  }
+
+  .course-name span:last-child {
+    font-size: 12px;
+    line-height: 1.05;
+    white-space: nowrap;
   }
 
   .course-art,
   .course-art .module-mark {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .dock-art {
+    width: 52px;
+    height: 52px;
+  }
+
+  .math-activity {
+    min-height: 76px;
+  }
+
+  [data-engineer="menu"] .math-activity {
+    min-height: 60px;
+    font-size: 13px;
+  }
+
+  [data-engineer="menu"] .math-activity-art,
+  [data-engineer="menu"] .math-activity-art svg {
+    width: 28px;
+    height: 28px;
   }
 }
 
@@ -6286,5 +6317,11 @@ input.is-pressed,
   .eng-ball {
     animation: none;
     transition: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .math-activity {
+    min-height: 76px;
   }
 }

@@ -43,15 +43,23 @@ test("Build sits on the home screen and a bridge can cross", async ({ page }, te
   await expect(board.locator("[data-activity=bridge]")).toBeVisible();
   const dock = await page.locator(".today-dock").boundingBox();
   const tile = await board.locator("[data-activity=float]").boundingBox();
-  expect(tile!.y + tile!.height).toBeLessThan((dock?.y ?? 0) + 1);
+  const overlaps = Boolean(
+    dock &&
+      tile &&
+      tile.x < dock.x + dock.width &&
+      tile.x + tile.width > dock.x &&
+      tile.y < dock.y + dock.height &&
+      tile.y + tile.height > dock.y,
+  );
+  expect(overlaps).toBe(false);
   if (testInfo.project.name === "chromium" || testInfo.project.name === "iphone") {
     await page.locator("[data-screen=today]").screenshot({ path: `test-results/screenshots/build_home_${testInfo.project.name}.png` });
   }
   await board.locator("[data-activity=bridge]").click();
   const play = page.locator("[data-engineer=bridge]");
   await expect(page.locator("[data-tip=engineer-bridge-start]")).toBeVisible();
-  await play.locator("[data-piece=block]").click();
-  await play.locator("[data-piece=plank]").dragTo(play.locator("[data-slot='1']"));
+  await play.locator("[data-kit=block]").click();
+  await play.locator("[data-kit=plank]").dragTo(play.locator("[data-slot='1']"));
   await expect(play).toHaveAttribute("data-slots", "block,plank");
   await play.locator("[data-test=bridge]").click();
   await expect(play).toHaveAttribute("data-outcome", "cross");
@@ -69,14 +77,14 @@ test("a narrow tower topples and a wide one reaches the nest", async ({ page }, 
   await page.locator("[data-course=build]").click();
   await page.locator("[data-activity=tower]").click();
   const play = page.locator("[data-engineer=tower]");
-  await play.locator("[data-piece=narrow]").click();
+  await play.locator("[data-kit=narrow]").click();
   await play.locator("[data-test=tower]").click();
   await expect(play).toHaveAttribute("data-outcome", "topple");
   await expect(play.locator(".build-again")).toHaveText("Try again.");
   await play.locator("[data-undo=tower]").click();
-  await play.locator("[data-piece=wide]").click();
-  await play.locator("[data-piece=medium]").click();
-  await play.locator("[data-piece=narrow]").click();
+  await play.locator("[data-kit=wide]").click();
+  await play.locator("[data-kit=medium]").click();
+  await play.locator("[data-kit=narrow]").click();
   await play.locator("[data-test=tower]").click();
   await expect(play).toHaveAttribute("data-outcome", "reach");
   if (testInfo.project.name === "chromium") {
@@ -141,9 +149,9 @@ test("ages 5 to 7 hear what went wrong, then balance the beam", async ({ page },
   await page.locator("[data-activity=bridge]").click();
   const bridge = page.locator("[data-engineer=bridge]");
   await expect(bridge).toHaveAttribute("data-level", "later");
-  await bridge.locator("[data-piece=plank]").click();
-  await bridge.locator("[data-piece=plank]").click();
-  await bridge.locator("[data-piece=block]").click();
+  await bridge.locator("[data-kit=plank]").click();
+  await bridge.locator("[data-kit=plank]").click();
+  await bridge.locator("[data-kit=block]").click();
   await bridge.locator("[data-test=bridge]").click();
   await expect(bridge).toHaveAttribute("data-outcome", "sag");
   await expect(bridge.locator("[data-wrong=true]")).toContainText("What went wrong?");
@@ -152,9 +160,9 @@ test("ages 5 to 7 hear what went wrong, then balance the beam", async ({ page },
   await bridge.locator("[data-slot='1']").click();
   await bridge.locator("[data-slot='2']").click();
   await bridge.locator("[data-slot='0']").click();
-  await bridge.locator("[data-piece=plank]").click();
-  await bridge.locator("[data-piece=block]").click();
-  await bridge.locator("[data-piece=plank]").click();
+  await bridge.locator("[data-kit=plank]").click();
+  await bridge.locator("[data-kit=block]").click();
+  await bridge.locator("[data-kit=plank]").click();
   await expect(bridge).toHaveAttribute("data-slots", "plank,block,plank");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.locator("[data-activity=balance]").click();

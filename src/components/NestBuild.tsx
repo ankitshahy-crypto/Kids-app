@@ -240,10 +240,10 @@ function BridgePlay({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
         </span>
       </div>
       <div className="eng-tray" role="group" aria-label="Pieces">
-        <button type="button" className="eng-piece" data-piece="block" aria-label="Block" {...bind("block")}>
+        <button type="button" className="eng-piece" data-kit="block" aria-label="Block" {...bind("block")}>
           <BlockArt />
         </button>
-        <button type="button" className="eng-piece" data-piece="plank" aria-label="Plank" {...bind("plank")}>
+        <button type="button" className="eng-piece" data-kit="plank" aria-label="Plank" {...bind("plank")}>
           <PlankArt />
         </button>
       </div>
@@ -313,7 +313,7 @@ function TowerPlay({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
       </div>
       <div className="eng-tray" role="group" aria-label="Shapes">
         {(["wide", "medium", "narrow"] as const).map((piece) => (
-          <button key={piece} type="button" className="eng-piece" data-piece={piece} aria-label={piece} {...bind(piece)}>
+          <button key={piece} type="button" className="eng-piece" data-kit={piece} aria-label={piece} {...bind(piece)}>
             <span className={`eng-layer eng-${piece}`} />
           </button>
         ))}
