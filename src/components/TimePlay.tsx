@@ -71,7 +71,7 @@ export function MoneyArt({ id }: { id: string }) {
   );
 }
 
-function SnackArt({ id }: { id: string }) {
+export function SnackArt({ id }: { id: string }) {
   if (id === "cookie") {
     return (
       <svg className="snack-art" viewBox="0 0 80 80" aria-hidden="true">

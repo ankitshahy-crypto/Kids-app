@@ -153,6 +153,26 @@ const timeTips: Record<string, { start: string; end: string }> = {
     start: "Their animal buys a snack. Early on, one coin is enough. Later, count the change.",
     end: "Ask: what else could we buy?",
   },
+  jars: {
+    start: "Pretend chores earn coins. Split them into save, spend, and share. The hat waits in the save jar.",
+    end: "At home, talk about saving for something they want. A jar on the counter works too.",
+  },
+  lemonade: {
+    start: "Each cup they serve is work, and work earns a coin.",
+    end: "Ask: what chore at home could earn a coin in a jar?",
+  },
+  choose: {
+    start: "They can buy a snack the coins cover. A bigger price waits.",
+    end: "If something costs too much, say let's save for it. No one is in trouble.",
+  },
+  needs: {
+    start: "Food is a need. A toy crown is a want. Both can be good.",
+    end: "Ask: is a warm coat a need or a want?",
+  },
+  cards: {
+    start: "A debit card uses money they already saved. A credit card borrows, then they pay it back. There is no interest.",
+    end: "Ask: which card made the save jar go down right away?",
+  },
 };
 
 /** A short grown-up line for a time and money activity. */

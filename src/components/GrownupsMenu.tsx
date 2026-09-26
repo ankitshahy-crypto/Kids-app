@@ -241,7 +241,7 @@ export function GrownupsMenu({
             Each day the child can choose LittleNest Words, LittleNest Numbers, LittleNest Colors, or LittleNest Time & Money. LittleNest Words
             has four stops: Letters, Draw, Story, and Colors. LittleNest Numbers has counting, numerals, tracing, shapes,
             comparing, and adding. LittleNest Colors has color names, then mixing paints, and coloring their animal. LittleNest Time & Money
-            has the parts of the day, a routine, a clock, coins, and a pretend shop. A
+            has the parts of the day, a routine, a clock, coins, a pretend shop, save jars, and a lemonade stand. Cards stay pretend. A
             star is for trying. The daily goal counts time on all of them. On Friday the letters from that week come
             back for a short review.
           </p>

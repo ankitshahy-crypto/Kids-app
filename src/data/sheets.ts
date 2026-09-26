@@ -25,6 +25,7 @@ const sheetCatalog: SheetKind[] = [
   { subject: COLORS, id: "coloring", title: "Coloring page" },
   { subject: TIME, id: "clock", title: "Clock faces" },
   { subject: TIME, id: "coins", title: "Coin counting" },
+  { subject: TIME, id: "jars", title: "Three jars chart" },
 ];
 
 export function sheetsFor(subject: SubjectId): SheetKind[] {

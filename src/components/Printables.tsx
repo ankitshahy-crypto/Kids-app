@@ -396,6 +396,28 @@ export function Printables({
                 </li>
               </ul>
             </article>
+            <article className="print-sheet" data-sheet="jars">
+              <header className="sheet-head">
+                <div>
+                  <p className="sheet-kicker">{PRODUCT_SHORT}</p>
+                  <h3>Three jars</h3>
+                </div>
+              </header>
+              <p className="sheet-word">Color a circle when a coin goes in a jar.</p>
+              <div className="jar-chart">
+                {["Save", "Spend", "Share"].map((name) => (
+                  <section key={name} data-jar={name.toLowerCase()}>
+                    <h4>{name}</h4>
+                    <div className="jar-dots">
+                      {Array.from({ length: 5 }, (_, index) => (
+                        <span key={index} className="jar-dot" />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+              <p className="sheet-word">Save goal: a paper crown.</p>
+            </article>
           </>
         ) : null}
         {sheetCourse === "colors" ? (

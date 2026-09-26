@@ -55,7 +55,7 @@ export const aboutContent = {
     {
       id: "time",
       title: MODULE_TIME,
-      body: "Morning, afternoon, and night, then the daily routine and o'clock. Ages 5 to 7 set half hours, quarter hours, and five-minute steps, match a digital time, and ask how long until. Name a penny, nickel, dime, quarter, and one- and five-dollar bills drawn for this app, sort coins, and let their animal buy a snack. Later they count mixed coins, pay dollars and cents, make change, and compare prices.",
+      body: "Morning, afternoon, and night, then the daily routine and o'clock. Ages 5 to 7 set half hours, quarter hours, and five-minute steps, match a digital time, and ask how long until. Name a penny, nickel, dime, quarter, and one- and five-dollar bills drawn for this app, sort coins, and let their animal buy a snack. Later they count mixed coins, pay dollars and cents, make change, and compare prices. Pretend chores fill Save, Spend, and Share jars, a lemonade stand earns coins, and a shop says let's save for it when the price is too big. Needs and wants are sorted. Pretend debit and credit cards come later, with no interest and no real payments.",
     },
     {
       id: "games",
@@ -75,7 +75,7 @@ export const aboutContent = {
   ],
   teachesHeading: `How ${PRODUCT_NAME} teaches`,
   teaches:
-    `${PRODUCT_NAME} has four modules. ${MODULE_WORDS} starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. ${MODULE_NUMBERS} starts with counting, then numerals, then shapes, then adding small groups. ${MODULE_COLORS} starts with color names, then mixing paints. ${MODULE_TIME} starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change.`,
+    `${PRODUCT_NAME} has four modules. ${MODULE_WORDS} starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. ${MODULE_NUMBERS} starts with counting, then numerals, then shapes, then adding small groups. ${MODULE_COLORS} starts with color names, then mixing paints. ${MODULE_TIME} starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7.`,
   safetyHeading: "Safe and private by design",
   safety:
     "No ads, no tracking, no in-app purchase tricks. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.",
