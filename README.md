@@ -31,9 +31,9 @@ The letter plan is 1–2 new letters a week, plus review. Friday is review day: 
 
 ## Parent and teacher
 
-The parent view is a calmer dashboard: letters learned, lessons this week, stars, and a From your teacher card. Children (add and edit) and Settings (sound and speech speed) work now. Progress, From Teacher, Home Rewards, and Privacy are placeholders.
+The parent view is a calmer dashboard: letters learned, lessons this week, stars, and a From your teacher card. Children (add and edit) and Settings (sound and speech speed) work now. Join a class, Progress, From Teacher, Home Rewards, and Privacy are placeholders.
 
-Teacher opens a classroom shell with sample data marked Demo: a class switcher, Scan QR, a class star jar, a roster of animal names and avatars, and a tab bar. Real names are never shown there. The real classroom tools are filled in later. Approved layout references live in `docs/mockups/`. They are not shown in the app.
+Teacher opens a classroom shell with sample data marked Demo: a class switcher, Scan QR, Add class, Pending requests, a class star jar, a roster of animal names and avatars, and a tab bar. Real names are never shown there. The real classroom tools, including joining a class, are filled in later. Approved layout references live in `docs/mockups/`. They are not shown in the app.
 
 ## Run on an iPhone
 

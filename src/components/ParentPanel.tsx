@@ -22,10 +22,11 @@ import { StarIcon } from "./icons";
 
 const WEEKLY_LESSONS = 4;
 
-type ParentPage = "home" | "children" | "progress" | "teacher" | "rewards" | "settings" | "privacy";
+type ParentPage = "home" | "children" | "join" | "progress" | "teacher" | "rewards" | "settings" | "privacy";
 
 const rows: { id: ParentPage; label: string; tint: string }[] = [
   { id: "children", label: "Children", tint: "#E5F4EA" },
+  { id: "join", label: "Join a class", tint: "#E4EEF8" },
   { id: "progress", label: "Progress", tint: "#F8E6D4" },
   { id: "teacher", label: "From Teacher", tint: "#E4EEF8" },
   { id: "rewards", label: "Home Rewards", tint: "#FDE7D4" },
@@ -218,6 +219,16 @@ export function ParentView({
             <legend>Speech speed</legend>
             <SpeedButtons speed={settings.speed} onChange={(speed) => onChange({ speed })} />
           </fieldset>
+        </section>
+      ) : null}
+
+      {page === "join" ? (
+        <section className="adult-section" data-section="join">
+          <h2>Join a class</h2>
+          <p className="adult-copy">
+            Only a parent can link a child. The consent screen and the class QR scan arrive in step 6. Nothing is
+            shared yet. A child cannot join a class.
+          </p>
         </section>
       ) : null}
 

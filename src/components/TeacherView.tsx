@@ -105,6 +105,17 @@ export function TeacherView({ onClose }: { onClose: () => void }) {
         </header>
         {scanNote ? <p className="adult-copy">QR transfer arrives in step 6. This screen is sample data.</p> : null}
 
+        <div className="assign-row">
+          <section className="teacher-card assign-card" data-card="add-class">
+            <h2>Add class</h2>
+            <p>A teacher creates a class here in step 6, and the app shows its QR code. Nothing is created yet.</p>
+          </section>
+          <section className="teacher-card assign-card" data-card="pending">
+            <h2>Pending requests</h2>
+            <p>None yet. A request will show the animal avatar and app name only. Approving is step 6.</p>
+          </section>
+        </div>
+
         {tab === "classes" ? (
           <section className="teacher-card" data-card="classes">
             <h2>Classes</h2>

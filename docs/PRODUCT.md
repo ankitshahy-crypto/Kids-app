@@ -109,6 +109,27 @@ Also later, for the classroom:
 - A certificate is generated on the teacher's device and can be printed. It is not stored on a server.
 - The class can share one star-jar goal.
 
+## Class assignment process
+
+This is built in step 6. Step 1 only leaves placeholders: a Join a class row in the parent view, and Add class plus Pending requests in the teacher view. Children never join, approve, move, or leave a class themselves.
+
+Roles:
+
+- The school admin (the director) sets up the school and adds teachers.
+- The teacher creates classes and approves students.
+- The parent is the only one who can link a child. That link is the consent.
+
+Flow:
+
+1. The admin creates the school and invites teachers. For the pilot, the director can simply be a teacher too.
+2. The teacher creates a class, for example "Sunflower Class." The app shows a class QR code and a join code.
+3. The parent opens the parent view, then Join a class, and reads a plain-language consent screen. It lists exactly what is shared: the app name, the avatar, the stars, and the letters practiced. Never a real name, and never photos. The parent agrees, then scans the class QR at drop-off or from a printed sheet.
+4. The request appears on the teacher's Pending list with the animal avatar and the app name. The teacher approves it, and can note the real name on their own offline list.
+5. Moving classes: the teacher can transfer a child to another class in the same school. Parents are notified.
+6. Unlink: the parent can unlink or delete at any time, and the teacher can remove a child from a roster.
+
+At the end of the year, the teacher archives the class.
+
 ## Privacy
 
 - No health information of any kind. No speech delay, diagnosis, therapy notes, or medical fields. Teacher notes must never contain health or diagnosis information, and the note field shows a gentle reminder.
@@ -121,11 +142,11 @@ Parent and Teacher open only after a press-and-hold of about 2 seconds on the st
 
 ## Build order
 
-1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings, and progress notes, with places for home rewards and consent or delete, plus a "From your teacher" placeholder card. Teacher view: a placeholder classroom dashboard, filled in at step 6.
+1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings, and progress notes, with places for home rewards and consent or delete, a "From your teacher" card, and a Join a class row. Teacher view: a placeholder classroom dashboard, including Add class and Pending requests, filled in at step 6.
 2. Letter games, tracing, and read-along stories.
 3. Sentence tiles, rhyming, and the color, shape, and number moments.
 4. Home stars and parent-written rewards on the device. Cosmetic unlocks.
 5. Parent progress view: letters learned, lessons done, stars, and Friday notes.
-6. Classroom connection, in the teacher view. QR first, picture-word codes later, then goals, certificates, and the class star jar. Teacher inputs travel back to the parent view by QR when there is no server, and through the minimal server once class codes exist.
+6. Classroom connection, in the teacher view, including the class assignment process. QR first, picture-word codes later, then goals, certificates, and the class star jar. Teacher inputs travel back to the parent view by QR when there is no server, and through the minimal server once class codes exist.
 
 Each step should keep the soft pastel look, big tap targets, very little text, original artwork only, and the privacy rules above.

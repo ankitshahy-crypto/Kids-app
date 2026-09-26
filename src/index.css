@@ -1741,6 +1741,23 @@ button:focus-visible {
   margin-bottom: 12px;
 }
 
+.assign-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.assign-card {
+  margin-bottom: 0;
+}
+
+.assign-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .class-switch {
   font-size: 26px;
   font-weight: 700;
@@ -1871,6 +1888,10 @@ button:focus-visible {
 @media (max-width: 360px) {
   .roster-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .assign-row {
+    grid-template-columns: 1fr;
   }
 
   .wordmark {
