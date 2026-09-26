@@ -106,7 +106,7 @@ export function SettingsFields({
             Off
           </button>
         </div>
-        <p className="adult-copy">On shows Numbers, Colors, and Games. Off keeps this device on reading only.</p>
+        <p className="adult-copy">On shows the other courses on this device. Off keeps this device on reading only.</p>
       </fieldset>
       <fieldset className="setting-group" data-setting="reading-goal">
         <legend>Daily reading goal</legend>

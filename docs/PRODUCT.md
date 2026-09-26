@@ -4,7 +4,7 @@ This document is the product direction for every later step. Build only what the
 
 ## What it is
 
-LittleNest Learning is a TriageDesk product. The short name is LittleNest. The modules are LittleNest Words, LittleNest Numbers, and LittleNest Colors. It is a pre-reading and early-reading app. Ages 3–5 come first. It grows into phonics for ages 5–7.
+LittleNest Learning is a TriageDesk product. The short name is LittleNest. The modules are LittleNest Words, LittleNest Numbers, LittleNest Colors, and LittleNest Time & Money. It is a pre-reading and early-reading app. Ages 3–5 come first. It grows into phonics for ages 5–7.
 
 Reading is the only subject. The child is the hero of the stories.
 

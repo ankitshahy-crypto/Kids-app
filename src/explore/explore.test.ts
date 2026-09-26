@@ -34,6 +34,8 @@ describe("explore isolation", () => {
     expect(sectionForScreen("letter")).toBeNull();
     expect(sectionForScreen("count")).toBe("math");
     expect(sectionForScreen("paint")).toBe("colors");
+    expect(sectionForScreen("clock")).toBe("time");
+    expect(sectionForScreen("shop")).toBe("time");
   });
 
   it("scans the files lazy.tsx imports and skips import type", () => {
@@ -68,7 +70,7 @@ describe("explore isolation", () => {
   });
 
   it("shows math and colors unless a flag is off", () => {
-    expect(visibleExplore()).toEqual(["math", "colors", "games"]);
+    expect(visibleExplore()).toEqual(["math", "colors", "time", "games"]);
     expect(sectionVisible("math", { math: false })).toBe(false);
     expect(sectionVisible("colors", { math: false })).toBe(true);
     expect(visibleExplore({}, false)).toEqual([]);

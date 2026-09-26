@@ -17,10 +17,11 @@ import {
 import type { Settings } from "../settings";
 import { ChildForm } from "./ChildForm";
 import { StarIcon } from "./icons";
-import { MODULE_COLORS, MODULE_NUMBERS } from "../brand";
+import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME } from "../brand";
 import { tint } from "../palette";
 import { COLORS, colorIntroduced } from "../data/colors";
 import { MATH, mathIntroduced } from "../data/math";
+import { TIME, timeIntroduced } from "../data/timeMoney";
 import { practiceTotal } from "../data/reading";
 import { LearningPath } from "./LearningPath";
 import { HatchLevelControl } from "./HatchLevel";
@@ -255,6 +256,7 @@ function PlacementSummary({ child, placement }: { child: ChildProfile; placement
   const resolved = resolvePlacement(placement, child.id, child.createdAt);
   const mathResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, MATH);
   const colorResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, COLORS);
+  const timeResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, TIME);
   const source =
     resolved.source === "child"
       ? "Set for this child."
@@ -286,6 +288,9 @@ function PlacementSummary({ child, placement }: { child: ChildProfile; placement
       <p className="adult-copy" data-color-stage={colorResolved.stageId} data-color-source={colorResolved.source}>
         {MODULE_COLORS}: {stageTitle(colorResolved.stageId, COLORS)}.
       </p>
+      <p className="adult-copy" data-time-stage={timeResolved.stageId} data-time-source={timeResolved.source}>
+        {MODULE_TIME}: {stageTitle(timeResolved.stageId, TIME)}.
+      </p>
     </section>
   );
 }
@@ -305,6 +310,7 @@ function ParentHome({
   const resolved = resolvePlacement(placement, child.id, child.createdAt);
   const mathResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, MATH);
   const colorResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, COLORS);
+  const timeResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, TIME);
   const introduced = lettersIntroduced(resolved.source === "calendar" ? weekIndex(child.createdAt, now) : resolved.weekIndex);
   const total = letterPlanSize();
   const pct = total === 0 ? 0 : Math.round((introduced.length / total) * 100);
@@ -332,6 +338,12 @@ function ParentHome({
         subject={COLORS}
         section="path-colors"
         placedIntroduced={colorResolved.source === "calendar" ? undefined : colorIntroduced(colorResolved.weekIndex)}
+      />
+      <LearningPath
+        profile={child}
+        subject={TIME}
+        section="path-time"
+        placedIntroduced={timeResolved.source === "calendar" ? undefined : timeIntroduced(timeResolved.weekIndex)}
       />
       <PlacementSummary child={child} placement={placement} />
       <header className="parent-hero">

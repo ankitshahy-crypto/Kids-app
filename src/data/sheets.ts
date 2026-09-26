@@ -5,6 +5,7 @@ import { letterSchedule } from "./schedule";
 import { COLORS } from "./colors";
 import { MATH } from "./math";
 import { READING, type SubjectId } from "./subject";
+import { TIME } from "./timeMoney";
 
 export type SheetKind = {
   subject: SubjectId;
@@ -22,6 +23,8 @@ const sheetCatalog: SheetKind[] = [
   { subject: MATH, id: "count", title: "Counting" },
   { subject: MATH, id: "shape", title: "Shape tracing" },
   { subject: COLORS, id: "coloring", title: "Coloring page" },
+  { subject: TIME, id: "clock", title: "Clock faces" },
+  { subject: TIME, id: "coins", title: "Coin counting" },
 ];
 
 export function sheetsFor(subject: SubjectId): SheetKind[] {

@@ -11,3 +11,8 @@ export const TraceActivity = lazy(() => import("../components/MathPlay").then((m
 export const MixActivity = lazy(() => import("../components/ColorPlay").then((mod) => ({ default: mod.MixActivity })));
 export const NameActivity = lazy(() => import("../components/ColorPlay").then((mod) => ({ default: mod.NameActivity })));
 export const PaintActivity = lazy(() => import("../components/ColorPlay").then((mod) => ({ default: mod.PaintActivity })));
+export const ClockActivity = lazy(() => import("../components/TimePlay").then((mod) => ({ default: mod.ClockActivity })));
+export const CoinsActivity = lazy(() => import("../components/TimePlay").then((mod) => ({ default: mod.CoinsActivity })));
+export const DayActivity = lazy(() => import("../components/TimePlay").then((mod) => ({ default: mod.DayActivity })));
+export const RoutineActivity = lazy(() => import("../components/TimePlay").then((mod) => ({ default: mod.RoutineActivity })));
+export const ShopActivity = lazy(() => import("../components/TimePlay").then((mod) => ({ default: mod.ShopActivity })));
