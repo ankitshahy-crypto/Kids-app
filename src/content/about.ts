@@ -52,6 +52,9 @@ export const aboutContent = {
       body: "They sit behind a simple check.",
     },
   ],
+  teachesHeading: "How WordNest teaches",
+  teaches:
+    "WordNest follows one gentle path. Children learn letter sounds, then blend those sounds into a word, then read short words, then tiny stories. Phonics for ages 5 to 7 comes after that.",
   safetyHeading: "Safe and private by design",
   safety:
     "No ads, no tracking, no in-app purchase tricks. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.",

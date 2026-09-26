@@ -21,6 +21,16 @@ WordNest helps young children take their first steps into reading, one small wor
 - **Made for classrooms too:** Teachers can follow a class and share goals with parents.
 - **Grown-up tools:** They sit behind a simple check.
 
+## How WordNest teaches
+
+WordNest follows one gentle path. Children learn letter sounds, then blend those sounds into a word, then read short words, then tiny stories. Phonics for ages 5 to 7 comes after that.
+
+1. **Letters:** Hear each letter sound.
+2. **Blending:** Slide sounds together into a word.
+3. **Words:** Read short words.
+4. **Stories:** A tiny story with their animal.
+5. **Phonics 5–7:** Comes after this path, for ages 5 to 7.
+
 ## Safe and private by design
 
 No ads, no tracking, no in-app purchase tricks. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.

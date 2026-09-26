@@ -1,4 +1,5 @@
 import { aboutContent, type AboutFeatureId } from "../content/about";
+import { laterPath, pathStages } from "../data/path";
 import { GrownupIcon, SpeakerIcon, StarIcon } from "./icons";
 
 const tints: Record<AboutFeatureId, string> = {
@@ -34,6 +35,21 @@ export function AboutWordNest() {
           </li>
         ))}
       </ul>
+
+      <h3>{about.teachesHeading}</h3>
+      <p className="about-lead">{about.teaches}</p>
+      <ol className="about-path">
+        {pathStages.map((stage) => (
+          <li key={stage.id} data-teach={stage.id}>
+            <strong>{stage.title}</strong>
+            <span>{stage.detail}</span>
+          </li>
+        ))}
+        <li data-teach={laterPath.id} data-later="true">
+          <strong>{laterPath.title}</strong>
+          <span>{laterPath.detail}</span>
+        </li>
+      </ol>
 
       <h3>{about.safetyHeading}</h3>
       <p className="about-lead">{about.safety}</p>

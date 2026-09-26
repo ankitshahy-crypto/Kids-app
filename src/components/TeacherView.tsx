@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { AnimalId } from "../data/animals";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { Avatar } from "../avatars";
+import { LearningPath } from "./LearningPath";
 import { ReadingChart } from "./ReadingChart";
 import { CheckBadge, StarJar, TabGlyph } from "./sceneArt";
 
@@ -75,6 +76,9 @@ function DeviceRewards({ profiles, goalMinutes }: { profiles: ChildProfile[]; go
           );
         })}
       </ul>
+      {profiles.map((profile) => (
+        <LearningPath key={profile.id} profile={profile} name={lessonName(profile)} />
+      ))}
       {profiles.map((profile) => (
         <ReadingChart key={profile.id} name={lessonName(profile)} days={profile.readingMs} goalMinutes={goalMinutes} />
       ))}

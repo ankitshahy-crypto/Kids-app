@@ -63,6 +63,28 @@ export function SettingsFields({
         </div>
         <p className="adult-copy">A soft tap and a short buzz when a finger presses something. Dragging across a word stays quiet.</p>
       </fieldset>
+      <fieldset className="setting-group" data-setting="tips">
+        <legend>Show read-together tips</legend>
+        <div className="segment">
+          <button
+            type="button"
+            className={settings.showTips ? "is-selected" : ""}
+            aria-pressed={settings.showTips}
+            onClick={() => onChange({ showTips: true })}
+          >
+            On
+          </button>
+          <button
+            type="button"
+            className={!settings.showTips ? "is-selected" : ""}
+            aria-pressed={!settings.showTips}
+            onClick={() => onChange({ showTips: false })}
+          >
+            Off
+          </button>
+        </div>
+        <p className="adult-copy">A short tip for you at a lesson. Your child can keep going without reading it.</p>
+      </fieldset>
       <fieldset className="setting-group" data-setting="reading-goal">
         <legend>Daily reading goal</legend>
         <div className="segment segment-3">

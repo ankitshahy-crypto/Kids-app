@@ -17,6 +17,8 @@ export type Settings = {
   voiceURI: string | null;
   /** Daily active-reading goal. One bonus star, then no more for extra time. */
   readingGoal: 5 | 10 | 15;
+  /** Short grown-up prompts at the start or end of a lesson. */
+  showTips: boolean;
 };
 
 /**
@@ -40,6 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   speed: "slow",
   voiceURI: null,
   readingGoal: 10,
+  showTips: true,
 };
 
 function clampVolume(value: unknown, fallback: number): number {
@@ -70,6 +73,7 @@ export function loadSettings(): Settings {
       speed: record.speed === "slower" ? "slower" : "slow",
       voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
       readingGoal: record.readingGoal === 5 || record.readingGoal === 15 ? record.readingGoal : 10,
+      showTips: record.showTips !== false,
     };
   } catch {
     return DEFAULT_SETTINGS;

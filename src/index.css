@@ -3501,6 +3501,144 @@ button:focus-visible {
   font-weight: 700;
 }
 
+.grownup-tip {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: #fffdfb;
+  box-shadow: var(--shadow);
+}
+
+.grownup-tip-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a56b32;
+}
+
+.grownup-tip-text {
+  margin: 0;
+  grid-column: 1;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.grownup-tip-hide {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #f8e6d4;
+  font-weight: 700;
+}
+
+.learn-path,
+.about-path {
+  margin: 8px 0 12px;
+}
+
+.learn-path h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.path-stages,
+.about-path {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.path-stages li,
+.about-path li {
+  flex: 1 0 78px;
+  min-width: 78px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 14px;
+  background: #f6efe6;
+}
+
+.path-stages li[data-state="current"],
+.about-path li[data-teach] {
+  background: #fffdfb;
+}
+
+.path-stages li[data-state="current"] {
+  box-shadow: inset 0 0 0 2px #7eae86;
+  background: #e5f4ea;
+}
+
+.path-stages li[data-state="later"] {
+  background: #eef3f8;
+}
+
+.path-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.path-state {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5f7d68;
+}
+
+.path-meter {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: #d7eee3;
+  overflow: hidden;
+}
+
+.path-meter span {
+  display: block;
+  height: 100%;
+  background: #7eae86;
+}
+
+.about-path {
+  flex-direction: column;
+}
+
+.about-path li {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.share-url {
+  margin: 0;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.share-button {
+  min-height: 56px;
+  margin-top: 8px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #7eae86;
+  color: #fffdfb;
+  font-size: 20px;
+  font-weight: 700;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

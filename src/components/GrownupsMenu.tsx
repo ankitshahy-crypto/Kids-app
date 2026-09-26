@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
-import { showHelpContact } from "../config";
+import { shareMessage, shareUrl, showHelpContact } from "../config";
+import { shareWordNest, type ShareResult } from "../share";
 import type { AnimalId } from "../data/animals";
 import { lessonName, type AgeRange, type ChildProfile } from "../data/profiles";
 import type { Settings } from "../settings";
@@ -9,15 +10,16 @@ import { ChildForm } from "./ChildForm";
 import { Chevron } from "./icons";
 import { SettingsFields } from "./SettingsFields";
 
-type GrownupsPage = "menu" | "settings" | "profiles" | "account" | "help" | "privacy" | "about";
+type GrownupsPage = "menu" | "settings" | "profiles" | "account" | "help" | "privacy" | "about" | "share";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
-  { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, and the daily goal", tint: "#E7F2EA" },
+  { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, and the daily goal", tint: "#E7F2EA" },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: "#F8E6D4" },
   { id: "account", title: "Account", note: "School sign-in is coming", tint: "#E4EEF8" },
   { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: "#FDE7D4" },
   { id: "privacy", title: "Privacy", note: "What stays on this device", tint: "#E5F4EA" },
   { id: "about", title: "About WordNest", note: "Version and who makes the app", tint: "#E4EEF8" },
+  { id: "share", title: "Tell a friend or your school", note: "Share the WordNest link", tint: "#F8E6D4" },
 ];
 
 function ProfileRow({
@@ -86,6 +88,7 @@ export function GrownupsMenu({
   onClose: () => void;
 }) {
   const [page, setPage] = useState<GrownupsPage>("menu");
+  const [shareStatus, setShareStatus] = useState<ShareResult | "idle">("idle");
   const [adding, setAdding] = useState(profiles.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = profiles.find((profile) => profile.id === editingId) ?? null;
@@ -261,6 +264,28 @@ export function GrownupsMenu({
       ) : null}
 
       {page === "about" ? <AboutWordNest /> : null}
+
+      {page === "share" ? (
+        <section className="adult-section" data-section="share">
+          <h2>Tell a friend or your school</h2>
+          <p className="adult-copy">{shareMessage}</p>
+          <p className="share-url" data-share-url={shareUrl}>
+            {shareUrl}
+          </p>
+          <p className="adult-copy">No codes and no tracking. This only shares the WordNest link.</p>
+          <button
+            type="button"
+            className="share-button"
+            onClick={() => {
+              void shareWordNest().then((result) => setShareStatus(result === "cancelled" ? "idle" : result));
+            }}
+          >
+            Share
+          </button>
+          {shareStatus === "shared" ? <p role="status">Shared</p> : null}
+          {shareStatus === "copied" ? <p role="status">Link copied</p> : null}
+        </section>
+      ) : null}
     </div>
   );
 }
