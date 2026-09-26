@@ -1,8 +1,17 @@
-import { laterPath, placeForChild } from "../data/path";
+import { laterPath, learningPlace, placeForChild } from "../data/path";
 import type { ChildProfile } from "../data/profiles";
 
-export function LearningPath({ profile, name }: { profile: ChildProfile; name?: string }) {
-  const place = placeForChild(profile.createdAt);
+export function LearningPath({
+  profile,
+  name,
+  placedIntroduced,
+}: {
+  profile: ChildProfile;
+  name?: string;
+  /** When a teacher placed the lesson, the path uses that letter count. */
+  placedIntroduced?: number;
+}) {
+  const place = placedIntroduced === undefined ? placeForChild(profile.createdAt) : learningPlace(placedIntroduced);
   const current = place.stages.find((stage) => stage.state === "current");
 
   return (

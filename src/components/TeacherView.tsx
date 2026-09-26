@@ -1,8 +1,12 @@
 import { useState } from "react";
 import type { AnimalId } from "../data/animals";
+import { lettersIntroduced } from "../data/schedule";
+import { resolvePlacement, type LessonPlace, type PlacementDocument } from "../data/placement";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { Avatar } from "../avatars";
 import { LearningPath } from "./LearningPath";
+import { PlacementControls } from "./PlacementControls";
+import { Printables } from "./Printables";
 import { ReadingChart } from "./ReadingChart";
 import { CheckBadge, StarJar, TabGlyph } from "./sceneArt";
 
@@ -53,7 +57,15 @@ const demoClasses: DemoClass[] = [
   },
 ];
 
-function DeviceRewards({ profiles, goalMinutes }: { profiles: ChildProfile[]; goalMinutes: number }) {
+function DeviceRewards({
+  profiles,
+  goalMinutes,
+  placement,
+}: {
+  profiles: ChildProfile[];
+  goalMinutes: number;
+  placement: PlacementDocument;
+}) {
   return (
     <section className="teacher-card" data-card="device">
       <h2>On this device</h2>
@@ -76,9 +88,19 @@ function DeviceRewards({ profiles, goalMinutes }: { profiles: ChildProfile[]; go
           );
         })}
       </ul>
-      {profiles.map((profile) => (
-        <LearningPath key={profile.id} profile={profile} name={lessonName(profile)} />
-      ))}
+      {profiles.map((profile) => {
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt);
+        const placedIntroduced =
+          resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length;
+        return (
+          <LearningPath
+            key={profile.id}
+            profile={profile}
+            name={lessonName(profile)}
+            placedIntroduced={placedIntroduced}
+          />
+        );
+      })}
       {profiles.map((profile) => (
         <ReadingChart key={profile.id} name={lessonName(profile)} days={profile.readingMs} goalMinutes={goalMinutes} />
       ))}
@@ -98,10 +120,18 @@ const tabs: { id: Tab; label: string }[] = [
 export function TeacherView({
   profiles,
   goalMinutes,
+  placement,
+  activeId,
+  onClassPlace,
+  onChildPlace,
   onClose,
 }: {
   profiles: ChildProfile[];
   goalMinutes: number;
+  placement: PlacementDocument;
+  activeId: string | null;
+  onClassPlace: (place: LessonPlace | null) => void;
+  onChildPlace: (childId: string, place: LessonPlace | null) => void;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("roster");
@@ -117,8 +147,18 @@ export function TeacherView({
         <button type="button" className="quiet-back" onClick={onClose}>
           Back
         </button>
+        <PlacementControls
+          placement={placement}
+          profiles={profiles}
+          onClassPlace={onClassPlace}
+          onChildPlace={onChildPlace}
+        />
+        <section className="teacher-card" data-card="printables">
+          <h2>Printables</h2>
+          <Printables profiles={profiles} activeId={activeId} placement={placement} />
+        </section>
+        <DeviceRewards profiles={profiles} goalMinutes={goalMinutes} placement={placement} />
         <p className="demo-flag">Demo data. Not a real class. Filled in during step 6.</p>
-        <DeviceRewards profiles={profiles} goalMinutes={goalMinutes} />
         <header className="teacher-top">
           <div className="class-switch-wrap">
             <button

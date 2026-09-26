@@ -7,12 +7,11 @@ import {
   type AgeRange,
   type ChildProfile,
 } from "../data/profiles";
+import { resolvePlacement, stageTitle, weekLabel, type PlacementDocument } from "../data/placement";
 import {
   isReviewDay,
   letterPlanSize,
   lettersIntroduced,
-  planForWeek,
-  practiceLetters,
   weekIndex,
 } from "../data/schedule";
 import type { Settings } from "../settings";
@@ -41,6 +40,7 @@ export function ParentView({
   onChange,
   profiles,
   active,
+  placement,
   onSelect,
   onAdd,
   onUpdate,
@@ -51,6 +51,7 @@ export function ParentView({
   onChange: (patch: Partial<Settings>) => void;
   profiles: ChildProfile[];
   active: ChildProfile | null;
+  placement: PlacementDocument;
   onSelect: (id: string) => void;
   onAdd: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
   onUpdate: (id: string, input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
@@ -89,7 +90,9 @@ export function ParentView({
         Back
       </button>
 
-      {page === "home" && child ? <ParentHome child={child} goalMinutes={settings.readingGoal} onOpen={setPage} /> : null}
+      {page === "home" && child ? (
+        <ParentHome child={child} goalMinutes={settings.readingGoal} placement={placement} onOpen={setPage} />
+      ) : null}
       {page === "home" && !child ? (
         <header className="parent-hero">
           <div>
@@ -167,7 +170,11 @@ export function ParentView({
           {profiles.length === 0 ? <p className="adult-copy">Add a child to see letters and stars.</p> : null}
           <ul className="note-list">
             {profiles.map((profile) => (
-              <ProgressNote key={profile.id} profile={profile} />
+              <ProgressNote
+                key={profile.id}
+                profile={profile}
+                letters={resolvePlacement(placement, profile.id, profile.createdAt).letters}
+              />
             ))}
           </ul>
         </section>
@@ -180,6 +187,7 @@ export function ParentView({
             Goals, certificates, the class star jar, and short notes will show here. Nothing is linked yet. Notes use
             the child's app name only, and never include health or diagnosis information.
           </p>
+          {child ? <PlacementSummary child={child} placement={placement} /> : null}
         </section>
       ) : null}
 
@@ -235,21 +243,51 @@ export function ParentView({
   );
 }
 
+function PlacementSummary({ child, placement }: { child: ChildProfile; placement: PlacementDocument }) {
+  const resolved = resolvePlacement(placement, child.id, child.createdAt);
+  const source =
+    resolved.source === "child"
+      ? "Set for this child."
+      : resolved.source === "class"
+        ? "Set for the whole class."
+        : "Following this child's weeks.";
+  return (
+    <section
+      className="dash-card"
+      data-section="placement"
+      data-source={resolved.source}
+      data-stage={resolved.stageId}
+      data-week={resolved.weekIndex}
+      data-letters={resolved.letters.join("")}
+    >
+      <h2>Lesson place</h2>
+      <p className="adult-copy">
+        {stageTitle(resolved.stageId)}. {weekLabel(resolved.weekIndex)}.
+      </p>
+      <p className="adult-copy">Today: {resolved.letters.map((letter) => letter.toUpperCase()).join(" ")}</p>
+      <p className="adult-copy">{source}</p>
+    </section>
+  );
+}
+
 function ParentHome({
   child,
   goalMinutes,
+  placement,
   onOpen,
 }: {
   child: ChildProfile;
   goalMinutes: number;
+  placement: PlacementDocument;
   onOpen: (page: ParentPage) => void;
 }) {
   const now = new Date();
-  const introduced = lettersIntroduced(weekIndex(child.createdAt, now));
+  const resolved = resolvePlacement(placement, child.id, child.createdAt);
+  const introduced = lettersIntroduced(resolved.source === "calendar" ? weekIndex(child.createdAt, now) : resolved.weekIndex);
   const total = letterPlanSize();
   const pct = total === 0 ? 0 : Math.round((introduced.length / total) * 100);
   const review = isReviewDay(now);
-  const weekLetters = practiceLetters(planForWeek(weekIndex(child.createdAt, now)), review);
+  const weekLetters = resolved.letters;
   const lessons = starsThisWeek(child, now);
   const lessonPct = Math.min(100, Math.round((lessons / WEEKLY_LESSONS) * 100));
   const age = child.ageRange === "6-7" ? "6–7" : child.ageRange;
@@ -257,7 +295,11 @@ function ParentHome({
 
   return (
     <>
-      <LearningPath profile={child} />
+      <LearningPath
+        profile={child}
+        placedIntroduced={resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length}
+      />
+      <PlacementSummary child={child} placement={placement} />
       <header className="parent-hero">
         <Avatar animal={child.animal} />
         <div>
@@ -414,9 +456,8 @@ function RewardFacts({ profile }: { profile: ChildProfile }) {
   );
 }
 
-function ProgressNote({ profile }: { profile: ChildProfile }) {
+function ProgressNote({ profile, letters }: { profile: ChildProfile; letters: string[] }) {
   const now = new Date();
-  const letters = practiceLetters(planForWeek(weekIndex(profile.createdAt, now)), isReviewDay(now));
   const review = isReviewDay(now);
   return (
     <li className="progress-note" data-note={profile.id}>
