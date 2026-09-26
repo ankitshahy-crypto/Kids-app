@@ -6,7 +6,7 @@ The first activity inside Today's lesson is **Sound it out**.
 
 A picture sits in a big rounded card for about a second. The word then builds one letter at a time: each tile glows, and that letter's sound plays (a phonics sound such as /k/, not the letter name "see"). After the last letter, every tile highlights and the whole word is spoken. Tap a tile to hear that sound again, tap **Play sound** to replay the word, or use the arrows (or swipe) to change words.
 
-There are no ads, scores, timers, accounts, or network calls. Speech, pictures, and profiles stay on the device. Pricing is on hold until after the Kids Villa pilot, and there is no payment code in the app.
+There are no ads, scores, timers, accounts, or network calls. Speech, pictures, and profiles stay on the device. Schools will license the app later; there is no payment code yet.
 
 ## Run in a browser
 

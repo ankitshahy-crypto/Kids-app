@@ -12,7 +12,7 @@ Market it as reading practice. Never market it as therapy, and never describe a 
 
 ## Pricing
 
-Pricing: to be decided after the Kids Villa pilot; no ads, no in-app purchases, no payment code for now.
+Business model: schools license the app and include it in tuition. Price target: $40 per family per year, the same price no matter how many children. Free for families at partner schools (no in-app charge). The Kids Villa pilot is free for 6 months. No payment code yet; the school-link step will later unlock the app for families.
 
 ## Go-to-market
 
