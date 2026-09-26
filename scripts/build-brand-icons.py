@@ -1,24 +1,30 @@
-"""Crop the approved LittleNest mockups into app and module icons.
+"""Build LittleNest app and module icons.
 
-The sources in logos/ are wide frames with the rounded-square mark centered.
-iOS needs an opaque full-bleed square (the system rounds the corners).
-The Words mark's inner field is recolored from mint to pastel pink.
+The app icon is the square master in logos/app-icon-1024.png (drawn from
+logos/app-icon.svg). It is already opaque and full-bleed. iOS rounds the
+corners itself, so this script must not add a rounded mask.
+
+Words, Numbers, and Colors stay text-free. Their wide frames in logos/ are
+cropped to the inner mark. The Words inner field is recolored from mint to
+pastel pink.
 """
 
-from base64 import b64encode
 from collections import deque
-from io import BytesIO
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = {
-    "main": ROOT / "logos/main.png",
+MODULE_SOURCES = {
     "words": ROOT / "logos/words.png",
     "numbers": ROOT / "logos/numbers.png",
     "colors": ROOT / "logos/colors.png",
 }
+APP_ICON = ROOT / "logos/app-icon-1024.png"
+APP_ICON_SVG = ROOT / "logos/app-icon.svg"
+# Soft pink field. The maskable icon is inset on this color so a circular
+# home-screen mask does not clip the LittleNest wordmark.
+FIELD = (247, 213, 227)
 # Pastel pink for the Words tile. The approved frame was already this pink;
 # only the inner square was still mint.
 PINK = (253, 216, 222)
@@ -149,34 +155,39 @@ def resize(im, size):
     return im.resize((size, size), Image.Resampling.LANCZOS)
 
 
+def load_app_icon():
+    icon = Image.open(APP_ICON).convert("RGB")
+    if icon.size != (1024, 1024):
+        raise SystemExit(f"{APP_ICON.name} must be 1024x1024, got {icon.size}")
+    return icon
+
+
+def maskable_icon(master, size=512, scale=0.72):
+    """Inset the whole mark so the wordmark stays inside a circular mask."""
+    inner = int(round(size * scale))
+    canvas = Image.new("RGB", (size, size), FIELD)
+    canvas.paste(resize(master, inner), ((size - inner) // 2, (size - inner) // 2))
+    return canvas
+
+
 def main():
     icons = {}
-    for name, path in SOURCES.items():
+    for name, path in MODULE_SOURCES.items():
         icon = crop_square(Image.open(path))
         if name == "words":
             icon = recolor_words(icon, PINK)
         icons[name] = icon
 
-    main_icon = icons["main"]
+    main_icon = load_app_icon()
     public = ROOT / "public"
     save_png(resize(main_icon, 192), public / "icons/icon-192.png")
     save_png(resize(main_icon, 512), public / "icons/icon-512.png")
-    bg = main_icon.getpixel((2, 2))
-    maskable = Image.new("RGB", (512, 512), bg)
-    inner = resize(main_icon, 392)
-    maskable.paste(inner, ((512 - 392) // 2, (512 - 392) // 2))
-    save_png(maskable, public / "icons/icon-maskable-512.png")
+    save_png(maskable_icon(main_icon), public / "icons/icon-maskable-512.png")
     save_png(resize(main_icon, 180), public / "icons/apple-touch-icon.png")
     for name in ("words", "numbers", "colors"):
         save_png(resize(icons[name], 512), public / f"icons/module-{name}.png")
 
-    buf = BytesIO()
-    resize(main_icon, 64).save(buf, "PNG", optimize=True)
-    encoded = b64encode(buf.getvalue()).decode()
-    (public / "favicon.svg").write_text(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
-        f'<image width="64" height="64" href="data:image/png;base64,{encoded}"/></svg>\n'
-    )
+    (public / "favicon.svg").write_text(APP_ICON_SVG.read_text())
 
     sizes = {
         "Icon-20.png": 20,
