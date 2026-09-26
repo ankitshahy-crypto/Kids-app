@@ -1,3 +1,4 @@
+import { PROFILES_KEY, readStored, writeStored } from "../storage";
 import { animalById, isAnimalId, type AnimalId } from "./animals";
 import { READING, isSubjectKey, readingSteps, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
@@ -72,7 +73,7 @@ type ProfileStore = {
   profiles: ChildProfile[];
 };
 
-const STORAGE_KEY = "kids-app-profiles-v1";
+const STORAGE_KEY = PROFILES_KEY;
 
 /** Local calendar date in the device zone. The lesson day resets at local midnight. */
 export function todayKey(now = new Date(), timeZone = deviceTimeZone()): string {
@@ -340,7 +341,7 @@ function isProfile(value: unknown): value is ChildProfile {
 
 export function loadStore(): ProfileStore {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readStored(localStorage, STORAGE_KEY);
     if (!raw) return { activeId: null, profiles: [] };
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return { activeId: null, profiles: [] };
@@ -358,5 +359,5 @@ export function saveStore(store: ProfileStore): void {
     activeId: store.profiles.some((profile) => profile.id === store.activeId) ? store.activeId : null,
     profiles: store.profiles,
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
+  writeStored(localStorage, STORAGE_KEY, JSON.stringify(safe));
 }

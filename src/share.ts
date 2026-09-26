@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "./brand";
 import { shareMessage, shareUrl } from "./config";
 import { enqueue, removeOutbox } from "./offline/queue";
 
@@ -5,7 +6,7 @@ export type ShareResult = "shared" | "copied" | "cancelled" | "queued";
 
 /** Share the public site. No codes, no tracking. Copy the link when share is unavailable. */
 export async function shareWordNest(): Promise<ShareResult> {
-  const data = { title: "WordNest", text: shareMessage, url: shareUrl };
+  const data = { title: PRODUCT_NAME, text: shareMessage, url: shareUrl };
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     enqueue("share", data);
     return "queued";

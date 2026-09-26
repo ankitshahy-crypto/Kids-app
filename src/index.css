@@ -1193,11 +1193,22 @@ button:focus-visible {
 }
 
 .wordmark {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.28em;
   margin: 0;
-  font-size: 44px;
+  font-size: 34px;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1;
+}
+
+.byline {
+  margin: 6px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #6d7a72;
 }
 
 .wordmark-word {
@@ -2560,7 +2571,11 @@ button:focus-visible {
   }
 
   .wordmark {
-    font-size: 72px;
+    font-size: 56px;
+  }
+
+  .byline {
+    font-size: 20px;
   }
 
   .who-card {
@@ -3872,22 +3887,22 @@ button:focus-visible {
   font-weight: 700;
 }
 
-@page wordnest-a4 {
+@page littlenest-a4 {
   size: A4;
   margin: 12mm;
 }
 
-@page wordnest-letter {
+@page littlenest-letter {
   size: letter;
   margin: 0.5in;
 }
 
 .print-root[data-paper="a4"] .print-sheet {
-  page: wordnest-a4;
+  page: littlenest-a4;
 }
 
 .print-root[data-paper="letter"] .print-sheet {
-  page: wordnest-letter;
+  page: littlenest-letter;
 }
 
 @media print {

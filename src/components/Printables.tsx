@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PRODUCT_SHORT } from "../brand";
 import { Avatar } from "../avatars";
 import { Illustration } from "../illustrations";
 import type { AnimalId } from "../data/animals";
@@ -51,7 +52,7 @@ function LetterSheet({ letter, animal }: { letter: string; animal: AnimalId }) {
     <article className="print-sheet" data-sheet="letter" data-letter={letter}>
       <header className="sheet-head">
         <div>
-          <p className="sheet-kicker">WordNest</p>
+          <p className="sheet-kicker">{PRODUCT_SHORT}</p>
           <h3>Letter {upper} {letter}</h3>
         </div>
         <div className="sheet-animal" data-animal={animal}>
@@ -189,7 +190,7 @@ export function Printables({
         <article className="print-sheet" data-sheet="blend">
           <header className="sheet-head">
             <div>
-              <p className="sheet-kicker">WordNest</p>
+              <p className="sheet-kicker">{PRODUCT_SHORT}</p>
               <h3>Blend the word</h3>
             </div>
             <div className="sheet-animal" data-animal={animal}>

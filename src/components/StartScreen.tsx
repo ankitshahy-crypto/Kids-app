@@ -1,5 +1,6 @@
 import { useState } from "react";
 import nestLogo from "../assets/nest-logo.svg";
+import { TAGLINE } from "../brand";
 import type { AnimalId } from "../data/animals";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { Avatar } from "../avatars";
@@ -43,9 +44,10 @@ export function StartScreen({
         <img className="nest-logo" src={nestLogo} alt="" />
       </div>
       <h1 className="wordmark">
-        <span className="wordmark-word">Word</span>
-        <span className="wordmark-nest">Nest</span>
+        <span className="wordmark-nest">LittleNest</span>
+        <span className="wordmark-word">Learning</span>
       </h1>
+      <p className="byline">{TAGLINE}</p>
       <div className="who-card">
         {profiles.length === 0 ? (
           <p className="who-empty">Ask a grown-up to tap Grown-ups.</p>

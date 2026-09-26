@@ -1,3 +1,5 @@
+import { MODULE_WORDS } from "../brand";
+
 /**
  * A subject is one course a child can practice.
  * Reading is built. Numbers & Math registers with `defineSubject` later and
@@ -58,7 +60,7 @@ export function defineSubject(definition: SubjectDefinition): void {
 
 defineSubject({
   id: READING,
-  title: "Reading",
+  title: MODULE_WORDS,
   stages: readingStages,
   later: readingLater,
   steps: readingSteps,
