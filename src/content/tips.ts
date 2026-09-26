@@ -124,6 +124,22 @@ const gameTips: Record<string, { start: string; end: string }> = {
     start: "Flick the wheel or tap it. Each slice is something they already know. A miss only shows a hint.",
     end: "Ask: which slice do you want to spin next?",
   },
+  bird: {
+    start: "Arrows move their animal to the nest. A wrong way just asks them to try again. Ages 5 to 7 line the arrows up, repeat a move, and fix one wrong arrow.",
+    end: "Ask: which way did the animal go to get home?",
+  },
+  pattern: {
+    start: "The pictures follow a pattern. They tap what comes next. No reading needed.",
+    end: "Ask: what would come next if we made the pattern longer?",
+  },
+  morning: {
+    start: "Drag or tap the morning pictures into order. A picture in the wrong spot wiggles back.",
+    end: "Ask: what do we do first in the morning at home?",
+  },
+  garden: {
+    start: "Rain grows the flower. Sun melts the ice. The other picture asks them to try again.",
+    end: "Ask: what else happens when it rains?",
+  },
 };
 
 /** A short grown-up line for a game. */

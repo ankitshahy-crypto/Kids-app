@@ -22,8 +22,9 @@ import { wordsForStep, type LadderStep } from "../data/ladder";
 import type { ChildProfile, StickerInput } from "../data/profiles";
 import { Hero } from "./Hero";
 import { SpinSay } from "./SpinSay";
+import { ThinkGame } from "./ThinkCode";
 
-export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory" | "spin";
+export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory" | "spin" | "bird" | "pattern" | "morning" | "garden";
 
 const tiles: { id: GameId; label: string }[] = [
   { id: "hatch", label: "Hatch the Egg" },
@@ -32,6 +33,13 @@ const tiles: { id: GameId; label: string }[] = [
   { id: "rhyme", label: "Rhyme Match" },
   { id: "memory", label: "Memory Flip" },
   { id: "spin", label: "Spin & Say" },
+];
+
+const thinkTiles: { id: GameId; label: string }[] = [
+  { id: "bird", label: "Bird home" },
+  { id: "pattern", label: "What next" },
+  { id: "morning", label: "Morning" },
+  { id: "garden", label: "If then" },
 ];
 
 export function Games({
@@ -66,6 +74,15 @@ export function Games({
           <h1>Games</h1>
           <div className="game-tiles">
             {tiles.map((tile) => (
+              <button key={tile.id} type="button" className="game-tile" data-game-tile={tile.id} onClick={() => open(tile.id)}>
+                <TileArt id={tile.id} />
+                <span>{tile.label}</span>
+              </button>
+            ))}
+          </div>
+          <h2 className="game-section">Think & Code</h2>
+          <div className="game-tiles">
+            {thinkTiles.map((tile) => (
               <button key={tile.id} type="button" className="game-tile" data-game-tile={tile.id} onClick={() => open(tile.id)}>
                 <TileArt id={tile.id} />
                 <span>{tile.label}</span>
@@ -131,6 +148,19 @@ export function Games({
           settingsRef={settingsRef}
           onDone={() => {
             onDone("memory", []);
+            setGame("home");
+          }}
+        />
+      ) : null}
+      {game === "bird" || game === "pattern" || game === "morning" || game === "garden" ? (
+        <ThinkGame
+          kind={game}
+          ageRange={profile.ageRange}
+          animal={profile.animal}
+          outfit={profile.outfit}
+          settingsRef={settingsRef}
+          onDone={() => {
+            onDone(game, []);
             setGame("home");
           }}
         />
@@ -720,6 +750,43 @@ function TileArt({ id }: { id: GameId }) {
       <svg viewBox="0 0 80 80" aria-hidden="true">
         <rect x="14" y="22" width="22" height="28" rx="4" fill="#C9E6D4" />
         <rect x="44" y="22" width="22" height="28" rx="4" fill="#F6E3B4" />
+      </svg>
+    );
+  }
+  if (id === "bird") {
+    return (
+      <svg viewBox="0 0 80 80" aria-hidden="true">
+        <ellipse cx="34" cy="40" rx="16" ry="12" fill="#F4A4B4" />
+        <circle cx="48" cy="32" r="8" fill="#F4A4B4" />
+        <path d="M54 32 h12 l-7 5 z" fill="#F6D56B" />
+        <ellipse cx="40" cy="62" rx="18" ry="8" fill="#E4C7A4" />
+      </svg>
+    );
+  }
+  if (id === "pattern") {
+    return (
+      <svg viewBox="0 0 80 80" aria-hidden="true">
+        <circle cx="18" cy="40" r="10" fill="#E07A8A" />
+        <circle cx="40" cy="40" r="10" fill="#8EB4D6" />
+        <circle cx="62" cy="40" r="10" fill="#E07A8A" />
+      </svg>
+    );
+  }
+  if (id === "morning") {
+    return (
+      <svg viewBox="0 0 80 80" aria-hidden="true">
+        <circle cx="40" cy="36" r="14" fill="#F6D56B" />
+        <path d="M18 58 h44" stroke="#E4C7A4" strokeWidth="4" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (id === "garden") {
+    return (
+      <svg viewBox="0 0 80 80" aria-hidden="true">
+        <rect x="36" y="40" width="8" height="22" fill="#6E9A74" />
+        <circle cx="40" cy="32" r="8" fill="#F6D56B" />
+        <circle cx="28" cy="38" r="8" fill="#F4A4B4" />
+        <circle cx="52" cy="38" r="8" fill="#F4A4B4" />
       </svg>
     );
   }
