@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { previewVoice } from "../audio/player";
+import { deviceSpeechFollowsSlider } from "../audio/platform";
 import { subscribeVoices, type VoiceOption } from "../audio/voices";
 import { animals, type AnimalId } from "../data/animals";
 import {
@@ -202,6 +203,11 @@ export function ParentView({
             volume={settings.voiceVolume}
             onToggle={(voice) => onChange({ voice })}
             onVolume={(voiceVolume) => onChange({ voiceVolume })}
+            note={
+              deviceSpeechFollowsSlider()
+                ? undefined
+                : "Recorded clips follow this slider. The phone's own voice uses the volume buttons."
+            }
           />
           <VoiceField settings={settings} onChange={onChange} />
           <MixRow
@@ -358,12 +364,14 @@ function MixRow({
   volume,
   onToggle,
   onVolume,
+  note,
 }: {
   label: string;
   on: boolean;
   volume: number;
   onToggle: (on: boolean) => void;
   onVolume: (volume: number) => void;
+  note?: string;
 }) {
   const id = `volume-${label.toLowerCase()}`;
   return (
@@ -389,6 +397,7 @@ function MixRow({
           onChange={(event) => onVolume(Number(event.target.value) / 100)}
         />
       </label>
+      {note ? <p className="adult-copy">{note}</p> : null}
     </fieldset>
   );
 }

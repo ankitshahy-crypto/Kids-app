@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { applyAudioSettings, playEffect, setMusicArea } from "./audio/manager";
+import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
 import { primeSpeech } from "./audio/player";
 import { Background } from "./components/Background";
 import { Chevron } from "./components/icons";
@@ -7,6 +7,7 @@ import { KidCorner } from "./components/KidCorner";
 import { ParentView } from "./components/ParentPanel";
 import { PlaceholderStep } from "./components/PlaceholderStep";
 import { SoundItOut } from "./components/SoundItOut";
+import { SilentHint } from "./components/SilentHint";
 import { StartScreen } from "./components/StartScreen";
 import { TeacherView } from "./components/TeacherView";
 import { TodayPath } from "./components/TodayPath";
@@ -31,6 +32,12 @@ export default function App() {
       if (window.speechSynthesis?.paused) window.speechSynthesis.resume();
     }, 4000);
     return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const unlock = () => unlockAudio();
+    window.addEventListener("pointerdown", unlock);
+    return () => window.removeEventListener("pointerdown", unlock);
   }, []);
 
   useEffect(() => {
@@ -82,6 +89,7 @@ export default function App() {
   return (
     <div className={`app mode-${mode}`} data-mode={mode}>
       {pastel ? <Background /> : null}
+      <SilentHint />
       <main className="stage">
         {mode === "start" ? (
           <StartScreen
