@@ -1,10 +1,11 @@
-import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
+import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
 import { TimeBoard } from "./TimePlay";
 import { COLORS, type ColorLesson, type ColorStep } from "../data/colors";
 import { MATH, type MathLesson, type MathStep } from "../data/math";
 import { TIME, type TimeLesson, type TimeStep } from "../data/timeMoney";
+import { BUILD, type BuildActivity } from "../data/engineer";
 import { READING } from "../data/subject";
 import type { PlacementSource } from "../data/placement";
 import { isReviewDay } from "../data/schedule";
@@ -13,6 +14,7 @@ import { practiceTotal } from "../data/reading";
 import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
 import { StarIcon } from "./icons";
+import { EngineerBoard } from "./NestBuild";
 import { ModuleMark } from "./ModuleMark";
 import { BookMark, EggNest, Hills, PencilMark, ShapesMark, ToyBox } from "./sceneArt";
 
@@ -46,6 +48,7 @@ export function TodayPath({
   timeLesson,
   onTime,
   onMoneyPlay,
+  onBuild,
   canTraceWord,
   canTraceName,
   onTraceWord,
@@ -64,8 +67,8 @@ export function TodayPath({
   onStickers: () => void;
   onGames: () => void;
   goalMinutes: number;
-  course: "reading" | "math" | "colors" | "time";
-  onCourse: (course: "reading" | "math" | "colors" | "time") => void;
+  course: "reading" | "math" | "colors" | "time" | "build";
+  onCourse: (course: "reading" | "math" | "colors" | "time" | "build") => void;
   mathLesson: MathLesson;
   onMath: (step: MathStep) => void;
   colorLesson: ColorLesson;
@@ -73,6 +76,7 @@ export function TodayPath({
   timeLesson: TimeLesson;
   onTime: (step: TimeStep) => void;
   onMoneyPlay: () => void;
+  onBuild: (activity: BuildActivity) => void;
   canTraceWord: boolean;
   canTraceName: boolean;
   onTraceWord: () => void;
@@ -91,7 +95,7 @@ export function TodayPath({
     <div
       className="today"
       data-screen="today"
-      data-subject={course === "math" ? MATH : course === "colors" ? COLORS : course === "time" ? TIME : READING}
+      data-subject={course === "math" ? MATH : course === "colors" ? COLORS : course === "time" ? TIME : course === "build" ? BUILD : READING}
       data-review={review ? "true" : "false"}
       data-source={placementSource}
       data-stage={
@@ -179,11 +183,30 @@ export function TodayPath({
             <span>Time & Money</span>
           </span>
         </button>
+        <button
+          type="button"
+          className={`course-button${course === "build" ? " is-selected" : ""}`}
+          data-course="build"
+          aria-pressed={course === "build"}
+          aria-label={MODULE_BUILD}
+          onClick={() => onCourse("build")}
+        >
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="build" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Build</span>
+          </span>
+        </button>
       </div>
 
       {course === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
       {course === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
       {course === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
+      {course === "build" ? (
+        <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} />
+      ) : null}
 
       {course === "reading" ? <div className="trail">
         <Hills />

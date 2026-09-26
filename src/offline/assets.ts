@@ -47,6 +47,7 @@ export function offlineUrls(): string[] {
   add(`${base}icons/module-numbers.png`);
   add(`${base}icons/module-colors.png`);
   add(`${base}icons/module-time.svg`);
+  add(`${base}icons/module-build.svg`);
   for (const font of fontUrls()) add(font);
   for (const file of lessonAudioFiles()) add(`${base}audio/${file}`);
   for (const entry of performance.getEntriesByType("resource")) {
