@@ -1,7 +1,13 @@
+import { MODULE_COLORS, MODULE_NUMBERS, MODULE_WORDS } from "../brand";
+import { ColorBoard } from "./ColorPlay";
+import { MathBoard } from "./MathPlay";
+import { COLORS, type ColorLesson, type ColorStep } from "../data/colors";
+import { MATH, type MathLesson, type MathStep } from "../data/math";
 import { READING } from "../data/subject";
 import type { PlacementSource } from "../data/placement";
 import { isReviewDay } from "../data/schedule";
 import { dayProgress, todayKey, type ChildProfile, type LessonStep } from "../data/profiles";
+import { practiceTotal } from "../data/reading";
 import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
 import { StarIcon } from "./icons";
@@ -28,6 +34,12 @@ export function TodayPath({
   onCloset,
   onStickers,
   goalMinutes,
+  course,
+  onCourse,
+  mathLesson,
+  onMath,
+  colorLesson,
+  onColor,
 }: {
   profile: ChildProfile;
   letters: string[];
@@ -41,10 +53,18 @@ export function TodayPath({
   onCloset: () => void;
   onStickers: () => void;
   goalMinutes: number;
+  course: "reading" | "math" | "colors";
+  onCourse: (course: "reading" | "math" | "colors") => void;
+  mathLesson: MathLesson;
+  onMath: (step: MathStep) => void;
+  colorLesson: ColorLesson;
+  onColor: (step: ColorStep) => void;
 }) {
   const now = new Date();
   const review = isReviewDay(now);
   const done = dayProgress(profile, now);
+  const mathDone = profile.days[todayKey(now)]?.[MATH] ?? {};
+  const colorDone = profile.days[todayKey(now)]?.[COLORS] ?? {};
   const current = stops.find((stop) => !done[stop.id]) ?? stops[stops.length - 1];
   const letter = (letters[0] ?? "a").toUpperCase();
 
@@ -52,10 +72,10 @@ export function TodayPath({
     <div
       className="today"
       data-screen="today"
-      data-subject={READING}
+      data-subject={course === "math" ? MATH : course === "colors" ? COLORS : READING}
       data-review={review ? "true" : "false"}
       data-source={placementSource}
-      data-stage={stageId}
+      data-stage={course === "math" ? mathLesson.stageId : course === "colors" ? colorLesson.stageId : stageId}
       data-week={weekIndex}
       data-letters={letters.join("")}
     >
@@ -64,21 +84,70 @@ export function TodayPath({
           <Hero animal={profile.animal} outfit={profile.outfit} />
         </button>
         <div className="today-tools">
-          <GoalRing ms={profile.readingMs[todayKey(now)] ?? 0} goalMinutes={goalMinutes} />
+          <GoalRing ms={practiceTotal(profile)[todayKey(now)] ?? 0} goalMinutes={goalMinutes} />
           <p className="star-count" data-stars={profile.stars}>
             <StarIcon />
             <span>{profile.stars}</span>
           </p>
         </div>
       </div>
-      {review ? <p className="today-review">Review</p> : null}
+      {review && course === "reading" ? <p className="today-review">Review</p> : null}
 
-      <p className="today-module">
-        <ModuleMark name="words" />
-        <span>Words</span>
-      </p>
+      <div className="course-pick" role="group" aria-label="Today">
+        <button
+          type="button"
+          className={`course-button${course === "reading" ? " is-selected" : ""}`}
+          data-course="reading"
+          aria-pressed={course === "reading"}
+          aria-label={MODULE_WORDS}
+          onClick={() => onCourse("reading")}
+        >
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="words" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Words</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`course-button${course === "math" ? " is-selected" : ""}`}
+          data-course="math"
+          aria-pressed={course === "math"}
+          aria-label={MODULE_NUMBERS}
+          onClick={() => onCourse("math")}
+        >
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="numbers" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Numbers</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`course-button${course === "colors" ? " is-selected" : ""}`}
+          data-course="colors"
+          aria-pressed={course === "colors"}
+          aria-label={MODULE_COLORS}
+          onClick={() => onCourse("colors")}
+        >
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="colors" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Colors</span>
+          </span>
+        </button>
+      </div>
 
-      <div className="trail">
+      {course === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
+      {course === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
+
+      {course === "reading" ? <div className="trail">
         <Hills />
         <svg className="trail-dots" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           <path
@@ -119,7 +188,7 @@ export function TodayPath({
         >
           <Hero animal={profile.animal} outfit={profile.outfit} />
         </span>
-      </div>
+      </div> : null}
 
       <div className="today-dock">
         <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>

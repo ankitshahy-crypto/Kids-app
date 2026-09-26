@@ -2,6 +2,8 @@ import type { IllustrationName } from "../illustrations";
 import type { DeckWord } from "./deck";
 import { starterDeck } from "./deck";
 import { letterSchedule } from "./schedule";
+import { COLORS } from "./colors";
+import { MATH } from "./math";
 import { READING, type SubjectId } from "./subject";
 
 export type SheetKind = {
@@ -14,6 +16,9 @@ export type SheetKind = {
 const sheetCatalog: SheetKind[] = [
   { subject: READING, id: "letter", title: "Letter tracing" },
   { subject: READING, id: "blending", title: "Blending" },
+  { subject: MATH, id: "trace", title: "Number tracing" },
+  { subject: MATH, id: "count", title: "Counting" },
+  { subject: COLORS, id: "coloring", title: "Coloring page" },
 ];
 
 export function sheetsFor(subject: SubjectId): SheetKind[] {

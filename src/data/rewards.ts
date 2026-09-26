@@ -86,7 +86,7 @@ export function applyEffort(
   let next = awardStar(profile, step, now, timeZone, subject);
   const awarded = next.stars !== before;
   const beforeStickers = next.stickers.length;
-  if (awarded && subject === READING && step === "letter") next = addStickers(next, learned, subject);
+  if (awarded && learned.length > 0) next = addStickers(next, learned, subject);
   const stickersAdded = next.stickers.length - beforeStickers;
   const steps = next.days[todayKey(now, timeZone)]?.[subject] ?? {};
   const lessonComplete = definition.steps.every((item) => steps[item] === true);

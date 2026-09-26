@@ -6,7 +6,7 @@ export function GoalRing({ ms, goalMinutes }: { ms: number; goalMinutes: number 
   const turn = 2 * Math.PI * radius;
   const met = ratio >= 1;
   return (
-    <div className="goal-ring" role="img" aria-label="Today's reading" data-progress={ratio.toFixed(2)} data-met={met ? "true" : "false"}>
+    <div className="goal-ring" role="img" aria-label="Today's practice" data-progress={ratio.toFixed(2)} data-met={met ? "true" : "false"}>
       <svg viewBox="0 0 40 40" aria-hidden="true">
         <circle cx="20" cy="20" r={radius} fill="none" stroke="var(--mint-wash)" strokeWidth="4" />
         <circle

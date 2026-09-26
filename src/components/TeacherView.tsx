@@ -1,5 +1,8 @@
 import { useState } from "react";
 import type { AnimalId } from "../data/animals";
+import { COLORS, colorIntroduced } from "../data/colors";
+import { MATH, mathIntroduced } from "../data/math";
+import { practiceTotal } from "../data/reading";
 import { lettersIntroduced } from "../data/schedule";
 import { resolvePlacement, type LessonPlace, type PlacementDocument } from "../data/placement";
 import { lessonName, type ChildProfile } from "../data/profiles";
@@ -92,17 +95,40 @@ function DeviceRewards({
         const resolved = resolvePlacement(placement, profile.id, profile.createdAt);
         const placedIntroduced =
           resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length;
+        const mathResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH);
+        const colorResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS);
         return (
-          <LearningPath
-            key={profile.id}
-            profile={profile}
-            name={lessonName(profile)}
-            placedIntroduced={placedIntroduced}
-          />
+          <div key={profile.id}>
+            <LearningPath profile={profile} name={lessonName(profile)} placedIntroduced={placedIntroduced} />
+            <LearningPath
+              profile={profile}
+              name={lessonName(profile)}
+              subject={MATH}
+              section="path-math"
+              placedIntroduced={mathResolved.source === "calendar" ? undefined : mathIntroduced(mathResolved.weekIndex)}
+            />
+            <LearningPath
+              profile={profile}
+              name={lessonName(profile)}
+              subject={COLORS}
+              section="path-colors"
+              placedIntroduced={colorResolved.source === "calendar" ? undefined : colorIntroduced(colorResolved.weekIndex)}
+            />
+          </div>
         );
       })}
       {profiles.map((profile) => (
         <ReadingChart key={profile.id} name={lessonName(profile)} days={profile.readingMs} goalMinutes={goalMinutes} />
+      ))}
+      {profiles.map((profile) => (
+        <ReadingChart
+          key={`${profile.id}-practice`}
+          name={lessonName(profile)}
+          days={practiceTotal(profile)}
+          goalMinutes={goalMinutes}
+          title="Time practicing"
+          section="practice"
+        />
       ))}
     </section>
   );

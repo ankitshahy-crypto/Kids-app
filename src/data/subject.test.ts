@@ -27,8 +27,8 @@ describe("subject key", () => {
     expect(reading.currentId).toBe("letters");
     expect(reading.stages).toHaveLength(4);
 
-    const later = learningPlace("math", 3);
-    expect(later.subject).toBe("math");
+    const later = learningPlace("science", 3);
+    expect(later.subject).toBe("science");
     expect(later.currentId).toBe("");
     expect(later.stages).toEqual([]);
     expect(later.introduced).toBe(0);
@@ -88,19 +88,19 @@ describe("subject key", () => {
 
   it("does not award stars or time for a subject that is not registered", () => {
     const child = createChild({ name: "Mia", ageRange: "4", animal: "fox" });
-    const starred = awardStar(child, "count", now, zone, "math");
+    const starred = awardStar(child, "count", now, zone, "science");
     expect(starred).toBe(child);
-    const effort = applyEffort(child, "count", [], now, zone, "math");
+    const effort = applyEffort(child, "count", [], now, zone, "science");
     expect(effort.awarded).toBe(false);
     expect(effort.profile).toBe(child);
-    const credit = applyReadingCredit(child, { "2026-09-26": 60_000 }, 10, now, zone, "math");
+    const credit = applyReadingCredit(child, { "2026-09-26": 60_000 }, 10, now, zone, "science");
     expect(credit.profile).toBe(child);
     expect(credit.awardedNow).toBe(false);
   });
 
   it("lists reading sheets and none for a subject that is not registered", () => {
     expect(sheetsFor(READING).map((sheet) => sheet.id)).toEqual(["letter", "blending"]);
-    expect(sheetsFor("math")).toEqual([]);
+    expect(sheetsFor("science")).toEqual([]);
   });
 
   it("stores reading time on the reading subject and keeps the reading mirror", () => {

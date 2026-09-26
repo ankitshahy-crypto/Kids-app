@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
-import { MODULE_WORDS, PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
-import { tint } from "../palette";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
+import { PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
+import { tint } from "../palette";
 import { shareWordNest, type ShareResult } from "../share";
 import type { AnimalId } from "../data/animals";
 import type { PlacementDocument } from "../data/placement";
@@ -238,8 +238,11 @@ export function GrownupsMenu({
           <h2>Help</h2>
           <h3>How the daily lesson works</h3>
           <p className="adult-copy">
-            Each day {MODULE_WORDS} has four stops: Letters, Draw, Story, and Colors. A star is for trying. On Friday the
-            letters from that week come back for a short review.
+            Each day the child can choose LittleNest Words, LittleNest Numbers, or LittleNest Colors. LittleNest Words
+            has four stops: Letters, Draw, Story, and Colors. LittleNest Numbers has counting, numerals, tracing, shapes,
+            comparing, and adding. LittleNest Colors has color names, then mixing paints, and coloring their animal. A
+            star is for trying. The daily goal counts time on all of them. On Friday the letters from that week come
+            back for a short review.
           </p>
           <h3>Drag to blend</h3>
           <p className="adult-copy">

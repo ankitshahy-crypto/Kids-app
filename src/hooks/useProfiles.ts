@@ -7,11 +7,11 @@ import {
   saveStore,
   type AgeRange,
   type ChildProfile,
-  type LessonStep,
   type StickerInput,
 } from "../data/profiles";
 import { applyReadingCredit, type ReadingCredit } from "../data/reading";
 import { applyEffort, wearItem, type EffortResult } from "../data/rewards";
+import { READING, type SubjectId } from "../data/subject";
 
 export function useProfiles() {
   const [store, setStore] = useState(() => loadStore());
@@ -50,7 +50,7 @@ export function useProfiles() {
     });
   };
 
-  const giveStar = (id: string, step: LessonStep, learned: StickerInput[] = []): EffortResult => {
+  const giveStar = (id: string, step: string, learned: StickerInput[] = [], subject: SubjectId = READING): EffortResult => {
     const profile = store.profiles.find((item) => item.id === id);
     if (!profile) {
       return {
@@ -63,19 +63,24 @@ export function useProfiles() {
     }
     // Read the award from this render. The updater repeats the same step, so a
     // second pass in development cannot add another star or hide the cheer.
-    const result = applyEffort(profile, step, learned);
+    const result = applyEffort(profile, step, learned, new Date(), undefined, subject);
     if (result.awarded) {
       setStore((current) => ({
         ...current,
         profiles: current.profiles.map((item) =>
-          item.id === id ? applyEffort(item, step, learned).profile : item,
+          item.id === id ? applyEffort(item, step, learned, new Date(), undefined, subject).profile : item,
         ),
       }));
     }
     return result;
   };
 
-  const recordReading = (id: string, totals: Record<string, number>, goalMinutes: number): ReadingCredit => {
+  const recordReading = (
+    id: string,
+    totals: Record<string, number>,
+    goalMinutes: number,
+    subject: SubjectId = READING,
+  ): ReadingCredit => {
     const profile = store.profiles.find((item) => item.id === id);
     if (!profile) {
       return {
@@ -84,12 +89,12 @@ export function useProfiles() {
         milestones: [],
       };
     }
-    const result = applyReadingCredit(profile, totals, goalMinutes);
+    const result = applyReadingCredit(profile, totals, goalMinutes, new Date(), undefined, subject);
     if (result.profile !== profile) {
       setStore((current) => ({
         ...current,
         profiles: current.profiles.map((item) =>
-          item.id === id ? applyReadingCredit(item, totals, goalMinutes).profile : item,
+          item.id === id ? applyReadingCredit(item, totals, goalMinutes, new Date(), undefined, subject).profile : item,
         ),
       }));
     }

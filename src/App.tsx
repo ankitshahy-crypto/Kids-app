@@ -21,10 +21,14 @@ import { StartScreen } from "./components/StartScreen";
 import { StickerBook } from "./components/StickerBook";
 import { TeacherView } from "./components/TeacherView";
 import { TodayPath } from "./components/TodayPath";
-import { readTip, type ReadTip } from "./content/tips";
+import { colorTip, mathTip, readTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
+import { MixActivity, NameActivity, PaintActivity } from "./components/ColorPlay";
+import { AddActivity, CountActivity, KnowActivity, MoreActivity, ShapeActivity, TraceActivity } from "./components/MathPlay";
+import { COLORS, colorFill, colorLessonForChild, type ColorStep } from "./data/colors";
+import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
-import type { ReadingCredit } from "./data/reading";
+import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
 import { wordsForLetters } from "./data/schedule";
 import { usePlacement } from "./hooks/usePlacement";
@@ -34,9 +38,12 @@ import { useSettings } from "./hooks/useSettings";
 import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | LessonStep;
+type Course = "reading" | "math" | "colors";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | LessonStep | MathStep | ColorStep;
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
+const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
+const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
@@ -49,6 +56,7 @@ export default function App() {
   const [cheer, setCheer] = useState<number | null>(null);
   const [goalMet, setGoalMet] = useState(false);
   const [tip, setTip] = useState<ReadTip | null>(null);
+  const [course, setCourse] = useState<Course>("reading");
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -105,6 +113,24 @@ export default function App() {
 
   const lessonLetters = lessonPlace?.letters ?? [];
 
+  const mathPlace = useMemo(() => {
+    if (!active) return null;
+    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, MATH);
+  }, [active, placement]);
+
+  const mathLesson = useMemo(() => {
+    return lessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, mathPlace?.weekIndex);
+  }, [active, mathPlace]);
+
+  const colorPlace = useMemo(() => {
+    if (!active) return null;
+    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, COLORS);
+  }, [active, placement]);
+
+  const colorLesson = useMemo(() => {
+    return colorLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, colorPlace?.weekIndex);
+  }, [active, colorPlace]);
+
   const lessonWords = useMemo(() => wordsForLetters(lessonLetters), [lessonLetters]);
 
   const showTip = (step: LessonStep, when: "start" | "end", letter?: string) => {
@@ -158,10 +184,74 @@ export default function App() {
     }
   };
 
-  useReadingTime(mode === "kid" ? active : null, (id, totals) => {
-    const result = recordReading(id, totals, settingsRef.current.readingGoal);
-    if (result.awardedNow) celebrateGoal(result);
-  });
+  useReadingTime(
+    mode === "kid" && active
+      ? {
+          id: active.id,
+          subject: course,
+          seed:
+            course === "math"
+              ? (active.practiceMs?.[MATH] ?? {})
+              : course === "colors"
+                ? (active.practiceMs?.[COLORS] ?? {})
+                : active.readingMs,
+        }
+      : null,
+    (id, totals, subject) => {
+      const result = recordReading(id, totals, settingsRef.current.readingGoal, subject);
+      if (result.awardedNow) celebrateGoal(result);
+    },
+  );
+
+  const finishMath = (step: MathStep, label: string) => {
+    if (!active) return;
+    const learned: StickerInput[] = label ? [{ subject: MATH, kind: "number", label }] : [];
+    const result = giveStar(active.id, step, learned, MATH);
+    if (result.awarded) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduce) setFlying(true);
+      if (result.milestones.length > 0) {
+        setCheer(result.milestones[result.milestones.length - 1] ?? null);
+        playEffect("cheer", settings);
+      } else if (result.lessonComplete) playEffect("celebrate", settings);
+      else playEffect("chime", settings);
+    }
+    setScreen("today");
+    if (settingsRef.current.showTips) setTip(mathTip(step, "end"));
+    else setTip(null);
+  };
+
+  const openMath = (step: MathStep) => {
+    primeSpeech();
+    setScreen(step);
+    if (settingsRef.current.showTips) setTip(mathTip(step, "start"));
+    else setTip(null);
+  };
+
+  const finishColor = (step: ColorStep, label: string) => {
+    if (!active) return;
+    const learned: StickerInput[] = label ? [{ subject: COLORS, kind: "color", label }] : [];
+    const result = giveStar(active.id, step, learned, COLORS);
+    if (result.awarded) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduce) setFlying(true);
+      if (result.milestones.length > 0) {
+        setCheer(result.milestones[result.milestones.length - 1] ?? null);
+        playEffect("cheer", settings);
+      } else if (result.lessonComplete) playEffect("celebrate", settings);
+      else playEffect("chime", settings);
+    }
+    setScreen("today");
+    if (settingsRef.current.showTips) setTip(colorTip(step, "end"));
+    else setTip(null);
+  };
+
+  const openColor = (step: ColorStep) => {
+    primeSpeech();
+    setScreen(step);
+    if (settingsRef.current.showTips) setTip(colorTip(step, "start"));
+    else setTip(null);
+  };
 
   const finishLetter = (word: DeckWord) => {
     const learned: StickerInput[] = [
@@ -172,7 +262,10 @@ export default function App() {
     showTip("letter", "end", word.letters[0]?.char ?? word.word);
   };
 
-  const inLesson = lessonScreens.includes(screen as LessonStep);
+  const inLesson =
+    lessonScreens.includes(screen as LessonStep) ||
+    mathScreens.includes(screen as MathStep) ||
+    colorScreens.includes(screen as ColorStep);
   const pastel = mode === "start" || mode === "kid";
   const openGrownups = () => {
     setGrownupsReturn(mode === "kid" ? "kid" : "start");
@@ -209,7 +302,7 @@ export default function App() {
                   </span>
                 </button>
                 <div className="today-tools">
-                  <GoalRing ms={active.readingMs[todayKey()] ?? 0} goalMinutes={settings.readingGoal} />
+                  <GoalRing ms={practiceTotal(active)[todayKey()] ?? 0} goalMinutes={settings.readingGoal} />
                   <p className="star-count" data-stars={active.stars}>
                     <StarIcon />
                     <span>{active.stars}</span>
@@ -233,6 +326,15 @@ export default function App() {
                   onCloset={() => setScreen("closet")}
                   onStickers={() => setScreen("stickers")}
                   goalMinutes={settings.readingGoal}
+                  course={course}
+                  onCourse={(next) => {
+                    setCourse(next);
+                    setTip(null);
+                  }}
+                  mathLesson={mathLesson}
+                  onMath={openMath}
+                  colorLesson={colorLesson}
+                  onColor={openColor}
                 />
               ) : null}
               {screen === "library" ? <KidCorner kind="library" onBack={() => setScreen("today")} /> : null}
@@ -253,6 +355,38 @@ export default function App() {
               ) : null}
               {screen === "draw" || screen === "story" || screen === "moment" ? (
                 <PlaceholderStep step={screen} profile={active} onDone={() => finishStep(screen)} />
+              ) : null}
+              {screen === "count" ? (
+                <CountActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("count", label)} />
+              ) : null}
+              {screen === "know" ? (
+                <KnowActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("know", label)} />
+              ) : null}
+              {screen === "trace" ? (
+                <TraceActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("trace", label)} />
+              ) : null}
+              {screen === "shape" ? (
+                <ShapeActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("shape", label)} />
+              ) : null}
+              {screen === "more" ? (
+                <MoreActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("more", label)} />
+              ) : null}
+              {screen === "add" ? (
+                <AddActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("add", label)} />
+              ) : null}
+              {screen === "name" ? (
+                <NameActivity lesson={colorLesson} settingsRef={settingsRef} onDone={(label) => finishColor("name", label)} />
+              ) : null}
+              {screen === "mix" ? <MixActivity settingsRef={settingsRef} onDone={(label) => finishColor("mix", label)} /> : null}
+              {screen === "paint" ? (
+                <PaintActivity
+                  animal={active.animal}
+                  outfit={active.outfit}
+                  made={active.stickers
+                    .filter((sticker) => sticker.subject === COLORS && sticker.kind === "color" && colorFill(sticker.label))
+                    .map((sticker) => sticker.label)}
+                  onDone={(label) => finishColor("paint", label)}
+                />
               ) : null}
             </div>
           </>

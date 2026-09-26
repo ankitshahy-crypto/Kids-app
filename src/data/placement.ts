@@ -1,4 +1,18 @@
 import { PLACEMENT_KEY, readStored, writeStored } from "../storage";
+import {
+  COLORS,
+  clampColorWeek,
+  colorIntroduced,
+  colorWeekCount,
+  firstColorWeekForStage,
+} from "./colors";
+import {
+  MATH,
+  clampMathWeek,
+  firstMathWeekForStage,
+  mathIntroduced,
+  mathWeekCount,
+} from "./math";
 import { learningPlace, type PathStageId } from "./path";
 import { isReviewDay, letterSchedule, lettersIntroduced, planForWeek, practiceLetters, weekIndex } from "./schedule";
 import { READING, isSubjectKey, readingStages, subjectDefinition, type SubjectId } from "./subject";
@@ -79,7 +93,11 @@ export function emptyPlacement(): PlacementDocument {
     origin: "device",
     classId: DEVICE_CLASS_ID,
     updatedAt: "",
-    subjects: { [READING]: emptySubjectPlacement() },
+    subjects: {
+      [READING]: emptySubjectPlacement(),
+      [MATH]: emptySubjectPlacement(),
+      [COLORS]: emptySubjectPlacement(),
+    },
   };
 }
 
@@ -111,28 +129,49 @@ export function firstWeekForStage(stageId: PathStageId): number {
   return letterSchedule.length - 1;
 }
 
-export function placeForStage(stageId: PathStageId, subject: SubjectId = READING): LessonPlace {
-  if (subject !== READING) {
-    return { subject, stageId, weekIndex: 0 };
-  }
-  return placeForWeek(firstWeekForStage(stageId));
+export function placeForStage(stageId: string, subject: SubjectId = READING): LessonPlace {
+  if (subject === MATH) return placeForWeek(firstMathWeekForStage(stageId), MATH);
+  if (subject === COLORS) return placeForWeek(firstColorWeekForStage(stageId), COLORS);
+  if (isPathStageId(stageId)) return placeForWeek(firstWeekForStage(stageId), READING);
+  return { subject, stageId, weekIndex: 0 };
 }
 
-/** Week chooses the reading lesson. The stage is the path stage that week sits in. */
+function introducedFor(subject: SubjectId, week: number): number {
+  if (subject === MATH) return mathIntroduced(week);
+  if (subject === COLORS) return colorIntroduced(week);
+  return lettersIntroduced(week).length;
+}
+
+/** Week chooses the lesson. The stage is the path stage that week sits in. */
 export function placeForWeek(index: number, subject: SubjectId = READING): LessonPlace {
-  const week = clampWeek(index);
+  const week = subject === MATH ? clampMathWeek(index) : subject === COLORS ? clampColorWeek(index) : clampWeek(index);
   return {
     subject,
-    stageId: learningPlace(subject, lettersIntroduced(week).length).currentId,
+    stageId: learningPlace(subject, introducedFor(subject, week)).currentId,
     weekIndex: week,
   };
 }
 
-export function weekLabel(index: number): string {
+export function weekLabel(index: number, subject: SubjectId = READING): string {
+  if (subject === MATH) {
+    const week = clampMathWeek(index);
+    const stageId = learningPlace(MATH, mathIntroduced(week)).currentId;
+    return `Week ${week + 1} · ${stageTitle(stageId, MATH)}`;
+  }
+  if (subject === COLORS) {
+    const week = clampColorWeek(index);
+    const stageId = learningPlace(COLORS, colorIntroduced(week)).currentId;
+    return `Week ${week + 1} · ${stageTitle(stageId, COLORS)}`;
+  }
   const week = clampWeek(index);
   const plan = letterSchedule[week];
   const letters = plan.newLetters.map((letter) => letter.toUpperCase()).join(" ");
   return `Week ${week + 1} · ${letters}`;
+}
+
+export function weekChoices(subject: SubjectId = READING): number[] {
+  const count = subject === MATH ? mathWeekCount() : subject === COLORS ? colorWeekCount() : letterSchedule.length;
+  return Array.from({ length: count }, (_, index) => index);
 }
 
 export function withClassPlace(
@@ -225,6 +264,8 @@ export function parsePlacement(value: unknown): PlacementDocument | null {
     };
   }
   if (!subjects[READING]) subjects[READING] = emptySubjectPlacement();
+  if (!subjects[MATH]) subjects[MATH] = emptySubjectPlacement();
+  if (!subjects[COLORS]) subjects[COLORS] = emptySubjectPlacement();
   return { version: 1, origin, classId, updatedAt, subjects };
 }
 
@@ -256,7 +297,7 @@ export function resolvePlacement(
   const chosen = childPlace ?? slot.classDefault;
   const source: PlacementSource = childPlace ? "child" : slot.classDefault ? "class" : "calendar";
   const index = chosen ? chosen.weekIndex : weekIndex(createdAt, now, timeZone);
-  const stageId = chosen ? chosen.stageId : learningPlace(subject, lettersIntroduced(index).length).currentId;
+  const stageId = chosen ? chosen.stageId : learningPlace(subject, introducedFor(subject, index)).currentId;
   const letters = subject === READING ? practiceLetters(planForWeek(index), isReviewDay(now, timeZone)) : [];
   return { subject, source, weekIndex: index, stageId, letters };
 }

@@ -3,7 +3,7 @@ import manifest from "./audioManifest.json";
 import { starterDeck } from "./deck";
 import { PHONEME_IDS } from "./phonemes";
 
-export type AudioKind = "letters" | "words" | "sentences";
+export type AudioKind = "letters" | "words" | "sentences" | "numbers" | "prompts" | "colors";
 
 export type AudioCue = {
   file: string;
@@ -54,6 +54,27 @@ for (const [id, cue] of Object.entries(book.sentences)) {
   assertCue("sentences", id, cue);
   if (cue.source !== "neural") {
     throw new Error(`Sentence "${id}" should be marked for offline neural audio`);
+  }
+}
+
+for (const [id, cue] of Object.entries(book.numbers)) {
+  assertCue("numbers", id, cue);
+  if (cue.source !== "neural") {
+    throw new Error(`Number "${id}" should be marked for offline neural audio`);
+  }
+}
+
+for (const [id, cue] of Object.entries(book.prompts)) {
+  assertCue("prompts", id, cue);
+  if (cue.source !== "neural") {
+    throw new Error(`Prompt "${id}" should be marked for offline neural audio`);
+  }
+}
+
+for (const [id, cue] of Object.entries(book.colors)) {
+  assertCue("colors", id, cue);
+  if (cue.source !== "neural") {
+    throw new Error(`Color "${id}" should be marked for offline neural audio`);
   }
 }
 

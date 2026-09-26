@@ -5,7 +5,10 @@ import font700 from "../assets/fonts/fredoka-latin-700-normal.woff2?url";
 
 type Cue = { file: string };
 
-const groups = [manifest.letters, manifest.words, manifest.sentences] as Record<string, Cue>[];
+const groups = [manifest.letters, manifest.words, manifest.sentences, manifest.numbers, manifest.prompts, manifest.colors] as Record<
+  string,
+  Cue
+>[];
 
 /** Every recorded clip in the lesson manifest. Paths stay under audio/. */
 export function lessonAudioFiles(): string[] {

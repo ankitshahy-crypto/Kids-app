@@ -15,9 +15,13 @@ import {
   weekIndex,
 } from "../data/schedule";
 import type { Settings } from "../settings";
-import { tint } from "../palette";
 import { ChildForm } from "./ChildForm";
 import { StarIcon } from "./icons";
+import { MODULE_COLORS, MODULE_NUMBERS } from "../brand";
+import { tint } from "../palette";
+import { COLORS, colorIntroduced } from "../data/colors";
+import { MATH, mathIntroduced } from "../data/math";
+import { practiceTotal } from "../data/reading";
 import { LearningPath } from "./LearningPath";
 import { ReadingChart } from "./ReadingChart";
 import { SettingsFields } from "./SettingsFields";
@@ -246,6 +250,8 @@ export function ParentView({
 
 function PlacementSummary({ child, placement }: { child: ChildProfile; placement: PlacementDocument }) {
   const resolved = resolvePlacement(placement, child.id, child.createdAt);
+  const mathResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, MATH);
+  const colorResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, COLORS);
   const source =
     resolved.source === "child"
       ? "Set for this child."
@@ -268,6 +274,12 @@ function PlacementSummary({ child, placement }: { child: ChildProfile; placement
       </p>
       <p className="adult-copy">Today: {resolved.letters.map((letter) => letter.toUpperCase()).join(" ")}</p>
       <p className="adult-copy">{source}</p>
+      <p className="adult-copy" data-math-stage={mathResolved.stageId} data-math-source={mathResolved.source}>
+        {MODULE_NUMBERS}: {stageTitle(mathResolved.stageId, MATH)}.
+      </p>
+      <p className="adult-copy" data-color-stage={colorResolved.stageId} data-color-source={colorResolved.source}>
+        {MODULE_COLORS}: {stageTitle(colorResolved.stageId, COLORS)}.
+      </p>
     </section>
   );
 }
@@ -285,6 +297,8 @@ function ParentHome({
 }) {
   const now = new Date();
   const resolved = resolvePlacement(placement, child.id, child.createdAt);
+  const mathResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, MATH);
+  const colorResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, COLORS);
   const introduced = lettersIntroduced(resolved.source === "calendar" ? weekIndex(child.createdAt, now) : resolved.weekIndex);
   const total = letterPlanSize();
   const pct = total === 0 ? 0 : Math.round((introduced.length / total) * 100);
@@ -300,6 +314,18 @@ function ParentHome({
       <LearningPath
         profile={child}
         placedIntroduced={resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length}
+      />
+      <LearningPath
+        profile={child}
+        subject={MATH}
+        section="path-math"
+        placedIntroduced={mathResolved.source === "calendar" ? undefined : mathIntroduced(mathResolved.weekIndex)}
+      />
+      <LearningPath
+        profile={child}
+        subject={COLORS}
+        section="path-colors"
+        placedIntroduced={colorResolved.source === "calendar" ? undefined : colorIntroduced(colorResolved.weekIndex)}
       />
       <PlacementSummary child={child} placement={placement} />
       <header className="parent-hero">
@@ -372,6 +398,7 @@ function ParentHome({
       </div>
 
       <ReadingChart days={child.readingMs} goalMinutes={goalMinutes} />
+      <ReadingChart days={practiceTotal(child)} goalMinutes={goalMinutes} title="Time practicing" section="practice" />
 
       <button type="button" className="teacher-card-link" data-section="teacher" onClick={() => onOpen("teacher")}>
         <span>
