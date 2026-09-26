@@ -99,7 +99,7 @@ describe("subject key", () => {
   });
 
   it("lists reading sheets and none for a subject that is not registered", () => {
-    expect(sheetsFor(READING).map((sheet) => sheet.id)).toEqual(["letter", "blending"]);
+    expect(sheetsFor(READING).map((sheet) => sheet.id)).toEqual(["letter", "blending", "word", "name"]);
     expect(sheetsFor("science")).toEqual([]);
   });
 

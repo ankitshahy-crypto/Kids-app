@@ -14,6 +14,7 @@ import { MilestoneCheer } from "./components/MilestoneCheer";
 import { NestView } from "./components/NestView";
 import { ParentView } from "./components/ParentPanel";
 import { LetterTrace } from "./components/LetterTrace";
+import { NameTrace, WordTrace } from "./components/PathTrace";
 import { PlaceholderStep } from "./components/PlaceholderStep";
 import { SoundItOut } from "./components/SoundItOut";
 import { SilentHint } from "./components/SilentHint";
@@ -32,6 +33,7 @@ import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
 import { wordsForLetters } from "./data/schedule";
+import { blendedCvcWords, nameToTrace } from "./data/tracePractice";
 import { usePlacement } from "./hooks/usePlacement";
 import { useProfiles } from "./hooks/useProfiles";
 import { useReadingTime } from "./hooks/useReadingTime";
@@ -40,7 +42,7 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | LessonStep | MathStep | ColorStep;
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | LessonStep | MathStep | ColorStep | "word" | "name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
@@ -101,7 +103,7 @@ export default function App() {
       setMusicArea("none");
       return;
     }
-    if (screen === "draw") setMusicArea("focus");
+    if (screen === "draw" || screen === "word" || screen === "name") setMusicArea("focus");
     else if (screen === "story") setMusicArea("story");
     else if (screen === "library") setMusicArea("play");
     else setMusicArea("today");
@@ -133,6 +135,8 @@ export default function App() {
   }, [active, colorPlace]);
 
   const lessonWords = useMemo(() => wordsForLetters(lessonLetters), [lessonLetters]);
+  const blendedWords = useMemo(() => blendedCvcWords(active?.stickers ?? []), [active]);
+  const traceName = nameToTrace(active?.name ?? "");
 
   const showTip = (step: LessonStep, when: "start" | "end", letter?: string) => {
     if (!settingsRef.current.showTips) {
@@ -206,7 +210,8 @@ export default function App() {
 
   const finishMath = (step: MathStep, label: string) => {
     if (!active) return;
-    const learned: StickerInput[] = label ? [{ subject: MATH, kind: "number", label }] : [];
+    const kind = step === "shape" ? ("shape" as const) : ("number" as const);
+    const learned: StickerInput[] = label ? [{ subject: MATH, kind, label }] : [];
     const result = giveStar(active.id, step, learned, MATH);
     if (result.awarded) {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -266,7 +271,23 @@ export default function App() {
   const inLesson =
     lessonScreens.includes(screen as LessonStep) ||
     mathScreens.includes(screen as MathStep) ||
-    colorScreens.includes(screen as ColorStep);
+    colorScreens.includes(screen as ColorStep) ||
+    screen === "word" ||
+    screen === "name";
+
+  const practiceReward = (step: "word" | "name", learned: StickerInput[]) => {
+    if (!active) return;
+    const result = giveStar(active.id, step, learned);
+    if (result.awarded) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduce) setFlying(true);
+      if (result.milestones.length > 0) {
+        setCheer(result.milestones[result.milestones.length - 1] ?? null);
+        playEffect("cheer", settings);
+      } else playEffect("chime", settings);
+    }
+    setScreen("today");
+  };
   const pastel = mode === "start" || mode === "kid";
   const openGrownups = () => {
     setGrownupsReturn(mode === "kid" ? "kid" : "start");
@@ -336,6 +357,18 @@ export default function App() {
                   onMath={openMath}
                   colorLesson={colorLesson}
                   onColor={openColor}
+                  canTraceWord={blendedWords.length > 0}
+                  canTraceName={Boolean(traceName)}
+                  onTraceWord={() => {
+                    primeSpeech();
+                    setScreen("word");
+                    setTip(null);
+                  }}
+                  onTraceName={() => {
+                    primeSpeech();
+                    setScreen("name");
+                    setTip(null);
+                  }}
                 />
               ) : null}
               {screen === "library" ? <KidCorner kind="library" onBack={() => setScreen("today")} /> : null}
@@ -367,6 +400,20 @@ export default function App() {
                     setScreen("today");
                     showTip("draw", "end");
                   }}
+                />
+              ) : null}
+              {screen === "word" ? (
+                <WordTrace
+                  words={blendedWords}
+                  settingsRef={settingsRef}
+                  onDone={(word) => practiceReward("word", [{ kind: "word", label: word }])}
+                />
+              ) : null}
+              {screen === "name" && traceName ? (
+                <NameTrace
+                  name={active.name}
+                  settingsRef={settingsRef}
+                  onDone={() => practiceReward("name", [{ kind: "word", label: traceName }])}
                 />
               ) : null}
               {screen === "story" || screen === "moment" ? (

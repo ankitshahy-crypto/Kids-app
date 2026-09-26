@@ -353,6 +353,9 @@ function ParentHome({
               ))}
             </div>
             <p className="adult-copy">{review ? `Friday review. Letters ${weekLetters.join(" ").toUpperCase()}.` : "Great job! Keep going!"}</p>
+            <p className="adult-copy" data-trace-more="shapes words name">
+              Shapes, blended words, and their name can be traced on this device.
+            </p>
           </div>
           <div className="progress-ring" role="img" aria-label={`${pct} percent of letters introduced`}>
             <svg viewBox="0 0 72 72">

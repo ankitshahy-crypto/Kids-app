@@ -4947,3 +4947,40 @@ input.is-pressed,
     stroke-dashoffset: 0;
   }
 }
+
+.trace-practice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: min(100%, 520px);
+  margin: 8px auto 0;
+}
+
+.trace-practice button {
+  min-height: 52px;
+  min-width: 140px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.trace-practice button:disabled {
+  opacity: 0.45;
+}
+
+.glyph-row {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  font-size: 28px;
+}
+
+.glyph-row [data-current="true"] {
+  color: var(--text-warm);
+}
+
+.trace-word-row .trace-glyph {
+  width: 30%;
+}

@@ -12,29 +12,40 @@ function inkPath(stroke: TracePoint[], covered: number): TracePoint[] {
  */
 export function StrokeFigure({
   letter,
-  casing,
+  casing = "lower",
+  strokes,
+  label,
+  ruled = true,
   progress,
   activeIndex = -1,
   demoIndex = -1,
 }: {
-  letter: string;
-  casing: LetterCase;
+  letter?: string;
+  casing?: LetterCase;
+  strokes?: TracePoint[][];
+  label?: string;
+  ruled?: boolean;
   progress?: number[];
   activeIndex?: number;
   demoIndex?: number;
 }) {
-  const form = letterForm(letter, casing);
-  const glyph = form.letter;
+  const form = strokes ? { letter: label ?? "", strokes } : letterForm(letter ?? "a", casing);
+  const glyph = label || form.letter;
+  const caption = glyph.length === 1 ? glyph : "";
   return (
-    <svg className="trace-glyph" viewBox="0 0 100 100" data-case={casing} role="img" aria-label={glyph}>
-      <text className="stroke-caption" x="8" y="10">
-        {glyph}
-      </text>
-      <g className="paper-lines" aria-hidden="true">
-        <line x1="14" y1="18" x2="86" y2="18" />
-        <line x1="14" y1="52" x2="86" y2="52" />
-        <line x1="14" y1="84" x2="86" y2="84" />
-      </g>
+    <svg className="trace-glyph" viewBox="0 0 100 100" data-case={strokes ? undefined : casing} role="img" aria-label={glyph || "shape"}>
+      {caption ? (
+        <text className="stroke-caption" x="8" y="10">
+          {caption}
+        </text>
+      ) : null}
+      {ruled ? (
+        <g className="paper-lines" aria-hidden="true">
+          <line x1="14" y1="18" x2="86" y2="18" />
+          <line x1="14" y1="52" x2="86" y2="52" />
+          <line x1="14" y1="84" x2="86" y2="84" />
+        </g>
+      ) : null}
       {form.strokes.map((stroke, index) => {
         const arrow = directionArrow(stroke);
         const spot = numberSpot(stroke);
