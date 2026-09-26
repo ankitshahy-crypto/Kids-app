@@ -2130,6 +2130,65 @@ button:focus-visible {
   color: var(--text);
 }
 
+.account-actions,
+.account-email {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.account-apple,
+.account-google,
+.account-email-go,
+.account-email-new,
+.account-magic,
+.account-sign-out,
+.account-delete {
+  min-height: 56px;
+  border-radius: 18px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.account-apple {
+  background: #1c1c1e;
+  color: #fff;
+}
+
+.account-google,
+.account-email-new,
+.account-magic,
+.account-sign-out,
+.account-delete-quiet {
+  background: #fff;
+  color: #1c1c1e;
+  border: 2px solid #e4ddd4;
+}
+
+.account-email-go {
+  background: var(--action);
+  color: var(--paper);
+}
+
+.account-delete:not(.account-delete-quiet) {
+  background: #f8e0d8;
+  color: #8a4b3c;
+}
+
+.account-email label {
+  font-weight: 700;
+}
+
+.account-email input {
+  min-height: 52px;
+  border-radius: 14px;
+  border: 2px solid #e4ddd4;
+  padding: 0 14px;
+  font-size: 18px;
+  background: #fff;
+}
+
 .grownups-view h3 {
   margin: 16px 0 4px;
   font-size: 16px;

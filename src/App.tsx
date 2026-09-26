@@ -43,6 +43,7 @@ import { resolvePlacement } from "./data/placement";
 import { blendList, phonicsOpen, wordsToTrace } from "./data/ladder";
 import { lettersIntroduced } from "./data/schedule";
 import { nameToTrace } from "./data/tracePractice";
+import { useGrownupAccount } from "./auth/useGrownupAccount";
 import { usePlacement } from "./hooks/usePlacement";
 import { useProfiles } from "./hooks/useProfiles";
 import { useReadingTime } from "./hooks/useReadingTime";
@@ -62,8 +63,9 @@ const scienceScreens: ScienceId[] = ["life", "homes", "body", "change", "weather
 const moneyScreens: MoneyGame[] = ["jars", "lemonade", "choose", "needs", "cards"];
 
 export default function App() {
-  const { settings, update, settingsRef } = useSettings();
-  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteLadder, setLadderStep, noteSpin, giveGift } = useProfiles();
+  const { settings, update, replace: replaceSettings, settingsRef } = useSettings();
+  const { profiles, active, select, addChild, updateChild, removeChild, replaceProfiles, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteLadder, setLadderStep, noteSpin, giveGift } = useProfiles();
+  const account = useGrownupAccount({ profiles, settings, replaceProfiles, replaceSettings });
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
@@ -789,6 +791,7 @@ export default function App() {
               onAdd={addChild}
               onUpdate={updateChild}
               onRemove={removeChild}
+              account={account}
               onClose={() => setMode(grownupsReturn)}
             />
           </div>

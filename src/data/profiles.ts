@@ -383,6 +383,43 @@ function isProfile(value: unknown): value is ChildProfile {
   return Object.values(profile.days).every(isStoredDay);
 }
 
+/** A backup child list. A last name is dropped. Records that are not profiles are skipped. */
+export function profilesFromBackup(value: unknown): ChildProfile[] {
+  if (!Array.isArray(value)) return [];
+  const profiles: ChildProfile[] = [];
+  for (const item of value) {
+    if (!isProfile(item)) continue;
+    const name = normalizeChildName(item.name);
+    if (!name) continue;
+    profiles.push(stripProfile(withRewards({ ...item, name })));
+  }
+  return profiles;
+}
+
+function stripProfile(profile: ChildProfile): ChildProfile {
+  return {
+    id: profile.id,
+    name: profile.name,
+    ageRange: profile.ageRange,
+    animal: profile.animal,
+    createdAt: profile.createdAt,
+    stars: profile.stars,
+    days: profile.days,
+    outfit: profile.outfit,
+    stickers: profile.stickers,
+    nest: profile.nest,
+    celebrated: profile.celebrated,
+    readingMs: profile.readingMs,
+    readingAwarded: profile.readingAwarded,
+    practiceMs: profile.practiceMs,
+    practiceAwarded: profile.practiceAwarded,
+    writing: profile.writing,
+    games: profile.games,
+    ladder: profile.ladder,
+    gifts: profile.gifts,
+  };
+}
+
 export function loadStore(): ProfileStore {
   try {
     const raw = readStored(localStorage, STORAGE_KEY);

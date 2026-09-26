@@ -101,7 +101,7 @@ LittleNest Science:
 
 ## Safe and private by design
 
-No ads, no tracking, no in-app purchase tricks. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.
+No ads, no tracking, no in-app purchase tricks. First name or initial only. Progress stays on this device unless a grown-up turns on backup. Photos stay on the device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.
 
 ## Affordable for every family
 

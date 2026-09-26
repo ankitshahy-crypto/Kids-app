@@ -8,7 +8,10 @@ import type { AnimalId } from "../data/animals";
 import type { PlacementDocument } from "../data/placement";
 import { lessonName, type AgeRange, type ChildProfile } from "../data/profiles";
 import type { Settings } from "../settings";
+import { PRIVACY_LINES } from "../auth/copy";
+import type { useGrownupAccount } from "../auth/useGrownupAccount";
 import { AboutWordNest } from "./AboutWordNest";
+import { AccountPanel } from "./AccountPanel";
 import { ChildForm } from "./ChildForm";
 import { Chevron } from "./icons";
 import { OfflinePanel } from "./OfflinePanel";
@@ -31,7 +34,7 @@ const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; ti
   { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, and the daily goal", tint: tint.mint },
   { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach },
-  { id: "account", title: "Account", note: "School sign-in is coming", tint: tint.sky },
+  { id: "account", title: "Account", note: "Optional sign-in. Kids never log in", tint: tint.sky },
   { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: tint.blush },
   { id: "privacy", title: "Privacy", note: "What stays on this device", tint: tint.mintCard },
   { id: "about", title: `About ${PRODUCT_NAME}`, note: "Version and who makes the app", tint: tint.sky },
@@ -93,6 +96,7 @@ export function GrownupsMenu({
   onAdd,
   onUpdate,
   onRemove,
+  account,
   onClose,
 }: {
   settings: Settings;
@@ -104,6 +108,7 @@ export function GrownupsMenu({
   onAdd: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
   onUpdate: (id: string, input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
   onRemove: (id: string) => void;
+  account: ReturnType<typeof useGrownupAccount>;
   onClose: () => void;
 }) {
   const [page, setPage] = useState<GrownupsPage>("menu");
@@ -174,8 +179,8 @@ export function GrownupsMenu({
         <section className="adult-section" data-section="profiles">
           <h2>Child profiles</h2>
           <p className="adult-copy">
-            A first name or one initial, and an animal from the app. Saved on this device only. A last name is not
-            stored.
+            A first name or one initial, and an animal from the app. Saved on this device. A grown-up can turn on
+            backup in Account. A last name is not stored.
           </p>
           <ul className="child-list">
             {profiles.map((profile) => (
@@ -223,14 +228,25 @@ export function GrownupsMenu({
       ) : null}
 
       {page === "account" ? (
-        <section className="adult-section" data-section="account">
-          <h2>Account</h2>
-          <p className="account-status">Not signed in</p>
-          <p className="adult-copy">
-            School sign-in is coming. A grown-up will be able to connect this device to a class later. There is no
-            account to create in this version, and {PRODUCT_NAME} does not ask for a card or a payment.
-          </p>
-        </section>
+        <AccountPanel
+          configured={account.configured}
+          user={account.user}
+          role={account.role}
+          sync={account.sync}
+          busy={account.busy}
+          error={account.error}
+          notice={account.notice}
+          onApple={() => void account.signInWithApple()}
+          onGoogle={() => void account.signInWithGoogle()}
+          onEmailSignIn={(email, password) => void account.signInWithEmail(email, password)}
+          onEmailCreate={(email, password) => void account.createWithEmail(email, password)}
+          onMagicLink={(email) => void account.sendMagicLink(email)}
+          onSignOut={() => void account.signOut()}
+          onRole={(role) => void account.setRole(role)}
+          onSync={(on) => void account.setSync(on)}
+          onDeleteData={() => void account.deleteData()}
+          onDeleteAccount={() => void account.deleteAccount()}
+        />
       ) : null}
 
       {page === "help" ? (
@@ -262,7 +278,7 @@ export function GrownupsMenu({
             <dt>Can a child open this menu?</dt>
             <dd>Only after the grown-up check. Cancel leaves them on the lesson.</dd>
             <dt>Where are profiles saved?</dt>
-            <dd>On this device. {PRODUCT_NAME} does not upload them.</dd>
+            <dd>On this device, unless a grown-up turns on backup in Account. Kids never log in.</dd>
             <dt>How do I quiet the taps?</dt>
             <dd>Open Settings, then turn Tap sounds & buzz off. Dragging across a word stays quiet either way.</dd>
           </dl>
@@ -279,12 +295,9 @@ export function GrownupsMenu({
         <section className="adult-section" data-section="privacy">
           <h2>Privacy</h2>
           <ul className="plain-list">
-            <li>{PRODUCT_NAME} keeps information on this device.</li>
-            <li>A profile stores a first name or one initial, an age range, and an animal that is already in the app.</li>
-            <li>Photos are not uploaded. The app does not take pictures.</li>
-            <li>There is no health data and no diagnosis.</li>
-            <li>There are no ads and no tracking.</li>
-            <li>Nothing is sent to a school. Class linking is not available yet.</li>
+            {PRIVACY_LINES.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
           </ul>
         </section>
       ) : null}

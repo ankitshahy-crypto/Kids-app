@@ -9,6 +9,13 @@ const config: CapacitorConfig = {
     contentInset: "never",
     backgroundColor: "#fbf6ee",
   },
+  plugins: {
+    FirebaseAuthentication: {
+      // The web SDK holds the session. Native iOS only shows the Apple and Google sheets.
+      skipNativeAuth: true,
+      providers: ["apple.com", "google.com"],
+    },
+  },
 };
 
 export default config;

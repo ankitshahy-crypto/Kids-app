@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { loadSettings, saveSettings, type Settings } from "../settings";
+import { loadSettings, normalizeSettings, saveSettings, type Settings } from "../settings";
 
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
@@ -10,6 +10,10 @@ export function useSettings() {
     saveSettings(settings);
   }, [settings]);
 
+  const replace = (next: Settings) => {
+    setSettings(normalizeSettings(next));
+  };
+
   const update = (patch: Partial<Settings>) => {
     setSettings((current) => {
       const next = { ...current, ...patch };
@@ -19,5 +23,5 @@ export function useSettings() {
     });
   };
 
-  return { settings, update, settingsRef };
+  return { settings, update, replace, settingsRef };
 }

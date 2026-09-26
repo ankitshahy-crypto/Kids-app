@@ -11,6 +11,13 @@ test-results
 playwright-report
 blob-report
 
+# Grown-up sign-in secrets. The demo runs with these missing.
+.env
+.env.*
+!.env.example
+GoogleService-Info.plist
+google-services.json
+
 # iOS build output. The Xcode project itself is committed.
 ios/App/Pods
 ios/App/build

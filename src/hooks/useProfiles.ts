@@ -53,6 +53,13 @@ export function useProfiles() {
     });
   };
 
+  const replaceProfiles = (profiles: ChildProfile[]) => {
+    setStore((current) => ({
+      activeId: profiles.some((profile) => profile.id === current.activeId) ? current.activeId : (profiles[0]?.id ?? null),
+      profiles,
+    }));
+  };
+
   const giveStar = (id: string, step: string, learned: StickerInput[] = [], subject: SubjectId = READING): EffortResult => {
     const profile = store.profiles.find((item) => item.id === id);
     if (!profile) {
@@ -190,6 +197,7 @@ export function useProfiles() {
     addChild,
     updateChild,
     removeChild,
+    replaceProfiles,
     giveStar,
     recordReading,
     recordWriting,

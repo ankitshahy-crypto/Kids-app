@@ -58,29 +58,33 @@ function clampVolume(value: unknown, fallback: number): number {
 
 const STORAGE_KEY = SETTINGS_KEY;
 
+/** Keep only the grown-up settings. Extra fields, including anything about a child photo, are dropped. */
+export function normalizeSettings(value: unknown): Settings {
+  if (!value || typeof value !== "object") return DEFAULT_SETTINGS;
+  const record = value as Partial<Settings>;
+  const voice = typeof record.voice === "boolean" ? record.voice : record.sound !== false;
+  return {
+    sound: voice,
+    voice,
+    voiceVolume: clampVolume(record.voiceVolume, DEFAULT_SETTINGS.voiceVolume),
+    effects: record.effects !== false,
+    effectsVolume: clampVolume(record.effectsVolume, DEFAULT_SETTINGS.effectsVolume),
+    music: record.music !== false,
+    musicVolume: clampVolume(record.musicVolume, DEFAULT_SETTINGS.musicVolume),
+    tapFeedback: record.tapFeedback !== false,
+    speed: record.speed === "slower" ? "slower" : "slow",
+    voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
+    readingGoal: record.readingGoal === 5 || record.readingGoal === 15 ? record.readingGoal : 10,
+    showTips: record.showTips !== false,
+    showCode: record.showCode === true,
+  };
+}
+
 export function loadSettings(): Settings {
   try {
     const raw = readStored(localStorage, STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return DEFAULT_SETTINGS;
-    const record = parsed as Partial<Settings>;
-    const voice = typeof record.voice === "boolean" ? record.voice : record.sound !== false;
-    return {
-      sound: voice,
-      voice,
-      voiceVolume: clampVolume(record.voiceVolume, DEFAULT_SETTINGS.voiceVolume),
-      effects: record.effects !== false,
-      effectsVolume: clampVolume(record.effectsVolume, DEFAULT_SETTINGS.effectsVolume),
-      music: record.music !== false,
-      musicVolume: clampVolume(record.musicVolume, DEFAULT_SETTINGS.musicVolume),
-      tapFeedback: record.tapFeedback !== false,
-      speed: record.speed === "slower" ? "slower" : "slow",
-      voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
-      readingGoal: record.readingGoal === 5 || record.readingGoal === 15 ? record.readingGoal : 10,
-      showTips: record.showTips !== false,
-      showCode: record.showCode === true,
-    };
+    return normalizeSettings(JSON.parse(raw));
   } catch {
     return DEFAULT_SETTINGS;
   }

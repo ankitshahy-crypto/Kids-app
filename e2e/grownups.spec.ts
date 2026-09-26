@@ -103,14 +103,18 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
 
   await page.getByRole("button", { name: /Child profiles/ }).click();
   await expect(page.getByRole("heading", { name: "Child profiles" })).toBeVisible();
-  await expect(page.getByText("this device only")).toBeVisible();
+  await expect(page.getByText("Saved on this device.")).toBeVisible();
   await expect(page.getByLabel("First name or initial")).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: /Account/ }).click();
   await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
   await expect(page.getByText("Not signed in")).toBeVisible();
-  await expect(page.getByText("School sign-in is coming")).toBeVisible();
+  await expect(page.getByText("Sign-in is optional")).toBeVisible();
+  await expect(page.getByText("Kids never log in")).toBeVisible();
+  await expect(page.getByText("no sign-in setup")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in with Apple" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Sign in with Google" })).toHaveCount(0);
   await expect(page.getByText("does not ask for a card")).toBeVisible();
   await expect(page.getByText(/\$|pricing|subscribe/i)).toHaveCount(0);
   await page.getByRole("button", { name: "Back", exact: true }).click();
