@@ -67,8 +67,18 @@ button {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
+  -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
+}
+
+button.hold-button {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-drag: none;
 }
 
 button:focus-visible {
@@ -231,20 +241,10 @@ button:focus-visible {
 .hold-value {
   stroke: var(--sage);
   stroke-dasharray: 100;
-  stroke-dashoffset: 100;
+  stroke-dashoffset: calc((1 - var(--hold, 0)) * 100);
   stroke-linecap: round;
   transform: rotate(-90deg);
   transform-origin: 32px 32px;
-}
-
-.is-holding .hold-value {
-  animation: hold-fill 2s linear forwards;
-}
-
-@keyframes hold-fill {
-  to {
-    stroke-dashoffset: 0;
-  }
 }
 
 .activity {
@@ -1200,20 +1200,14 @@ button:focus-visible {
 .hold-bar {
   position: absolute;
   left: 0;
+  top: 0;
   bottom: 0;
-  height: 3px;
-  width: 0;
-  background: var(--sage);
-}
-
-.gate-button.is-holding .hold-bar {
-  animation: hold-bar 2s linear forwards;
-}
-
-@keyframes hold-bar {
-  to {
-    width: 100%;
-  }
+  width: calc(var(--hold, 0) * 100%);
+  height: auto;
+  border-radius: inherit;
+  background: rgba(79, 125, 88, 0.45);
+  background: color-mix(in srgb, currentColor 50%, transparent);
+  pointer-events: none;
 }
 
 .parent-view,
