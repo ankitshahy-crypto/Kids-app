@@ -52,6 +52,9 @@ test("tracing the letter path completes and a far stroke does not", async ({ pag
   if (testInfo.project.name === "chromium") {
     await page.screenshot({ path: "/opt/cursor/artifacts/letter_trace_board.png" });
   }
+  if (testInfo.project.name === "iphone") {
+    await page.screenshot({ path: "/opt/cursor/artifacts/letter_trace_iphone.png" });
+  }
   await finishLetterTracing(page);
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
@@ -87,8 +90,8 @@ test("upper and lower letters can be matched by tap or drag", async ({ page }, t
   await page.mouse.up();
   await expect(upper).toHaveAttribute("data-paired", "true");
 
-  const other = root.locator("[data-match-upper][data-paired=false]").first();
-  const otherLetter = (await other.getAttribute("data-match-upper")) ?? "";
+  const otherLetter = (await root.locator("[data-match-upper][data-paired=false]").first().getAttribute("data-match-upper")) ?? "";
+  const other = root.locator(`[data-match-upper="${otherLetter}"]`);
   await other.click();
   await root.locator(`[data-match-lower="${otherLetter.toLowerCase()}"]`).click();
   await expect(other).toHaveAttribute("data-paired", "true");
