@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
 import { MODULE_WORDS, PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
+import { tint } from "../palette";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
 import { shareWordNest, type ShareResult } from "../share";
 import type { AnimalId } from "../data/animals";
@@ -27,15 +28,15 @@ type GrownupsPage =
   | "offline";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
-  { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, and the daily goal", tint: "#E7F2EA" },
-  { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: "#E4EEF8" },
-  { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: "#F8E6D4" },
-  { id: "account", title: "Account", note: "School sign-in is coming", tint: "#E4EEF8" },
-  { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: "#FDE7D4" },
-  { id: "privacy", title: "Privacy", note: "What stays on this device", tint: "#E5F4EA" },
-  { id: "about", title: `About ${PRODUCT_NAME}`, note: "Version and who makes the app", tint: "#E4EEF8" },
-  { id: "share", title: "Tell a friend or your school", note: `Share the ${PRODUCT_SHORT} link`, tint: "#F8E6D4" },
-  { id: "printables", title: "Printables", note: "Letter tracing and blending sheets", tint: "#E4EEF8" },
+  { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, and the daily goal", tint: tint.mint },
+  { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky },
+  { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach },
+  { id: "account", title: "Account", note: "School sign-in is coming", tint: tint.sky },
+  { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: tint.blush },
+  { id: "privacy", title: "Privacy", note: "What stays on this device", tint: tint.mintCard },
+  { id: "about", title: `About ${PRODUCT_NAME}`, note: "Version and who makes the app", tint: tint.sky },
+  { id: "share", title: "Tell a friend or your school", note: `Share the ${PRODUCT_SHORT} link`, tint: tint.peach },
+  { id: "printables", title: "Printables", note: "Letter tracing and blending sheets", tint: tint.sky },
 ];
 
 function ProfileRow({
