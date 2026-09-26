@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { AnimalId } from "../data/animals";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { Avatar } from "../avatars";
+import { ReadingChart } from "./ReadingChart";
 import { CheckBadge, StarJar, TabGlyph } from "./sceneArt";
 
 type Tab = "classes" | "roster" | "goals" | "jar" | "certificates" | "notes";
@@ -51,7 +52,7 @@ const demoClasses: DemoClass[] = [
   },
 ];
 
-function DeviceRewards({ profiles }: { profiles: ChildProfile[] }) {
+function DeviceRewards({ profiles, goalMinutes }: { profiles: ChildProfile[]; goalMinutes: number }) {
   return (
     <section className="teacher-card" data-card="device">
       <h2>On this device</h2>
@@ -74,6 +75,9 @@ function DeviceRewards({ profiles }: { profiles: ChildProfile[] }) {
           );
         })}
       </ul>
+      {profiles.map((profile) => (
+        <ReadingChart key={profile.id} name={lessonName(profile)} days={profile.readingMs} goalMinutes={goalMinutes} />
+      ))}
     </section>
   );
 }
@@ -87,7 +91,15 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "notes", label: "Notes" },
 ];
 
-export function TeacherView({ profiles, onClose }: { profiles: ChildProfile[]; onClose: () => void }) {
+export function TeacherView({
+  profiles,
+  goalMinutes,
+  onClose,
+}: {
+  profiles: ChildProfile[];
+  goalMinutes: number;
+  onClose: () => void;
+}) {
   const [tab, setTab] = useState<Tab>("roster");
   const [classId, setClassId] = useState(demoClasses[0].id);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -102,7 +114,7 @@ export function TeacherView({ profiles, onClose }: { profiles: ChildProfile[]; o
           Back
         </button>
         <p className="demo-flag">Demo data. Not a real class. Filled in during step 6.</p>
-        <DeviceRewards profiles={profiles} />
+        <DeviceRewards profiles={profiles} goalMinutes={goalMinutes} />
         <header className="teacher-top">
           <div className="class-switch-wrap">
             <button

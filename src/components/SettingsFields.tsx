@@ -63,6 +63,23 @@ export function SettingsFields({
         </div>
         <p className="adult-copy">A soft tap and a short buzz when a finger presses something. Dragging across a word stays quiet.</p>
       </fieldset>
+      <fieldset className="setting-group" data-setting="reading-goal">
+        <legend>Daily reading goal</legend>
+        <div className="segment segment-3">
+          {([5, 10, 15] as const).map((minutes) => (
+            <button
+              key={minutes}
+              type="button"
+              className={settings.readingGoal === minutes ? "is-selected" : ""}
+              aria-pressed={settings.readingGoal === minutes}
+              onClick={() => onChange({ readingGoal: minutes })}
+            >
+              {minutes} min
+            </button>
+          ))}
+        </div>
+        <p className="adult-copy">One star when this time is reached. Extra time does not add more stars.</p>
+      </fieldset>
       <fieldset className="setting-group">
         <legend>Speech speed</legend>
         <SpeedButtons speed={settings.speed} onChange={(speed) => onChange({ speed })} />

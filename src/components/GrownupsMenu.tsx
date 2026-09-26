@@ -12,7 +12,7 @@ import { SettingsFields } from "./SettingsFields";
 type GrownupsPage = "menu" | "settings" | "profiles" | "account" | "help" | "privacy" | "about";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
-  { id: "settings", title: "Settings", note: "Volume, tap sounds, and the reading voice", tint: "#E7F2EA" },
+  { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, and the daily goal", tint: "#E7F2EA" },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: "#F8E6D4" },
   { id: "account", title: "Account", note: "School sign-in is coming", tint: "#E4EEF8" },
   { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: "#FDE7D4" },
