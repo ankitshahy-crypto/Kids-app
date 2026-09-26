@@ -694,6 +694,7 @@ export default function App() {
                       color={colorLesson.hear}
                       colorOptions={colorLesson.choices}
                       settingsRef={settingsRef}
+                      showCode={settings.showCode}
                       onEnter={(game) => {
                         if (settingsRef.current.showTips) setTip(gameTip(game, "start"));
                         else setTip(null);

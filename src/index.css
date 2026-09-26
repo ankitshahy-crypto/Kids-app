@@ -5867,6 +5867,58 @@ input.is-pressed,
   height: 48px;
 }
 
+.build-chip[data-line] {
+  position: relative;
+  width: auto;
+  min-width: 88px;
+  max-width: 168px;
+  height: auto;
+  min-height: 88px;
+  grid-template-rows: 48px auto;
+  align-content: center;
+  padding: 8px 10px 10px;
+}
+
+.build-line {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--ink);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.build-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: #f6d6d2;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0;
+}
+
+.build-python {
+  width: min(100%, 440px);
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: #fff8ee;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
 .build-chip[data-on="true"],
 .build-music [data-on="true"] {
   outline: 4px solid #f6d56b;

@@ -48,6 +48,32 @@ export const RECIPE = ["bread", "spread", "filling"] as const;
 
 export type PlayStep = { block: BuildBlock; index: number };
 
+/** A step the animal, song, scene, or chef can run. Splash exists only inside an if. */
+export type DoAction = Exclude<BuildBlock, "repeat" | "pond"> | "splash";
+
+export type Statement =
+  | { type: "do"; action: DoAction; index: number }
+  | { type: "repeat"; times: 3; index: number; body: Statement }
+  | { type: "if"; when: "at-pond"; index: number; body: Statement };
+
+const PYTHON: Record<DoAction, string> = {
+  walk: "bird.walk()",
+  jump: "bird.jump()",
+  spin: "bird.spin()",
+  dance: "bird.dance()",
+  sing: "bird.sing()",
+  drum: "play.drum()",
+  bell: "play.bell()",
+  note: "play.note()",
+  rain: "scene.rain()",
+  sun: "scene.sun()",
+  flower: "scene.flower()",
+  bread: "chef.bread()",
+  spread: "chef.spread()",
+  filling: "chef.filling()",
+  splash: "bird.splash()",
+};
+
 export function isBuildBlock(value: string): value is BuildBlock {
   return BLOCKS.has(value);
 }
@@ -67,20 +93,91 @@ export function buildLevel(ageRange: AgeRange | string): LogicLevel {
   return logicLevel(ageRange);
 }
 
+/**
+ * One program for every view. A repeat wraps the previous block and plays it
+ * three times. A pond block is "if at the pond, splash."
+ */
+export function compile(script: BuildBlock[]): Statement[] {
+  const program: Statement[] = [];
+  script.forEach((block, index) => {
+    if (block === "repeat") {
+      const prev = script[index - 1];
+      if (!prev || prev === "repeat" || program.length === 0) return;
+      const body = program.pop();
+      if (!body) return;
+      program.push({ type: "repeat", times: 3, index, body });
+      return;
+    }
+    if (block === "pond") {
+      program.push({
+        type: "if",
+        when: "at-pond",
+        index,
+        body: { type: "do", action: "splash", index },
+      });
+      return;
+    }
+    program.push({ type: "do", action: block, index });
+  });
+  return program;
+}
+
+function pseudoStatement(statement: Statement): string {
+  if (statement.type === "do") return statement.action === "splash" ? "splash" : statement.action;
+  if (statement.type === "repeat") return `repeat ${statement.times} times: ${pseudoStatement(statement.body)}`;
+  return `if at pond: ${pseudoStatement(statement.body)}`;
+}
+
+function pythonStatement(statement: Statement, indent: number): string {
+  const pad = "    ".repeat(indent);
+  if (statement.type === "do") return `${pad}${PYTHON[statement.action]}`;
+  if (statement.type === "repeat") {
+    return `${pad}for i in range(${statement.times}):\n${pythonStatement(statement.body, indent + 1)}`;
+  }
+  return `${pad}if bird.at_pond():\n${pythonStatement(statement.body, indent + 1)}`;
+}
+
+/** The whole program in short lines. Ages 5–7 show one of these on each block. */
+export function pseudoCode(script: BuildBlock[]): string {
+  return compile(script).map(pseudoStatement).join("\n");
+}
+
+/** The line for one block in the stack. */
+export function pseudoLine(script: BuildBlock[], index: number): string {
+  const block = script[index];
+  if (!block) return "";
+  if (block === "pond") return "if at pond: splash";
+  if (block !== "repeat") return block;
+  const prev = script[index - 1];
+  if (!prev || prev === "repeat") return "repeat 3 times";
+  if (prev === "pond") return "repeat 3 times: if at pond: splash";
+  return `repeat 3 times: ${prev}`;
+}
+
+/** The same program as Python. Read-only until a later version. */
+export function pythonCode(script: BuildBlock[]): string {
+  return compile(script).map((statement) => pythonStatement(statement, 0)).join("\n");
+}
+
 /** Repeat means the previous block plays three times in all. */
 export function playSteps(script: BuildBlock[]): PlayStep[] {
   const steps: PlayStep[] = [];
-  script.forEach((block, index) => {
-    if (block !== "repeat") {
-      steps.push({ block, index });
+  const emit = (statement: Statement) => {
+    if (statement.type === "do") {
+      if (statement.action === "splash") return;
+      steps.push({ block: statement.action, index: statement.index });
       return;
     }
-    const prev = script[index - 1];
-    if (!prev || prev === "repeat") return;
-    steps.push({ block: "repeat", index });
-    steps.push({ block: prev, index: index - 1 });
-    steps.push({ block: prev, index: index - 1 });
-  });
+    if (statement.type === "if") {
+      steps.push({ block: "pond", index: statement.index });
+      return;
+    }
+    emit(statement.body);
+    steps.push({ block: "repeat", index: statement.index });
+    emit(statement.body);
+    emit(statement.body);
+  };
+  for (const statement of compile(script)) emit(statement);
   return steps;
 }
 
