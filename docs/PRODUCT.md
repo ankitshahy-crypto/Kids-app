@@ -10,6 +10,20 @@ Reading is the only subject. The child is the hero of the stories.
 
 Market it as reading practice. Never market it as therapy, and never describe a child in clinical language.
 
+## Three views
+
+The app has three views. They do not look the same.
+
+**Kid view.** Picture-first, with huge tap targets and almost no text. Soft pastel. It shows the profile picker, the daily lesson path, and stars.
+
+**Parent view.** Behind a press-and-hold of about 2 seconds. Calmer and text-friendly. A parent manages child profiles, settings, home rewards, progress notes, and consent or delete.
+
+**Teacher view.** A separate teacher profile, also behind a press-and-hold. A classroom dashboard: more than one class, rosters by in-app name and avatar only, goals, a class star jar, and certificates.
+
+The start screen is the mode switch. Kid is the large control and opens with a tap. Parent and Teacher are smaller and open only after a press-and-hold. The gear inside the kid view is the same hold gate into the parent view. A tap does not open Parent, Teacher, or the gear.
+
+Step 1 sets up the shell and routing for all three views, builds the kid view, and builds a basic parent view that can add and edit a child. The teacher view in step 1 is a placeholder dashboard. Step 6 fills it in.
+
 ## Pricing
 
 Business model: schools license the app and include it in tuition. Price target: $40 per family per year, the same price no matter how many children. Free for families at partner schools (no in-app charge). The Kids Villa pilot is free for 6 months. No payment code yet; the school-link step will later unlock the app for families.
@@ -68,7 +82,7 @@ Stars are for effort only.
 
 ## Classroom
 
-This is later (build step 6). Do not add it early.
+The connection, goals, certificates, and class star jar are later (build step 6). Step 1 only reserves the teacher view as a placeholder dashboard.
 
 Option B comes first and is the one to pilot. The home app transfers progress to a classroom tablet with a QR code. No server.
 
@@ -92,15 +106,15 @@ Also later, for the classroom:
 - No analytics and no tracking.
 - Until a classroom server exists, everything stays on the device (`localStorage`, IndexedDB, or Capacitor Preferences).
 
-The parent gate is a press-and-hold of about 2 seconds on the gear. Children should not be able to open it with a tap.
+Parent and Teacher open only after a press-and-hold of about 2 seconds, from the start screen or from the gear in the kid view. A tap does not open them.
 
 ## Build order
 
-1. Profile and the daily lesson flow. Parent onboarding behind the gate, a profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars.
+1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings, and progress notes, with places for home rewards and consent or delete. Teacher view: a placeholder classroom dashboard, filled in at step 6.
 2. Letter games, tracing, and read-along stories.
 3. Sentence tiles, rhyming, and the color, shape, and number moments.
 4. Home stars and parent-written rewards on the device. Cosmetic unlocks.
 5. Parent progress view.
-6. Classroom connection. QR first, picture-word codes later, then goals, certificates, and the class star jar.
+6. Classroom connection, in the teacher view. QR first, picture-word codes later, then goals, certificates, and the class star jar.
 
 Each step should keep the soft pastel look, big tap targets, very little text, original artwork only, and the privacy rules above.

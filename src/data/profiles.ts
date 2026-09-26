@@ -110,6 +110,21 @@ function newId(): string {
   return `child-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+/** Change name, age, or animal. Stars and daily progress stay as they are. */
+export function editChild(
+  profile: ChildProfile,
+  input: { name: string; ageRange: AgeRange; animal: AnimalId },
+): ChildProfile {
+  const name = normalizeChildName(input.name);
+  if (!name) throw new Error("A first name or initial is required");
+  return {
+    ...profile,
+    name,
+    ageRange: input.ageRange,
+    animal: input.animal,
+  };
+}
+
 export function createChild(input: { name: string; ageRange: AgeRange; animal: AnimalId }): ChildProfile {
   const name = normalizeChildName(input.name);
   if (!name) throw new Error("A first name or initial is required");

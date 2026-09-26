@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { animals } from "../data/animals";
+import { animals, type AnimalId } from "../data/animals";
 import { isReviewDay, planForWeek, practiceLetters, weekIndex } from "../data/schedule";
 import {
   ageRanges,
@@ -9,15 +9,15 @@ import {
   type AgeRange,
   type ChildProfile,
 } from "../data/profiles";
-import type { AnimalId } from "../data/animals";
 import type { Settings, SpeechSpeed } from "../settings";
 import { Avatar } from "../avatars";
 
-export function ParentPanel({
+export function ParentView({
   settings,
   onChange,
   profiles,
   onAdd,
+  onUpdate,
   onRemove,
   onClose,
 }: {
@@ -25,11 +25,14 @@ export function ParentPanel({
   onChange: (patch: Partial<Settings>) => void;
   profiles: ChildProfile[];
   onAdd: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
+  onUpdate: (id: string, input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
 }) {
   const [adding, setAdding] = useState(profiles.length === 0);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const editing = profiles.find((profile) => profile.id === editingId) ?? null;
 
   useEffect(() => {
     panelRef.current?.focus();
@@ -40,19 +43,70 @@ export function ParentPanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
-    <div className="settings-backdrop parent-backdrop">
-      <div
-        ref={panelRef}
-        className="parent-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="settings-title"
-        tabIndex={-1}
-      >
-        <h2 id="settings-title">Grown-ups</h2>
-        <p className="settings-note">Saved on this device only.</p>
+  useEffect(() => {
+    if (editingId && !profiles.some((profile) => profile.id === editingId)) {
+      setEditingId(null);
+    }
+  }, [editingId, profiles]);
 
+  return (
+    <div ref={panelRef} className="parent-view" data-screen="parent" tabIndex={-1}>
+      <header className="adult-head">
+        <button type="button" className="quiet-back" onClick={onClose}>
+          Back
+        </button>
+        <div>
+          <h1>Parent</h1>
+          <p className="adult-note">Saved on this device only.</p>
+        </div>
+      </header>
+
+      <section className="adult-section" data-section="children">
+        <h2>Children</h2>
+        <ul className="child-list">
+          {profiles.map((profile) => (
+            <ChildRow
+              key={profile.id}
+              profile={profile}
+              onEdit={() => {
+                setAdding(false);
+                setEditingId(profile.id);
+              }}
+              onRemove={() => onRemove(profile.id)}
+            />
+          ))}
+        </ul>
+        {editing ? (
+          <ChildForm
+            key={editing.id}
+            initial={editing}
+            submitLabel="Save changes"
+            onSave={(input) => {
+              onUpdate(editing.id, input);
+              setEditingId(null);
+            }}
+            onCancel={() => setEditingId(null)}
+          />
+        ) : null}
+        {adding ? (
+          <ChildForm
+            submitLabel="Save child"
+            onSave={(input) => {
+              onAdd(input);
+              setAdding(false);
+            }}
+            onCancel={profiles.length === 0 ? undefined : () => setAdding(false)}
+          />
+        ) : null}
+        {!adding && !editing ? (
+          <button type="button" className="add-child" onClick={() => setAdding(true)}>
+            Add a child
+          </button>
+        ) : null}
+      </section>
+
+      <section className="adult-section" data-section="settings">
+        <h2>Settings</h2>
         <fieldset className="setting-group">
           <legend>Sound</legend>
           <div className="segment">
@@ -74,38 +128,37 @@ export function ParentPanel({
             </button>
           </div>
         </fieldset>
-
         <fieldset className="setting-group">
           <legend>Speech speed</legend>
           <SpeedButtons speed={settings.speed} onChange={(speed) => onChange({ speed })} />
         </fieldset>
+      </section>
 
-        <section className="setting-group">
-          <h3>Children</h3>
-          <ul className="child-list">
-            {profiles.map((profile) => (
-              <ChildRow key={profile.id} profile={profile} onRemove={() => onRemove(profile.id)} />
-            ))}
-          </ul>
-          {adding ? (
-            <AddChildForm
-              onSave={(input) => {
-                onAdd(input);
-                setAdding(false);
-              }}
-              onCancel={profiles.length === 0 ? undefined : () => setAdding(false)}
-            />
-          ) : (
-            <button type="button" className="add-child" onClick={() => setAdding(true)}>
-              Add a child
-            </button>
-          )}
-        </section>
+      <section className="adult-section" data-section="notes">
+        <h2>Progress notes</h2>
+        {profiles.length === 0 ? <p className="adult-copy">Add a child to see this week's letters and stars.</p> : null}
+        <ul className="note-list">
+          {profiles.map((profile) => (
+            <ProgressNote key={profile.id} profile={profile} />
+          ))}
+        </ul>
+      </section>
 
-        <button type="button" className="done-button" onClick={onClose}>
-          Done
-        </button>
-      </div>
+      <section className="adult-section" data-section="rewards">
+        <h2>Home rewards</h2>
+        <p className="adult-copy">
+          A parent will write home rewards here, on this device, such as a park trip for a set number of stars.
+          Stars are never removed and cannot be bought. This is filled in later.
+        </p>
+      </section>
+
+      <section className="adult-section" data-section="consent">
+        <h2>Consent and delete</h2>
+        <p className="adult-copy">
+          Before a class link, consent is asked here. You can unlink or delete at any time. Class linking is not
+          available yet. Delete a profile with Remove on that child. Photos and names stay on this device.
+        </p>
+      </section>
     </div>
   );
 }
@@ -139,12 +192,16 @@ function SpeedButtons({
   );
 }
 
-function ChildRow({ profile, onRemove }: { profile: ChildProfile; onRemove: () => void }) {
+function ChildRow({
+  profile,
+  onEdit,
+  onRemove,
+}: {
+  profile: ChildProfile;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
   const [confirming, setConfirming] = useState(false);
-  const now = new Date();
-  const plan = planForWeek(weekIndex(profile.createdAt, now));
-  const letters = practiceLetters(plan, isReviewDay(now));
-  const review = isReviewDay(now);
 
   return (
     <li className="child-row">
@@ -156,36 +213,58 @@ function ChildRow({ profile, onRemove }: { profile: ChildProfile; onRemove: () =
             Age {profile.ageRange === "6-7" ? "6–7" : profile.ageRange}
             {profile.name.length === 1 ? ` · initial ${profile.name}` : ""}
           </p>
-          <p className="child-note" data-note={profile.id}>
-            {review ? "Friday review. " : ""}
-            Letters {letters.map((letter) => letter.toUpperCase()).join(" ")}. Stars {profile.stars}. This
-            week {starsThisWeek(profile, now)}.
-          </p>
         </div>
       </div>
-      {confirming ? (
-        <button type="button" className="remove-child" onClick={onRemove}>
-          Remove
+      <div className="child-actions">
+        <button type="button" className="edit-child" onClick={onEdit}>
+          Edit
         </button>
-      ) : (
-        <button type="button" className="remove-child remove-quiet" onClick={() => setConfirming(true)}>
-          Remove
-        </button>
-      )}
+        {confirming ? (
+          <button type="button" className="remove-child" onClick={onRemove}>
+            Remove
+          </button>
+        ) : (
+          <button type="button" className="remove-child remove-quiet" onClick={() => setConfirming(true)}>
+            Remove
+          </button>
+        )}
+      </div>
     </li>
   );
 }
 
-function AddChildForm({
+function ProgressNote({ profile }: { profile: ChildProfile }) {
+  const now = new Date();
+  const plan = planForWeek(weekIndex(profile.createdAt, now));
+  const letters = practiceLetters(plan, isReviewDay(now));
+  const review = isReviewDay(now);
+
+  return (
+    <li className="progress-note" data-note={profile.id}>
+      <p className="child-name">{lessonName(profile)}</p>
+      <p className="child-note">
+        {review ? "Friday review. " : ""}
+        Letters {letters.map((letter) => letter.toUpperCase()).join(" ")}. Stars {profile.stars}. This week{" "}
+        {starsThisWeek(profile, now)}.
+      </p>
+    </li>
+  );
+}
+
+function ChildForm({
+  initial,
+  submitLabel,
   onSave,
   onCancel,
 }: {
+  initial?: Pick<ChildProfile, "name" | "ageRange" | "animal">;
+  submitLabel: string;
   onSave: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
   onCancel?: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [ageRange, setAgeRange] = useState<AgeRange | null>(null);
-  const [animal, setAnimal] = useState<AnimalId | null>(null);
+  const [name, setName] = useState(initial?.name ?? "");
+  const [ageRange, setAgeRange] = useState<AgeRange | null>(initial?.ageRange ?? null);
+  const [animal, setAnimal] = useState<AnimalId | null>(initial?.animal ?? null);
   const [error, setError] = useState("");
   const droppedLastName = name.trim().includes(" ");
 
@@ -261,8 +340,8 @@ function AddChildForm({
       </div>
 
       {error ? <p className="field-error">{error}</p> : null}
-      <button type="submit" className="done-button">
-        Save child
+      <button type="submit" className="save-child">
+        {submitLabel}
       </button>
       {onCancel ? (
         <button type="button" className="text-button" onClick={onCancel}>

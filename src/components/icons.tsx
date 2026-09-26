@@ -1,3 +1,14 @@
+export function HomeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
+      <path
+        fill="currentColor"
+        d="M12 3.2 3 11h2.2v8.2c0 .7.5 1.2 1.2 1.2H10v-5.2h4V20.4h3.6c.7 0 1.2-.5 1.2-1.2V11H21L12 3.2Z"
+      />
+    </svg>
+  );
+}
+
 export function GearIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">

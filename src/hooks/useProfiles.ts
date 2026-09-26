@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   awardStar,
   createChild,
+  editChild,
   loadStore,
   saveStore,
   type AgeRange,
@@ -32,6 +33,13 @@ export function useProfiles() {
     return profile;
   };
 
+  const updateChild = (id: string, input: { name: string; ageRange: AgeRange; animal: AnimalId }) => {
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((profile) => (profile.id === id ? editChild(profile, input) : profile)),
+    }));
+  };
+
   const removeChild = (id: string) => {
     setStore((current) => {
       const profiles = current.profiles.filter((profile) => profile.id !== id);
@@ -52,6 +60,7 @@ export function useProfiles() {
     active,
     select,
     addChild,
+    updateChild,
     removeChild,
     giveStar,
   };

@@ -82,6 +82,17 @@ button:focus-visible {
   position: relative;
   overflow: hidden;
   user-select: none;
+  background: var(--cream);
+}
+
+.app.mode-parent {
+  background: #f3f0ea;
+  color: #2c2a26;
+}
+
+.app.mode-teacher {
+  background: #e4ecef;
+  color: #1c2a32;
 }
 
 .blobs {
@@ -222,7 +233,7 @@ button:focus-visible {
   transform-origin: 32px 32px;
 }
 
-.gear-button.is-holding .hold-value {
+.is-holding .hold-value {
   animation: hold-fill 2s linear forwards;
 }
 
@@ -996,6 +1007,253 @@ button:focus-visible {
 .text-button {
   width: 100%;
   color: #6d7d74;
+}
+
+.mode-switch {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 0;
+  padding-bottom: 12px;
+}
+
+.mode-art {
+  width: min(52vw, 200px);
+}
+
+.mode-art .art {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.kid-enter {
+  width: min(100%, 300px);
+  min-height: 96px;
+  border-radius: 32px;
+  background: #fffdfb;
+  box-shadow: var(--shadow);
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.kid-enter:active {
+  transform: scale(0.98);
+}
+
+.gate-row {
+  display: flex;
+  gap: 10px;
+}
+
+.gate-button {
+  position: relative;
+  min-width: 112px;
+  min-height: 44px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(255, 253, 251, 0.78);
+  color: #6d655c;
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+}
+
+.gate-hint {
+  margin: 0;
+  font-size: 13px;
+  color: #8a8176;
+}
+
+.hold-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 0;
+  background: var(--sage);
+}
+
+.gate-button.is-holding .hold-bar {
+  animation: hold-bar 2s linear forwards;
+}
+
+@keyframes hold-bar {
+  to {
+    width: 100%;
+  }
+}
+
+.parent-view,
+.teacher-view {
+  width: 100%;
+  padding-bottom: 28px;
+  user-select: text;
+}
+
+.parent-view:focus,
+.teacher-view:focus {
+  outline: none;
+}
+
+.adult-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.adult-head h1,
+.teacher-view h1,
+.parent-view h1 {
+  margin: 0;
+  text-align: left;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.adult-note,
+.adult-copy,
+.teacher-card p,
+.class-list,
+.roster-meta {
+  margin: 4px 0 0;
+  color: #5e675f;
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.quiet-back {
+  min-height: 40px;
+  padding: 0;
+  color: #5c6b62;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.adult-section,
+.teacher-card {
+  background: #fff;
+  border: 1px solid #e4ddd3;
+  border-radius: 12px;
+  padding: 14px 14px 16px;
+  margin-bottom: 12px;
+}
+
+.adult-section h2,
+.teacher-card h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b645c;
+}
+
+.app.mode-parent .segment button,
+.app.mode-parent .age-grid button,
+.app.mode-parent .add-child,
+.app.mode-parent .edit-child,
+.app.mode-parent .remove-child,
+.app.mode-parent .save-child,
+.app.mode-parent .text-button {
+  min-height: 44px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.app.mode-parent .segment button,
+.app.mode-parent .age-grid button,
+.app.mode-parent .add-child,
+.app.mode-parent .animal-pick {
+  background: #faf8f5;
+  box-shadow: none;
+  border: 1px solid #e4ddd3;
+}
+
+.app.mode-parent .name-input {
+  height: 48px;
+  border-radius: 10px;
+  border-width: 1px;
+  font-size: 18px;
+}
+
+.save-child {
+  width: 100%;
+  margin-top: 8px;
+  background: #2f4a3c;
+  color: #f7f4ee;
+}
+
+.child-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.edit-child {
+  background: #faf8f5;
+  color: #2c2a26;
+  border: 1px solid #e4ddd3;
+}
+
+.note-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.progress-note {
+  margin: 0;
+}
+
+.app.mode-teacher .teacher-card {
+  background: #f7fafb;
+  border-color: #d3dee3;
+  border-radius: 8px;
+}
+
+.app.mode-teacher .teacher-card h2 {
+  color: #3d5560;
+}
+
+.class-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.roster-sample {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #d3dee3;
+}
+
+.roster-sample .avatar-art {
+  width: 56px;
+  height: 56px;
+}
+
+.roster-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.roster-meta {
+  margin: 0;
 }
 
 .icon {

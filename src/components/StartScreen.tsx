@@ -1,25 +1,42 @@
-import { starterDeck } from "../data/deck";
 import { Illustration } from "../illustrations";
-import { PictureCard } from "./PictureCard";
-import { PlayGlyph } from "./icons";
-import { SoundLabel } from "./SoundLabel";
+import { HoldButton } from "./HoldButton";
 
-export function StartScreen({ onStart }: { onStart: () => void }) {
-  const first = starterDeck.words[0];
-
+export function StartScreen({
+  onKid,
+  onParent,
+  onTeacher,
+}: {
+  onKid: () => void;
+  onParent: () => void;
+  onTeacher: () => void;
+}) {
   return (
-    <div className="activity">
-      <PictureCard label={first.word}>
-        <Illustration name={first.illustration} />
-      </PictureCard>
-      <SoundLabel />
-      <div className="letter-slot" aria-hidden="true" />
-      <button type="button" className="start-button" onClick={onStart}>
-        <span className="play-icon" aria-hidden="true">
-          <PlayGlyph />
-        </span>
-        <span>Tap to start</span>
+    <div className="mode-switch" data-screen="start">
+      <div className="mode-art" aria-hidden="true">
+        <Illustration name="apple" />
+      </div>
+      <button type="button" className="kid-enter" onClick={onKid}>
+        Kid
       </button>
+      <div className="gate-row">
+        <HoldButton
+          className="gate-button"
+          indicator="bar"
+          label="Parent. Press and hold to open."
+          onOpen={onParent}
+        >
+          Parent
+        </HoldButton>
+        <HoldButton
+          className="gate-button"
+          indicator="bar"
+          label="Teacher. Press and hold to open."
+          onOpen={onTeacher}
+        >
+          Teacher
+        </HoldButton>
+      </div>
+      <p className="gate-hint">Hold Parent or Teacher.</p>
     </div>
   );
 }
