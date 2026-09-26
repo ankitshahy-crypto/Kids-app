@@ -12,6 +12,7 @@ import {
 } from "../data/profiles";
 import { applyReadingCredit, type ReadingCredit } from "../data/reading";
 import { applyEffort, wearItem, type EffortResult } from "../data/rewards";
+import { assignWritingLevel, recordWritingAttempt, type ScaffoldLevel, type WritingOutcome } from "../data/scaffold";
 import { READING, type SubjectId } from "../data/subject";
 
 export function useProfiles() {
@@ -106,6 +107,26 @@ export function useProfiles() {
     return result;
   };
 
+  const recordWriting = (id: string, itemId: string, success: boolean): WritingOutcome => {
+    const profile = store.profiles.find((item) => item.id === id);
+    const outcome = recordWritingAttempt(profile?.writing, itemId, success);
+    if (!profile) return outcome;
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) => (item.id === id ? { ...item, writing: outcome.writing } : item)),
+    }));
+    return outcome;
+  };
+
+  const setWritingLevel = (id: string, itemId: string, level: ScaffoldLevel) => {
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) =>
+        item.id === id ? { ...item, writing: assignWritingLevel(item.writing, itemId, level) } : item,
+      ),
+    }));
+  };
+
   const wear = (id: string, itemId: string) => {
     setStore((current) => ({
       ...current,
@@ -122,6 +143,8 @@ export function useProfiles() {
     removeChild,
     giveStar,
     recordReading,
+    recordWriting,
+    setWritingLevel,
     wear,
   };
 }

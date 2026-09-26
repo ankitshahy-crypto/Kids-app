@@ -5045,3 +5045,78 @@ input.is-pressed,
 .trace-word-row .trace-glyph {
   width: 30%;
 }
+
+.copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: min(100%, 680px);
+}
+
+.copy-row .letter-board {
+  width: min(42vw, 280px, 46dvh);
+}
+
+.copy-row.is-memory .letter-board {
+  width: min(78vw, 420px, 52dvh);
+}
+
+.copy-model,
+.copy-model-row {
+  width: min(36vw, 200px);
+}
+
+.copy-model-row {
+  display: flex;
+  gap: 4px;
+}
+
+.writing-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.writing-hint {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-warm);
+}
+
+.writing-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.writing-level {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.writing-name {
+  min-width: 88px;
+  font-weight: 700;
+}
+
+.writing-level button {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.writing-level button[aria-pressed="true"] {
+  background: var(--sage-soft);
+  color: var(--ink);
+}
