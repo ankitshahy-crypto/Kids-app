@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { AnimalId } from "../data/animals";
+import { lessonName, type ChildProfile } from "../data/profiles";
 import { Avatar } from "../avatars";
 import { CheckBadge, StarJar, TabGlyph } from "./sceneArt";
 
@@ -50,6 +51,33 @@ const demoClasses: DemoClass[] = [
   },
 ];
 
+function DeviceRewards({ profiles }: { profiles: ChildProfile[] }) {
+  return (
+    <section className="teacher-card" data-card="device">
+      <h2>On this device</h2>
+      <p className="adult-copy">
+        Stars, stickers, and milestones for children who practice here. They stay on this device.
+      </p>
+      {profiles.length === 0 ? <p className="adult-copy">No child profile yet.</p> : null}
+      <ul className="device-roster">
+        {profiles.map((profile) => {
+          const recent = profile.celebrated.slice(-3);
+          return (
+            <li key={profile.id} data-child={profile.id}>
+              <strong>{lessonName(profile)}</strong>
+              <span data-stars={profile.stars}>{profile.stars} stars</span>
+              <span data-stickers={profile.stickers.length}>{profile.stickers.length} stickers</span>
+              <span data-milestones={recent.join(" ") || "none"}>
+                {recent.length > 0 ? `Recent milestones: ${recent.join(", ")} stars` : "No milestones yet"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 const tabs: { id: Tab; label: string }[] = [
   { id: "classes", label: "Classes" },
   { id: "roster", label: "Roster" },
@@ -59,7 +87,7 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "notes", label: "Notes" },
 ];
 
-export function TeacherView({ onClose }: { onClose: () => void }) {
+export function TeacherView({ profiles, onClose }: { profiles: ChildProfile[]; onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("roster");
   const [classId, setClassId] = useState(demoClasses[0].id);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -74,6 +102,7 @@ export function TeacherView({ onClose }: { onClose: () => void }) {
           Back
         </button>
         <p className="demo-flag">Demo data. Not a real class. Filled in during step 6.</p>
+        <DeviceRewards profiles={profiles} />
         <header className="teacher-top">
           <div className="class-switch-wrap">
             <button

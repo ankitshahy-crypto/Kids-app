@@ -37,6 +37,11 @@ export const aboutContent = {
       body: "Effort, not perfection. No pressure, no scores.",
     },
     {
+      id: "rewards",
+      title: "Rewards that feel great",
+      body: "Stars for effort unlock outfits for your child's animal, a sticker book of learned letters, and a growing nest. Every reward is earned by reading, never bought.",
+    },
+    {
       id: "classroom",
       title: "Made for classrooms too",
       body: "Teachers can follow a class and share goals with parents.",

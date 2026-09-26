@@ -185,9 +185,21 @@ export function ParentView({
         <section className="adult-section" data-section="rewards">
           <h2>Home rewards</h2>
           <p className="adult-copy">
-            A parent will write home rewards here, on this device. Stars are never removed and cannot be bought. This
-            is filled in later.
+            Stars, stickers, and nest pieces stay on this device. They are earned by reading, never bought, and never
+            taken away.
           </p>
+          {profiles.length === 0 ? <p className="adult-copy">Add a child to see rewards.</p> : null}
+          <ul className="note-list">
+            {profiles.map((profile) => (
+              <li key={profile.id} className="progress-note" data-reward={profile.id}>
+                <p className="child-name">{lessonName(profile)}</p>
+                <RewardFacts profile={profile} />
+                <p className="child-note">
+                  {profile.nest.length === 1 ? "1 nest piece" : `${profile.nest.length} nest pieces`}
+                </p>
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 
@@ -295,6 +307,7 @@ function ParentHome({ child, onOpen }: { child: ChildProfile; onOpen: (page: Par
         <section className="dash-card" data-section="stars">
           <h2>Stars earned</h2>
           <p className="dash-stat">{child.stars} stars</p>
+          <RewardFacts profile={child} />
           <span className="dash-stars" aria-hidden="true">
             {Array.from({ length: 5 }, (_, index) => (
               <StarIcon key={index} />
@@ -369,6 +382,25 @@ function ChildRow({
   );
 }
 
+function milestoneLine(profile: ChildProfile): string {
+  const recent = profile.celebrated.slice(-3);
+  if (recent.length === 0) return "No milestones yet";
+  return `Recent milestones: ${recent.join(", ")} stars`;
+}
+
+function RewardFacts({ profile }: { profile: ChildProfile }) {
+  return (
+    <div className="reward-facts">
+      <p className="child-note" data-stickers={profile.stickers.length}>
+        {profile.stickers.length} stickers
+      </p>
+      <p className="child-note" data-milestones={profile.celebrated.join(" ") || "none"}>
+        {milestoneLine(profile)}
+      </p>
+    </div>
+  );
+}
+
 function ProgressNote({ profile }: { profile: ChildProfile }) {
   const now = new Date();
   const letters = practiceLetters(planForWeek(weekIndex(profile.createdAt, now)), isReviewDay(now));
@@ -378,8 +410,9 @@ function ProgressNote({ profile }: { profile: ChildProfile }) {
       <p className="child-name">{lessonName(profile)}</p>
       <p className="child-note">
         {review ? "Friday review. " : ""}
-        Letters {letters.map((letter) => letter.toUpperCase()).join(" ")}. Stars {profile.stars}. This week{" "}
-        {starsThisWeek(profile, now)}.
+        Letters {letters.map((letter) => letter.toUpperCase()).join(" ")}. Stars {profile.stars}. Stickers{" "}
+        {profile.stickers.length}. This week {starsThisWeek(profile, now)}.
+        {profile.celebrated.length > 0 ? ` Milestones ${profile.celebrated.join(", ")}.` : ""}
       </p>
     </li>
   );

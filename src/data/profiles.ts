@@ -1,5 +1,6 @@
 import { animalById, isAnimalId, type AnimalId } from "./animals";
 import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
+import { emptyOutfit, itemForSlot, type Outfit } from "./wardrobe";
 
 export const ageRanges = ["3", "4", "5", "6-7"] as const;
 export type AgeRange = (typeof ageRanges)[number];
@@ -8,6 +9,18 @@ export const lessonSteps = ["letter", "draw", "story", "moment"] as const;
 export type LessonStep = (typeof lessonSteps)[number];
 
 export type DayProgress = Record<LessonStep, boolean>;
+
+export type Sticker = {
+  kind: "letter" | "word";
+  /** Lowercase letter or word. Stored once. */
+  label: string;
+};
+
+export type NestPiece = {
+  /** Local date the daily lesson was finished. Never removed. */
+  date: string;
+  piece: "twig" | "egg";
+};
 
 export type ChildProfile = {
   id: string;
@@ -24,6 +37,14 @@ export type ChildProfile = {
    * zone when the star was awarded. The same date is never awarded twice.
    */
   days: Record<string, DayProgress>;
+  /** What the animal is wearing. Empty until the child picks something already earned. */
+  outfit: Outfit;
+  /** Letters and words learned. Only added, never removed. */
+  stickers: Sticker[];
+  /** One twig or egg for each day the whole lesson was finished. */
+  nest: NestPiece[];
+  /** Star totals already celebrated, such as 10 and 20. */
+  celebrated: number[];
 };
 
 type ProfileStore = {
@@ -123,6 +144,10 @@ export function editChild(
   };
 }
 
+function emptyRewards(): Pick<ChildProfile, "outfit" | "stickers" | "nest" | "celebrated"> {
+  return { outfit: emptyOutfit(), stickers: [], nest: [], celebrated: [] };
+}
+
 export function createChild(input: { name: string; ageRange: AgeRange; animal: AnimalId }): ChildProfile {
   const name = normalizeChildName(input.name);
   if (!name) throw new Error("A first name or initial is required");
@@ -134,6 +159,7 @@ export function createChild(input: { name: string; ageRange: AgeRange; animal: A
     createdAt: utcTimestamp(),
     stars: 0,
     days: {},
+    ...emptyRewards(),
   };
 }
 
@@ -141,6 +167,37 @@ function isDayProgress(value: unknown): value is DayProgress {
   if (!value || typeof value !== "object") return false;
   const day = value as Partial<DayProgress>;
   return lessonSteps.every((step) => typeof day[step] === "boolean");
+}
+
+function isSticker(value: unknown): value is Sticker {
+  if (!value || typeof value !== "object") return false;
+  const sticker = value as Partial<Sticker>;
+  return (sticker.kind === "letter" || sticker.kind === "word") && typeof sticker.label === "string" && sticker.label.length > 0;
+}
+
+function isNestPiece(value: unknown): value is NestPiece {
+  if (!value || typeof value !== "object") return false;
+  const piece = value as Partial<NestPiece>;
+  return typeof piece.date === "string" && (piece.piece === "twig" || piece.piece === "egg");
+}
+
+/** Older saves have stars and days only. Rewards start empty and are never required to load. */
+function withRewards(profile: ChildProfile): ChildProfile {
+  const raw = profile as ChildProfile & { outfit?: Partial<Outfit> };
+  return {
+    ...profile,
+    outfit: {
+      hat: itemForSlot(raw.outfit?.hat ?? null, "hat"),
+      scarf: itemForSlot(raw.outfit?.scarf ?? null, "scarf"),
+      glasses: itemForSlot(raw.outfit?.glasses ?? null, "glasses"),
+      color: itemForSlot(raw.outfit?.color ?? null, "color"),
+    },
+    stickers: Array.isArray(profile.stickers) ? profile.stickers.filter(isSticker) : [],
+    nest: Array.isArray(profile.nest) ? profile.nest.filter(isNestPiece) : [],
+    celebrated: Array.isArray(profile.celebrated)
+      ? profile.celebrated.filter((value) => typeof value === "number" && value > 0 && value % 10 === 0)
+      : [],
+  };
 }
 
 function isProfile(value: unknown): value is ChildProfile {
@@ -161,7 +218,7 @@ export function loadStore(): ProfileStore {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return { activeId: null, profiles: [] };
     const store = parsed as Partial<ProfileStore>;
-    const profiles = Array.isArray(store.profiles) ? store.profiles.filter(isProfile) : [];
+    const profiles = Array.isArray(store.profiles) ? store.profiles.filter(isProfile).map(withRewards) : [];
     const activeId = profiles.some((profile) => profile.id === store.activeId) ? store.activeId ?? null : null;
     return { activeId, profiles };
   } catch {

@@ -7,6 +7,7 @@ const tints: Record<AboutFeatureId, string> = {
   blend: "#E7F2EA",
   lesson: "#FDE7D4",
   stars: "#F8E6D4",
+  rewards: "#FDE7D4",
   classroom: "#E4EEF8",
   grownups: "#E5F4EA",
 };
@@ -54,6 +55,7 @@ function FeatureIcon({ id }: { id: AboutFeatureId }) {
   if (id === "hero") return <HeroIcon />;
   if (id === "blend") return <BlendIcon />;
   if (id === "lesson") return <LessonIcon />;
+  if (id === "rewards") return <RewardIcon />;
   return <ClassIcon />;
 }
 
@@ -93,6 +95,18 @@ function LessonIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
       <circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
       <path d="M12 8.2V12l2.8 1.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function RewardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
+      <path fill="currentColor" d="M12 2.4 13.6 7h4.8l-3.9 2.8 1.5 4.6L12 11.6 7.9 14.4 9.4 9.8 5.6 7h4.8L12 2.4Z" />
+      <path
+        fill="currentColor"
+        d="M7 15.2h10v2.2c0 .8-.7 1.6-1.6 1.6H8.6c-.9 0-1.6-.8-1.6-1.6v-2.2Z"
+      />
     </svg>
   );
 }

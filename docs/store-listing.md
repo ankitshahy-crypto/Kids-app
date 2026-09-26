@@ -17,6 +17,7 @@ WordNest helps young children take their first steps into reading, one small wor
 - **Drag to blend:** Slide across a word and hear each sound join into the whole word, the way blending is taught in classrooms.
 - **Short daily lessons:** 5–10 minutes builds a habit without too much screen time.
 - **Stars for trying:** Effort, not perfection. No pressure, no scores.
+- **Rewards that feel great:** Stars for effort unlock outfits for your child's animal, a sticker book of learned letters, and a growing nest. Every reward is earned by reading, never bought.
 - **Made for classrooms too:** Teachers can follow a class and share goals with parents.
 - **Grown-up tools:** They sit behind a simple check.
 
