@@ -14,9 +14,9 @@ Market it as reading practice. Never market it as therapy, and never describe a 
 
 The app has three views. They do not look the same.
 
-**Kid view.** Picture-first, with huge tap targets and almost no text. Soft pastel. It shows the profile picker, the daily lesson path, and stars.
+**Kid view.** Picture-first, with huge tap targets and almost no text. Soft pastel hills and a winding path of four round stops: letters, tracing, story, and a color, shape, or number moment. The child's animal stands at the current stop. Stars sit in the corner. Play library and My Nest are on the path for later.
 
-**Parent view.** Behind a press-and-hold of about 2 seconds. Calmer and text-friendly. A parent manages child profiles, settings, home rewards, progress notes, and consent or delete.
+**Parent view.** Behind a press-and-hold of about 2 seconds. Calmer and text-friendly. The home screen shows letters learned, lessons this week, stars, and a From your teacher card. Rows open Children, Progress, From Teacher, Home Rewards, Settings, and Privacy. Step 1 builds Children (add and edit) and Settings. The other rows are placeholders.
 
 In steps 5 and 6, a parent can monitor that child's progress and see what the teacher sent for them:
 
@@ -27,9 +27,9 @@ Teacher notes are tied to the child's app name only (the animal hero's name, or 
 
 Step 1 only leaves a "From your teacher" placeholder card in the parent view. The progress detail and the teacher inputs are filled in at steps 5 and 6.
 
-**Teacher view.** A separate teacher profile, also behind a press-and-hold. A classroom dashboard: more than one class, rosters by in-app name and avatar only, goals, a class star jar, and certificates.
+**Teacher view.** A separate teacher profile, also behind a press-and-hold. A classroom shell: a class switcher, Scan QR, a class star jar, a roster of app names and avatars, and tabs for classes, roster, goals, the star jar, certificates, and notes. Step 1 shows that shell with demo data only.
 
-The start screen is the mode switch. Kid is the large control and opens with a tap. Parent and Teacher are smaller and open only after a press-and-hold. The gear inside the kid view is the same hold gate into the parent view. A tap does not open Parent, Teacher, or the gear.
+The start screen shows the nest, the WordNest name, and the child avatar buttons. Tapping a child opens the kid view. Parent and Teacher are smaller locked pills and open only after a press-and-hold. A tap does not open them.
 
 Step 1 sets up the shell and routing for all three views, builds the kid view, and builds a basic parent view that can add and edit a child. The teacher view in step 1 is a placeholder dashboard. Step 6 fills it in.
 
@@ -117,7 +117,7 @@ Also later, for the classroom:
 - No analytics and no tracking.
 - Until a classroom server exists, everything stays on the device (`localStorage`, IndexedDB, or Capacitor Preferences).
 
-Parent and Teacher open only after a press-and-hold of about 2 seconds, from the start screen or from the gear in the kid view. A tap does not open them.
+Parent and Teacher open only after a press-and-hold of about 2 seconds on the start screen. A tap does not open them.
 
 ## Build order
 

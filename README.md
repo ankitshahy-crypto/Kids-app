@@ -17,23 +17,23 @@ npm run dev
 
 Open the address Vite prints. The layout is a portrait phone screen, centered on a wide window.
 
-The first screen is a mode switch. **Kid** is the large button and opens with a tap. **Parent** and **Teacher** are smaller and open only after a press-and-hold of about 2 seconds.
+The first screen shows the nest, the WordNest name, and a card of child avatars. Tap a child to open Today. **Parent** and **Teacher** are small locked pills and open only after a press-and-hold of about 2 seconds.
 
-Phones (and some browsers) will not speak until there has been a tap. Opening Kid, choosing a child, or opening the letter game is that tap.
+Phones (and some browsers) will not speak until there has been a tap. Choosing a child, or opening the letter game, is that tap.
 
 ## Today
 
-The kid view is picture-first: a profile picker, Today's path, and stars. A grown-up holds Parent (or the gear inside the kid view) for about 2 seconds, then adds a child: a first name or a single initial, an age range (3, 4, 5, or 6–7), and one of eight animals. The animal is the profile and the story hero. A single initial uses the animal's name in lessons. Edit and remove are on that same parent screen. The app never asks for a last name, birthdate, or school.
+A grown-up holds Parent for about 2 seconds, then adds a child: a first name or a single initial, an age range (3, 4, 5, or 6–7), and one of eight animals. The animal is the profile and the story hero. A single initial uses the animal's name in lessons. Edit and remove are under Children. The app never asks for a last name, birthdate, or school.
 
-The child picks a profile from the big animal buttons, then sees **Today**: letters, draw, story, and a color moment. Letters opens Sound it out, using this week's letters when those words exist. The other three steps are marked **Soon** and can be marked done so the path and stars work. Each finished step adds one effort star for that day. Stars are not removed.
+Today is a winding path of four stops: a letter, a pencil, a book, and shapes. The letter stop opens Sound it out, using this week's letters when those words exist. The other three stops are marked **Soon** and can be marked done so the path and stars work. The child's animal stands at the current stop. Each finished step adds one effort star for that day. Stars are not removed. Play library and My Nest are on the path for later.
 
-The letter plan is 1–2 new letters a week, plus review. Friday is review day: a badge on Today, and a short note in the parent view.
+The letter plan is 1–2 new letters a week, plus review. Friday is review day: a Review mark on Today, and a short note in the parent view.
 
 ## Parent and teacher
 
-The parent view is a calmer, text-friendly screen: children (add and edit), sound and speech speed, progress notes, a "From your teacher" placeholder, and labeled places for home rewards and class consent. Rewards, consent, and teacher inputs are not built yet.
+The parent view is a calmer dashboard: letters learned, lessons this week, stars, and a From your teacher card. Children (add and edit) and Settings (sound and speech speed) work now. Progress, From Teacher, Home Rewards, and Privacy are placeholders.
 
-Teacher opens a classroom placeholder: more than one class, a roster that shows an in-app name and avatar only, goals, a class star jar, and certificates. That dashboard is filled in later. Real names are never shown there.
+Teacher opens a classroom shell with sample data marked Demo: a class switcher, Scan QR, a class star jar, a roster of animal names and avatars, and a tab bar. Real names are never shown there. The real classroom tools are filled in later. Approved layout references live in `docs/mockups/`. They are not shown in the app.
 
 ## Run on an iPhone
 
@@ -59,7 +59,7 @@ The installed app does not need a network connection. Everything it shows and sp
 
 ## Parent settings
 
-Parent opens from the start screen, or from the gear in the kid view, only after a press-and-hold of about 2 seconds (a mark fills while you hold). A short tap does nothing. Grown-ups can add, edit, or remove a child, read the week's letters and stars, turn sound off, and switch speech between slow and slower. Profiles and settings stay in `localStorage` on that device.
+Parent opens from the locked pill on the start screen only after a press-and-hold of about 2 seconds (a mark fills while you hold). A short tap does nothing. Grown-ups can add, edit, or remove a child, read letters and stars, turn sound off, and switch speech between slow and slower. Profiles and settings stay in `localStorage` on that device.
 
 ## Add words later
 

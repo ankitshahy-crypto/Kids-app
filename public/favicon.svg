@@ -12,6 +12,7 @@
   <path d="M94 92h12l-6 8z" fill="#E07A5F"/>
   <ellipse cx="76" cy="90" rx="5" ry="3" fill="#F4A4B4" opacity="0.9"/>
   <ellipse cx="124" cy="90" rx="5" ry="3" fill="#F4A4B4" opacity="0.9"/>
+  <ellipse cx="70" cy="108" rx="16" ry="9" fill="#A9D2C0" transform="rotate(-24 70 108)"/>
   <path d="M26 126c12 40 136 40 148 0-4 32-32 50-74 50S30 158 26 126z" fill="#E8C4A0"/>
   <path d="M48 124c16 14 88 14 104 0" stroke="#F8E6D0" stroke-width="8" stroke-linecap="round" fill="none"/>
   <path d="M30 122c18-18 36-8 48 6" stroke="#C9956A" stroke-width="5.5" stroke-linecap="round" fill="none"/>

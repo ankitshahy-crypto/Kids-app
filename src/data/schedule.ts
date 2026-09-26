@@ -41,6 +41,26 @@ export function weekIndex(createdAt: string, now = new Date()): number {
   return Math.max(0, Math.floor(days / 7));
 }
 
+/** New letters from the first lesson week through this one. */
+export function lettersIntroduced(index: number): string[] {
+  const count = Math.min(Math.max(index, 0) + 1, letterSchedule.length);
+  const seen = new Set<string>();
+  const letters: string[] = [];
+  for (let i = 0; i < count; i += 1) {
+    for (const letter of letterSchedule[i].newLetters) {
+      const lower = letter.toLowerCase();
+      if (seen.has(lower)) continue;
+      seen.add(lower);
+      letters.push(lower);
+    }
+  }
+  return letters;
+}
+
+export function letterPlanSize(): number {
+  return letterSchedule.reduce((total, week) => total + week.newLetters.length, 0);
+}
+
 export function planForWeek(index: number): WeekPlan {
   const safe = ((index % letterSchedule.length) + letterSchedule.length) % letterSchedule.length;
   return letterSchedule[safe];

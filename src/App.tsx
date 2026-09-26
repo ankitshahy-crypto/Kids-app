@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { primeSpeech } from "./audio/player";
 import { Background } from "./components/Background";
-import { Chevron, HomeIcon } from "./components/icons";
-import { GearButton } from "./components/GearButton";
+import { Chevron } from "./components/icons";
+import { KidCorner } from "./components/KidCorner";
 import { ParentView } from "./components/ParentPanel";
 import { PlaceholderStep } from "./components/PlaceholderStep";
-import { ProfilePicker } from "./components/ProfilePicker";
 import { SoundItOut } from "./components/SoundItOut";
 import { StartScreen } from "./components/StartScreen";
 import { TeacherView } from "./components/TeacherView";
@@ -16,14 +15,15 @@ import { useProfiles } from "./hooks/useProfiles";
 import { useSettings } from "./hooks/useSettings";
 
 type Mode = "start" | "kid" | "parent" | "teacher";
-type Screen = "picker" | "today" | LessonStep;
+type Screen = "today" | "library" | "nest" | LessonStep;
+
+const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
   const { profiles, active, select, addChild, updateChild, removeChild, giveStar } = useProfiles();
   const [mode, setMode] = useState<Mode>("start");
-  const [parentFrom, setParentFrom] = useState<"start" | "kid">("start");
-  const [screen, setScreen] = useState<Screen>("picker");
+  const [screen, setScreen] = useState<Screen>("today");
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -33,8 +33,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!active && screen !== "picker") setScreen("picker");
-  }, [active, screen]);
+    if (!active && mode === "kid") setMode("start");
+  }, [active, mode]);
 
   const lessonWords = useMemo(() => {
     if (!active) return [];
@@ -42,11 +42,6 @@ export default function App() {
     const letters = practiceLetters(planForWeek(weekIndex(active.createdAt, now)), isReviewDay(now));
     return wordsForLetters(letters);
   }, [active]);
-
-  const openParent = (from: "start" | "kid") => {
-    setParentFrom(from);
-    setMode("parent");
-  };
 
   const openStep = (step: LessonStep) => {
     primeSpeech();
@@ -58,7 +53,7 @@ export default function App() {
     setScreen("today");
   };
 
-  const showBack = screen !== "picker" && screen !== "today";
+  const inLesson = lessonScreens.includes(screen as LessonStep);
   const pastel = mode === "start" || mode === "kid";
 
   return (
@@ -67,58 +62,44 @@ export default function App() {
       <main className="stage">
         {mode === "start" ? (
           <StartScreen
-            onKid={() => {
+            profiles={profiles}
+            onPick={(id) => {
               primeSpeech();
-              setScreen("picker");
+              select(id);
+              setScreen("today");
               setMode("kid");
             }}
-            onParent={() => openParent("start")}
+            onParent={() => setMode("parent")}
             onTeacher={() => setMode("teacher")}
           />
         ) : null}
 
-        {mode === "kid" ? (
+        {mode === "kid" && active ? (
           <>
-            <div className="top-bar">
-              {showBack ? (
+            {inLesson ? (
+              <div className="top-bar">
                 <button type="button" className="back-button" aria-label="Back" onClick={() => setScreen("today")}>
                   <span className="gear-face">
                     <Chevron direction="left" />
                   </span>
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  className="back-button"
-                  aria-label="Home"
-                  onClick={() => setMode("start")}
-                >
-                  <span className="gear-face">
-                    <HomeIcon />
-                  </span>
-                </button>
-              )}
-              <GearButton onOpen={() => openParent("kid")} />
-            </div>
-            <div className="screen-body">
-              {screen === "picker" || !active ? (
-                <ProfilePicker
-                  profiles={profiles}
-                  onPick={(id) => {
-                    primeSpeech();
-                    select(id);
-                    setScreen("today");
-                  }}
-                />
-              ) : null}
-              {screen === "today" && active ? (
+                <span className="top-spacer" />
+              </div>
+            ) : null}
+            <div className={`screen-body${screen === "today" ? " is-fit" : ""}`}>
+              {screen === "today" ? (
                 <TodayPath
                   profile={active}
-                  onSwitch={() => setScreen("picker")}
+                  onLeave={() => setMode("start")}
                   onOpen={openStep}
+                  onLibrary={() => setScreen("library")}
+                  onNest={() => setScreen("nest")}
                 />
               ) : null}
-              {screen === "letter" && active ? (
+              {screen === "library" || screen === "nest" ? (
+                <KidCorner kind={screen} onBack={() => setScreen("today")} />
+              ) : null}
+              {screen === "letter" ? (
                 <SoundItOut
                   settingsRef={settingsRef}
                   paused={false}
@@ -126,7 +107,7 @@ export default function App() {
                   onFinished={() => giveStar(active.id, "letter")}
                 />
               ) : null}
-              {screen !== "picker" && screen !== "today" && screen !== "letter" && active ? (
+              {screen === "draw" || screen === "story" || screen === "moment" ? (
                 <PlaceholderStep step={screen} profile={active} onDone={() => finishStep(screen)} />
               ) : null}
             </div>
@@ -139,19 +120,17 @@ export default function App() {
               settings={settings}
               onChange={update}
               profiles={profiles}
+              active={active}
+              onSelect={select}
               onAdd={addChild}
               onUpdate={updateChild}
               onRemove={removeChild}
-              onClose={() => setMode(parentFrom)}
+              onClose={() => setMode("start")}
             />
           </div>
         ) : null}
 
-        {mode === "teacher" ? (
-          <div className="screen-body">
-            <TeacherView onClose={() => setMode("start")} />
-          </div>
-        ) : null}
+        {mode === "teacher" ? <TeacherView onClose={() => setMode("start")} /> : null}
       </main>
     </div>
   );
