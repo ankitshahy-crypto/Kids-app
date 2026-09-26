@@ -123,11 +123,15 @@ export function TimeBoard({
   lesson,
   done,
   onOpen,
+  onMoneyPlay,
 }: {
   lesson: TimeLesson;
   done: Record<string, boolean>;
   onOpen: (step: TimeStep) => void;
+  onMoneyPlay?: () => void;
 }) {
+  const moneySteps = ["jars", "lemonade", "choose", "needs", "cards"];
+  const moneyDone = moneySteps.every((id) => done[id]);
   return (
     <div className="math-board" data-stage={lesson.stageId} data-week={lesson.weekIndex}>
       {board.map((stop) => (
@@ -149,6 +153,20 @@ export function TimeBoard({
           <span>{stop.label}</span>
         </button>
       ))}
+      {onMoneyPlay ? (
+        <button
+          type="button"
+          className={`math-activity${moneyDone ? " is-done" : ""}`}
+          data-activity="money-play"
+          aria-label="Money play"
+          onClick={onMoneyPlay}
+        >
+          <span className="math-activity-art" aria-hidden="true">
+            <MoneyArt id={lesson.coinTarget} />
+          </span>
+          <span>Play</span>
+        </button>
+      ) : null}
     </div>
   );
 }

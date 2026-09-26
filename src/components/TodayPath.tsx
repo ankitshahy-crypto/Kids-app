@@ -1,11 +1,10 @@
 import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
-import { MoneyBoard } from "./MoneyPlay";
 import { TimeBoard } from "./TimePlay";
 import { COLORS, type ColorLesson, type ColorStep } from "../data/colors";
 import { MATH, type MathLesson, type MathStep } from "../data/math";
-import { TIME, type MoneyGame, type TimeLesson, type TimeStep } from "../data/timeMoney";
+import { TIME, type TimeLesson, type TimeStep } from "../data/timeMoney";
 import { READING } from "../data/subject";
 import type { PlacementSource } from "../data/placement";
 import { isReviewDay } from "../data/schedule";
@@ -47,7 +46,7 @@ export function TodayPath({
   onColor,
   timeLesson,
   onTime,
-  onMoney,
+  onMoneyPlay,
   canTraceWord,
   canTraceName,
   onTraceWord,
@@ -75,7 +74,7 @@ export function TodayPath({
   onColor: (step: ColorStep) => void;
   timeLesson: TimeLesson;
   onTime: (step: TimeStep) => void;
-  onMoney: (game: MoneyGame) => void;
+  onMoneyPlay: () => void;
   canTraceWord: boolean;
   canTraceName: boolean;
   onTraceWord: () => void;
@@ -191,8 +190,7 @@ export function TodayPath({
 
       {shown === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
       {shown === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
-      {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} /> : null}
-      {shown === "time" ? <MoneyBoard done={timeDone} onOpen={onMoney} /> : null}
+      {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
 
       {shown === "reading" ? <div className="trail">
         <Hills />

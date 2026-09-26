@@ -40,6 +40,7 @@ import {
   KnowActivity,
   LemonadeActivity,
   MixActivity,
+  MoneyBoard,
   MoreActivity,
   NameActivity,
   NeedsActivity,
@@ -67,7 +68,7 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors" | "time";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | "word" | "my-name";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | "word" | "my-name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
@@ -132,7 +133,7 @@ export default function App() {
     }
     if (screen === "draw" || screen === "word" || screen === "my-name") setMusicArea("focus");
     else if (screen === "story") setMusicArea("story");
-    else if (screen === "library" || screen === "games") setMusicArea("play");
+    else if (screen === "library" || screen === "games" || screen === "money-play" || moneyScreens.includes(screen as MoneyGame)) setMusicArea("play");
     else setMusicArea("today");
   }, [mode, screen]);
 
@@ -350,6 +351,12 @@ export default function App() {
     else setTip(null);
   };
 
+  const openMoneyPlay = () => {
+    primeSpeech();
+    setScreen("money-play");
+    setTip(null);
+  };
+
   const openMoney = (step: MoneyGame) => {
     primeSpeech();
     setScreen(step);
@@ -375,6 +382,7 @@ export default function App() {
     colorScreens.includes(screen as ColorStep) ||
     timeScreens.includes(screen as TimeStep) ||
     moneyScreens.includes(screen as MoneyGame) ||
+    screen === "money-play" ||
     screen === "word" ||
     screen === "my-name" ||
     screen === "games";
@@ -461,7 +469,12 @@ export default function App() {
                   className="back-button"
                   aria-label="Back"
                   onClick={() => {
-                    if (screen === "games") setTip(null);
+                    if (moneyScreens.includes(screen as MoneyGame)) {
+                      setTip(null);
+                      setScreen("money-play");
+                      return;
+                    }
+                    if (screen === "games" || screen === "money-play") setTip(null);
                     setScreen("today");
                   }}
                 >
@@ -505,7 +518,7 @@ export default function App() {
                   onColor={openColor}
                   timeLesson={timeLesson}
                   onTime={openTime}
-                  onMoney={openMoney}
+                  onMoneyPlay={openMoneyPlay}
                   canTraceWord={blendedWords.length > 0}
                   canTraceName={Boolean(traceName)}
                   onTraceWord={() => {
@@ -665,6 +678,13 @@ export default function App() {
                       settingsRef={settingsRef}
                       onDone={(label) => finishTime("shop", label)}
                     />
+                  ) : null}
+                  {screen === "money-play" ? (
+                    <div className="math-play" data-screen="money-play">
+                      <h1>Money play</h1>
+                      <p className="math-prompt">Pretend coins only.</p>
+                      <MoneyBoard done={active.days[todayKey()]?.[TIME] ?? {}} onOpen={openMoney} />
+                    </div>
                   ) : null}
                   {screen === "games" ? (
                     <Games

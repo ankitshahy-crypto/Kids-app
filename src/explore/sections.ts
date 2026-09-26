@@ -23,6 +23,7 @@ const BY_SCREEN: Record<string, ExploreSection> = {
   choose: "time",
   needs: "time",
   cards: "time",
+  "money-play": "time",
   games: "games",
 };
 

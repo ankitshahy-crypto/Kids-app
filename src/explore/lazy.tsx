@@ -20,4 +20,5 @@ export const CardsActivity = lazy(() => import("../components/MoneyPlay").then((
 export const ChooseActivity = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.ChooseActivity })));
 export const JarsActivity = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.JarsActivity })));
 export const LemonadeActivity = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.LemonadeActivity })));
+export const MoneyBoard = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.MoneyBoard })));
 export const NeedsActivity = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.NeedsActivity })));
