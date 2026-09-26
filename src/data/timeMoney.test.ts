@@ -6,6 +6,7 @@ import { applyEffort } from "./rewards";
 import { sheetsFor } from "./sheets";
 import {
   TIME,
+  canAfford,
   changeAmount,
   clockCue,
   coinSum,
@@ -14,6 +15,8 @@ import {
   hourFromAngle,
   lessonForWeek,
   minuteFromAngle,
+  saveAfterPay,
+  saveGoalMet,
   snapMinute,
   timeIntroduced,
   timeManifestEntries,
@@ -42,8 +45,10 @@ describe("time and money lessons", () => {
     expect(lessonForWeek(7)).toMatchObject({ stageId: "minutes", clockMode: "five", targetMinute: 25, match: true });
     expect(lessonForWeek(8)).toMatchObject({ stageId: "values", coinTask: "count", shopTask: "pay", countTotal: 7, clockMode: "five" });
     expect(lessonForWeek(9)).toMatchObject({ stageId: "change", coinTask: "compare", shopTask: "change", changeCents: 10 });
-    expect(lessonForWeek(10).stageId).toBe("change");
+    expect(lessonForWeek(10).stageId).toBe("jars");
     expect(timeIntroduced(10)).toBe(36);
+    expect(lessonForWeek(10).cardsOpen).toBe(false);
+    expect(lessonForWeek(15)).toMatchObject({ stageId: "cards", cardsOpen: true });
     expect(placeForWeek(0, TIME).stageId).toBe("day");
     expect(placeForWeek(5, TIME).stageId).toBe("hours");
     expect(placeForWeek(9, TIME).stageId).toBe("change");
@@ -59,6 +64,11 @@ describe("time and money lessons", () => {
     expect(firstTimeWeekForStage("minutes")).toBe(6);
     expect(firstTimeWeekForStage("values")).toBe(8);
     expect(firstTimeWeekForStage("change")).toBe(9);
+    expect(firstTimeWeekForStage("jars")).toBe(10);
+    expect(firstTimeWeekForStage("earn")).toBe(12);
+    expect(firstTimeWeekForStage("choose")).toBe(13);
+    expect(firstTimeWeekForStage("needs")).toBe(14);
+    expect(firstTimeWeekForStage("cards")).toBe(15);
   });
 
   it("snaps clock hands and speaks the time in words", () => {
@@ -79,6 +89,14 @@ describe("time and money lessons", () => {
     expect(clockCue(2, 25)).toEqual({ id: "min-2-25", say: "two twenty-five" });
     expect(coinSum([{ cents: 1, count: 2 }, { cents: 5, count: 1 }])).toBe(7);
     expect(changeAmount(25, 15)).toBe(10);
+    expect(canAfford(10, 25)).toBe(false);
+    expect(canAfford(10, 5)).toBe(true);
+    expect(saveGoalMet(2)).toBe(true);
+    expect(saveGoalMet(1)).toBe(false);
+    expect(saveAfterPay(4, 1)).toBe(3);
+    expect(lessonForWeek(0).cardsOpen).toBe(false);
+    expect(lessonForWeek(0).walletCents).toBe(10);
+    expect(lessonForWeek(0).saveGoal).toBe(2);
   });
 
   it("keeps a coin sticker without finishing the reading lesson", () => {
@@ -90,7 +108,7 @@ describe("time and money lessons", () => {
     expect(result.profile.stickers[0]).toMatchObject({ kind: "coin", label: "penny", subject: TIME });
     expect(dayProgress(result.profile, now, "UTC").letter).toBe(false);
     expect(result.profile.days[todayKey(now, "UTC")]?.reading).toBeUndefined();
-    expect(sheetsFor(TIME).map((sheet) => sheet.id)).toEqual(["clock", "coins"]);
+    expect(sheetsFor(TIME).map((sheet) => sheet.id)).toEqual(["clock", "coins", "jars"]);
   });
 
   it("lists a neural line for every time prompt", () => {

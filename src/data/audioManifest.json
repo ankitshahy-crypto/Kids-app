@@ -91,7 +91,18 @@
     "dime": { "file": "words/dime.mp3", "say": "dime", "source": "neural" },
     "quarter": { "file": "words/quarter.mp3", "say": "quarter", "source": "neural" },
     "cookie": { "file": "words/cookie.mp3", "say": "cookie", "source": "neural" },
-    "banana": { "file": "words/banana.mp3", "say": "banana", "source": "neural" }
+    "banana": { "file": "words/banana.mp3", "say": "banana", "source": "neural" },
+    "save": { "file": "words/save.mp3", "say": "save", "source": "neural" },
+    "spend": { "file": "words/spend.mp3", "say": "spend", "source": "neural" },
+    "share": { "file": "words/share.mp3", "say": "share", "source": "neural" },
+    "need": { "file": "words/need.mp3", "say": "need", "source": "neural" },
+    "want": { "file": "words/want.mp3", "say": "want", "source": "neural" },
+    "lemonade": { "file": "words/lemonade.mp3", "say": "lemonade", "source": "neural" },
+    "tidy": { "file": "words/tidy.mp3", "say": "tidy", "source": "neural" },
+    "feed": { "file": "words/feed.mp3", "say": "feed", "source": "neural" },
+    "help": { "file": "words/help.mp3", "say": "help", "source": "neural" },
+    "debit": { "file": "words/debit.mp3", "say": "debit", "source": "neural" },
+    "credit": { "file": "words/credit.mp3", "say": "credit", "source": "neural" }
   },
   "sentences": {
     "lets-read": { "file": "sentences/lets-read.mp3", "say": "Hi. Let's read together.", "source": "neural" },
@@ -332,7 +343,17 @@
     "min-12-40": { "file": "prompts/min-12-40.mp3", "say": "twelve forty", "source": "neural" },
     "quarter-to-1": { "file": "prompts/quarter-to-1.mp3", "say": "quarter to one", "source": "neural" },
     "min-12-50": { "file": "prompts/min-12-50.mp3", "say": "twelve fifty", "source": "neural" },
-    "min-12-55": { "file": "prompts/min-12-55.mp3", "say": "twelve fifty-five", "source": "neural" }
+    "min-12-55": { "file": "prompts/min-12-55.mp3", "say": "twelve fifty-five", "source": "neural" },
+    "time-jars": { "file": "prompts/time-jars.mp3", "say": "Put each coin in a jar.", "source": "neural" },
+    "time-chore": { "file": "prompts/time-chore.mp3", "say": "Do a pretend chore.", "source": "neural" },
+    "time-lemonade": { "file": "prompts/time-lemonade.mp3", "say": "Serve a cup of lemonade.", "source": "neural" },
+    "time-earn": { "file": "prompts/time-earn.mp3", "say": "You worked and earned a coin.", "source": "neural" },
+    "time-save": { "file": "prompts/time-save.mp3", "say": "Let's save for it!", "source": "neural" },
+    "time-needs": { "file": "prompts/time-needs.mp3", "say": "Is it a need or a want?", "source": "neural" },
+    "time-debit": { "file": "prompts/time-debit.mp3", "say": "A debit card pays with money you saved.", "source": "neural" },
+    "time-credit": { "file": "prompts/time-credit.mp3", "say": "A credit card borrows money. We pay it back later.", "source": "neural" },
+    "time-goal": { "file": "prompts/time-goal.mp3", "say": "The save jar reached the hat.", "source": "neural" },
+    "time-payback": { "file": "prompts/time-payback.mp3", "say": "Pay the borrowed coin back.", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },
