@@ -8,6 +8,16 @@ A picture sits in a big rounded card for about a second. The word then builds on
 
 There are no ads, scores, timers, accounts, or network calls. Speech, pictures, and profiles stay on the device. Schools will license the app later; there is no payment code yet.
 
+## Open the demo on an iPhone
+
+https://ankitshahy-crypto.github.io/Kids-app/
+
+That address is the web build, published by GitHub Actions. A push to `main` or to `cursor/profile-daily-lesson-df76` deploys it, and it can also be started by hand from the Actions tab. Safari loads the app at that address. Refreshing it loads the app again. Any other path under the site uses the same page as a fallback, so a refresh does not stop on a host 404.
+
+The site is served from `/Kids-app/`. The installed iPhone app still builds with relative file paths (`npm run ios:sync`).
+
+The first time, GitHub Pages has to use Actions as its source. In the repository: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
 ## Run in a browser
 
 ```bash
