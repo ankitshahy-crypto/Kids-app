@@ -102,8 +102,11 @@ input.is-pressed,
 .parent-row.is-pressed,
 .kid-enter.is-pressed {
   scale: 0.95;
-  filter: brightness(1.08);
-  box-shadow: 0 0 0 6px rgba(183, 224, 194, 0.65);
+  filter: brightness(1.12);
+  box-shadow:
+    0 0 0 3px #fffdfb,
+    0 0 0 7px rgba(111, 168, 124, 0.95),
+    0 0 18px rgba(242, 193, 78, 0.8);
 }
 
 .is-busy {
@@ -129,7 +132,7 @@ input.is-pressed,
   .parent-row.is-pressed,
   .kid-enter.is-pressed {
     scale: 1;
-    filter: brightness(1.14);
+    filter: brightness(1.18);
   }
 }
 
@@ -2643,8 +2646,11 @@ input.is-pressed,
 .parent-row.is-pressed,
 .kid-enter.is-pressed {
   scale: 0.95;
-  filter: brightness(1.08);
-  box-shadow: 0 0 0 6px rgba(183, 224, 194, 0.65);
+  filter: brightness(1.12);
+  box-shadow:
+    0 0 0 3px #fffdfb,
+    0 0 0 7px rgba(111, 168, 124, 0.95),
+    0 0 18px rgba(242, 193, 78, 0.8);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2666,6 +2672,6 @@ input.is-pressed,
   .parent-row.is-pressed,
   .kid-enter.is-pressed {
     scale: 1;
-    filter: brightness(1.14);
+    filter: brightness(1.18);
   }
 }
