@@ -1,5 +1,6 @@
 import type { DeckWord, LetterTile } from "../data/deck";
 import { PHONEME_TTS } from "../data/phonemes";
+import { beginVoice, endVoice, unlockAudio } from "./manager";
 import { SPEECH_RATES, type Settings } from "../settings";
 
 const SILENT_BEAT_MS = 720;
@@ -11,6 +12,7 @@ const SILENT_BEAT_MS = 720;
  */
 export function primeSpeech(): void {
   try {
+    unlockAudio();
     const synth = window.speechSynthesis;
     if (!synth) return;
     synth.resume();
@@ -96,6 +98,7 @@ function speak(text: string, settings: Settings, signal: AbortSignal): Promise<v
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = SPEECH_RATES[settings.speed];
     utterance.pitch = 1;
+    utterance.volume = settings.voiceVolume;
     utterance.lang = "en-US";
     try {
       const voice = pickVoice(synth.getVoices());
@@ -137,13 +140,14 @@ function speak(text: string, settings: Settings, signal: AbortSignal): Promise<v
   });
 }
 
-function playFile(src: string, signal: AbortSignal): Promise<void> {
+function playFile(src: string, signal: AbortSignal, volume: number): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
       reject(abortError());
       return;
     }
     const audio = new Audio(src);
+    audio.volume = volume;
     const cleanup = () => {
       signal.removeEventListener("abort", onAbort);
       audio.onended = null;
@@ -170,25 +174,34 @@ function playFile(src: string, signal: AbortSignal): Promise<void> {
   });
 }
 
+/**
+ * Prefer a recorded file when one is passed. Otherwise use device speech.
+ * A parent recording, stored only on the device, uses the same `src` path.
+ */
 async function playCue(
   cue: { src?: string; text: string },
   settings: Settings,
   signal: AbortSignal,
 ): Promise<void> {
   if (signal.aborted) throw abortError();
-  if (!settings.sound) {
+  if (!settings.voice) {
     await sleep(SILENT_BEAT_MS, signal);
     return;
   }
-  if (cue.src) {
-    try {
-      await playFile(cue.src, signal);
-      return;
-    } catch (error) {
-      if (isAbortError(error) || signal.aborted) throw abortError();
+  beginVoice();
+  try {
+    if (cue.src) {
+      try {
+        await playFile(cue.src, signal, settings.voiceVolume);
+        return;
+      } catch (error) {
+        if (isAbortError(error) || signal.aborted) throw abortError();
+      }
     }
+    await speak(cue.text, settings, signal);
+  } finally {
+    endVoice();
   }
-  await speak(cue.text, settings, signal);
 }
 
 export function playLetter(

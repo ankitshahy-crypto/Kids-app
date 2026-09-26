@@ -963,6 +963,21 @@ button:focus-visible {
   color: var(--sage-deep);
 }
 
+.volume-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5e675f;
+}
+
+.volume-input {
+  width: 100%;
+  accent-color: #6e9a74;
+}
+
 .name-input {
   width: 100%;
   height: 64px;

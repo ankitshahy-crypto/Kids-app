@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { applyAudioSettings, playEffect, setMusicArea } from "./audio/manager";
 import { primeSpeech } from "./audio/player";
 import { Background } from "./components/Background";
 import { Chevron } from "./components/icons";
@@ -36,6 +37,21 @@ export default function App() {
     if (!active && mode === "kid") setMode("start");
   }, [active, mode]);
 
+  useEffect(() => {
+    applyAudioSettings(settings);
+  }, [settings]);
+
+  useEffect(() => {
+    if (mode !== "kid") {
+      setMusicArea("none");
+      return;
+    }
+    if (screen === "draw") setMusicArea("focus");
+    else if (screen === "story") setMusicArea("story");
+    else if (screen === "library") setMusicArea("play");
+    else setMusicArea("today");
+  }, [mode, screen]);
+
   const lessonWords = useMemo(() => {
     if (!active) return [];
     const now = new Date();
@@ -48,8 +64,15 @@ export default function App() {
     setScreen(step);
   };
 
+  const reward = (step: LessonStep) => {
+    if (!active) return;
+    const result = giveStar(active.id, step);
+    if (result.lessonComplete && result.awarded) playEffect("celebrate", settings);
+    else if (result.awarded) playEffect("chime", settings);
+  };
+
   const finishStep = (step: LessonStep) => {
-    if (active) giveStar(active.id, step);
+    reward(step);
     setScreen("today");
   };
 
@@ -104,7 +127,7 @@ export default function App() {
                   settingsRef={settingsRef}
                   paused={false}
                   words={lessonWords}
-                  onFinished={() => giveStar(active.id, "letter")}
+                  onFinished={() => reward("letter")}
                 />
               ) : null}
               {screen === "draw" || screen === "story" || screen === "moment" ? (

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { playEffect } from "../audio/manager";
 import { cancelSpeech, isAbortError, playLetter, playWord, sleep } from "../audio/player";
 import type { DeckWord } from "../data/deck";
 import type { Settings } from "../settings";
@@ -46,6 +47,7 @@ export function usePlayback(
         for (let index = 0; index < current.letters.length; index += 1) {
           setRevealed(index + 1);
           setActive(index);
+          playEffect("pop", settingsRef.current);
           try {
             await playLetter(current.letters[index], settingsRef.current, signal);
           } catch (error) {
@@ -97,6 +99,7 @@ export function usePlayback(
       const controller = begin();
       setRevealed(current.letters.length);
       setActive(index);
+      playEffect("pop", settingsRef.current);
       void (async () => {
         try {
           await playLetter(current.letters[index], settingsRef.current, controller.signal);

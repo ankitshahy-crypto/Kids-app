@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import {
   awardStar,
   createChild,
+  dayProgress,
   editChild,
+  lessonSteps,
   loadStore,
   saveStore,
   type AgeRange,
@@ -49,10 +51,20 @@ export function useProfiles() {
   };
 
   const giveStar = (id: string, step: LessonStep) => {
+    let awarded = false;
+    let lessonComplete = false;
     setStore((current) => ({
       ...current,
-      profiles: current.profiles.map((profile) => (profile.id === id ? awardStar(profile, step) : profile)),
+      profiles: current.profiles.map((profile) => {
+        if (profile.id !== id) return profile;
+        const next = awardStar(profile, step);
+        awarded = next.stars !== profile.stars;
+        const day = dayProgress(next);
+        lessonComplete = lessonSteps.every((item) => day[item]);
+        return next;
+      }),
     }));
+    return { awarded, lessonComplete };
   };
 
   return {

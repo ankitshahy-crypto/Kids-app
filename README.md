@@ -59,7 +59,7 @@ The installed app does not need a network connection. Everything it shows and sp
 
 ## Parent settings
 
-Parent opens from the locked pill on the start screen only after a press-and-hold of about 2 seconds (a mark fills while you hold). A short tap does nothing. Grown-ups can add, edit, or remove a child, read letters and stars, turn sound off, and switch speech between slow and slower. Profiles and settings stay in `localStorage` on that device.
+Parent opens from the locked pill on the start screen only after a press-and-hold of about 2 seconds (a mark fills while you hold). A short tap does nothing. Grown-ups can add, edit, or remove a child, read letters and stars, and set music, effects, and voice separately, including volume and speech speed. Profiles and settings stay in `localStorage` on that device. Letter sounds use a recorded file when one is present, and the phone's voice otherwise. A few soft effects are made in the app. Music loops are not included yet.
 
 ## Add words later
 
@@ -67,7 +67,7 @@ Decks live in `src/data/deck.ts`. A word has letters, a phoneme key for each let
 
 ## Audio limits
 
-Sounds use the browser **Web Speech API**. It cannot make a pure phoneme, so stops are short approximations (`buh`, `kuh`) and vowels are near-misses (`aah` for short a). The same spelling can be a different sound in a longer word: apple's second **p** repeats /p/, and the final **e** is a soft "uh". The **x** in fox is approximated as "kss". Voices differ by phone, and the iPhone silent switch mutes speech. This is a first version of the letter sounds.
+Sounds use a recorded clip when `audioSrc` is set, and otherwise the browser **Web Speech API**. Device speech cannot make a pure phoneme, so stops are short approximations (`buh`, `kuh`) and vowels are near-misses (`aah` for short a). The same spelling can be a different sound in a longer word: apple's second **p** repeats /p/, and the final **e** is a soft "uh". The **x** in fox is approximated as "kss". Voices differ by phone, and the iPhone silent switch mutes speech. This is a first version of the letter sounds.
 
 ## Privacy
 

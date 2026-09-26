@@ -194,27 +194,28 @@ export function ParentView({
       {page === "settings" ? (
         <section className="adult-section" data-section="settings">
           <h2>Settings</h2>
-          <fieldset className="setting-group">
-            <legend>Sound</legend>
-            <div className="segment">
-              <button
-                type="button"
-                className={settings.sound ? "is-selected" : ""}
-                aria-pressed={settings.sound}
-                onClick={() => onChange({ sound: true })}
-              >
-                On
-              </button>
-              <button
-                type="button"
-                className={!settings.sound ? "is-selected" : ""}
-                aria-pressed={!settings.sound}
-                onClick={() => onChange({ sound: false })}
-              >
-                Off
-              </button>
-            </div>
-          </fieldset>
+          <MixRow
+            label="Voice"
+            on={settings.voice}
+            volume={settings.voiceVolume}
+            onToggle={(voice) => onChange({ voice })}
+            onVolume={(voiceVolume) => onChange({ voiceVolume })}
+          />
+          <MixRow
+            label="Effects"
+            on={settings.effects}
+            volume={settings.effectsVolume}
+            onToggle={(effects) => onChange({ effects })}
+            onVolume={(effectsVolume) => onChange({ effectsVolume })}
+          />
+          <MixRow
+            label="Music"
+            on={settings.music}
+            volume={settings.musicVolume}
+            onToggle={(music) => onChange({ music })}
+            onVolume={(musicVolume) => onChange({ musicVolume })}
+          />
+          <p className="adult-copy">Music loops are not in the app yet. The switch is ready for them.</p>
           <fieldset className="setting-group">
             <legend>Speech speed</legend>
             <SpeedButtons speed={settings.speed} onChange={(speed) => onChange({ speed })} />
@@ -345,6 +346,47 @@ function ParentHome({ child, onOpen }: { child: ChildProfile; onOpen: (page: Par
         ))}
       </ul>
     </>
+  );
+}
+
+function MixRow({
+  label,
+  on,
+  volume,
+  onToggle,
+  onVolume,
+}: {
+  label: string;
+  on: boolean;
+  volume: number;
+  onToggle: (on: boolean) => void;
+  onVolume: (volume: number) => void;
+}) {
+  const id = `volume-${label.toLowerCase()}`;
+  return (
+    <fieldset className="setting-group" data-mix={label.toLowerCase()}>
+      <legend>{label}</legend>
+      <div className="segment">
+        <button type="button" className={on ? "is-selected" : ""} aria-pressed={on} onClick={() => onToggle(true)}>
+          On
+        </button>
+        <button type="button" className={!on ? "is-selected" : ""} aria-pressed={!on} onClick={() => onToggle(false)}>
+          Off
+        </button>
+      </div>
+      <label className="volume-label" htmlFor={id}>
+        Volume
+        <input
+          id={id}
+          className="volume-input"
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(volume * 100)}
+          onChange={(event) => onVolume(Number(event.target.value) / 100)}
+        />
+      </label>
+    </fieldset>
   );
 }
 

@@ -89,6 +89,42 @@ Stars are for effort only.
 - Stars unlock in-app cosmetics, such as hats and colors for the animal hero.
 - A parent can write real-world home rewards on the device, for example "20 stars = park trip." Those rewards are not a payment system.
 
+## Audio and music
+
+The app stays quiet unless a sound is doing a job. No constant noise, and no loud or flashing rewards. The animal hero can cheer the child by name. That cheer uses the lesson name (the first name, or the animal's name when the profile is only an initial).
+
+Voice:
+
+- Version 1 may speak with the device's own voice. That is the fallback.
+- The target is a recorded human voice for every letter sound, word, and story. A warm voice actor, under a work-for-hire or other commercial license.
+- A parent may record their own voice for words and for the child's name. Those recordings stay on the device and are never uploaded.
+- The audio manager plays a recorded file when one exists, and otherwise uses device speech.
+
+Music:
+
+- Soft background loops, one mood per area. Calm on Today and Play. Gentle during stories.
+- Original music, or royalty-free music that allows commercial use.
+- Music lowers itself whenever a voice or a letter sound plays.
+- Music stops during tracing, so the child can focus.
+- Step 1 does not ship a music file. The manager already ducks and can stop for tracing. Adding a loop later means logging it in `ASSETS.md` first.
+
+Sound effects, all short and gentle:
+
+- A tile pop.
+- A star chime.
+- A page turn.
+- A soft "try again" boop. Never a harsh buzzer.
+- A small celebration when the day's lesson is finished.
+
+Step 1 synthesizes the pop, the chime, the boop, and the celebration in the browser. No effect files are bundled. The page turn waits for the story step.
+
+Parent controls, in Settings:
+
+- Music, effects, and voice each have their own on/off switch and volume.
+- Speech speed stays slow or slower.
+
+Every audio file that is added later is logged in `ASSETS.md` with its source and license.
+
 ## Classroom
 
 The connection, goals, certificates, and class star jar are later (build step 6). Step 1 only reserves the teacher view as a placeholder dashboard.
@@ -142,7 +178,7 @@ Parent and Teacher open only after a press-and-hold of about 2 seconds on the st
 
 ## Build order
 
-1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings, and progress notes, with places for home rewards and consent or delete, a "From your teacher" card, and a Join a class row. Teacher view: a placeholder classroom dashboard, including Add class and Pending requests, filled in at step 6.
+1. The app shell and routing for the kid, parent, and teacher views, with the start-screen mode switch. Kid view: profile picker, Today's four-step path, the weekly letter schedule, Friday review, and effort stars. Parent view, behind the hold gate: add and edit a child, sound settings (music, effects, voice, and speech speed), and progress notes, with places for home rewards and consent or delete, a "From your teacher" card, and a Join a class row. The audio manager prefers a recorded file and otherwise uses device speech, ducks music while a voice plays, and plays a few soft synthesized effects. Music files are not bundled yet. Teacher view: a placeholder classroom dashboard, including Add class and Pending requests, filled in at step 6.
 2. Letter games, tracing, and read-along stories.
 3. Sentence tiles, rhyming, and the color, shape, and number moments.
 4. Home stars and parent-written rewards on the device. Cosmetic unlocks.
