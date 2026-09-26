@@ -17,13 +17,26 @@ const SILENT_BEAT_MS = 720;
  * the tap handler that starts the app. A single space is effectively silent
  * and unlocks later playback for the rest of the WebView session.
  */
-export function primeSpeech(): void {
+let primedText = "";
+let primedAt = 0;
+
+/**
+ * Call synchronously inside a tap. A non-empty utterance unlocks iOS speech
+ * for the rest of the session. Pass the first lesson line so that tap is
+ * also the sound the child hears.
+ */
+export function primeSpeech(cue?: string): void {
   try {
     unlockAudio();
     const synth = window.speechSynthesis;
     if (!synth) return;
+    const spoken = cue?.trim() ?? "";
+    if (spoken) {
+      primedText = spoken;
+      primedAt = Date.now();
+    }
     synth.resume();
-    const utterance = new SpeechSynthesisUtterance(" ");
+    const utterance = new SpeechSynthesisUtterance(spoken || "\u00a0");
     utterance.volume = 1;
     utterance.rate = 1;
     utterance.lang = "en-US";
@@ -33,11 +46,27 @@ export function primeSpeech(): void {
   }
 }
 
+/** True when this exact line was just spoken from a tap. */
+export function consumePrimedSpeech(text: string): boolean {
+  const spoken = text.trim();
+  if (!primedText || primedText !== spoken || Date.now() - primedAt > 5000) return false;
+  primedText = "";
+  return true;
+}
+
+export function hasFreshPrimedSpeech(): boolean {
+  return primedText !== "" && Date.now() - primedAt < 5000;
+}
+
 export function resumeSpeech(): void {
   window.speechSynthesis?.resume();
 }
 
+let speechGeneration = 0;
+
 export function cancelSpeech(): void {
+  speechGeneration += 1;
+  primedText = "";
   window.speechSynthesis?.cancel();
 }
 
@@ -67,21 +96,6 @@ export function sleep(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-function loadVoices(synth: SpeechSynthesis, signal: AbortSignal): Promise<SpeechSynthesisVoice[]> {
-  const ready = synth.getVoices();
-  if (ready.length > 0 || signal.aborted) return Promise.resolve(ready);
-  return new Promise((resolve) => {
-    const finish = () => {
-      window.clearTimeout(timer);
-      synth.removeEventListener("voiceschanged", finish);
-      resolve(synth.getVoices());
-    };
-    const timer = window.setTimeout(finish, 400);
-    synth.addEventListener("voiceschanged", finish);
-    signal.addEventListener("abort", finish, { once: true });
-  });
-}
-
 function speechVolume(settings: Settings): number {
   if (!deviceSpeechFollowsSlider()) return 1;
   const level = settings.voiceVolume;
@@ -92,13 +106,30 @@ function speechVolume(settings: Settings): number {
 function speak(text: string, settings: Settings, signal: AbortSignal): Promise<void> {
   const synth = window.speechSynthesis;
   if (!synth || !text.trim()) return sleep(SILENT_BEAT_MS, signal);
+  if (signal.aborted) return Promise.reject(abortError());
+
+  // Speak in this turn, before any await. iOS drops speech that starts from
+  // a timer unless an earlier tap already unlocked the synthesizer.
+  const generation = ++speechGeneration;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = SPEECH_RATES[settings.speed];
+  utterance.pitch = NATURAL_PITCH;
+  utterance.volume = speechVolume(settings);
+  utterance.lang = "en-US";
+  try {
+    const voice = pickVoice(synth.getVoices(), settings.voiceURI);
+    if (voice) utterance.voice = voice;
+  } catch {
+    // A voice list entry the engine rejects should not stop the lesson.
+  }
+  try {
+    synth.resume();
+    synth.speak(utterance);
+  } catch {
+    return sleep(SILENT_BEAT_MS, signal);
+  }
 
   return new Promise((resolve, reject) => {
-    if (signal.aborted) {
-      reject(abortError());
-      return;
-    }
-
     let settled = false;
     let timer = 0;
 
@@ -114,51 +145,21 @@ function speak(text: string, settings: Settings, signal: AbortSignal): Promise<v
       resolve();
     };
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = SPEECH_RATES[settings.speed];
-    utterance.pitch = NATURAL_PITCH;
-    utterance.volume = speechVolume(settings);
-    utterance.lang = "en-US";
     utterance.onend = () => finish();
     utterance.onerror = () => finish();
 
     const onAbort = () => {
-      synth.cancel();
+      if (generation === speechGeneration) synth.cancel();
       finish(abortError());
     };
     signal.addEventListener("abort", onAbort);
 
     const backupMs = Math.min(9000, (800 + text.length * 420) / utterance.rate);
     timer = window.setTimeout(() => {
-      synth.cancel();
+      // Only cancel this utterance. A newer speak() has its own generation.
+      if (generation === speechGeneration) synth.cancel();
       finish();
     }, backupMs);
-
-    const start = () => {
-      if (settled) return;
-      try {
-        const voice = pickVoice(synth.getVoices(), settings.voiceURI);
-        if (voice) utterance.voice = voice;
-      } catch {
-        // A voice list entry the engine rejects should not stop the lesson.
-      }
-      try {
-        synth.resume();
-        synth.speak(utterance);
-      } catch {
-        finish();
-      }
-    };
-
-    void loadVoices(synth, signal).then(() => {
-      if (settled) return;
-      if (synth.speaking) {
-        synth.cancel();
-        window.setTimeout(start, 60);
-      } else {
-        start();
-      }
-    });
   });
 }
 
@@ -226,6 +227,11 @@ async function playCue(
   }
   beginVoice();
   try {
+    if (consumePrimedSpeech(cue.text)) {
+      // The tap that opened the lesson already spoke this line.
+      await sleep(1200, signal);
+      return;
+    }
     if (cue.src) {
       try {
         await playFile(cue.src, signal);

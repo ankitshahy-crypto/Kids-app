@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { unlockAudio } from "../audio/manager";
 import { resumeSpeech } from "../audio/player";
 import { starterDeck, type DeckWord } from "../data/deck";
 import { usePlayback } from "../hooks/usePlayback";
@@ -24,6 +25,13 @@ export function SoundItOut({
   const word = deck[index % deck.length];
   const { revealed, active, replay, replayLetter } = usePlayback(word, settingsRef, paused, onFinished);
   const gesture = useRef<{ x: number; y: number; interactive: boolean } | null>(null);
+  const touchHandled = useRef(false);
+
+  const tapLetter = (letterIndex: number) => {
+    unlockAudio();
+    resumeSpeech();
+    replayLetter(letterIndex);
+  };
 
   const go = (direction: 1 | -1) => {
     resumeSpeech();
@@ -67,24 +75,31 @@ export function SoundItOut({
       <SoundLabel />
       <div className="letters" role="group" aria-label={word.word}>
         {word.letters.map((letter, letterIndex) => {
-          const shown = letterIndex < revealed;
-          const highlighted = shown && (active === "all" || active === letterIndex);
+          const highlighted = active === "all" || active === letterIndex;
           const sounding = active === letterIndex;
           return (
             <div
               key={`${word.id}-${letterIndex}`}
-              className={`tile-wrap${highlighted ? " is-active" : ""}${shown ? "" : " is-hidden"}`}
+              className={`tile-wrap${highlighted ? " is-active" : ""}`}
+              data-letter={letterIndex}
             >
               {sounding ? <SoundWaves /> : null}
               <button
                 type="button"
                 className="tile"
-                disabled={!shown}
-                aria-hidden={!shown}
                 aria-label={`${letter.char.toUpperCase()} sound`}
+                onPointerDown={(event) => event.stopPropagation()}
+                onPointerUp={(event) => {
+                  if (event.pointerType === "mouse") return;
+                  touchHandled.current = true;
+                  tapLetter(letterIndex);
+                }}
                 onClick={() => {
-                  resumeSpeech();
-                  replayLetter(letterIndex);
+                  if (touchHandled.current) {
+                    touchHandled.current = false;
+                    return;
+                  }
+                  tapLetter(letterIndex);
                 }}
               >
                 {letter.char.toUpperCase()}

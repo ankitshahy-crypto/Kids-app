@@ -1235,6 +1235,7 @@ button:focus-visible {
   left: 50%;
   bottom: calc(16px + env(safe-area-inset-bottom));
   z-index: 8;
+  pointer-events: none;
   transform: translateX(-50%);
   width: min(420px, calc(100% - 32px));
   display: flex;
@@ -1255,6 +1256,7 @@ button:focus-visible {
 }
 
 .silent-hint button {
+  pointer-events: auto;
   min-height: 44px;
   min-width: 44px;
   padding: 0 12px;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
-import { primeSpeech } from "./audio/player";
+import { primeSpeech, resumeSpeech } from "./audio/player";
+import { spokenLine } from "./data/audioCatalog";
 import { Background } from "./components/Background";
 import { Chevron } from "./components/icons";
 import { KidCorner } from "./components/KidCorner";
@@ -35,9 +36,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unlock = () => unlockAudio();
-    window.addEventListener("pointerdown", unlock);
-    return () => window.removeEventListener("pointerdown", unlock);
+    // Bubble phase, after the control's own click handler. Capture-phase
+    // playback was swallowing the click in WebKit. touchend and click are the
+    // gestures iOS accepts for resume().
+    const unlock = () => {
+      try {
+        unlockAudio();
+        resumeSpeech();
+      } catch {
+        // A locked audio device must not block the tap.
+      }
+    };
+    window.addEventListener("touchend", unlock);
+    window.addEventListener("click", unlock);
+    return () => {
+      window.removeEventListener("touchend", unlock);
+      window.removeEventListener("click", unlock);
+    };
   }, []);
 
   useEffect(() => {
@@ -67,7 +82,12 @@ export default function App() {
   }, [active]);
 
   const openStep = (step: LessonStep) => {
-    primeSpeech();
+    if (step === "letter") {
+      const letter = lessonWords[0]?.letters[0];
+      primeSpeech(letter ? spokenLine("letters", letter.phoneme, letter.char) : undefined);
+    } else {
+      primeSpeech();
+    }
     setScreen(step);
   };
 
