@@ -292,7 +292,7 @@ export function NameTrace({
   const title = nameToTrace(name) ?? name;
   return (
     <PathTrace
-      screen="name"
+      screen="my-name"
       title={title}
       glyphs={nameGlyphs(name)}
       settingsRef={settingsRef}

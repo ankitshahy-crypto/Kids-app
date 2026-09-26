@@ -42,7 +42,7 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | LessonStep | MathStep | ColorStep | "word" | "name";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | LessonStep | MathStep | ColorStep | "word" | "my-name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
@@ -103,7 +103,7 @@ export default function App() {
       setMusicArea("none");
       return;
     }
-    if (screen === "draw" || screen === "word" || screen === "name") setMusicArea("focus");
+    if (screen === "draw" || screen === "word" || screen === "my-name") setMusicArea("focus");
     else if (screen === "story") setMusicArea("story");
     else if (screen === "library") setMusicArea("play");
     else setMusicArea("today");
@@ -273,7 +273,7 @@ export default function App() {
     mathScreens.includes(screen as MathStep) ||
     colorScreens.includes(screen as ColorStep) ||
     screen === "word" ||
-    screen === "name";
+    screen === "my-name";
 
   const practiceReward = (step: "word" | "name", learned: StickerInput[]) => {
     if (!active) return;
@@ -366,7 +366,7 @@ export default function App() {
                   }}
                   onTraceName={() => {
                     primeSpeech();
-                    setScreen("name");
+                    setScreen("my-name");
                     setTip(null);
                   }}
                 />
@@ -409,7 +409,7 @@ export default function App() {
                   onDone={(word) => practiceReward("word", [{ kind: "word", label: word }])}
                 />
               ) : null}
-              {screen === "name" && traceName ? (
+              {screen === "my-name" && traceName ? (
                 <NameTrace
                   name={active.name}
                   settingsRef={settingsRef}

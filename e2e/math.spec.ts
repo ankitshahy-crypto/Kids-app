@@ -129,7 +129,7 @@ test("number tracing follows the dots in order", async ({ page }, testInfo) => {
   await expect(page.locator(`[data-sticker='${digit}'][data-kind=number][data-subject=math]`)).toBeVisible();
 });
 
-test("shape matching finds the prompted shape, then tracing finishes it", async ({ page }) => {
+test("shape matching finds the prompted shape, then tracing finishes it", async ({ page }, testInfo) => {
   await install(page);
   await page.getByRole("button", { name: "Match a shape" }).click();
   const play = page.locator("[data-screen=shape]");
@@ -142,6 +142,9 @@ test("shape matching finds the prompted shape, then tracing finishes it", async 
   const { finishPathTrace, scribbleCorner } = await import("./traceFlow");
   await play.getByRole("button", { name: "Your turn" }).click();
   await scribbleCorner(page, "shape");
+  if (testInfo.project.name === "chromium") {
+    await page.screenshot({ path: "/opt/cursor/artifacts/shape_trace_board.png" });
+  }
   await finishPathTrace(page, "shape");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "Stickers" }).click();
