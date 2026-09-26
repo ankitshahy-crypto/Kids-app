@@ -3,6 +3,7 @@ import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./aud
 import { primeSpeech, resumeSpeech } from "./audio/player";
 import { Background } from "./components/Background";
 import { Closet } from "./components/Closet";
+import { GrownupTip } from "./components/GrownupTip";
 import { GoalCheer } from "./components/GoalCheer";
 import { GoalRing } from "./components/GoalRing";
 import { GrownupsButton } from "./components/GrownupsButton";
@@ -20,6 +21,7 @@ import { StartScreen } from "./components/StartScreen";
 import { StickerBook } from "./components/StickerBook";
 import { TeacherView } from "./components/TeacherView";
 import { TodayPath } from "./components/TodayPath";
+import { readTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
 import { todayKey, type LessonStep, type Sticker } from "./data/profiles";
 import type { ReadingCredit } from "./data/reading";
@@ -43,6 +45,7 @@ export default function App() {
   const [flying, setFlying] = useState(false);
   const [cheer, setCheer] = useState<number | null>(null);
   const [goalMet, setGoalMet] = useState(false);
+  const [tip, setTip] = useState<ReadTip | null>(null);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -100,10 +103,25 @@ export default function App() {
 
   const lessonWords = useMemo(() => wordsForLetters(lessonLetters), [lessonLetters]);
 
+  const showTip = (step: LessonStep, when: "start" | "end", letter?: string) => {
+    if (!settingsRef.current.showTips) {
+      setTip(null);
+      return;
+    }
+    setTip(readTip(step, when, letter));
+  };
+
   const openStep = (step: LessonStep) => {
     primeSpeech();
     setScreen(step);
+    // The letter track stays clear. The tip waits until the word is blended.
+    if (step === "letter") setTip(null);
+    else showTip(step, "start");
   };
+
+  useEffect(() => {
+    if (!settings.showTips) setTip(null);
+  }, [settings.showTips]);
 
   const reward = (step: LessonStep, learned: Sticker[] = []) => {
     if (!active) return;
@@ -121,6 +139,7 @@ export default function App() {
   const finishStep = (step: LessonStep) => {
     reward(step);
     setScreen("today");
+    showTip(step, "end");
   };
 
   const celebrateGoal = (result: ReadingCredit) => {
@@ -146,6 +165,7 @@ export default function App() {
       { kind: "word" as const, label: word.word },
     ];
     reward("letter", learned);
+    showTip("letter", "end", word.letters[0]?.char ?? word.word);
   };
 
   const inLesson = lessonScreens.includes(screen as LessonStep);
@@ -194,6 +214,7 @@ export default function App() {
               </div>
             ) : null}
             <div className={`screen-body${screen === "today" ? " is-fit" : ""}`}>
+              {tip ? <GrownupTip tip={tip} onDismiss={() => setTip(null)} /> : null}
               {screen === "today" ? (
                 <TodayPath
                   profile={active}

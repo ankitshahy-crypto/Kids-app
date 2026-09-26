@@ -1,0 +1,24 @@
+import { describe, expect, it } from "vitest";
+import { laterPath, learningPlace, pathCoversLetterPlan, placeForChild } from "./path";
+
+describe("learning path", () => {
+  it("covers the letter plan and moves Letters, then Blending, then Words, then Stories", () => {
+    expect(pathCoversLetterPlan()).toBe(true);
+    expect(learningPlace(0).currentId).toBe("letters");
+    expect(learningPlace(2).stages[0].progress).toBeCloseTo(0.25);
+    expect(learningPlace(8).currentId).toBe("blending");
+    expect(learningPlace(8).stages[0].state).toBe("done");
+    expect(learningPlace(16).currentId).toBe("words");
+    expect(learningPlace(22).currentId).toBe("stories");
+    const done = learningPlace(26);
+    expect(done.currentId).toBe("stories");
+    expect(done.stages.find((stage) => stage.id === "stories")?.progress).toBe(1);
+    expect(laterPath.id).toBe("phonics");
+  });
+
+  it("places a new child in Letters", () => {
+    const place = placeForChild("2026-09-07T15:00:00.000Z", new Date("2026-09-07T18:00:00.000Z"), "UTC");
+    expect(place.currentId).toBe("letters");
+    expect(place.introduced).toBe(2);
+  });
+});

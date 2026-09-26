@@ -18,6 +18,7 @@ import {
 import type { Settings } from "../settings";
 import { ChildForm } from "./ChildForm";
 import { StarIcon } from "./icons";
+import { LearningPath } from "./LearningPath";
 import { ReadingChart } from "./ReadingChart";
 import { SettingsFields } from "./SettingsFields";
 
@@ -256,6 +257,7 @@ function ParentHome({
 
   return (
     <>
+      <LearningPath profile={child} />
       <header className="parent-hero">
         <Avatar animal={child.animal} />
         <div>
