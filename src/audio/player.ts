@@ -280,6 +280,18 @@ export function playWord(word: DeckWord, settings: Settings, signal: AbortSignal
   );
 }
 
+/** A word from the manifest, used when a sentence tile is a whole word. */
+export function playWordId(id: string, fallback: string, settings: Settings, signal: AbortSignal): Promise<void> {
+  return playCue(
+    {
+      src: recordedSrc("words", id),
+      text: spokenLine("words", id, fallback),
+    },
+    settings,
+    signal,
+  );
+}
+
 export function playNumber(value: number, settings: Settings, signal: AbortSignal): Promise<void> {
   const id = String(value);
   return playCue(

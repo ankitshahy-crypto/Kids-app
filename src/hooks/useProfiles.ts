@@ -13,6 +13,7 @@ import {
 import { applyReadingCredit, type ReadingCredit } from "../data/reading";
 import { applyEffort, grantGift, wearItem, type EffortResult } from "../data/rewards";
 import { assignHatchLevel, recordHatch, recordSpin, type HatchLevel } from "../data/games";
+import { assignLadderStep, recordLadderSuccess, type LadderStep } from "../data/ladder";
 import { assignWritingLevel, recordWritingAttempt, type ScaffoldLevel, type WritingOutcome } from "../data/scaffold";
 import { READING, type SubjectId } from "../data/subject";
 
@@ -158,6 +159,24 @@ export function useProfiles() {
     }));
   };
 
+  const noteLadder = (id: string, phonics: boolean) => {
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) =>
+        item.id === id ? { ...item, ladder: recordLadderSuccess(item.ladder, { phonicsOpen: phonics }).ladder } : item,
+      ),
+    }));
+  };
+
+  const setLadderStep = (id: string, step: LadderStep) => {
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) =>
+        item.id === id ? { ...item, ladder: assignLadderStep(item.ladder, step) } : item,
+      ),
+    }));
+  };
+
   const setWritingLevel = (id: string, itemId: string, level: ScaffoldLevel) => {
     setStore((current) => ({
       ...current,
@@ -187,6 +206,8 @@ export function useProfiles() {
     setWritingLevel,
     noteHatch,
     setHatchLevel,
+    noteLadder,
+    setLadderStep,
     noteSpin,
     giveGift,
     wear,

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { cancelSpeech, hasFreshPrimedSpeech, isAbortError, playLetter, playWord, sleep } from "../audio/player";
+import { cancelSpeech, hasFreshPrimedSpeech, isAbortError, playLetter, playSentence, playWord, playWordId, sleep } from "../audio/player";
 import type { DeckWord } from "../data/deck";
 import type { Settings } from "../settings";
 
@@ -58,7 +58,9 @@ export function usePlayback(
           playEffect("pop", settingsRef.current);
           const started = Date.now();
           try {
-            await playLetter(current.letters[index], settingsRef.current, signal);
+            const letter = current.letters[index];
+            if (letter.wordId) await playWordId(letter.wordId, letter.char, settingsRef.current, signal);
+            else await playLetter(letter, settingsRef.current, signal);
           } catch (error) {
             if (isAbortError(error)) throw error;
           }
@@ -70,7 +72,8 @@ export function usePlayback(
         setActive("all");
         await sleep(BEFORE_WORD_MS, signal);
         try {
-          await playWord(current, settingsRef.current, signal);
+          if (current.sentenceId) await playSentence(current.sentenceId, settingsRef.current, signal);
+          else await playWord(current, settingsRef.current, signal);
         } catch (error) {
           if (isAbortError(error)) throw error;
         }
@@ -122,7 +125,8 @@ export function usePlayback(
       playEffect("pop", settingsRef.current);
       void (async () => {
         try {
-          await playLetter(letter, settingsRef.current, controller.signal);
+          if (letter.wordId) await playWordId(letter.wordId, letter.char, settingsRef.current, controller.signal);
+          else await playLetter(letter, settingsRef.current, controller.signal);
           if (token === tokenRef.current && !controller.signal.aborted) setActive(null);
         } catch (error) {
           if (!isAbortError(error) && token === tokenRef.current) setActive(null);
@@ -139,7 +143,8 @@ export function usePlayback(
     playEffect("celebrate", settingsRef.current);
     void (async () => {
       try {
-        await playWord(current, settingsRef.current, controller.signal);
+        if (current.sentenceId) await playSentence(current.sentenceId, settingsRef.current, controller.signal);
+        else await playWord(current, settingsRef.current, controller.signal);
         if (token === tokenRef.current && !controller.signal.aborted) setActive(null);
       } catch (error) {
         if (!isAbortError(error) && token === tokenRef.current) setActive(null);
@@ -156,7 +161,9 @@ export function usePlayback(
       const started = Date.now();
       void (async () => {
         try {
-          await playLetter(current.letters[index], settingsRef.current, controller.signal);
+          const letter = current.letters[index];
+          if (letter?.wordId) await playWordId(letter.wordId, letter.char, settingsRef.current, controller.signal);
+          else if (letter) await playLetter(letter, settingsRef.current, controller.signal);
           const remain = 450 - (Date.now() - started);
           if (remain > 0) await sleep(remain, controller.signal);
           if (token === tokenRef.current && !controller.signal.aborted) setActive(null);

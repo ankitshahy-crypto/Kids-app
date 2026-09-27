@@ -1,4 +1,5 @@
 import { starterDeck, type DeckWord, type LetterTile } from "./deck";
+import { ladderMaxLetters, type LadderStep } from "./ladder";
 import type { PhonemeId } from "./phonemes";
 import { isWardrobeId, wardrobe, wardrobeItem } from "./wardrobe";
 
@@ -203,22 +204,29 @@ export const FOODS: readonly Food[] = [
   { id: "donut", letter: "d", label: "donut" },
 ];
 
-export function feedRound(known: readonly string[]): { target: string; foods: Food[] } {
+export function feedRound(known: readonly string[], step?: LadderStep): { target: string; foods: Food[] } {
   const taught = knownSet(known);
-  const target = FOODS.find((food) => taught.size === 0 || taught.has(food.letter))?.letter ?? "m";
-  const matching = FOODS.filter((food) => food.letter === target);
-  const others = FOODS.filter((food) => food.letter !== target && (taught.size === 0 || taught.has(food.letter)));
-  return { target, foods: [...matching, ...others].slice(0, 4) };
+  const max = step ? ladderMaxLetters(step) : 24;
+  const pool = FOODS.filter((food) => food.label.length <= max);
+  const foods = pool.length >= 2 ? pool : FOODS;
+  const target = foods.find((food) => taught.size === 0 || taught.has(food.letter))?.letter ?? "m";
+  const matching = foods.filter((food) => food.letter === target);
+  const others = foods.filter((food) => food.letter !== target && (taught.size === 0 || taught.has(food.letter)));
+  const round = [...matching, ...others].slice(0, 4);
+  return { target, foods: round.length > 0 ? round : foods.slice(0, 4) };
 }
 
-export type RhymePair = { a: string; b: string };
+export type RhymePair = { a: string; b: string; step: 3 | 4 };
 
 export const RHYME_PAIRS: readonly RhymePair[] = [
-  { a: "map", b: "tap" },
-  { a: "pin", b: "tin" },
-  { a: "man", b: "pan" },
-  { a: "mad", b: "sad" },
-  { a: "net", b: "pet" },
+  { a: "map", b: "tap", step: 3 },
+  { a: "pin", b: "tin", step: 3 },
+  { a: "man", b: "pan", step: 3 },
+  { a: "mad", b: "sad", step: 3 },
+  { a: "net", b: "pet", step: 3 },
+  { a: "nest", b: "tent", step: 4 },
+  { a: "jump", b: "bump", step: 4 },
+  { a: "fish", b: "wish", step: 4 },
 ];
 
 export type RhymeCard = {
@@ -240,12 +248,16 @@ function mix<T>(items: readonly T[], salt: number): T[] {
   return copy;
 }
 
-/** Two rhyming pairs whose first sounds are already taught. */
-export function rhymeRound(known: readonly string[], salt = 0): RhymeCard[] {
+/** Two rhyming pairs at this ladder step whose first sounds are already taught. */
+export function rhymeRound(known: readonly string[], salt = 0, step: LadderStep = 3): RhymeCard[] {
   const taught = knownSet(known);
   const startsKnown = (word: string) => taught.size === 0 || taught.has(word[0] ?? "");
-  const ready = RHYME_PAIRS.filter((pair) => startsKnown(pair.a) && startsKnown(pair.b));
-  const source = ready.length > 0 ? ready : RHYME_PAIRS;
+  const knownPair = (pair: RhymePair) => startsKnown(pair.a) && startsKnown(pair.b);
+  const eligible = RHYME_PAIRS.filter((pair) => pair.step <= step && knownPair(pair));
+  const top = eligible.reduce((best, pair) => Math.max(best, pair.step), 0);
+  const atTop = eligible.filter((pair) => pair.step === top);
+  const early = RHYME_PAIRS.filter((pair) => pair.step <= 3);
+  const source = atTop.length >= 2 ? atTop : eligible.length >= 2 ? eligible : early.length > 0 ? early : RHYME_PAIRS;
   const chosen = source.slice(0, 2);
   const cards = chosen.flatMap((pair, index) => [
     { id: `${pair.a}-${index}`, word: pair.a, pair: String(index) },

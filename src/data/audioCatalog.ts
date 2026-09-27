@@ -1,6 +1,7 @@
 import available from "./audioAvailable.json";
 import manifest from "./audioManifest.json";
 import { starterDeck } from "./deck";
+import { ladderClips } from "./ladder";
 import { PHONEME_IDS } from "./phonemes";
 
 export type AudioKind = "letters" | "words" | "sentences" | "numbers" | "prompts" | "colors";
@@ -47,6 +48,17 @@ for (const word of starterDeck.words) {
   assertCue("words", word.id, cue);
   if (cue.say.trim().toLowerCase() !== word.word.toLowerCase()) {
     throw new Error(`Word clip "${word.id}" should say "${word.word}"`);
+  }
+}
+
+for (const clip of ladderClips()) {
+  const cue = book[clip.kind][clip.id];
+  assertCue(clip.kind, clip.id, cue);
+  if (cue.say !== clip.say) {
+    throw new Error(`Ladder ${clip.kind} "${clip.id}" should say "${clip.say}"`);
+  }
+  if (cue.source !== "neural") {
+    throw new Error(`Ladder ${clip.kind} "${clip.id}" should be marked for offline neural audio`);
   }
 }
 

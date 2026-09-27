@@ -227,6 +227,7 @@ test("a teacher sets the hatch level and the egg follows it", async ({ page }) =
   await page.getByRole("button", { name: "Switch child" }).click();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
+  await page.getByRole("button", { name: "Word ladder step 3" }).click();
   await page.getByRole("button", { name: "Hatch level 2" }).click();
   await expect(page.locator("[data-section=games]")).toHaveAttribute("data-hatch-level", "2");
   await page.getByRole("button", { name: "Back", exact: true }).click();

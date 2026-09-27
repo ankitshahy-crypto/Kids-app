@@ -2,7 +2,7 @@ import type { IllustrationName } from "../illustrations";
 import type { PhonemeId } from "./phonemes";
 
 export type LetterTile = {
-  /** The letter shown on the tile. */
+  /** The letter shown on the tile. A sentence chunk shows the whole word. */
   char: string;
   /** Key into the phoneme map. Played when this tile is tapped or revealed. */
   phoneme: PhonemeId;
@@ -11,6 +11,8 @@ export type LetterTile = {
    * Otherwise the app plays `public/audio/` when that file is indexed, then device speech.
    */
   audioSrc?: string;
+  /** When set, this tile is a word in a short sentence, not a letter sound. */
+  wordId?: string;
 };
 
 export type DeckWord = {
@@ -22,6 +24,8 @@ export type DeckWord = {
   illustration: IllustrationName;
   /** Optional parent photo. When set, shown instead of the built-in illustration. */
   photoSrc?: string;
+  /** When set, blending this card speaks a short sentence instead of one word. */
+  sentenceId?: string;
 };
 
 export type Deck = {

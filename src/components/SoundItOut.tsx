@@ -18,6 +18,7 @@ export function SoundItOut({
   words = starterDeck.words,
   animal = null,
   outfit = emptyOutfit(),
+  ladderStep = 1,
   onFinished,
 }: {
   settingsRef: { current: Settings };
@@ -25,6 +26,7 @@ export function SoundItOut({
   words?: DeckWord[];
   animal?: AnimalId | null;
   outfit?: Outfit;
+  ladderStep?: number;
   onFinished?: (word: DeckWord) => void;
 }) {
   const deck = words.length > 0 ? words : starterDeck.words;
@@ -176,6 +178,8 @@ export function SoundItOut({
     <div
       className="activity"
       data-word={word.id}
+      data-ladder-step={ladderStep}
+      data-sentence={word.sentenceId ? "true" : "false"}
       data-revealed={Math.max(revealed, lit.filter(Boolean).length)}
       data-active={active === null ? "" : String(active)}
       data-blended={blended ? "true" : "false"}
@@ -209,18 +213,20 @@ export function SoundItOut({
       </PictureCard>
       <SoundLabel />
       <div className={`blend${celebrating ? " is-celebrating" : ""}${dragging ? " is-dragging" : ""}`} data-lit-order={litOrder.join(",")}>
-        <div className="letters" role="group" aria-label={word.word}>
+        <div className={`letters${word.sentenceId ? " chunks" : ""}`} role="group" aria-label={word.word}>
           {word.letters.map((letter, letterIndex) => {
             const shown = lit[letterIndex] || letterIndex < revealed || active === "all";
             const highlighted = shown && (active === "all" || active === letterIndex);
             const sounding = active === letterIndex;
+            const chunk = Boolean(letter.wordId);
+            const label = chunk ? letter.char : letter.char.toUpperCase();
             return (
               <div
                 key={`${word.id}-${letterIndex}`}
                 ref={(element) => {
                   tileRefs.current[letterIndex] = element;
                 }}
-                className={`tile-wrap${shown ? " is-lit" : " is-dim"}${highlighted ? " is-active" : ""}`}
+                className={`tile-wrap${chunk ? " is-chunk" : ""}${shown ? " is-lit" : " is-dim"}${highlighted ? " is-active" : ""}`}
                 data-letter={letterIndex}
                 data-lit={shown ? "true" : "false"}
               >
@@ -229,7 +235,7 @@ export function SoundItOut({
                   type="button"
                   className="tile"
                   disabled={!shown}
-                  aria-label={`${letter.char.toUpperCase()} sound`}
+                  aria-label={chunk ? letter.char : `${letter.char.toUpperCase()} sound`}
                   onPointerDown={(event) => event.stopPropagation()}
                   onPointerUp={(event) => {
                     if (event.pointerType === "mouse" || !shown) return;
@@ -244,7 +250,7 @@ export function SoundItOut({
                     tapLetter(letterIndex);
                   }}
                 >
-                  {shown ? letter.char.toUpperCase() : <span className="tile-mark" />}
+                  {shown ? label : <span className="tile-mark" />}
                 </button>
               </div>
             );
@@ -254,7 +260,7 @@ export function SoundItOut({
           ref={trackRef}
           className="blend-track"
           role="slider"
-          aria-label="Drag across the letters"
+          aria-label={word.sentenceId ? "Drag across the words" : "Drag across the letters"}
           aria-valuemin={0}
           aria-valuemax={word.letters.length}
           aria-valuenow={lit.filter(Boolean).length}
