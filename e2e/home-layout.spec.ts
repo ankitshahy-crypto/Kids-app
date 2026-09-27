@@ -55,3 +55,29 @@ test("the reading lesson leads, and Explore sits below it", async ({ page }) => 
     expect(box!.x + box!.width).toBeLessThanOrEqual(391);
   }
 });
+
+test("the lesson path and the dock fit an iPad in landscape without scrolling", async ({ page }) => {
+  await openHome(page);
+  for (const [width, height] of [
+    [1024, 768],
+    [1180, 820],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(150);
+    const viewport = page.viewportSize()!;
+    expect(viewport.height).toBe(height);
+    const targets = ["[data-step=letter]", "[data-step=draw]", "[data-step=story]", "[data-step=moment]", "[data-dock=games]", "[data-dock=nest]", "[data-dock=library]"];
+    for (const selector of targets) {
+      const box = await page.locator(selector).boundingBox();
+      expect(box, `${selector} at ${width}x${height}`).toBeTruthy();
+      expect(box!.y, `${selector} top at ${width}x${height}`).toBeGreaterThanOrEqual(0);
+      expect(box!.y + box!.height, `${selector} bottom at ${width}x${height}`).toBeLessThanOrEqual(height);
+      expect(box!.x + box!.width, `${selector} right at ${width}x${height}`).toBeLessThanOrEqual(width);
+    }
+    const scrolled = await page.evaluate(() => window.scrollY);
+    expect(scrolled, `no scroll needed at ${width}x${height}`).toBe(0);
+    if (width === 1024) {
+      await page.screenshot({ path: "test-results/screenshots/home-ipad-landscape.png", animations: "disabled" });
+    }
+  }
+});
