@@ -7,9 +7,11 @@ import { resolvePlacement, type PlacementDocument } from "../data/placement";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { isReviewDay, planForWeek, practiceLetters } from "../data/schedule";
 import { COLORS, colorIds, colorPattern, colorPatternLabel, colorTitle } from "../data/colors";
-import { MATH } from "../data/math";
+import { MATH, shapeIds, shapeTitles } from "../data/math";
 import { READING } from "../data/subject";
+import { shapeStrokes } from "../data/shapeStrokes";
 import { blendingWords, pictureForLetter, scheduleLetters, sheetsFor } from "../data/sheets";
+import { nameGlyphs, nameToTrace, wordGlyphs } from "../data/tracePractice";
 import { Pictogram } from "./Pictogram";
 import { StrokeFigure } from "./StrokeFigure";
 
@@ -111,6 +113,10 @@ export function Printables({
   const sheets = sheetsFor(READING);
   const showLetters = sheets.some((sheet) => sheet.id === "letter");
   const showBlending = sheets.some((sheet) => sheet.id === "blending");
+  const showWords = sheets.some((sheet) => sheet.id === "word");
+  const showName = sheets.some((sheet) => sheet.id === "name");
+  const tracedName = nameToTrace(child?.name ?? "");
+  const showShapes = sheetsFor(MATH).some((sheet) => sheet.id === "shape");
   const letters = showLetters ? scheduleLetters().filter((letter) => picked.includes(letter)) : [];
   const blends = showBlending ? blendingWords(letters.length > 0 ? letters : picked) : [];
 
@@ -282,6 +288,21 @@ export function Printables({
                 ))}
               </ul>
             </article>
+            {showShapes
+              ? shapeIds.map((id) => (
+                  <article key={id} className="print-sheet" data-sheet="shape" data-shape={id}>
+                    <header className="sheet-head">
+                      <div>
+                        <p className="sheet-kicker">{PRODUCT_SHORT}</p>
+                        <h3>Trace {shapeTitles[id]}</h3>
+                      </div>
+                    </header>
+                    <div className="trace-row">
+                      <StrokeFigure strokes={shapeStrokes(id)} label={shapeTitles[id]} ruled={false} />
+                    </div>
+                  </article>
+                ))
+              : null}
           </>
         ) : null}
         {sheetCourse === "colors" ? (
@@ -319,6 +340,38 @@ export function Printables({
         {sheetCourse === "reading"
           ? letters.map((letter) => <LetterSheet key={letter} letter={letter} animal={animal} />)
           : null}
+        {sheetCourse === "reading" && showWords
+          ? blends.map((word) => (
+              <article key={word.id} className="print-sheet" data-sheet="word" data-word={word.word}>
+                <header className="sheet-head">
+                  <div>
+                    <p className="sheet-kicker">{PRODUCT_SHORT}</p>
+                    <h3>Trace {word.word}</h3>
+                  </div>
+                </header>
+                <div className="trace-row trace-word-row">
+                  {wordGlyphs(word.word).map((glyph, index) => (
+                    <StrokeFigure key={`${word.id}-${index}`} strokes={glyph.strokes} label={glyph.label} />
+                  ))}
+                </div>
+              </article>
+            ))
+          : null}
+        {sheetCourse === "reading" && showName && tracedName ? (
+          <article className="print-sheet" data-sheet="name" data-name={tracedName}>
+            <header className="sheet-head">
+              <div>
+                <p className="sheet-kicker">{PRODUCT_SHORT}</p>
+                <h3>Trace {tracedName}</h3>
+              </div>
+            </header>
+            <div className="trace-row trace-word-row">
+              {nameGlyphs(tracedName).map((glyph, index) => (
+                <StrokeFigure key={`${glyph.label}-${index}`} strokes={glyph.strokes} label={glyph.label} />
+              ))}
+            </div>
+          </article>
+        ) : null}
         {sheetCourse === "reading" && showBlending ? (
         <article className="print-sheet" data-sheet="blend">
           <header className="sheet-head">

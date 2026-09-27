@@ -40,6 +40,10 @@ export function TodayPath({
   onMath,
   colorLesson,
   onColor,
+  canTraceWord,
+  canTraceName,
+  onTraceWord,
+  onTraceName,
 }: {
   profile: ChildProfile;
   letters: string[];
@@ -59,6 +63,10 @@ export function TodayPath({
   onMath: (step: MathStep) => void;
   colorLesson: ColorLesson;
   onColor: (step: ColorStep) => void;
+  canTraceWord: boolean;
+  canTraceName: boolean;
+  onTraceWord: () => void;
+  onTraceName: () => void;
 }) {
   const now = new Date();
   const review = isReviewDay(now);
@@ -189,6 +197,17 @@ export function TodayPath({
           <Hero animal={profile.animal} outfit={profile.outfit} />
         </span>
       </div> : null}
+
+      {course === "reading" ? (
+        <div className="trace-practice">
+          <button type="button" data-practice="word" disabled={!canTraceWord} onClick={onTraceWord}>
+            Trace a word
+          </button>
+          <button type="button" data-practice="name" disabled={!canTraceName} onClick={onTraceName}>
+            Trace my name
+          </button>
+        </div>
+      ) : null}
 
       <div className="today-dock">
         <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>

@@ -16,8 +16,11 @@ export type SheetKind = {
 const sheetCatalog: SheetKind[] = [
   { subject: READING, id: "letter", title: "Letter tracing" },
   { subject: READING, id: "blending", title: "Blending" },
+  { subject: READING, id: "word", title: "Word tracing" },
+  { subject: READING, id: "name", title: "Name tracing" },
   { subject: MATH, id: "trace", title: "Number tracing" },
   { subject: MATH, id: "count", title: "Counting" },
+  { subject: MATH, id: "shape", title: "Shape tracing" },
   { subject: COLORS, id: "coloring", title: "Coloring page" },
 ];
 

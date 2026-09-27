@@ -15,7 +15,7 @@ function round(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-function line(x1: number, y1: number, x2: number, y2: number, steps = 12): TracePoint[] {
+export function line(x1: number, y1: number, x2: number, y2: number, steps = 12): TracePoint[] {
   const points: TracePoint[] = [];
   for (let index = 0; index <= steps; index += 1) {
     const t = index / steps;
@@ -24,7 +24,7 @@ function line(x1: number, y1: number, x2: number, y2: number, steps = 12): Trace
   return points;
 }
 
-function arc(
+export function arc(
   cx: number,
   cy: number,
   rx: number,
@@ -45,7 +45,7 @@ function arc(
   return points;
 }
 
-function join(parts: TracePoint[][]): TracePoint[] {
+export function join(parts: TracePoint[][]): TracePoint[] {
   const points: TracePoint[] = [];
   for (const part of parts) {
     for (const point of part) {
