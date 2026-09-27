@@ -301,12 +301,6 @@ export default function App() {
     if (result.lessonComplete) setWrappingUp((current) => current ?? "lesson");
   };
 
-  const finishStep = (step: LessonStep) => {
-    reward(step);
-    setScreen("today");
-    showTip(step, "end");
-  };
-
   /** The story's own closing question stands in for the generic end tip. */
   const finishStory = (after: string) => {
     reward("story");
