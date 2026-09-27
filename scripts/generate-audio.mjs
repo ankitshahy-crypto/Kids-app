@@ -16,6 +16,8 @@
  *   node scripts/generate-audio.mjs --only words,stories
  *   node scripts/generate-audio.mjs --sample chirp3:Aoede,gemini-2.5-pro-tts:Kore --sample-dir samples
  *                                                       # a short comparison clip per voice, nothing in public/audio
+ *   node scripts/generate-audio.mjs --voice Achernar --try tries.txt --sample-dir samples
+ *                                                       # experiments: each line "label=text or <speak>ssml</speak>"
  *
  * Voices (env or flags):
  *   GOOGLE_TTS_VOICE / --voice          Aoede (default). A Chirp 3 HD / Gemini voice name such as
@@ -203,6 +205,7 @@ const sampleSpecs = option("--sample", "")
   .map((spec) => spec.trim())
   .filter(Boolean);
 const sampleDir = resolve(root, option("--sample-dir", "samples"));
+const tryFile = option("--try", "");
 
 const apiKey = process.env.GOOGLE_TTS_API_KEY?.trim();
 const credentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
@@ -354,6 +357,46 @@ async function makeSamples() {
     }
   }
   if (failed === sampleSpecs.length) process.exit(1);
+}
+
+/**
+ * Experiments: one clip per line of a file, "label=what to say", in the
+ * main voice (SSML when it starts with <speak>). For trying out how a
+ * voice renders a phoneme before changing LETTER_IPA.
+ */
+async function makeTries() {
+  const lines = readFileSync(tryFile, "utf8")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
+  const dir = join(sampleDir, `try-${mainVoice.label.replace(/[^A-Za-z0-9.-]+/g, "-")}`);
+  for (const line of lines) {
+    const at = line.indexOf("=");
+    if (at === -1) throw new Error(`Each line is label=text. Got "${line}"`);
+    const label = line.slice(0, at).trim().replace(/[^A-Za-z0-9.-]+/g, "-");
+    const what = line.slice(at + 1).trim();
+    const dest = join(dir, `${label}.mp3`);
+    const input = what.startsWith("<speak>") ? { ssml: what, voice: mainVoice.ssml ? mainVoice : letterVoice } : { text: what, voice: mainVoice };
+    if (dryRun) {
+      console.log(`${relative(root, dest)}  ${input.voice.label}  ${JSON.stringify(what)}`);
+      continue;
+    }
+    try {
+      const audio = await synthesize(input, label);
+      writeClip(dest, audio, label);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`${label}: ${message}`);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, `${label}.error.txt`), `${message}\n`);
+    }
+  }
+  console.log(`${lines.length} tries in ${relative(root, dir)}`);
+}
+
+if (tryFile) {
+  await makeTries();
+  process.exit(0);
 }
 
 if (sampleSpecs.length > 0) {
