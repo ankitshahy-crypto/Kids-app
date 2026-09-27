@@ -17,7 +17,7 @@ import {
   type WritingOutcome,
 } from "../data/scaffold";
 import { nameGlyphs, nameToTrace, wordGlyphs, type TraceGlyph } from "../data/tracePractice";
-import { followStroke, stationsAttribute, strokeComplete } from "../data/trace";
+import { followStroke, stationsAttribute, strokeComplete, traceTolerance } from "../data/trace";
 import type { Settings } from "../settings";
 import { StrokeFigure } from "./StrokeFigure";
 import { WritingBox } from "./WritingBox";
@@ -189,7 +189,7 @@ export function PathTrace({
     if (phase !== "trace" || !tracing.current || !stroke || doneStroke) return;
     const point = pointFrom(event);
     if (!point) return;
-    const next = followStroke(stroke, coveredRef.current, point);
+    const next = followStroke(stroke, coveredRef.current, point, traceTolerance(settingsRef.current));
     if (next === coveredRef.current) return;
     coveredRef.current = next;
     setCovered(next);

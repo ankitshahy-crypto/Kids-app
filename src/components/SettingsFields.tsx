@@ -3,7 +3,7 @@ import { previewVoice } from "../audio/player";
 import { deviceSpeechFollowsSlider } from "../audio/platform";
 import { subscribeVoices, type VoiceOption } from "../audio/voices";
 import { savePin } from "../data/grownupPin";
-import type { Settings, SpeechSpeed } from "../settings";
+import { EXTRA_CHUNKS, LESSON_MINUTES, type Settings, type SpeechSpeed } from "../settings";
 
 export function SettingsFields({
   settings,
@@ -131,9 +131,9 @@ export function SettingsFields({
         <p className="adult-copy">Shows the same Build It program as Python. It stays off until you turn it on. Children cannot edit it.</p>
       </fieldset>
       <fieldset className="setting-group" data-setting="reading-goal">
-        <legend>Daily reading goal</legend>
+        <legend>Lesson length</legend>
         <div className="segment segment-3">
-          {([5, 10, 15] as const).map((minutes) => (
+          {LESSON_MINUTES.map((minutes) => (
             <button
               key={minutes}
               type="button"
@@ -145,14 +145,97 @@ export function SettingsFields({
             </button>
           ))}
         </div>
-        <p className="adult-copy">One star when this time is reached. Extra time does not add more stars.</p>
+        <p className="adult-copy">
+          Minutes of active play before a friendly wrap-up. One star when it is reached. Your child never sees a clock.
+        </p>
+      </fieldset>
+      <fieldset className="setting-group" data-setting="extra-chunks">
+        <legend>“One more?” offers</legend>
+        <div className="segment segment-4">
+          {EXTRA_CHUNKS.map((count) => (
+            <button
+              key={count}
+              type="button"
+              className={settings.extraChunks === count ? "is-selected" : ""}
+              aria-pressed={settings.extraChunks === count}
+              onClick={() => onChange({ extraChunks: count })}
+            >
+              {count === 0 ? "None" : count}
+            </button>
+          ))}
+        </div>
+        <p className="adult-copy">After the lesson or the time is done, how many extra short chunks a day your child may say yes to.</p>
       </fieldset>
       <fieldset className="setting-group">
         <legend>Speech speed</legend>
         <SpeedButtons speed={settings.speed} onChange={(speed) => onChange({ speed })} />
       </fieldset>
+      <OnOff
+        id="calm"
+        legend="Calm mode"
+        on={settings.calm}
+        onChange={(calm) => onChange({ calm })}
+        note="Less motion, softer colors, no confetti, and no loud sounds. Tracing lanes are wider too. Follows the device's reduce-motion setting on its own."
+      />
+      <OnOff
+        id="easier-tracing"
+        legend="Easier tracing"
+        on={settings.easierTracing}
+        onChange={(easierTracing) => onChange({ easierTracing })}
+        note="A wider lane for a finger to follow when tracing letters, shapes, and words."
+      />
+      <OnOff
+        id="readable-font"
+        legend="Easier-to-read font"
+        on={settings.readableFont}
+        onChange={(readableFont) => onChange({ readableFont })}
+        note="A plainer typeface with open, distinct letters across the whole app."
+      />
+      <OnOff
+        id="letter-spacing"
+        legend="Extra letter spacing"
+        on={settings.letterSpacing}
+        onChange={(letterSpacing) => onChange({ letterSpacing })}
+        note="More room between letters and words."
+      />
+      <OnOff
+        id="high-contrast"
+        legend="High contrast"
+        on={settings.highContrast}
+        onChange={(highContrast) => onChange({ highContrast })}
+        note="Darker text on plainer backgrounds."
+      />
       <PinSetter />
     </>
+  );
+}
+
+function OnOff({
+  id,
+  legend,
+  on,
+  onChange,
+  note,
+}: {
+  id: string;
+  legend: string;
+  on: boolean;
+  onChange: (on: boolean) => void;
+  note: string;
+}) {
+  return (
+    <fieldset className="setting-group" data-setting={id}>
+      <legend>{legend}</legend>
+      <div className="segment">
+        <button type="button" className={on ? "is-selected" : ""} aria-pressed={on} onClick={() => onChange(true)}>
+          On
+        </button>
+        <button type="button" className={!on ? "is-selected" : ""} aria-pressed={!on} onClick={() => onChange(false)}>
+          Off
+        </button>
+      </div>
+      <p className="adult-copy">{note}</p>
+    </fieldset>
   );
 }
 
