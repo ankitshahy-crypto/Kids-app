@@ -21,16 +21,17 @@ export function Dinosaur() {
   return (
     <svg className="art" viewBox="0 0 280 210" aria-hidden="true">
       <Shadow />
-      <path d="M40 150c20-60 70-70 110-56 30 10 40 40 44 72H70c-14 0-30-6-30-16Z" fill="#9BD1A8" />
-      <path d="M150 96c14-30 44-30 60-18 18 12 22 36 12 52-16-4-40-8-72-34Z" fill="#9BD1A8" />
-      <path d="M30 150c-12-18-24-14-26 6 8-4 16-4 26-6Z" fill="#9BD1A8" />
-      <path d="M96 94 108 66l12 30M124 92l12-28 12 28M152 92l10-22 8 22" fill="#79B98C" />
-      <circle cx="98" cy="166" r="10" fill="#79B98C" />
-      <circle cx="136" cy="168" r="9" fill="#79B98C" />
-      <Eye x={196} y={96} />
-      <path d="M204 112c10 2 18 0 24-4" fill="none" stroke="#2C3A4F" strokeWidth="3" strokeLinecap="round" />
-      <rect x="96" y="150" width="20" height="30" rx="8" fill="#79B98C" />
-      <rect x="150" y="150" width="20" height="30" rx="8" fill="#79B98C" />
+      {/* Long neck up to a small head, a round body, and a tail: a friendly sauropod. */}
+      <path d="M40 150c-16-6-28 4-26 16 10-4 18-6 30-8Z" fill="#79B98C" />
+      <path d="M44 170c-6-40 20-72 60-74 26-2 44 10 54 30 8 18 8 40-2 52H60c-10 0-16-2-16-8Z" fill="#9BD1A8" />
+      <path d="M144 106c10-36 20-62 42-72 16-8 34 0 40 14 4 12-2 24-14 26h-10c-10 0-14 8-16 20-2 12-4 22-10 30-8-6-20-12-32-18Z" fill="#9BD1A8" />
+      <path d="M92 96 104 74l10 24M118 92l12-24 10 26M146 96l10-20 6 22" fill="#79B98C" />
+      <circle cx="94" cy="132" r="10" fill="#79B98C" opacity="0.8" />
+      <circle cx="126" cy="150" r="8" fill="#79B98C" opacity="0.8" />
+      <Eye x={204} y={58} />
+      <path d="M210 76c8 2 16 0 22-4" fill="none" stroke="#2C3A4F" strokeWidth="3" strokeLinecap="round" />
+      <rect x="70" y="160" width="22" height="30" rx="9" fill="#79B98C" />
+      <rect x="132" y="160" width="22" height="30" rx="9" fill="#79B98C" />
     </svg>
   );
 }
