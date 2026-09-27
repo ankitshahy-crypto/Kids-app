@@ -42,6 +42,7 @@ export function SoundItOut({
   const [dragging, setDragging] = useState(false);
   const gesture = useRef<{ x: number; y: number; interactive: boolean } | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const tokenRef = useRef<HTMLDivElement | null>(null);
   const tileRefs = useRef<(HTMLDivElement | null)[]>([]);
   const draggingRef = useRef(false);
   const sounded = useRef(new Set<number>());
@@ -116,7 +117,9 @@ export function SoundItOut({
     if (!track) return;
     const rect = track.getBoundingClientRect();
     if (rect.width <= 0) return;
-    const clamped = Math.min(rect.right - 8, Math.max(rect.left + 8, clientX));
+    // Keep the whole hero on the track: its center stops half a token from each end.
+    const half = (tokenRef.current?.offsetWidth ?? 72) / 2;
+    const clamped = Math.min(rect.right - half, Math.max(rect.left + half, clientX));
     setProgress((clamped - rect.left) / rect.width);
     light(tilesCrossed(fromX, clientX));
     const allSounded = word.letters.every((_, tileIndex) => sounded.current.has(tileIndex));
@@ -284,7 +287,7 @@ export function SoundItOut({
             <line x1="2" y1="12" x2="90" y2="12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             <path d="M86 5 L97 12 L86 19" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>
-          <div className="blend-token" style={{ left: `${progress * 100}%` }} data-blend-token>
+          <div className="blend-token" ref={tokenRef} style={{ left: `${progress * 100}%` }} data-blend-token>
             {animal ? <Hero animal={animal} outfit={outfit} /> : <StarIcon />}
           </div>
         </div>

@@ -531,7 +531,8 @@ export default function App() {
                       setScreen("money-play");
                       return;
                     }
-                    if (screen === "games" || screen === "money-play") setTip(null);
+                    // Leaving a lesson early clears its tip. A finished step sets its own end tip.
+                    setTip(null);
                     setScreen("today");
                   }}
                 >

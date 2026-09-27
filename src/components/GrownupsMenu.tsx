@@ -62,8 +62,9 @@ function ProfileRow({
         <div>
           <p className="child-name">{lessonName(profile)}</p>
           <p className="child-meta">
-            {profile.name.length === 1 ? `Initial ${profile.name}` : profile.name}
-            {selected ? " · showing" : ""}
+            Age {profile.ageRange === "6-7" ? "6–7" : profile.ageRange}
+            {profile.name.length === 1 ? ` · initial ${profile.name}` : ""}
+            {selected ? " · on this device now" : ""}
           </p>
         </div>
       </button>

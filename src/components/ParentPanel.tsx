@@ -469,7 +469,7 @@ function ChildRow({
           <p className="child-meta">
             Age {profile.ageRange === "6-7" ? "6–7" : profile.ageRange}
             {profile.name.length === 1 ? ` · initial ${profile.name}` : ""}
-            {selected ? " · showing" : ""}
+            {selected ? " · on this device now" : ""}
           </p>
         </div>
       </button>

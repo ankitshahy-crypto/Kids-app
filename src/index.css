@@ -1640,29 +1640,29 @@ button:focus-visible {
   color: var(--text-muted);
 }
 
-.app.mode-parent .segment button,
-.app.mode-parent .age-grid button,
-.app.mode-parent .add-child,
-.app.mode-parent .edit-child,
-.app.mode-parent .remove-child,
-.app.mode-parent .save-child,
-.app.mode-parent .text-button {
+.app:is(.mode-parent, .mode-grownups) .segment button,
+.app:is(.mode-parent, .mode-grownups) .age-grid button,
+.app:is(.mode-parent, .mode-grownups) .add-child,
+.app:is(.mode-parent, .mode-grownups) .edit-child,
+.app:is(.mode-parent, .mode-grownups) .remove-child,
+.app:is(.mode-parent, .mode-grownups) .save-child,
+.app:is(.mode-parent, .mode-grownups) .text-button {
   min-height: 44px;
   border-radius: 10px;
   font-size: 16px;
   font-weight: 600;
 }
 
-.app.mode-parent .segment button,
-.app.mode-parent .age-grid button,
-.app.mode-parent .add-child,
-.app.mode-parent .animal-pick {
+.app:is(.mode-parent, .mode-grownups) .segment button,
+.app:is(.mode-parent, .mode-grownups) .age-grid button,
+.app:is(.mode-parent, .mode-grownups) .add-child,
+.app:is(.mode-parent, .mode-grownups) .animal-pick {
   background: #faf8f5;
   box-shadow: none;
   border: 1px solid var(--line);
 }
 
-.app.mode-parent .name-input {
+.app:is(.mode-parent, .mode-grownups) .name-input {
   height: 48px;
   border-radius: 10px;
   border-width: 1px;
@@ -2935,20 +2935,20 @@ button:focus-visible {
     min-height: 56px;
   }
 
-  .app.mode-parent .segment button,
-  .app.mode-parent .age-grid button,
-  .app.mode-parent .add-child,
-  .app.mode-parent .edit-child,
-  .app.mode-parent .remove-child,
-  .app.mode-parent .save-child,
-  .app.mode-parent .text-button,
-  .app.mode-parent .name-input,
+  .app:is(.mode-parent, .mode-grownups) .segment button,
+  .app:is(.mode-parent, .mode-grownups) .age-grid button,
+  .app:is(.mode-parent, .mode-grownups) .add-child,
+  .app:is(.mode-parent, .mode-grownups) .edit-child,
+  .app:is(.mode-parent, .mode-grownups) .remove-child,
+  .app:is(.mode-parent, .mode-grownups) .save-child,
+  .app:is(.mode-parent, .mode-grownups) .text-button,
+  .app:is(.mode-parent, .mode-grownups) .name-input,
   .voice-select,
   .voice-preview {
     min-height: 52px;
   }
 
-  .app.mode-parent .name-input,
+  .app:is(.mode-parent, .mode-grownups) .name-input,
   .voice-select {
     height: 52px;
   }
