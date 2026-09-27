@@ -4228,21 +4228,6 @@ button:focus-visible {
   }
 }
 
-@media (min-width: 900px) {
-  .course-pick {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 768px) and (orientation: landscape) {
-  .course-pick {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    width: min(100%, 720px);
-    justify-self: center;
-  }
-}
-
 .course-button,
 .math-activity,
 .math-object,
@@ -6019,19 +6004,6 @@ input.is-pressed,
 @media (prefers-reduced-motion: reduce) {
   .build-actor {
     transition: none;
-  }
-}
-
-@media (min-width: 768px) and (orientation: landscape) {
-  .course-button {
-    min-height: 72px;
-    font-size: 16px;
-  }
-
-  .course-art,
-  .course-art .module-mark {
-    width: 40px;
-    height: 40px;
   }
 }
 
