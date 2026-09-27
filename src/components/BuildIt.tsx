@@ -3,7 +3,6 @@ import { playEffect } from "../audio/manager";
 import { playOnDevice, playPrompt } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import {
-  BUILD_KEY,
   addBlock,
   buildLevel,
   chefResult,
@@ -19,6 +18,7 @@ import {
 } from "../data/build";
 import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
+import { readSection, writeSection } from "../explore/sectionStore";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
 
@@ -165,7 +165,7 @@ function Builder({
             : "Make a sandwich.";
     speak.prompt(prompt, fallback);
     if (level !== "later") return;
-    const stored = loadBuild(childId, activity, localStorage.getItem(BUILD_KEY));
+    const stored = loadBuild(childId, activity, readSection("games", "build"));
     if (stored.length > 0) {
       setScript(stored);
       setLoaded(true);
@@ -236,8 +236,8 @@ function Builder({
   };
 
   const store = () => {
-    const next = saveBuild(childId, activity, script, localStorage.getItem(BUILD_KEY));
-    localStorage.setItem(BUILD_KEY, next);
+    const next = saveBuild(childId, activity, script, readSection("games", "build"));
+    writeSection("games", "build", next);
     setSaved(true);
     speak.prompt("build-save", "Saved on this device.");
   };

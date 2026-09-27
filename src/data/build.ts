@@ -22,7 +22,6 @@ export type BuildBlock =
 
 export type BuildActivity = "move" | "music" | "scene" | "chef";
 
-export const BUILD_KEY = "littlenest-build-v1";
 export const SCRIPT_LIMIT = 8;
 export const POND_STEPS = 3;
 

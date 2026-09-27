@@ -24,7 +24,7 @@ async function install(page: Page, saved: unknown = profile) {
   await page.addInitScript((saved) => {
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
     localStorage.removeItem("kids-app-silent-hint-v1");
-    localStorage.removeItem("littlenest-build-v1");
+    localStorage.removeItem("littlenest.section.games.build");
   }, saved);
   await page.goto("./");
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
@@ -142,7 +142,7 @@ test("ages 5 to 7 splash at the pond and save on this device", async ({ page }, 
   const before = requests.length;
   await board.locator("[data-save=device]").click();
   await expect(board).toHaveAttribute("data-saved", "true");
-  const saved = await page.evaluate(() => localStorage.getItem("littlenest-build-v1") ?? "");
+  const saved = await page.evaluate(() => localStorage.getItem("littlenest.section.games.build") ?? "");
   expect(saved).toContain("walk");
   expect(saved).not.toContain("Mia");
   expect(requests.slice(before).every((url) => url.startsWith("http://127.0.0.1") || url.startsWith("data:"))).toBe(true);
