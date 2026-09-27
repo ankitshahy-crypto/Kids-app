@@ -289,7 +289,7 @@ export function playLetter(
 ): Promise<void> {
   return playCue(
     letter.say
-      ? { text: letter.say }
+      ? { src: letter.sayId ? recordedSrc("letters", letter.sayId) : undefined, text: letter.say }
       : {
           src: letter.audioSrc ?? recordedSrc("letters", letter.phoneme),
           text: spokenLine("letters", letter.phoneme, letter.char),

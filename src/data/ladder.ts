@@ -404,9 +404,8 @@ export function letterCard(letter: string, themes: readonly ThemeId[] = []): Dec
       {
         char,
         phoneme: (PHONEME[char] ?? char) as PhonemeId,
-        // The recorded phrase names the regular example, so a themed card is
-        // spoken by the device voice: "d, as in dinosaur".
-        ...(themed ? { say: `${char}, as in ${themed}` } : {}),
+        // A themed card plays its own phrase, "d, as in dinosaur", not the regular one.
+        ...(themed ? { say: `${char}, as in ${themed}`, sayId: `${char}-${themed.replace(/\s+/g, "-")}` } : {}),
       },
     ],
   };

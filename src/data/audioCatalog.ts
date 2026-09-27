@@ -3,12 +3,20 @@ import manifest from "./audioManifest.json";
 import { starterDeck } from "./deck";
 import { ladderClips } from "./ladder";
 import { PHONEME_IDS } from "./phonemes";
+import { THEME_IDS, THEMES } from "./themes";
+import { themedWordCatalog } from "./themeWords";
+
+/** Manifest id of a themed letter phrase: "d-dinosaur" for "d, as in dinosaur". */
+export function themedLetterId(char: string, example: string): string {
+  return `${char}-${example.trim().toLowerCase().replace(/\s+/g, "-")}`;
+}
 
 export type AudioKind = "letters" | "words" | "sentences" | "numbers" | "prompts" | "colors";
 
 export type AudioCue = {
   file: string;
   say: string;
+  /** "neural" clips are generated offline by scripts/generate-audio-kokoro.py. A person can replace any of them. */
   source: "human" | "neural";
 };
 
@@ -31,15 +39,30 @@ function assertCue(kind: AudioKind, id: string, cue: AudioCue | undefined): void
 for (const id of PHONEME_IDS) {
   const cue = book.letters[id];
   assertCue("letters", id, cue);
-  if (!/, as in /i.test(cue.say) || cue.source !== "human") {
-    throw new Error(`Letter sound "${id}" needs a human-recorded example phrase`);
+  if (!/, as in /i.test(cue.say)) {
+    throw new Error(`Letter sound "${id}" needs an example phrase`);
   }
 }
 
 for (const [id, cue] of Object.entries(book.letters)) {
   assertCue("letters", id, cue);
-  if (cue.source !== "human") {
-    throw new Error(`Letter sound "${id}" must stay human-recorded`);
+  if (!/, as in /i.test(cue.say)) {
+    throw new Error(`Letter phrase "${id}" should name an example word`);
+  }
+}
+
+for (const word of themedWordCatalog()) {
+  const cue = book.words[word.id];
+  assertCue("words", word.id, cue);
+  if (cue.say !== word.word) throw new Error(`Themed word clip "${word.id}" should say "${word.word}"`);
+}
+
+for (const theme of THEME_IDS) {
+  for (const [char, example] of Object.entries(THEMES[theme].letters)) {
+    const id = themedLetterId(char, example ?? "");
+    const cue = book.letters[id];
+    assertCue("letters", id, cue);
+    if (cue.say !== `${char}, as in ${example}`) throw new Error(`Themed letter "${id}" should say "${char}, as in ${example}"`);
   }
 }
 
