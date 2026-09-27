@@ -6,7 +6,7 @@ import font700 from "../assets/fonts/fredoka-latin-700-normal.woff2?url";
 
 type Cue = { file: string };
 
-const groups = [manifest.letters, manifest.words, manifest.sentences, manifest.numbers, manifest.prompts, manifest.colors] as Record<
+const groups = [manifest.letters, manifest.sounds, manifest.words, manifest.sentences, manifest.numbers, manifest.prompts, manifest.colors] as Record<
   string,
   Cue
 >[];

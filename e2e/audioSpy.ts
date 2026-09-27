@@ -5,6 +5,12 @@ const manifest = JSON.parse(readFileSync(new URL("../src/data/audioManifest.json
   string,
   Record<string, { file: string; say: string }>
 >;
+const available = JSON.parse(readFileSync(new URL("../src/data/audioAvailable.json", import.meta.url), "utf8")) as { files: string[] };
+
+/** True when this clip (letters/m.mp3) is bundled with the app. */
+export function clipShipped(file: string): boolean {
+  return available.files.includes(file);
+}
 
 /**
  * Records what the app tried to say: device speech, a bundled clip played
@@ -50,6 +56,14 @@ export async function installAudioSpy(page: Page): Promise<void> {
 const sayByFile = new Map<string, string>();
 for (const kind of Object.values(manifest)) {
   for (const cue of Object.values(kind)) sayByFile.set(cue.file, cue.say);
+}
+
+/** Clip files the app played, in order (letters/m.mp3), leaving out device speech. */
+export async function playedClips(page: Page): Promise<string[]> {
+  const attempts = await page.evaluate(
+    () => (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [],
+  );
+  return attempts.filter((item) => item.kind === "clip").map((item) => item.detail.split("/audio/")[1] ?? item.detail);
 }
 
 /** Lines the app said or played, lowercased: the utterance text, or the clip's manifest line. */

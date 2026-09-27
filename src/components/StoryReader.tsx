@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { cancelSpeech, isAbortError, playLetter, playStoryLine, playWordId, sleep } from "../audio/player";
+import { cancelSpeech, isAbortError, playLetterSound, playStoryLine, playWordId, sleep } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import type { PhonemeId } from "../data/phonemes";
 import { storyLineId, storyText, storyTitleId, storyTokens, type Story, type StoryHero, type StoryToken } from "../data/stories";
@@ -86,7 +86,7 @@ export function StoryReader({
           setActiveLetter(at);
           playEffect("pop", settingsRef.current);
           const char = chars[at];
-          await playLetter({ char, phoneme: (PHONEME[char] ?? char) as PhonemeId }, settingsRef.current, signal);
+          await playLetterSound({ char, phoneme: (PHONEME[char] ?? char) as PhonemeId }, settingsRef.current, signal);
           await sleep(BETWEEN_LETTERS_MS, signal);
         }
         setActiveLetter(null);

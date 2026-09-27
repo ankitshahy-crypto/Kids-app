@@ -54,6 +54,20 @@ describe("word ladder lists", () => {
       expect(cue.file.endsWith(".mp3")).toBe(true);
     }
   });
+
+  it("gives every letter a bare sound clip for sounding out, sharing the letter's phrase", () => {
+    const letters = manifest.letters as Record<string, { file: string; say: string }>;
+    const sounds = manifest.sounds as Record<string, { file: string; say: string; source: string }>;
+    for (const [id, cue] of Object.entries(letters)) {
+      if (id.includes("-")) continue;
+      expect(sounds[id], id).toBeTruthy();
+      expect(sounds[id].file).toBe(cue.file.replace("letters/", "sounds/"));
+      expect(sounds[id].say).toBe(cue.say);
+      expect(sounds[id].source).toBe("neural");
+    }
+    expect(sounds.ae.file).toBe(sounds.a.file);
+    expect(sounds.ks.file).toBe(sounds.x.file);
+  });
 });
 
 describe("word ladder progression", () => {

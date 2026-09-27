@@ -299,6 +299,36 @@ export function playLetter(
   );
 }
 
+/**
+ * The letter's sound on its own ("mmm"), for sounding out a word. Without a
+ * sound clip on the device it says the example phrase instead, since a device
+ * voice cannot say a bare sound.
+ */
+export function playLetterSound(letter: LetterTile, settings: Settings, signal: AbortSignal): Promise<void> {
+  const src = recordedSrc("sounds", letter.phoneme);
+  if (!src) return playLetter(letter, settings, signal);
+  return playCue({ src, text: letter.say ?? spokenLine("letters", letter.phoneme, letter.char) }, settings, signal);
+}
+
+/**
+ * One tile of a card: a whole word inside a sentence, the phrase on a letter
+ * card ("m, as in moon"), or the bare sound while a word is sounded out.
+ */
+export function playTile(card: DeckWord, letter: LetterTile, settings: Settings, signal: AbortSignal): Promise<void> {
+  if (letter.wordId) return playWordId(letter.wordId, letter.char, settings, signal);
+  return card.letterCard ? playLetter(letter, settings, signal) : playLetterSound(letter, settings, signal);
+}
+
+/** The whole card: its sentence, its word, or a letter card's example word ("moon"). */
+export function playWhole(card: DeckWord, settings: Settings, signal: AbortSignal): Promise<void> {
+  if (card.sentenceId) return playSentence(card.sentenceId, settings, signal);
+  if (card.letterCard) {
+    const example = card.word.trim();
+    return playWordId(example.toLowerCase().replace(/\s+/g, "-"), example, settings, signal);
+  }
+  return playWord(card, settings, signal);
+}
+
 /** Speak with the device voice only. Nothing is fetched and nothing leaves the device. */
 export function playOnDevice(text: string, settings: Settings, signal: AbortSignal): Promise<void> {
   if (signal.aborted) return Promise.reject(abortError());

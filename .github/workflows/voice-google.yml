@@ -5,24 +5,48 @@ name: Voice clips (Google)
 # Needs the GOOGLE_TTS_API_KEY repository secret: an API key from a project
 # with the Text-to-Speech API enabled, restricted to that API. The app never
 # calls Google; it only plays the files. Run it from the Actions tab.
+#
+# Letter phrases ("m, as in moon") and bare letter sounds ("mmm", for
+# sounding out a word) are made with SSML phonemes, which the Chirp 3 HD
+# voices take. With a Gemini model, those two kinds still come from the
+# Chirp 3 HD voice of the same name.
 
 on:
   workflow_dispatch:
     inputs:
       voice:
-        description: "Main voice (en-US Chirp3-HD, Chirp-HD, Studio, or Neural2 name)"
-        default: en-US-Chirp3-HD-Aoede
+        description: "Voice: a Chirp 3 HD / Gemini name (Aoede, Kore, Leda, Zephyr, Sulafat...) or a full Google voice name"
+        default: Aoede
+      model:
+        description: "Model"
+        type: choice
+        default: chirp3
+        options:
+          - chirp3
+          - gemini-2.5-pro-tts
+          - gemini-2.5-flash-tts
+          - gemini-3.1-flash-tts-preview
+      prompt:
+        description: "Style prompt for the Gemini models (blank = the script's calm-teacher prompt)"
+        default: ""
       letter_style:
-        description: "Letter phrases say the sound (via an SSML voice) or the name (bee, as in ball)"
+        description: "Letter phrases say the sound (mmm, as in moon) or the name (em, as in moon)"
+        type: choice
         default: sound
+        options:
+          - sound
+          - name
       letter_voice:
-        description: "Voice for letter sounds; must support SSML (Neural2 or Studio)"
-        default: en-US-Neural2-F
+        description: "Voice for letter phrases and sounds (blank = the same voice, as Chirp 3 HD)"
+        default: ""
       speed:
-        description: "Speaking rate (1 is normal)"
+        description: "Speaking rate (1 is normal; Chirp 3 HD, Neural2, Studio only)"
         default: "0.95"
+      only:
+        description: "Only these kinds, comma-separated (blank = all): letters,sounds,words,sentences,numbers,prompts,colors,stories"
+        default: ""
       force:
-        description: "Remake clips that already exist (true/false)"
+        description: "Remake clips that already exist: true, false, or kinds to remake (letters,sounds)"
         default: "true"
 
 permissions:
@@ -55,39 +79,51 @@ jobs:
       - name: Make clips
         env:
           GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
+          VOICE: ${{ inputs.voice }}
+          MODEL: ${{ inputs.model }}
+          PROMPT: ${{ inputs.prompt }}
+          LETTER_STYLE: ${{ inputs.letter_style }}
+          LETTER_VOICE: ${{ inputs.letter_voice }}
+          SPEED: ${{ inputs.speed }}
+          ONLY: ${{ inputs.only }}
+          FORCE: ${{ inputs.force }}
         run: |
-          node scripts/generate-audio.mjs \
-            --voice "${{ inputs.voice }}" \
-            --letter-voice "${{ inputs.letter_voice }}" \
-            --letter-style "${{ inputs.letter_style }}" \
-            --speed "${{ inputs.speed }}" \
-            $([ "${{ inputs.force }}" = "true" ] && echo --force)
+          args=(--voice "$VOICE" --model "$MODEL" --letter-style "$LETTER_STYLE" --speed "$SPEED")
+          [ -n "$PROMPT" ] && args+=(--prompt "$PROMPT")
+          [ -n "$LETTER_VOICE" ] && args+=(--letter-voice "$LETTER_VOICE")
+          [ -n "$ONLY" ] && args+=(--only "$ONLY")
+          case "$FORCE" in
+            true) args+=(--force) ;;
+            false|"") ;;
+            *) args+=(--force "$FORCE") ;;
+          esac
+          node scripts/generate-audio.mjs "${args[@]}"
 
       - name: Summary
         run: |
           echo "### Voice clips (Google)" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Voice: ${{ inputs.voice }}, letters as ${{ inputs.letter_style }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Voice: ${{ inputs.voice }} (${{ inputs.model }}), letters as ${{ inputs.letter_style }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Files: $(find public/audio -name '*.mp3' | wc -l)" >> "$GITHUB_STEP_SUMMARY"
           echo "- Size: $(du -sh public/audio | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open pull request
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: voice/google-${{ inputs.voice }}
-          title: "Voice clips: ${{ inputs.voice }}, letters as ${{ inputs.letter_style }}"
+          branch: voice/google-${{ inputs.model }}-${{ inputs.voice }}
+          title: "Voice clips: ${{ inputs.voice }} (${{ inputs.model }}), letters as ${{ inputs.letter_style }}"
           commit-message: |
-            Add spoken clips made with Google Cloud Text-to-Speech (${{ inputs.voice }}).
+            Add spoken clips made with Google Cloud Text-to-Speech (${{ inputs.voice }}, ${{ inputs.model }}).
 
             Generated offline by scripts/generate-audio.mjs. The app plays these
             files and never calls a voice service.
           body: |
-            Spoken clips for every line in `src/data/audioManifest.json`, made with Google Cloud Text-to-Speech on GitHub's machines.
+            Spoken clips for `src/data/audioManifest.json`${{ inputs.only != '' && format(' (kinds: `{0}`)', inputs.only) || '' }}, made with Google Cloud Text-to-Speech on GitHub's machines.
 
-            - Voice: `${{ inputs.voice }}`, speed `${{ inputs.speed }}`, letter phrases as `${{ inputs.letter_style }}`${{ inputs.letter_style == 'sound' && format(' via `{0}`', inputs.letter_voice) || '' }}
+            - Voice: `${{ inputs.voice }}`, model `${{ inputs.model }}`, speed `${{ inputs.speed }}`, letter phrases as `${{ inputs.letter_style }}`${{ inputs.letter_voice != '' && format(' via `{0}`', inputs.letter_voice) || '' }}
             - The app plays these files offline. It never contacts a voice service.
             - `src/data/audioAvailable.json` lists every file so the app knows what it has.
 
-            Listen on a phone before merging: a few letter phrases, a few words, a story page.
+            Listen on a phone before merging: a few letter phrases, a sounded-out word, a story page.
           labels: audio
           delete-branch: true

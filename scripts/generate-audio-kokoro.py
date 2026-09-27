@@ -59,6 +59,11 @@ def spoken(kind: str, cue_id: str, say: str) -> str:
             char = match.group(1).lower()
             table = LETTER_NAMES if LETTER_STYLE == "name" else LETTER_SOUNDS
             return f"{table.get(char, char)}, as in {match.group(2)}."
+    if kind == "sounds":
+        # The bare sound for sounding out a word: "mmm", never the phrase.
+        match = re.match(r"^([a-z]), as in ", say, re.IGNORECASE)
+        char = cue_id if cue_id in LETTER_SOUNDS else (match.group(1).lower() if match else cue_id)
+        return f"{LETTER_SOUNDS.get(char, char)}."
     if kind == "words" and say == "I":
         return "I."
     if kind == "words" and say == "a":

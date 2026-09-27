@@ -101,9 +101,9 @@ Voice:
 
 - The pipeline is built around pre-recorded files. `src/data/audioManifest.json` maps each letter sound, word, and sentence id to a file under `public/audio/`. The app plays that file when `src/data/audioAvailable.json` lists it.
 - If Web Audio cannot play a file, the app tries a plain audio element and then device speech, so a child still hears the line. Device speech is the fallback, and it must not sound robotic. It picks the best en-US voice on the phone (Enhanced, Premium, or Siri-quality by name or quality; local when possible) and skips compact and novelty voices. Rate stays near a natural pace (about 0.9, or 0.85 on the slower setting). Pitch stays at 1.0. A parent can preview and choose the voice in Settings.
-- Letter sounds do not use isolated syllables such as "buh". Play the recorded clip when it exists. Otherwise say an example phrase, such as "b, as in ball".
-- The 26 letter sounds, plus the extra phoneme ids in the manifest, are recorded by a person. They are not synthesized.
-- Words and short sentences may be pre-generated offline with `npm run generate-audio`. That Node script calls Google Cloud Text-to-Speech (Neural2, Studio, or Chirp HD en-US) using `GOOGLE_APPLICATION_CREDENTIALS`, writes MP3s into `public/audio/`, and refreshes the available-file index. The developer runs it. The app makes no network calls.
+- Letter sounds are never left to device speech as isolated syllables such as "buh". A letter card plays its phrase clip ("m, as in moon"); sounding out a word plays the bare sound clip ("mmm") for each letter, then the word. Without a clip, device speech says the example phrase.
+- Every clip is pre-generated offline with `npm run generate-audio` (Google Cloud Text-to-Speech: a Chirp 3 HD voice, or a Gemini voice with a style prompt) or with the Kokoro script. Letter phrases and bare sounds use SSML phonemes in the same voice. The developer runs it, usually through the "Voice clips (Google)" workflow. The app makes no network calls.
+- A person's recording replaces any clip by overwriting its file; letter sounds and words are the first candidates.
 - A parent may record their own voice for words and for the child's name. Those recordings stay on the device and are never uploaded. An `audioSrc` on a letter or word overrides the manifest file.
 - A warm voice actor, under a work-for-hire or other commercial license, remains the target for story narration and for replacing generated word clips.
 
