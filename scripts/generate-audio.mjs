@@ -32,8 +32,12 @@
  *                                       models cannot take SSML). Neural2 and Studio voices work too.
  *   --letter-style sound|name           "name" says letter names ("bee, as in ball") in the main voice.
  *   --speed                             speaking rate, default 0.95 (Chirp 3 HD, Neural2, Studio).
+ *   --no-trim                           keep Google's leading and trailing silence. By default, when
+ *                                       ffmpeg is installed, each clip is fetched as WAV, trimmed so it
+ *                                       starts at once, and encoded to MP3 here.
  */
 
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -110,10 +114,12 @@ function resolveVoice(spec, modelName, prompt) {
  * stop ("bə") is how the sound is said to a child; continuants are held.
  */
 const LETTER_IPA = {
-  a: "æ", b: "bə", c: "kə", d: "də", e: "ɛ", f: "fː", g: "ɡə", h: "hə", i: "ɪ", j: "dʒə", k: "kə", l: "lː",
-  m: "mː", n: "nː", o: "ɑ", p: "pə", q: "kwə", r: "ɹː", s: "sː", t: "tə", u: "ʌ", v: "vː", w: "wə", x: "ks",
-  y: "jə", z: "zː", ae: "æ", eh: "ɛ", ih: "ɪ", aw: "ɑ", uh: "ʌ", ks: "ks",
+  a: "æ", b: "bə", c: "kə", d: "də", e: "ɛː", f: "f", g: "ɡə", h: "hə", i: "ɪː", j: "dʒə", k: "kə", l: "lː",
+  m: "mː", n: "nː", o: "ɑ", p: "pə", q: "kwə", r: "ɹ", s: "s", t: "tə", u: "ʌ", v: "vː", w: "wə", x: "ks",
+  y: "jə", z: "zː", ae: "æ", eh: "ɛː", ih: "ɪː", aw: "ɑ", uh: "ʌ", ks: "ks",
 };
+// Held /s/, /f/ and /r/ (sː) came out as three short pulses; a single phone is one clean sound.
+// /ɛ/ and /ɪ/ alone were too short to hear, so they are held a little.
 
 /** What a child might read on a phonics card: the sound written out, for a voice with no SSML. */
 const LETTER_SOUNDS = {
@@ -238,25 +244,56 @@ async function connect() {
   }
 }
 
-async function synthesize({ text, ssml, plain, voice }) {
+const hasFfmpeg = spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status === 0;
+const trim = hasFfmpeg && !flags.has("--no-trim");
+if (!trim && !flags.has("--index-only")) console.log(hasFfmpeg ? "Keeping Google's silence (--no-trim)." : "ffmpeg not found: clips keep Google's leading silence.");
+
+/**
+ * Google leaves about 0.4 s of silence before a clip. Trim it (keeping a
+ * short lead-in) and encode to MP3 here, so a sound starts the moment a
+ * child taps. Falls back to the untrimmed audio if trimming leaves nothing.
+ */
+function trimAndEncode(wav, label) {
+  const filter =
+    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06," +
+    "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,areverse";
+  const encode = (args) =>
+    spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "wav", "-i", "pipe:0", ...args, "-ac", "1", "-ar", "24000", "-c:a", "libmp3lame", "-b:a", "64k", "-f", "mp3", "pipe:1"], {
+      input: wav,
+      maxBuffer: 64 * 1024 * 1024,
+    });
+  const trimmed = encode(["-af", filter]);
+  if (trimmed.status === 0 && trimmed.stdout.length > 800) return trimmed.stdout;
+  const whole = encode([]);
+  if (whole.status !== 0) throw new Error(`ffmpeg could not encode ${label}: ${whole.stderr}`);
+  return whole.stdout;
+}
+
+async function synthesize({ text, ssml, plain, voice }, label = "") {
   await connect();
   const input = ssml ? { ssml } : voice.modelName ? { prompt: voice.prompt, text } : { text };
+  const audioConfig = { audioEncoding: trim ? "LINEAR16" : "MP3", sampleRateHertz: 24000, ...(voice.rate ? { speakingRate: speed } : {}) };
   const request = {
     input,
     voice: { languageCode: voice.languageCode, name: voice.name, ...(voice.modelName ? { modelName: voice.modelName } : {}) },
-    audioConfig: voice.rate ? { audioEncoding: "MP3", speakingRate: speed, sampleRateHertz: 24000 } : { audioEncoding: "MP3", sampleRateHertz: 24000 },
+    audioConfig,
   };
+  let audio;
   try {
-    return await synthesizeRaw(request);
+    audio = await synthesizeRaw(request);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     // A voice that takes SSML but not <break>: say it with a comma instead.
     if (ssml && plain && /break|ssml|tag|unsupported|invalid/i.test(message)) {
-      return synthesizeRaw({ ...request, input: { ssml: plain } });
+      audio = await synthesizeRaw({ ...request, input: { ssml: plain } });
+    } else if (/speaking_?rate|sample_?rate|pitch/i.test(message)) {
+      audio = await synthesizeRaw({ ...request, audioConfig: { audioEncoding: audioConfig.audioEncoding } });
+    } else {
+      throw error;
     }
-    if (!/speaking_?rate|sample_?rate|pitch/i.test(message)) throw error;
-    return synthesizeRaw({ ...request, audioConfig: { audioEncoding: "MP3" } });
   }
+  if (!audio || audio.length === 0) return audio;
+  return trim ? trimAndEncode(Buffer.isBuffer(audio) ? audio : Buffer.from(audio), label) : audio;
 }
 
 function writeClip(dest, audio, label) {
@@ -356,7 +393,7 @@ for (const [file, job] of todo) {
     console.log(`${file}  ${input.voice.label}  ${JSON.stringify(input.ssml ?? input.text)}`);
     continue;
   }
-  const audio = await synthesize(input);
+  const audio = await synthesize(input, `${job.kind} ${job.id}`);
   writeClip(dest, audio, `${job.kind} ${job.id}`);
   made += 1;
   if (made % 50 === 0 || made === todo.length) console.log(`${made}/${todo.length}  public/audio/${file}`);

@@ -35,7 +35,10 @@ jobs:
           cache: npm
 
       - name: Install
-        run: npm ci
+        run: |
+          npm ci
+          command -v ffmpeg >/dev/null || sudo apt-get install -y -q ffmpeg
+          ffmpeg -version | head -n 1
 
       - name: Check the key
         run: |
@@ -63,8 +66,6 @@ jobs:
       - name: Join each voice into one clip
         continue-on-error: true
         run: |
-          command -v ffmpeg >/dev/null || sudo apt-get install -y -q ffmpeg
-          ffmpeg -version | head -n 1
           for dir in samples/*/; do
             if ! node scripts/join-audio.mjs "${dir%/}" 2>&1 | tee join.log; then
               echo "::error::join failed for $dir: $(tail -n 3 join.log | tr '\n' ' ')"
