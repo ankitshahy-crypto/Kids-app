@@ -1,6 +1,22 @@
 import { directionArrow, letterForm, numberSpot, strokePath, type LetterCase, type TracePoint } from "../data/handwriting";
 import { strokeStations } from "../data/trace";
 
+/** Strokes that start at the same point get their numbers nudged apart, so M reads 1 2, not 21. */
+export function spreadSpots(spots: TracePoint[], gap = 9): TracePoint[] {
+  const placed: TracePoint[] = [];
+  for (const spot of spots) {
+    let next = { ...spot };
+    for (let tries = 0; tries < 4; tries += 1) {
+      const clash = placed.find((other) => Math.hypot(other.x - next.x, other.y - next.y) < gap);
+      if (!clash) break;
+      next = { x: next.x, y: Math.min(96, next.y + gap) };
+      if (next.y >= 96) next = { x: Math.min(94, next.x + gap), y: clash.y };
+    }
+    placed.push(next);
+  }
+  return placed;
+}
+
 function inkPath(stroke: TracePoint[], covered: number): TracePoint[] {
   if (covered <= 0) return [];
   return strokeStations(stroke).slice(0, covered);
@@ -36,6 +52,7 @@ export function StrokeFigure({
 }) {
   const form = strokes ? { letter: label ?? "", strokes } : letterForm(letter ?? "a", casing);
   const glyph = label || form.letter;
+  const spots = spreadSpots(form.strokes.map(numberSpot));
   const caption = glyph.length === 1 ? glyph : "";
   return (
     <svg className="trace-glyph" viewBox="0 0 100 100" data-case={strokes ? undefined : casing} role="img" aria-label={glyph || "shape"}>
@@ -53,7 +70,7 @@ export function StrokeFigure({
       ) : null}
       {form.strokes.map((stroke, index) => {
         const arrow = directionArrow(stroke);
-        const spot = numberSpot(stroke);
+        const spot = spots[index];
         const start = stroke[0];
         const covered = guide === "model" || guide === "none" ? 0 : (progress?.[index] ?? 0);
         const ink = inkPath(stroke, covered);

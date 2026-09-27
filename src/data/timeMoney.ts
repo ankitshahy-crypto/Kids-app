@@ -1,4 +1,6 @@
 import { MODULE_TIME } from "../brand";
+import { calendarStageCap, lastWeekWithinStage } from "./ageBand";
+import type { AgeRange } from "./profiles";
 import { weekIndex } from "./schedule";
 import { defineSubject } from "./subject";
 import { deviceTimeZone } from "./time";
@@ -438,13 +440,31 @@ export function lessonForWeek(weekIndexValue: number): TimeLesson {
   };
 }
 
+/** The last time week whose stage is still this stage or an earlier one. */
+export function lastTimeWeekForStage(stageId: string): number {
+  return lastWeekWithinStage(
+    stageId,
+    timeWeeks.length,
+    timeStages.map((stage) => stage.id),
+    (week) => stageFromIntroduced(timeIntroduced(week)),
+  );
+}
+
+/** The calendar week for this age. Ages 3 and 4 stop at the pretend shop; half hours wait for 5. */
+export function timeCalendarWeek(createdAt: string, ageRange?: AgeRange | string, now = new Date(), timeZone = deviceTimeZone()): number {
+  const week = weekIndex(createdAt, now, timeZone);
+  const cap = calendarStageCap(TIME, ageRange);
+  return cap ? Math.min(week, lastTimeWeekForStage(cap)) : week;
+}
+
 export function lessonForChild(
   createdAt: string,
   now = new Date(),
   timeZone = deviceTimeZone(),
   placedWeek?: number,
+  ageRange?: AgeRange | string,
 ): TimeLesson {
-  const week = placedWeek ?? weekIndex(createdAt, now, timeZone);
+  const week = placedWeek ?? timeCalendarWeek(createdAt, ageRange, now, timeZone);
   return lessonForWeek(week);
 }
 

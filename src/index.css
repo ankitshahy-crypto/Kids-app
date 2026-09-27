@@ -334,6 +334,25 @@ button:focus-visible {
   width: 100%;
 }
 
+/* A letter-sound card with no drawing: the letter, then its example word. */
+.letter-glyph {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(96px, 26vmin, 168px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--sage-deep, #2f4a3c);
+}
+
+.letter-glyph small {
+  font-size: clamp(18px, 3.2vmin, 26px);
+  font-weight: 600;
+  color: var(--text-sage, #5f7a68);
+  letter-spacing: 0.02em;
+}
+
 .picture-card {
   position: relative;
   width: 100%;
@@ -1621,29 +1640,29 @@ button:focus-visible {
   color: var(--text-muted);
 }
 
-.app.mode-parent .segment button,
-.app.mode-parent .age-grid button,
-.app.mode-parent .add-child,
-.app.mode-parent .edit-child,
-.app.mode-parent .remove-child,
-.app.mode-parent .save-child,
-.app.mode-parent .text-button {
+.app:is(.mode-parent, .mode-grownups) .segment button,
+.app:is(.mode-parent, .mode-grownups) .age-grid button,
+.app:is(.mode-parent, .mode-grownups) .add-child,
+.app:is(.mode-parent, .mode-grownups) .edit-child,
+.app:is(.mode-parent, .mode-grownups) .remove-child,
+.app:is(.mode-parent, .mode-grownups) .save-child,
+.app:is(.mode-parent, .mode-grownups) .text-button {
   min-height: 44px;
   border-radius: 10px;
   font-size: 16px;
   font-weight: 600;
 }
 
-.app.mode-parent .segment button,
-.app.mode-parent .age-grid button,
-.app.mode-parent .add-child,
-.app.mode-parent .animal-pick {
+.app:is(.mode-parent, .mode-grownups) .segment button,
+.app:is(.mode-parent, .mode-grownups) .age-grid button,
+.app:is(.mode-parent, .mode-grownups) .add-child,
+.app:is(.mode-parent, .mode-grownups) .animal-pick {
   background: #faf8f5;
   box-shadow: none;
   border: 1px solid var(--line);
 }
 
-.app.mode-parent .name-input {
+.app:is(.mode-parent, .mode-grownups) .name-input {
   height: 48px;
   border-radius: 10px;
   border-width: 1px;
@@ -1766,6 +1785,73 @@ button:focus-visible {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-warm);
+}
+
+.today-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lesson {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 0 auto;
+}
+
+.pilot-label {
+  align-self: flex-start;
+  margin: 0;
+  min-height: 32px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #f3faf4;
+  color: var(--text-sage);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pilot-label.is-selected {
+  box-shadow: inset 0 0 0 2px var(--sage-soft);
+}
+
+.explore-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.explore-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.explore-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.explore-tag {
+  margin: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--butter);
+  color: var(--text-warm);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .trail {
@@ -2849,20 +2935,20 @@ button:focus-visible {
     min-height: 56px;
   }
 
-  .app.mode-parent .segment button,
-  .app.mode-parent .age-grid button,
-  .app.mode-parent .add-child,
-  .app.mode-parent .edit-child,
-  .app.mode-parent .remove-child,
-  .app.mode-parent .save-child,
-  .app.mode-parent .text-button,
-  .app.mode-parent .name-input,
+  .app:is(.mode-parent, .mode-grownups) .segment button,
+  .app:is(.mode-parent, .mode-grownups) .age-grid button,
+  .app:is(.mode-parent, .mode-grownups) .add-child,
+  .app:is(.mode-parent, .mode-grownups) .edit-child,
+  .app:is(.mode-parent, .mode-grownups) .remove-child,
+  .app:is(.mode-parent, .mode-grownups) .save-child,
+  .app:is(.mode-parent, .mode-grownups) .text-button,
+  .app:is(.mode-parent, .mode-grownups) .name-input,
   .voice-select,
   .voice-preview {
     min-height: 52px;
   }
 
-  .app.mode-parent .name-input,
+  .app:is(.mode-parent, .mode-grownups) .name-input,
   .voice-select {
     height: 52px;
   }
@@ -2953,11 +3039,11 @@ button:focus-visible {
 
   .today {
     display: grid;
-    grid-template-columns: minmax(280px, 520px) 180px;
+    grid-template-columns: minmax(280px, 520px) 224px;
     grid-template-areas:
       "top top"
       "review review"
-      "trail dock";
+      "body dock";
     justify-content: center;
     align-items: center;
     column-gap: 36px;
@@ -2972,11 +3058,16 @@ button:focus-visible {
     grid-area: review;
   }
 
-  .trail {
-    grid-area: trail;
-    width: min(100%, 500px);
-    height: min(70dvh, 520px);
+  .today-body {
+    grid-area: body;
     min-height: 0;
+    max-height: min(70dvh, 520px);
+  }
+
+  .trail {
+    width: min(100%, 500px);
+    height: min(52dvh, 380px);
+    min-height: 220px;
   }
 
   .today-dock {
@@ -3581,15 +3672,27 @@ button:focus-visible {
 }
 
 @media (min-width: 768px) and (orientation: landscape) {
+  /* Two columns so all five dock stops fit beside the path on a 768px-tall iPad. */
   .today-dock {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: center;
-    gap: 10px;
+    align-self: center;
+    gap: 6px 10px;
+    max-height: 100%;
+  }
+
+  .dock-button {
+    font-size: 12px;
   }
 
   .dock-art {
-    width: 72px;
-    height: 72px;
+    width: 64px;
+    height: 64px;
+  }
+
+  .dock-art .mark {
+    width: 42px;
+    height: 42px;
   }
 }
 
@@ -6303,27 +6406,8 @@ input.is-pressed,
   }
 
   [data-science="menu"] {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
     width: 100%;
     max-width: 100%;
-    gap: 8px;
-    padding-bottom: 4px;
-  }
-
-  [data-science="menu"] .math-activity {
-    flex: 0 0 84px;
-    width: 84px;
-    min-width: 84px;
-    min-height: 72px;
-  }
-}
-
-@media (min-width: 768px) and (orientation: landscape) {
-  [data-science="menu"] {
-    grid-area: trail;
-    align-self: start;
   }
 }
 
@@ -6370,4 +6454,3 @@ input.is-pressed,
 .sci-rabbit { background: #f7e1c8; border-radius: 50%; }
 .sci-puddle { background: #8eb4d6; border-radius: 50%; }
 .sci-listen { background: #6d5b86; border-radius: 50%; }
-.sci-mark { width: 28px; height: 28px; border-radius: 8px; background: #b7e6d8; display: block; }

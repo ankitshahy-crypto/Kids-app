@@ -5,6 +5,7 @@ import {
   editChild,
   loadStore,
   saveStore,
+  todayKey,
   storeSnapshot,
   type AgeRange,
   type ChildProfile,
@@ -159,11 +160,13 @@ export function useProfiles() {
     }));
   };
 
-  const noteLadder = (id: string, phonics: boolean) => {
+  /** One finished word try. The same word counts once per local day. */
+  const noteLadder = (id: string, phonics: boolean, word: string) => {
+    const day = todayKey();
     setStore((current) => ({
       ...current,
       profiles: current.profiles.map((item) =>
-        item.id === id ? { ...item, ladder: recordLadderSuccess(item.ladder, { phonicsOpen: phonics }).ladder } : item,
+        item.id === id ? { ...item, ladder: recordLadderSuccess(item.ladder, { phonicsOpen: phonics, word, day }).ladder } : item,
       ),
     }));
   };

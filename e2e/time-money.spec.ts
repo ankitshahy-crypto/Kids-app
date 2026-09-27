@@ -78,7 +78,7 @@ test("morning is the week 0 day task and a wrong part only wiggles", async ({ pa
   await expect(play.locator("[data-part=afternoon]")).toHaveAttribute("data-wiggle", "true");
   await play.locator("[data-part=morning]").click();
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
-  await page.getByRole("button", { name: "LittleNest Words" }).click();
+  await page.getByRole("button", { name: "Pilot focus" }).click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
@@ -96,7 +96,7 @@ test("next hour sets the clock and does not finish the reading lesson", async ({
   await clock.getByRole("button", { name: "Next hour" }).click();
   await expect(clock).toHaveAttribute("data-matched", "true");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
-  await page.getByRole("button", { name: "LittleNest Words" }).click();
+  await page.getByRole("button", { name: "Pilot focus" }).click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 

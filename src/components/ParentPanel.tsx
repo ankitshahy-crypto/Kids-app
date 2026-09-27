@@ -254,9 +254,9 @@ export function ParentView({
 
 function PlacementSummary({ child, placement }: { child: ChildProfile; placement: PlacementDocument }) {
   const resolved = resolvePlacement(placement, child.id, child.createdAt);
-  const mathResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, MATH);
-  const colorResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, COLORS);
-  const timeResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, TIME);
+  const mathResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, MATH, child.ageRange);
+  const colorResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, COLORS, child.ageRange);
+  const timeResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, TIME, child.ageRange);
   const source =
     resolved.source === "child"
       ? "Set for this child."
@@ -308,9 +308,9 @@ function ParentHome({
 }) {
   const now = new Date();
   const resolved = resolvePlacement(placement, child.id, child.createdAt);
-  const mathResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, MATH);
-  const colorResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, COLORS);
-  const timeResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, TIME);
+  const mathResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, MATH, child.ageRange);
+  const colorResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, COLORS, child.ageRange);
+  const timeResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, TIME, child.ageRange);
   const introduced = lettersIntroduced(resolved.source === "calendar" ? weekIndex(child.createdAt, now) : resolved.weekIndex);
   const total = letterPlanSize();
   const pct = total === 0 ? 0 : Math.round((introduced.length / total) * 100);
@@ -469,7 +469,7 @@ function ChildRow({
           <p className="child-meta">
             Age {profile.ageRange === "6-7" ? "6–7" : profile.ageRange}
             {profile.name.length === 1 ? ` · initial ${profile.name}` : ""}
-            {selected ? " · showing" : ""}
+            {selected ? " · on this device now" : ""}
           </p>
         </div>
       </button>

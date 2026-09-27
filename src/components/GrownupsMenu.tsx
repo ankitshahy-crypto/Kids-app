@@ -62,8 +62,9 @@ function ProfileRow({
         <div>
           <p className="child-name">{lessonName(profile)}</p>
           <p className="child-meta">
-            {profile.name.length === 1 ? `Initial ${profile.name}` : profile.name}
-            {selected ? " · showing" : ""}
+            Age {profile.ageRange === "6-7" ? "6–7" : profile.ageRange}
+            {profile.name.length === 1 ? ` · initial ${profile.name}` : ""}
+            {selected ? " · on this device now" : ""}
           </p>
         </div>
       </button>
@@ -244,7 +245,7 @@ export function GrownupsMenu({
           <h2>Help</h2>
           <h3>How the daily lesson works</h3>
           <p className="adult-copy">
-            Each day the child can choose LittleNest Words, LittleNest Numbers, LittleNest Colors, LittleNest Time & Money, LittleNest Build, or LittleNest Science. LittleNest Words
+            Each day starts with the reading lesson, Pilot focus. Explore adds LittleNest Numbers, LittleNest Colors, LittleNest Time & Money, LittleNest Build, and LittleNest Science. LittleNest Words
             has four stops: Letters, Draw, Story, and Colors. LittleNest Numbers has counting, numerals, tracing, shapes,
             comparing, and adding. LittleNest Colors has color names, then mixing paints, and coloring their animal. LittleNest Time & Money
             has the parts of the day, a routine, a clock, coins, a pretend shop, save jars, and a lemonade stand. Cards stay pretend. LittleNest Build

@@ -62,7 +62,9 @@ test("Show Explore off hides Numbers, Colors, and Games and stays off after relo
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator("[data-screen='today']")).toBeVisible();
-  await expect(page.getByRole("button", { name: "LittleNest Words" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pilot focus" })).toBeVisible();
+  await expect(page.locator("[data-step=letter]")).toBeVisible();
+  await expect(page.locator("[data-area=explore] [data-course=reading]")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "LittleNest Numbers" })).toBeVisible();
   await expect(page.getByRole("button", { name: "LittleNest Colors" })).toBeVisible();
   await expect(page.locator("[data-dock='games']")).toBeVisible();
@@ -82,7 +84,9 @@ test("Show Explore off hides Numbers, Colors, and Games and stays off after relo
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("[data-screen='today']")).toBeVisible();
-  await expect(page.getByRole("button", { name: "LittleNest Words" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pilot focus" })).toBeVisible();
+  await expect(page.locator("[data-step=letter]")).toBeVisible();
+  await expect(page.locator("[data-area=explore]")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "LittleNest Numbers" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "LittleNest Colors" })).toHaveCount(0);
   await expect(page.locator("[data-dock='games']")).toHaveCount(0);
@@ -91,7 +95,9 @@ test("Show Explore off hides Numbers, Colors, and Games and stays off after relo
   await page.reload();
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator("[data-screen='today']")).toBeVisible();
-  await expect(page.getByRole("button", { name: "LittleNest Words" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pilot focus" })).toBeVisible();
+  await expect(page.locator("[data-step=letter]")).toBeVisible();
+  await expect(page.locator("[data-area=explore]")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "LittleNest Numbers" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "LittleNest Colors" })).toHaveCount(0);
   await expect(page.locator("[data-dock='games']")).toHaveCount(0);

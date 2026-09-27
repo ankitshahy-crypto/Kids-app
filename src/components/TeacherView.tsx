@@ -108,9 +108,9 @@ function DeviceRewards({
         const resolved = resolvePlacement(placement, profile.id, profile.createdAt);
         const placedIntroduced =
           resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length;
-        const mathResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH);
-        const colorResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS);
-        const timeResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, TIME);
+        const mathResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH, profile.ageRange);
+        const colorResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS, profile.ageRange);
+        const timeResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, TIME, profile.ageRange);
         return (
           <div key={profile.id}>
             <WritingLevels

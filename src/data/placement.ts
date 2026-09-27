@@ -1,22 +1,27 @@
 import { PLACEMENT_KEY, readStored, writeStored } from "../storage";
+import { calendarStageCap } from "./ageBand";
 import {
   COLORS,
   clampColorWeek,
   colorIntroduced,
   colorWeekCount,
   firstColorWeekForStage,
+  lastColorWeekForStage,
 } from "./colors";
 import {
   MATH,
   clampMathWeek,
   firstMathWeekForStage,
+  lastMathWeekForStage,
   mathIntroduced,
   mathWeekCount,
 } from "./math";
+import type { AgeRange } from "./profiles";
 import {
   TIME,
   clampTimeWeek,
   firstTimeWeekForStage,
+  lastTimeWeekForStage,
   timeIntroduced,
   timeWeekCount,
 } from "./timeMoney";
@@ -64,6 +69,8 @@ export type ResolvedPlacement = {
   source: PlacementSource;
   weekIndex: number;
   stageId: string;
+  /** The stage the calendar stops at for this child's age, when that cap was applied. */
+  ageCap: string | null;
   /** Reading: letters the child practices today, including Friday review when that applies. */
   letters: string[];
 };
@@ -307,7 +314,21 @@ export function savePlacement(doc: PlacementDocument, storage: KeyValueStore = l
   writeStored(storage, PLACEMENT_STORAGE_KEY, JSON.stringify(doc));
 }
 
-/** Child override, then the class place, then that subject's calendar. Reading uses weeks since the profile was created. */
+/** The last calendar week a child of this age reaches in a subject, or null for the whole path. */
+export function calendarCapWeek(subject: SubjectId, ageRange: AgeRange | string | undefined): { stageId: string; weekIndex: number } | null {
+  const stageId = calendarStageCap(subject, ageRange);
+  if (!stageId) return null;
+  if (subject === MATH) return { stageId, weekIndex: lastMathWeekForStage(stageId) };
+  if (subject === COLORS) return { stageId, weekIndex: lastColorWeekForStage(stageId) };
+  if (subject === TIME) return { stageId, weekIndex: lastTimeWeekForStage(stageId) };
+  return null;
+}
+
+/**
+ * Child override, then the class place, then that subject's calendar. Reading
+ * uses weeks since the profile was created. The calendar stops at the stage for
+ * the child's age; a grown-up's placement is used as given.
+ */
 export function resolvePlacement(
   doc: PlacementDocument,
   childId: string,
@@ -315,13 +336,17 @@ export function resolvePlacement(
   now = new Date(),
   timeZone = deviceTimeZone(),
   subject: SubjectId = READING,
+  ageRange?: AgeRange | string,
 ): ResolvedPlacement {
   const slot = placesFor(doc, subject);
   const childPlace = slot.byChildId[childId] ?? null;
   const chosen = childPlace ?? slot.classDefault;
   const source: PlacementSource = childPlace ? "child" : slot.classDefault ? "class" : "calendar";
-  const index = chosen ? chosen.weekIndex : weekIndex(createdAt, now, timeZone);
+  const calendar = weekIndex(createdAt, now, timeZone);
+  const cap = chosen ? null : calendarCapWeek(subject, ageRange);
+  const capped = cap !== null && calendar > cap.weekIndex;
+  const index = chosen ? chosen.weekIndex : capped ? cap.weekIndex : calendar;
   const stageId = chosen ? chosen.stageId : learningPlace(subject, introducedFor(subject, index)).currentId;
   const letters = subject === READING ? practiceLetters(planForWeek(index), isReviewDay(now, timeZone)) : [];
-  return { subject, source, weekIndex: index, stageId, letters };
+  return { subject, source, weekIndex: index, stageId, ageCap: capped ? cap.stageId : null, letters };
 }

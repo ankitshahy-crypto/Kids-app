@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import config from "../../capacitor.config";
-import { lessonAudioFiles } from "./assets";
+import { lessonAudioFiles, offlineUrls, shippedAudioFiles } from "./assets";
 import { enqueue, readOutbox, requestClassSync } from "./queue";
 import { shareWordNest } from "../share";
 
@@ -40,6 +40,26 @@ describe("offline bundle", () => {
     }
     expect(config.webDir).toBe("dist");
     expect(config.server).toBeUndefined();
+  });
+
+  it("prefetches only audio files listed as shipped", () => {
+    expect(shippedAudioFiles()).toEqual([]);
+    expect(shippedAudioFiles(["letters/b.mp3", "../secret.mp3", "notes.txt", "words/cat.mp3"])).toEqual([
+      "letters/b.mp3",
+      "words/cat.mp3",
+    ]);
+    vi.stubGlobal("window", { location: new URL("http://127.0.0.1:5173/Kids-app/") });
+    vi.stubGlobal("performance", {
+      getEntriesByType: () => [
+        { name: "http://127.0.0.1:5173/Kids-app/audio/letters/b.mp3" },
+        { name: "http://127.0.0.1:5173/Kids-app/src/audio/manager.ts" },
+        { name: "http://127.0.0.1:5173/Kids-app/favicon.svg" },
+      ],
+    });
+    const urls = offlineUrls();
+    expect(urls.some((url) => url.includes("/audio/letters/"))).toBe(false);
+    expect(urls.some((url) => url.includes("/src/audio/manager.ts"))).toBe(true);
+    expect(urls.some((url) => url.endsWith("/favicon.svg"))).toBe(true);
   });
 
   it("queues share and class sync while offline and does not throw", async () => {

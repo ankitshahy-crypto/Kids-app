@@ -60,7 +60,7 @@ test("tapped and dragged blocks play on the animal", async ({ page }, testInfo) 
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "All games" }).click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "LittleNest Words" }).click();
+  await page.getByRole("button", { name: "Pilot focus" }).click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 

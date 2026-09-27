@@ -1,4 +1,4 @@
-import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME, MODULE_WORDS } from "../brand";
+import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
 import { TimeBoard } from "./TimePlay";
@@ -141,116 +141,21 @@ export function TodayPath({
       </div>
       {review && shown === "reading" ? <p className="today-review">Review</p> : null}
 
-      <div className="course-pick" role="group" aria-label="Today">
-        <button
-          type="button"
-          className={`course-button${shown === "reading" ? " is-selected" : ""}`}
-          data-course="reading"
-          aria-pressed={shown === "reading"}
-          aria-label={MODULE_WORDS}
-          onClick={() => onCourse("reading")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="words" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Words</span>
-          </span>
-        </button>
-        {showMath ? <button
-          type="button"
-          className={`course-button${shown === "math" ? " is-selected" : ""}`}
-          data-course="math"
-          aria-pressed={shown === "math"}
-          aria-label={MODULE_NUMBERS}
-          onClick={() => onCourse("math")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="numbers" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Numbers</span>
-          </span>
-        </button> : null}
-        {showColors ? <button
-          type="button"
-          className={`course-button${shown === "colors" ? " is-selected" : ""}`}
-          data-course="colors"
-          aria-pressed={shown === "colors"}
-          aria-label={MODULE_COLORS}
-          onClick={() => onCourse("colors")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="colors" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Colors</span>
-          </span>
-        </button> : null}
-        {showTime ? <button
-          type="button"
-          className={`course-button${shown === "time" ? " is-selected" : ""}`}
-          data-course="time"
-          aria-pressed={shown === "time"}
-          aria-label={MODULE_TIME}
-          onClick={() => onCourse("time")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="time" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Time & Money</span>
-          </span>
-        </button> : null}
-        {showBuild ? <button
-          type="button"
-          className={`course-button${shown === "build" ? " is-selected" : ""}`}
-          data-course="build"
-          aria-pressed={shown === "build"}
-          aria-label={MODULE_BUILD}
-          onClick={() => onCourse("build")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="build" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Build</span>
-          </span>
-        </button> : null}
-        {showScience ? <button
-          type="button"
-          className={`course-button${shown === "science" ? " is-selected" : ""}`}
-          data-course="science"
-          aria-pressed={shown === "science"}
-          aria-label={MODULE_SCIENCE}
-          onClick={() => onCourse("science")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="science" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Science</span>
-          </span>
-        </button> : null}
-      </div>
+      <div className="today-body">
+        <section className="lesson">
+          <button
+            type="button"
+            className={`pilot-label${shown === "reading" ? " is-selected" : ""}`}
+            data-area="pilot"
+            data-course="reading"
+            aria-pressed={shown === "reading"}
+            onClick={() => onCourse("reading")}
+          >
+            Pilot focus
+          </button>
 
-      {shown === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
-      {shown === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
-      {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
-      {shown === "build" ? (
-        <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} />
-      ) : null}
-      {shown === "science" ? (
-        <ScienceBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[SCIENCE] ?? {}} onOpen={onScience} />
-      ) : null}
-
-      {shown === "reading" ? <div className="trail">
+          {shown === "reading" ? (
+            <div className="trail">
         <Hills />
         <svg className="trail-dots" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           <path
@@ -291,18 +196,132 @@ export function TodayPath({
         >
           <Hero animal={profile.animal} outfit={profile.outfit} />
         </span>
-      </div> : null}
+            </div>
+          ) : null}
 
-      {shown === "reading" ? (
-        <div className="trace-practice">
-          <button type="button" data-practice="word" disabled={!canTraceWord} onClick={onTraceWord}>
-            Trace a word
-          </button>
-          <button type="button" data-practice="name" disabled={!canTraceName} onClick={onTraceName}>
-            Trace my name
-          </button>
-        </div>
-      ) : null}
+          {shown === "reading" ? (
+            <div className="trace-practice">
+              <button type="button" data-practice="word" disabled={!canTraceWord} onClick={onTraceWord}>
+                Trace a word
+              </button>
+              <button type="button" data-practice="name" disabled={!canTraceName} onClick={onTraceName}>
+                Trace my name
+              </button>
+            </div>
+          ) : null}
+
+          {shown === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
+          {shown === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
+          {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
+          {shown === "build" ? (
+            <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} />
+          ) : null}
+          {shown === "science" ? (
+            <ScienceBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[SCIENCE] ?? {}} onOpen={onScience} />
+          ) : null}
+        </section>
+
+        {showMath || showColors || showTime || showBuild || showScience ? (
+          <section className="explore-area" data-area="explore">
+            <div className="explore-head">
+              <h2>Explore</h2>
+              <p className="explore-tag">New – try it!</p>
+            </div>
+            <div className="course-pick" role="group" aria-label="Explore">
+              {showMath ? (
+                <button
+                  type="button"
+                  className={`course-button${shown === "math" ? " is-selected" : ""}`}
+                  data-course="math"
+                  aria-pressed={shown === "math"}
+                  aria-label={MODULE_NUMBERS}
+                  onClick={() => onCourse("math")}
+                >
+                  <span className="course-art" aria-hidden="true">
+                    <ModuleMark name="numbers" />
+                  </span>
+                  <span className="course-name">
+                    <span className="course-brand">LittleNest</span>
+                    <span>Numbers</span>
+                  </span>
+                </button>
+              ) : null}
+              {showColors ? (
+                <button
+                  type="button"
+                  className={`course-button${shown === "colors" ? " is-selected" : ""}`}
+                  data-course="colors"
+                  aria-pressed={shown === "colors"}
+                  aria-label={MODULE_COLORS}
+                  onClick={() => onCourse("colors")}
+                >
+                  <span className="course-art" aria-hidden="true">
+                    <ModuleMark name="colors" />
+                  </span>
+                  <span className="course-name">
+                    <span className="course-brand">LittleNest</span>
+                    <span>Colors</span>
+                  </span>
+                </button>
+              ) : null}
+              {showTime ? (
+                <button
+                  type="button"
+                  className={`course-button${shown === "time" ? " is-selected" : ""}`}
+                  data-course="time"
+                  aria-pressed={shown === "time"}
+                  aria-label={MODULE_TIME}
+                  onClick={() => onCourse("time")}
+                >
+                  <span className="course-art" aria-hidden="true">
+                    <ModuleMark name="time" />
+                  </span>
+                  <span className="course-name">
+                    <span className="course-brand">LittleNest</span>
+                    <span>Time & Money</span>
+                  </span>
+                </button>
+              ) : null}
+              {showBuild ? (
+                <button
+                  type="button"
+                  className={`course-button${shown === "build" ? " is-selected" : ""}`}
+                  data-course="build"
+                  aria-pressed={shown === "build"}
+                  aria-label={MODULE_BUILD}
+                  onClick={() => onCourse("build")}
+                >
+                  <span className="course-art" aria-hidden="true">
+                    <ModuleMark name="build" />
+                  </span>
+                  <span className="course-name">
+                    <span className="course-brand">LittleNest</span>
+                    <span>Build</span>
+                  </span>
+                </button>
+              ) : null}
+              {showScience ? (
+                <button
+                  type="button"
+                  className={`course-button${shown === "science" ? " is-selected" : ""}`}
+                  data-course="science"
+                  aria-pressed={shown === "science"}
+                  aria-label={MODULE_SCIENCE}
+                  onClick={() => onCourse("science")}
+                >
+                  <span className="course-art" aria-hidden="true">
+                    <ModuleMark name="science" />
+                  </span>
+                  <span className="course-name">
+                    <span className="course-brand">LittleNest</span>
+                    <span>Science</span>
+                  </span>
+                </button>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+      </div>
 
       <div className="today-dock">
         <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>

@@ -1,4 +1,5 @@
 import type { IllustrationName } from "../illustrations";
+import manifest from "./audioManifest.json";
 import { starterDeck, type DeckWord, type LetterTile } from "./deck";
 import type { PhonemeId } from "./phonemes";
 import { letterPlanSize } from "./schedule";
@@ -13,6 +14,10 @@ export const SUCCESSES_TO_ADVANCE = 3;
 export type LadderProgress = {
   step: LadderStep;
   successes: number;
+  /** The local day the words below were counted on. */
+  day?: string;
+  /** Words that already counted today, so a replay is one try, not three. */
+  words?: string[];
 };
 
 const PHONEME: Record<string, string> = {
@@ -47,13 +52,21 @@ export function emptyLadder(): LadderProgress {
   return { step: 1, successes: 0 };
 }
 
+function cleanWords(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const words = value.filter((item): item is string => typeof item === "string" && item.length > 0 && item.length <= 32);
+  return [...new Set(words)].slice(0, 64);
+}
+
 export function normalizeLadder(value: unknown): LadderProgress {
   if (!value || typeof value !== "object") return emptyLadder();
   const raw = value as Partial<LadderProgress>;
   const step = typeof raw.step === "number" && isLadderStep(raw.step) ? raw.step : 1;
   const successes =
     typeof raw.successes === "number" && raw.successes > 0 ? Math.min(SUCCESSES_TO_ADVANCE, Math.floor(raw.successes)) : 0;
-  return { step, successes };
+  const day = typeof raw.day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : undefined;
+  const words = day ? cleanWords(raw.words) : [];
+  return day && words.length > 0 ? { step, successes, day, words } : { step, successes };
 }
 
 /** A teacher places the child on a step. The success streak starts over. */
@@ -65,23 +78,30 @@ export function assignLadderStep(progress: LadderProgress | undefined, step: Lad
 
 /**
  * Count one finished word try. Three successes move up one step.
- * Step 5 stays reserved for phonics until that level is open, or a teacher sets it.
+ * A word counts once per local day: replaying "cat" three times is one try,
+ * and tomorrow it counts again. Step 5 stays reserved for phonics until that
+ * level is open, or a teacher sets it.
  */
 export function recordLadderSuccess(
   progress: LadderProgress | undefined,
-  options?: { phonicsOpen?: boolean },
+  options?: { phonicsOpen?: boolean; word?: string; day?: string },
 ): { ladder: LadderProgress; advanced: boolean } {
   const current = normalizeLadder(progress);
+  const word = options?.word?.trim().toLowerCase() ?? "";
+  const day = options?.day ?? "";
+  const counted = word && day && current.day === day ? (current.words ?? []) : [];
+  if (word && day && counted.includes(word)) return { ladder: current, advanced: false };
+  const memo = word && day ? { day, words: [...counted, word].slice(-64) } : {};
   if (current.step >= 5) {
-    return { ladder: { step: 5, successes: Math.min(SUCCESSES_TO_ADVANCE, current.successes + 1) }, advanced: false };
+    return { ladder: { step: 5, successes: Math.min(SUCCESSES_TO_ADVANCE, current.successes + 1), ...memo }, advanced: false };
   }
   const successes = current.successes + 1;
   const blocked = current.step === 4 && !options?.phonicsOpen;
   if (successes >= SUCCESSES_TO_ADVANCE && !blocked) {
-    return { ladder: { step: (current.step + 1) as LadderStep, successes: 0 }, advanced: true };
+    return { ladder: { step: (current.step + 1) as LadderStep, successes: 0, ...memo }, advanced: true };
   }
   return {
-    ladder: { step: current.step, successes: Math.min(SUCCESSES_TO_ADVANCE, successes) },
+    ladder: { step: current.step, successes: Math.min(SUCCESSES_TO_ADVANCE, successes), ...memo },
     advanced: false,
   };
 }
@@ -300,11 +320,79 @@ function lettersKnown(word: DeckWord, known: Set<string>): boolean {
   return word.letters.every((letter) => letter.wordId || known.has(letter.char.toLowerCase()));
 }
 
+/** Pictures for letter cards, where the drawing matches the spoken example. */
+const LETTER_PICTURES: Partial<Record<string, IllustrationName>> = {
+  a: "apple",
+  c: "cat",
+  d: "dog",
+  e: "bed",
+  f: "fish",
+  h: "hat",
+  i: "pig",
+  l: "lamp",
+  n: "nest",
+  o: "dog",
+  p: "pig",
+  s: "sun",
+  u: "sun",
+  x: "fox",
+};
+
+const letterSays = manifest.letters as Record<string, { say?: string }>;
+
+/** The example word the letter phrase names: "m, as in moon" gives "moon". */
+export function letterExample(letter: string): string {
+  const say = letterSays[letter.toLowerCase()]?.say ?? "";
+  const match = say.match(/as in ([a-z]+)/i);
+  return match ? match[1].toLowerCase() : letter.toLowerCase();
+}
+
 /**
- * What drag-to-blend shows. Known-letter words come first.
+ * A letter-sound card for the letter of the week: one tile that plays the
+ * sound, then says its example word. Letters without a drawing show the letter.
+ */
+const letterCardCache = new Map<string, DeckWord>();
+
+export function letterCard(letter: string): DeckWord {
+  const char = letter.toLowerCase().slice(0, 1);
+  // One object per letter, like the fixed word lists, so a card keeps its
+  // state while the lesson list is recomputed around it.
+  const cached = letterCardCache.get(char);
+  if (cached) return cached;
+  const example = letterExample(char);
+  const picture = LETTER_PICTURES[char];
+  const card: DeckWord = {
+    id: `letter-${char}`,
+    word: example,
+    letterCard: true,
+    illustration: picture ?? "apple",
+    ...(picture ? {} : { glyph: char.toUpperCase() }),
+    letters: [{ char, phoneme: (PHONEME[char] ?? char) as PhonemeId }],
+  };
+  letterCardCache.set(char, card);
+  return card;
+}
+
+/** The week's letters as cards, in plan order. */
+export function letterCards(letters: readonly string[]): DeckWord[] {
+  const seen = new Set<string>();
+  const cards: DeckWord[] = [];
+  for (const letter of letters) {
+    const char = letter.toLowerCase().slice(0, 1);
+    if (!/^[a-z]$/.test(char) || seen.has(char)) continue;
+    seen.add(char);
+    cards.push(letterCard(char));
+  }
+  return cards;
+}
+
+/**
+ * What drag-to-blend shows. Step 1 leads with the week's letters, so the card
+ * on Today is the card in the lesson. Known-letter words come first after that.
  * Step 5 adds the short sentences after the longer words.
  */
 export function blendList(step: LadderStep, letters: readonly string[]): DeckWord[] {
+  if (step === 1) return [...letterCards(letters), ...wordsForStep(1)];
   const pool = [...wordsForStep(step), ...sentencesForStep(step)];
   const known = new Set(letters.map((letter) => letter.toLowerCase()));
   const matched = pool.filter((word) => lettersKnown(word, known));
