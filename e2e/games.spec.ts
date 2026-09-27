@@ -88,7 +88,7 @@ test("game tiles stay large on iPad", async ({ page }, testInfo) => {
     expect(box!.height).toBeGreaterThanOrEqual(100);
     expect(box!.width).toBeGreaterThan(140);
     if (testInfo.project.name === "chromium") {
-      await page.locator("[data-screen=games]").screenshot({ path: `/opt/cursor/artifacts/games_ipad_${viewport.name}.png` });
+      await page.locator("[data-screen=games]").screenshot({ path: `test-results/screenshots/games_ipad_${viewport.name}.png` });
     }
   }
 });
