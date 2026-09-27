@@ -1,3 +1,4 @@
+import { installAudioSpy, spokenLines } from "./audioSpy";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const profile = {
@@ -16,22 +17,8 @@ const profile = {
 };
 
 async function install(page: Page) {
+  await installAudioSpy(page);
   await page.addInitScript((saved) => {
-    const target = window as Window & { __audioAttempts?: { kind: string; detail: string }[] };
-    target.__audioAttempts = [];
-    const synth = window.SpeechSynthesis?.prototype;
-    if (synth && typeof synth.speak === "function") {
-      const speak = synth.speak;
-      synth.speak = function (this: SpeechSynthesis, utterance: SpeechSynthesisUtterance) {
-        target.__audioAttempts?.push({ kind: "speech", detail: utterance.text });
-        return speak.call(this, utterance);
-      };
-    }
-    const play = HTMLAudioElement.prototype.play;
-    HTMLAudioElement.prototype.play = function (this: HTMLAudioElement) {
-      target.__audioAttempts?.push({ kind: "element", detail: this.currentSrc || this.src || "" });
-      return play.apply(this);
-    };
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
     localStorage.removeItem("kids-app-silent-hint-v1");
   }, profile);
@@ -44,10 +31,7 @@ async function install(page: Page) {
 }
 
 async function spoken(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const list = (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [];
-    return list.filter((item) => item.kind === "speech" || item.kind === "element").map((item) => item.detail.toLowerCase());
-  });
+  return spokenLines(page);
 }
 
 async function passGate(page: Page) {
