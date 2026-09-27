@@ -13,6 +13,8 @@ export type LetterTile = {
   audioSrc?: string;
   /** When set, this tile is a word in a short sentence, not a letter sound. */
   wordId?: string;
+  /** When set, the device voice says this phrase and no recording is used. */
+  say?: string;
 };
 
 export type DeckWord = {

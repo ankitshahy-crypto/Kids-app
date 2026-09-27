@@ -211,6 +211,40 @@ function playFile(src: string, signal: AbortSignal): Promise<void> {
   return playOnBus(src, "voice", signal);
 }
 
+/** The last instruction, word, or letter spoken, so "Hear again" can say it as often as a child likes. */
+let lastCue: { src?: string; text: string } | null = null;
+let lastCueAt = 0;
+let replayController: AbortController | null = null;
+
+export function hasLastCue(): boolean {
+  return lastCue !== null;
+}
+
+function remember(cue: { src?: string; text: string }): void {
+  lastCue = cue;
+  lastCueAt = Date.now();
+}
+
+/**
+ * Forget a line spoken before `since`, for example by the screen that just
+ * closed. A line the new screen has already spoken is kept.
+ */
+export function clearLastCue(since = Number.POSITIVE_INFINITY): void {
+  if (lastCueAt >= since) return;
+  lastCue = null;
+  replayController?.abort();
+  replayController = null;
+}
+
+/** Say the last line again. Nothing happens when nothing has been said yet. */
+export function replayLastCue(settings: Settings): Promise<void> {
+  if (!lastCue) return Promise.resolve();
+  replayController?.abort();
+  const controller = new AbortController();
+  replayController = controller;
+  return playCue(lastCue, settings, controller.signal, { remember: false }).catch(() => undefined);
+}
+
 /**
  * Prefer a recorded file when one is passed. Otherwise use device speech.
  * A parent recording, stored only on the device, uses the same `src` path.
@@ -219,8 +253,10 @@ async function playCue(
   cue: { src?: string; text: string },
   settings: Settings,
   signal: AbortSignal,
+  options: { remember?: boolean } = {},
 ): Promise<void> {
   if (signal.aborted) throw abortError();
+  if (options.remember !== false) remember(cue);
   if (!settings.voice) {
     await sleep(SILENT_BEAT_MS, signal);
     return;
@@ -252,10 +288,12 @@ export function playLetter(
   signal: AbortSignal,
 ): Promise<void> {
   return playCue(
-    {
-      src: letter.audioSrc ?? recordedSrc("letters", letter.phoneme),
-      text: spokenLine("letters", letter.phoneme, letter.char),
-    },
+    letter.say
+      ? { text: letter.say }
+      : {
+          src: letter.audioSrc ?? recordedSrc("letters", letter.phoneme),
+          text: spokenLine("letters", letter.phoneme, letter.char),
+        },
     settings,
     signal,
   );
@@ -264,6 +302,7 @@ export function playLetter(
 /** Speak with the device voice only. Nothing is fetched and nothing leaves the device. */
 export function playOnDevice(text: string, settings: Settings, signal: AbortSignal): Promise<void> {
   if (signal.aborted) return Promise.reject(abortError());
+  if (text.trim()) remember({ text });
   if (!settings.voice || !text.trim()) return sleep(SILENT_BEAT_MS, signal);
   beginVoice();
   return speak(text, settings, signal).finally(() => endVoice());

@@ -3,6 +3,9 @@ import manifest from "./audioManifest.json";
 import { starterDeck, type DeckWord, type LetterTile } from "./deck";
 import type { PhonemeId } from "./phonemes";
 import { letterPlanSize } from "./schedule";
+import { themedLetterExample, type ThemeId } from "./themes";
+import { themedEntries, themedWordCatalog } from "./themeWords";
+import { PHONEME, made, spell } from "./wordBuild";
 
 /** 1 is a one-letter word. 5 is phonics for ages 5 to 7. */
 export const LADDER_STEPS = [1, 2, 3, 4, 5] as const;
@@ -20,29 +23,6 @@ export type LadderProgress = {
   words?: string[];
 };
 
-const PHONEME: Record<string, string> = {
-  a: "ae",
-  b: "b",
-  c: "k",
-  d: "d",
-  e: "eh",
-  f: "f",
-  g: "g",
-  h: "h",
-  i: "ih",
-  j: "j",
-  k: "k",
-  l: "l",
-  m: "m",
-  n: "n",
-  o: "aw",
-  p: "p",
-  r: "r",
-  s: "s",
-  t: "t",
-  u: "uh",
-  w: "w",
-};
 
 export function isLadderStep(value: number): value is LadderStep {
   return LADDER_STEPS.includes(value as LadderStep);
@@ -133,30 +113,7 @@ export function ladderMaxLetters(step: LadderStep): number {
   return step;
 }
 
-function spell(id: string, text: string, phonemes: PhonemeId[], illustration: IllustrationName): DeckWord {
-  const chars = [...text];
-  if (chars.length !== phonemes.length) {
-    throw new Error(`"${id}" has ${chars.length} letters and ${phonemes.length} sounds`);
-  }
-  return {
-    id,
-    word: text,
-    illustration,
-    letters: chars.map((char, index) => ({ char, phoneme: phonemes[index] })),
-  };
-}
 
-function sounds(text: string): PhonemeId[] {
-  return [...text.toLowerCase()].map((char) => {
-    const phoneme = PHONEME[char];
-    if (!phoneme) throw new Error(`No sound for "${char}" in "${text}"`);
-    return phoneme as PhonemeId;
-  });
-}
-
-function made(id: string, text: string, illustration: IllustrationName): DeckWord {
-  return spell(id, text, sounds(text), illustration);
-}
 
 function fromDeck(id: string): DeckWord {
   const found = starterDeck.words.find((word) => word.id === id);
@@ -296,9 +253,58 @@ function checkWords(): void {
 
 checkWords();
 
+/** A regular ladder word by id, for themed lists that reuse one. */
+function ladderWord(id: string): DeckWord | undefined {
+  for (const step of LADDER_STEPS) {
+    const found = byStep[step].find((word) => word.id === id);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+function checkThemedWords(): void {
+  const regular = new Set(LADDER_STEPS.flatMap((step) => byStep[step].map((word) => word.id)));
+  for (const word of themedWordCatalog()) {
+    if (regular.has(word.id)) throw new Error(`Themed word "${word.id}" is already a ladder word`);
+    const spelled = word.letters.map((letter) => letter.char).join("");
+    if (spelled !== word.word) throw new Error(`"${word.id}" spells "${spelled}"`);
+  }
+  for (const step of LADDER_STEPS) {
+    for (const entry of themedEntries(["dinosaurs", "vehicles", "space", "animals", "bugs", "ocean", "castles"], step)) {
+      if ("use" in entry) {
+        const found = ladderWord(entry.use);
+        if (!found) throw new Error(`Theme uses unknown ladder word "${entry.use}"`);
+        if (!byStep[step].includes(found)) throw new Error(`"${entry.use}" is not a step ${step} word`);
+        continue;
+      }
+      const length = entry.word.length;
+      if (step <= 4 && length !== step) throw new Error(`Themed "${entry.id}" is not a step ${step} word`);
+      if (step === 5 && length < 5) throw new Error(`Themed "${entry.id}" is not a longer word`);
+    }
+  }
+}
+
+checkThemedWords();
+
 /** Picture words on this step only. Sentences stay out of letter games. */
 export function wordsForStep(step: LadderStep): DeckWord[] {
   return byStep[step];
+}
+
+/**
+ * The step's words with the child's themes first: themed words drawn for the
+ * theme, and regular words that fit it, then the rest of the regular list. A
+ * step no theme has words for is the regular list.
+ */
+export function themedWordsForStep(step: LadderStep, themes: readonly ThemeId[]): DeckWord[] {
+  const entries = themedEntries(themes, step);
+  if (entries.length === 0) return byStep[step];
+  const front: DeckWord[] = [];
+  for (const entry of entries) {
+    const word = "use" in entry ? ladderWord(entry.use) : entry;
+    if (word && !front.includes(word)) front.push(word);
+  }
+  return [...front, ...byStep[step].filter((word) => !front.includes(word))];
 }
 
 /** Picture words from step 1 through this step. */
@@ -353,35 +359,70 @@ export function letterExample(letter: string): string {
  */
 const letterCardCache = new Map<string, DeckWord>();
 
-export function letterCard(letter: string): DeckWord {
+/** Themed example words that have a drawing of their own. */
+const THEMED_PICTURES: Partial<Record<string, IllustrationName>> = {
+  dinosaur: "dinosaurs",
+  egg: "egg",
+  truck: "vehicles",
+  bus: "bus",
+  car: "cab",
+  van: "van",
+  jet: "jet",
+  rocket: "space",
+  star: "star",
+  cat: "cat",
+  dog: "dog",
+  pig: "pig",
+  fox: "fox",
+  hen: "hen",
+  bug: "bug",
+  ant: "ant",
+  web: "web",
+  fish: "fish",
+  crab: "crab",
+  wave: "wave",
+  crown: "castles",
+};
+
+export function letterCard(letter: string, themes: readonly ThemeId[] = []): DeckWord {
   const char = letter.toLowerCase().slice(0, 1);
-  // One object per letter, like the fixed word lists, so a card keeps its
-  // state while the lesson list is recomputed around it.
-  const cached = letterCardCache.get(char);
+  const themed = themedLetterExample(char, themes);
+  const key = themed ? `${char}:${themed}` : char;
+  // One object per letter (and themed example), like the fixed word lists, so
+  // a card keeps its state while the lesson list is recomputed around it.
+  const cached = letterCardCache.get(key);
   if (cached) return cached;
-  const example = letterExample(char);
-  const picture = LETTER_PICTURES[char];
+  const example = themed ?? letterExample(char);
+  const picture = themed ? THEMED_PICTURES[themed] : LETTER_PICTURES[char];
   const card: DeckWord = {
     id: `letter-${char}`,
     word: example,
     letterCard: true,
     illustration: picture ?? "apple",
     ...(picture ? {} : { glyph: char.toUpperCase() }),
-    letters: [{ char, phoneme: (PHONEME[char] ?? char) as PhonemeId }],
+    letters: [
+      {
+        char,
+        phoneme: (PHONEME[char] ?? char) as PhonemeId,
+        // The recorded phrase names the regular example, so a themed card is
+        // spoken by the device voice: "d, as in dinosaur".
+        ...(themed ? { say: `${char}, as in ${themed}` } : {}),
+      },
+    ],
   };
-  letterCardCache.set(char, card);
+  letterCardCache.set(key, card);
   return card;
 }
 
 /** The week's letters as cards, in plan order. */
-export function letterCards(letters: readonly string[]): DeckWord[] {
+export function letterCards(letters: readonly string[], themes: readonly ThemeId[] = []): DeckWord[] {
   const seen = new Set<string>();
   const cards: DeckWord[] = [];
   for (const letter of letters) {
     const char = letter.toLowerCase().slice(0, 1);
     if (!/^[a-z]$/.test(char) || seen.has(char)) continue;
     seen.add(char);
-    cards.push(letterCard(char));
+    cards.push(letterCard(char, themes));
   }
   return cards;
 }
@@ -391,9 +432,9 @@ export function letterCards(letters: readonly string[]): DeckWord[] {
  * on Today is the card in the lesson. Known-letter words come first after that.
  * Step 5 adds the short sentences after the longer words.
  */
-export function blendList(step: LadderStep, letters: readonly string[]): DeckWord[] {
-  if (step === 1) return [...letterCards(letters), ...wordsForStep(1)];
-  const pool = [...wordsForStep(step), ...sentencesForStep(step)];
+export function blendList(step: LadderStep, letters: readonly string[], themes: readonly ThemeId[] = []): DeckWord[] {
+  if (step === 1) return [...letterCards(letters, themes), ...wordsForStep(1)];
+  const pool = [...themedWordsForStep(step, themes), ...sentencesForStep(step)];
   const known = new Set(letters.map((letter) => letter.toLowerCase()));
   const matched = pool.filter((word) => lettersKnown(word, known));
   const rest = pool.filter((word) => !matched.includes(word));
@@ -403,12 +444,13 @@ export function blendList(step: LadderStep, letters: readonly string[]): DeckWor
   return picked.slice(0, 6);
 }
 
-/** Words the child has already blended, at this step or an earlier one. */
+/** Words the child has already blended, at this step or an earlier one, themed words included. */
 export function wordsToTrace(stickers: { kind: string; label: string }[], step: LadderStep): DeckWord[] {
   const known = new Set(
     stickers.filter((sticker) => sticker.kind === "word").map((sticker) => sticker.label.trim().toLowerCase()),
   );
-  return wordsThrough(step).filter((word) => known.has(word.word.toLowerCase()));
+  const themed = themedWordCatalog().filter((word) => word.word.length <= ladderMaxLetters(step));
+  return [...wordsThrough(step), ...themed].filter((word) => known.has(word.word.toLowerCase()));
 }
 
 export type LadderClip = {

@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type JSX, type PointerEvent } from "react";
 import { playNumber, playPrompt } from "../audio/player";
+import { THEMES, type ThemeId } from "../data/themes";
+import { illustrations } from "../illustrations";
+import { themeArt } from "../themeArt";
 import { PathTrace } from "./PathTrace";
 import {
   numberWord,
@@ -40,6 +43,17 @@ function Apple() {
       <ellipse cx="26" cy="32" rx="4" ry="3" fill="#f4c7b8" opacity="0.8" />
     </svg>
   );
+}
+
+/** What the child counts: an apple, or the day's theme object when a theme is picked. */
+function countObject(theme?: ThemeId): { name: string; Art: () => JSX.Element } {
+  if (!theme) return { name: "apple", Art: Apple };
+  const Art = theme === "ocean" ? illustrations.fish : themeArt[theme];
+  return { name: THEMES[theme].object, Art: () => <span className="math-theme-object"><Art /></span> };
+}
+
+function titleCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 export function ShapeGlyph({ id }: { id: ShapeId }) {
@@ -106,12 +120,15 @@ export function CountActivity({
   lesson,
   settingsRef,
   onDone,
+  theme,
 }: {
   lesson: MathLesson;
   settingsRef: { current: Settings };
   onDone: (label: string) => void;
+  theme?: ThemeId;
 }) {
   const speak = useSpeaker(settingsRef);
+  const { name: objectName, Art: CountArt } = countObject(theme);
   const seen = useRef(new Set<number>());
   const [counted, setCounted] = useState<number[]>([]);
   const finished = useRef(false);
@@ -129,10 +146,10 @@ export function CountActivity({
   };
 
   return (
-    <div className="math-play" data-screen="count" data-target={lesson.count} data-counted={counted.length}>
+    <div className="math-play" data-screen="count" data-target={lesson.count} data-counted={counted.length} data-theme={theme ?? ""}>
       <h1>Count</h1>
-      <p className="math-prompt">Tap each apple, or drag it.</p>
-      <div className="math-objects" role="group" aria-label="Apples to count">
+      <p className="math-prompt">Tap each {objectName}, or drag it.</p>
+      <div className="math-objects" role="group" aria-label={`${titleCase(objectName)}s to count`}>
         {Array.from({ length: lesson.count }, (_, index) => {
           const on = counted.includes(index);
           return (
@@ -142,12 +159,12 @@ export function CountActivity({
               className={`math-object${on ? " is-counted" : ""}`}
               data-object={index}
               data-counted={on ? "true" : "false"}
-              aria-label={on ? `Apple ${index + 1}, counted` : `Apple ${index + 1}`}
+              aria-label={on ? `${titleCase(objectName)} ${index + 1}, counted` : `${titleCase(objectName)} ${index + 1}`}
               onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
               onPointerUp={() => countOne(index)}
               onClick={() => countOne(index)}
             >
-              <Apple />
+              <CountArt />
             </button>
           );
         })}

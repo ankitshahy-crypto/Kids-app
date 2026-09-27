@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
-import type { AnimalId } from "../data/animals";
-import {
-  lessonName,
-  starsThisWeek,
-  type AgeRange,
-  type ChildProfile,
-} from "../data/profiles";
+import { lessonName, starsThisWeek, type ChildInput, type ChildProfile } from "../data/profiles";
 import { resolvePlacement, stageTitle, weekLabel, type PlacementDocument } from "../data/placement";
 import {
   isReviewDay,
@@ -62,8 +56,8 @@ export function ParentView({
   active: ChildProfile | null;
   placement: PlacementDocument;
   onSelect: (id: string) => void;
-  onAdd: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
-  onUpdate: (id: string, input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
+  onAdd: (input: ChildInput) => void;
+  onUpdate: (id: string, input: ChildInput) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
 }) {

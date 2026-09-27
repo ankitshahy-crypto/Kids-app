@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Avatar } from "../avatars";
 import { animals, type AnimalId } from "../data/animals";
-import { ageRanges, normalizeChildName, type AgeRange, type ChildProfile } from "../data/profiles";
+import { ageRanges, normalizeChildName, type AgeRange, type ChildInput, type ChildProfile } from "../data/profiles";
+import { MAX_THEMES, THEME_IDS, THEMES, type ThemeId } from "../data/themes";
+import { themeArt } from "../themeArt";
+import { Illustration } from "../illustrations";
 
 export function ChildForm({
   initial,
@@ -9,16 +12,29 @@ export function ChildForm({
   onSave,
   onCancel,
 }: {
-  initial?: Pick<ChildProfile, "name" | "ageRange" | "animal">;
+  initial?: Pick<ChildProfile, "name" | "ageRange" | "animal"> & { themes?: ThemeId[] };
   submitLabel: string;
-  onSave: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
+  onSave: (input: ChildInput) => void;
   onCancel?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [ageRange, setAgeRange] = useState<AgeRange | null>(initial?.ageRange ?? null);
   const [animal, setAnimal] = useState<AnimalId | null>(initial?.animal ?? null);
+  const [themes, setThemes] = useState<ThemeId[]>(initial?.themes ?? []);
   const [error, setError] = useState("");
   const droppedLastName = name.trim().includes(" ");
+
+  const toggleTheme = (theme: ThemeId) => {
+    setError("");
+    setThemes((current) => {
+      if (current.includes(theme)) return current.filter((item) => item !== theme);
+      if (current.length >= MAX_THEMES) {
+        setError(`Up to ${MAX_THEMES} favorites. Tap one to take it off first.`);
+        return current;
+      }
+      return [...current, theme];
+    });
+  };
 
   const save = () => {
     if (!normalizeChildName(name)) {
@@ -29,7 +45,7 @@ export function ChildForm({
       setError("Choose an age and an animal.");
       return;
     }
-    onSave({ name, ageRange, animal });
+    onSave({ name, ageRange, animal, themes });
   };
 
   return (
@@ -88,6 +104,30 @@ export function ChildForm({
           </button>
         ))}
       </div>
+      <p className="field-label" id="theme-label">
+        Favorites <span className="field-optional">(pick up to {MAX_THEMES}, or none)</span>
+      </p>
+      <div className="theme-grid" role="group" aria-labelledby="theme-label" data-themes={themes.join(",")}>
+        {THEME_IDS.map((id) => {
+          const picked = themes.includes(id);
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`theme-pick${picked ? " is-selected" : ""}`}
+              aria-pressed={picked}
+              data-theme={id}
+              onClick={() => toggleTheme(id)}
+            >
+              <span className="theme-art" aria-hidden="true">
+                {id === "ocean" ? <Illustration name="fish" /> : <ThemeIcon id={id} />}
+              </span>
+              <span>{THEMES[id].title}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="field-hint">Words, pictures, and story lines lean on these. Lessons stay the same.</p>
       {error ? <p className="field-error">{error}</p> : null}
       <button type="submit" className="save-child">
         {submitLabel}
@@ -99,4 +139,9 @@ export function ChildForm({
       ) : null}
     </form>
   );
+}
+
+function ThemeIcon({ id }: { id: Exclude<ThemeId, "ocean"> }) {
+  const Art = themeArt[id];
+  return <Art />;
 }

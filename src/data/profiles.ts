@@ -1,5 +1,6 @@
 import { PROFILES_KEY, corruptKey, readStored, stashCorrupt, writeStored, type KeyValueStore } from "../storage";
 import { animalById, isAnimalId, type AnimalId } from "./animals";
+import { normalizeThemes, type ThemeId } from "./themes";
 import { READING, isSubjectKey, readingSteps, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
 import { emptyGames, normalizeGames, type GameProgress } from "./games";
@@ -77,7 +78,11 @@ export type ChildProfile = {
   ladder: LadderProgress;
   /** Dress-up items from the wheel. They can be worn before their star cost. */
   gifts: string[];
+  /** One to three interest themes, in the order picked. Empty means the regular content. */
+  themes: ThemeId[];
 };
+
+export type ChildInput = { name: string; ageRange: AgeRange; animal: AnimalId; themes?: ThemeId[] };
 
 type ProfileStore = {
   activeId: string | null;
@@ -218,10 +223,7 @@ function newId(): string {
 }
 
 /** Change name, age, or animal. Stars and daily progress stay as they are. */
-export function editChild(
-  profile: ChildProfile,
-  input: { name: string; ageRange: AgeRange; animal: AnimalId },
-): ChildProfile {
+export function editChild(profile: ChildProfile, input: ChildInput): ChildProfile {
   const name = normalizeChildName(input.name);
   if (!name) throw new Error("A first name or initial is required");
   return {
@@ -229,6 +231,7 @@ export function editChild(
     name,
     ageRange: input.ageRange,
     animal: input.animal,
+    themes: normalizeThemes(input.themes ?? profile.themes),
   };
 }
 
@@ -248,7 +251,7 @@ function emptyRewards(): Pick<
   };
 }
 
-export function createChild(input: { name: string; ageRange: AgeRange; animal: AnimalId }): ChildProfile {
+export function createChild(input: ChildInput): ChildProfile {
   const name = normalizeChildName(input.name);
   if (!name) throw new Error("A first name or initial is required");
   return {
@@ -256,6 +259,7 @@ export function createChild(input: { name: string; ageRange: AgeRange; animal: A
     name,
     ageRange: input.ageRange,
     animal: input.animal,
+    themes: normalizeThemes(input.themes),
     createdAt: utcTimestamp(),
     stars: 0,
     days: {},
@@ -314,6 +318,7 @@ function withRewards(profile: ChildProfile): ChildProfile {
     games: normalizeGames((profile as { games?: unknown }).games),
     ladder: normalizeLadder((profile as { ladder?: unknown }).ladder),
     gifts: normalizeGifts((profile as { gifts?: unknown }).gifts),
+    themes: normalizeThemes((profile as { themes?: unknown }).themes),
   };
 }
 
