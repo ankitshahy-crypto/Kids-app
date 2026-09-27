@@ -12,11 +12,14 @@ import {
 } from "../data/profiles";
 import { applyReadingCredit, type ReadingCredit } from "../data/reading";
 import { applyEffort, wearItem, type EffortResult } from "../data/rewards";
+import { assignWritingLevel, recordWritingAttempt, type ScaffoldLevel, type WritingOutcome } from "../data/scaffold";
 import { READING, type SubjectId } from "../data/subject";
 
 export function useProfiles() {
   const [store, setStore] = useState(() => loadStore());
   const saved = useRef(storeSnapshot(store));
+  const profilesRef = useRef(store.profiles);
+  profilesRef.current = store.profiles;
 
   useEffect(() => {
     const next = storeSnapshot(store);
@@ -106,6 +109,29 @@ export function useProfiles() {
     return result;
   };
 
+  // Fast repeats read the ref, and each updater writes that attempt's map onto the latest profile.
+  const recordWriting = (id: string, itemId: string, success: boolean): WritingOutcome => {
+    const profile = profilesRef.current.find((item) => item.id === id);
+    const outcome = recordWritingAttempt(profile?.writing, itemId, success);
+    if (!profile) return outcome;
+    const writing = outcome.writing;
+    profilesRef.current = profilesRef.current.map((item) => (item.id === id ? { ...item, writing } : item));
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) => (item.id === id ? { ...item, writing } : item)),
+    }));
+    return outcome;
+  };
+
+  const setWritingLevel = (id: string, itemId: string, level: ScaffoldLevel) => {
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) =>
+        item.id === id ? { ...item, writing: assignWritingLevel(item.writing, itemId, level) } : item,
+      ),
+    }));
+  };
+
   const wear = (id: string, itemId: string) => {
     setStore((current) => ({
       ...current,
@@ -122,6 +148,8 @@ export function useProfiles() {
     removeChild,
     giveStar,
     recordReading,
+    recordWriting,
+    setWritingLevel,
     wear,
   };
 }

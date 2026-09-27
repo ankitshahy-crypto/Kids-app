@@ -4,6 +4,18 @@ import { playPrompt } from "../audio/player";
 import { letterForm, type LetterCase, type TracePoint } from "../data/handwriting";
 import { pairLine, pairPromptId } from "../data/letterPairs";
 import {
+  fadeOpacity,
+  guideFor,
+  letterItemId,
+  memoryPrompt,
+  recordWritingAttempt,
+  writingLevel,
+  writingState,
+  type ScaffoldLevel,
+  type WritingMap,
+  type WritingOutcome,
+} from "../data/scaffold";
+import {
   followStroke,
   matchDistractor,
   reversalPartner,
@@ -12,8 +24,15 @@ import {
 } from "../data/trace";
 import type { Settings } from "../settings";
 import { StrokeFigure } from "./StrokeFigure";
+import { WritingBox } from "./WritingBox";
 
-type Phase = "demo" | "trace" | "cheer" | "match" | "reversal";
+type Phase = "demo" | "trace" | "write" | "cheer" | "match" | "reversal";
+
+function openingPhase(level: ScaffoldLevel): Phase {
+  if (level >= 4) return "write";
+  if (level === 3) return "trace";
+  return "demo";
+}
 
 function lessonLetters(letters: string[]): string[] {
   const seen = new Set<string>();
@@ -45,16 +64,22 @@ function shuffled(letters: string[], salt: number): string[] {
 export function LetterTrace({
   letters,
   settingsRef,
+  writing,
+  onAttempt = (id, success) => recordWritingAttempt(writing, id, success),
   onDone,
 }: {
   letters: string[];
   settingsRef: { current: Settings };
+  writing?: WritingMap;
+  onAttempt?: (id: string, success: boolean) => WritingOutcome;
   onDone: () => void;
 }) {
   const plan = lessonLetters(letters);
   const [index, setIndex] = useState(0);
   const [casing, setCasing] = useState<LetterCase>("upper");
-  const [phase, setPhase] = useState<Phase>("demo");
+  const [phase, setPhase] = useState<Phase>(() => openingPhase(writingLevel(writing, letterItemId(plan[0] ?? "a", "upper"))));
+  const [hint, setHint] = useState("");
+  const [attempt, setAttempt] = useState(0);
   const [strokeIndex, setStrokeIndex] = useState(0);
   const [covered, setCovered] = useState(0);
   const [paired, setPaired] = useState<string[]>([]);
@@ -117,6 +142,27 @@ export function LetterTrace({
     resetCovered();
   };
 
+  const finishCasing = (success: boolean) => {
+    const id = letterItemId(letter, casing);
+    const outcome = onAttempt(id, success);
+    if (!success && !outcome.steppedBack) {
+      setHint("Almost. Try again.");
+      setAttempt((current) => current + 1);
+      return;
+    }
+    setHint("");
+    if (casing === "upper") {
+      const nextLevel = writingLevel(writing, letterItemId(letter, "lower"));
+      setCasing("lower");
+      setPhase(openingPhase(nextLevel));
+      setStrokeIndex(0);
+      resetCovered();
+      return;
+    }
+    setPhase("cheer");
+    playEffect("cheer", settingsRef.current);
+  };
+
   const advanceStroke = () => {
     const strokes = letterForm(letter, casing).strokes;
     if (strokeIndex + 1 < strokes.length) {
@@ -124,15 +170,7 @@ export function LetterTrace({
       resetCovered();
       return;
     }
-    if (casing === "upper") {
-      setCasing("lower");
-      setPhase("demo");
-      setStrokeIndex(0);
-      resetCovered();
-      return;
-    }
-    setPhase("cheer");
-    playEffect("cheer", settingsRef.current);
+    finishCasing(true);
   };
 
   const completeStroke = () => {
@@ -186,13 +224,15 @@ export function LetterTrace({
   const goNext = () => {
     if (finished.current) return;
     if (index + 1 < plan.length) {
+      const next = plan[index + 1] ?? letter;
       setIndex((current) => current + 1);
       setCasing("upper");
-      setPhase("demo");
+      setPhase(openingPhase(writingLevel(writing, letterItemId(next, "upper"))));
       setStrokeIndex(0);
       setPaired([]);
       setSelected(null);
       setMisses(0);
+      setHint("");
       resetCovered();
       return;
     }
@@ -266,6 +306,11 @@ export function LetterTrace({
   });
 
   const caseLabel = casing === "upper" ? `Big ${letter.toUpperCase()}` : `Little ${letter}`;
+  const itemId = letterItemId(letter, casing);
+  const level = writingLevel(writing, itemId);
+  const guide = guideFor(level);
+  const opacity = level === 2 ? fadeOpacity(writingState(writing, itemId).successes) : 1;
+  const partnerStrokes = partner ? letterForm(partner, casing).strokes : undefined;
 
   return (
     <div
@@ -278,6 +323,11 @@ export function LetterTrace({
       data-stroke={strokeIndex}
       data-covered={covered}
       data-stroke-done={doneStroke ? "true" : "false"}
+      data-level={level}
+      data-guide={guide}
+      data-item={itemId}
+      data-hint={hint || undefined}
+      data-fade={level === 2 ? String(opacity) : undefined}
       data-reversal={phase === "reversal" ? letter : undefined}
       data-reversal-misses={misses}
     >
@@ -314,9 +364,25 @@ export function LetterTrace({
             casing={casing}
             progress={progress}
             activeIndex={phase === "trace" ? strokeIndex : -1}
-            demoIndex={phase === "demo" ? strokeIndex : -1}
+            demoIndex={phase === "demo" && level < 3 ? strokeIndex : -1}
+            guide={level <= 2 ? (level === 2 ? "fade" : "full") : "start"}
+            guideOpacity={opacity}
           />
         </div>
+      ) : null}
+      {phase === "write" ? (
+        <WritingBox
+          key={`${itemId}-${attempt}`}
+          template={form.strokes}
+          partner={partnerStrokes}
+          prompt={level === 5 ? memoryPrompt("letter", letter, casing) : `Copy ${caseLabel}.`}
+          speak={level === 5}
+          showModel={level === 4}
+          hint={hint}
+          settingsRef={settingsRef}
+          model={<StrokeFigure letter={letter} casing={casing} guide="model" />}
+          onJudge={finishCasing}
+        />
       ) : null}
       {phase === "cheer" ? (
         <div className="letter-cheer" data-traced={letter}>

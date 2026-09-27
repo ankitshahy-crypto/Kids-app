@@ -23,6 +23,7 @@ import { COLORS, colorIntroduced } from "../data/colors";
 import { MATH, mathIntroduced } from "../data/math";
 import { practiceTotal } from "../data/reading";
 import { LearningPath } from "./LearningPath";
+import { WritingLevels } from "./WritingLevels";
 import { ReadingChart } from "./ReadingChart";
 import { SettingsFields } from "./SettingsFields";
 
@@ -380,6 +381,8 @@ function ParentHome({
           </div>
         </div>
       </section>
+
+      <WritingLevels writing={child.writing} weekLetters={weekLetters} childName={child.name} stickers={child.stickers} />
 
       <div className="dash-split">
         <section className="dash-card" data-section="lessons">

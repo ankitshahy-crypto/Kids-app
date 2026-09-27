@@ -19,6 +19,8 @@ export function StrokeFigure({
   progress,
   activeIndex = -1,
   demoIndex = -1,
+  guide = "full",
+  guideOpacity = 1,
 }: {
   letter?: string;
   casing?: LetterCase;
@@ -28,6 +30,9 @@ export function StrokeFigure({
   progress?: number[];
   activeIndex?: number;
   demoIndex?: number;
+  /** full guide, fading guide, start dot only, a copy model, or an empty page. */
+  guide?: "full" | "fade" | "start" | "model" | "none";
+  guideOpacity?: number;
 }) {
   const form = strokes ? { letter: label ?? "", strokes } : letterForm(letter ?? "a", casing);
   const glyph = label || form.letter;
@@ -50,19 +55,30 @@ export function StrokeFigure({
         const arrow = directionArrow(stroke);
         const spot = numberSpot(stroke);
         const start = stroke[0];
-        const covered = progress?.[index] ?? 0;
+        const covered = guide === "model" || guide === "none" ? 0 : (progress?.[index] ?? 0);
         const ink = inkPath(stroke, covered);
+        const showPath = guide === "full" || guide === "fade" || guide === "model";
+        const showStart = showPath || (guide === "start" && index === 0);
+        const chrome = guide === "fade" ? guideOpacity : 1;
         return (
           <g key={`${glyph}-${index}`} className={index === activeIndex || index === demoIndex ? "is-current" : undefined}>
-            <path className="stroke-guide" d={strokePath(stroke)} />
+            {showPath || showStart ? (
+              <g opacity={chrome}>
+                {showPath ? <path className="stroke-guide" d={strokePath(stroke)} /> : null}
+                {demoIndex === index && showPath ? <path className="stroke-demo" pathLength={1} d={strokePath(stroke)} /> : null}
+                {showStart && arrow ? (
+                  <polygon className="stroke-arrow" points={arrow.map((point) => `${point.x},${point.y}`).join(" ")} />
+                ) : null}
+                {showStart && start ? <circle className="stroke-start" cx={start.x} cy={start.y} r="4.2" /> : null}
+                {showPath ? (
+                  <text className="stroke-number" x={spot.x} y={spot.y} textAnchor="middle" dominantBaseline="central">
+                    {index + 1}
+                  </text>
+                ) : null}
+              </g>
+            ) : null}
             {ink.length >= 2 ? <path className="stroke-ink" d={strokePath(ink)} /> : null}
             {ink.length === 1 ? <circle className="stroke-ink-dot" cx={ink[0].x} cy={ink[0].y} r="3.2" /> : null}
-            {demoIndex === index ? <path className="stroke-demo" pathLength={1} d={strokePath(stroke)} /> : null}
-            {arrow ? <polygon className="stroke-arrow" points={arrow.map((point) => `${point.x},${point.y}`).join(" ")} /> : null}
-            {start ? <circle className="stroke-start" cx={start.x} cy={start.y} r="4.2" /> : null}
-            <text className="stroke-number" x={spot.x} y={spot.y} textAnchor="middle" dominantBaseline="central">
-              {index + 1}
-            </text>
           </g>
         );
       })}
