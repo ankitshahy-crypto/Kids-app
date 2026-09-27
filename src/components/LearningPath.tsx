@@ -59,7 +59,7 @@ export function LearningPath({
           </li>
         ))}
         {subject === READING ? (
-          <li data-stage="word-ladder" data-ladder-step={ladderStep} data-state="current">
+          <li data-stage="word-ladder" data-ladder-step={ladderStep} data-state="step">
             <span className="path-title">Word ladder</span>
             <span className="path-state">
               Step {ladderStep} · {ladderTitle(ladderStep)}

@@ -11,6 +11,7 @@ const profile = {
       createdAt: "2026-09-01T15:00:00.000Z",
       stars: 1,
       days: {},
+      ladder: { step: 3, successes: 0 },
     },
   ],
 };
