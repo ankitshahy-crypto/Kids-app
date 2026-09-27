@@ -6979,7 +6979,10 @@ input.is-pressed,
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* A page sits in the middle of the screen, not against the top bar with an empty half below. */
+  justify-content: safe center;
   gap: 12px;
+  padding-bottom: 12px;
 }
 
 .story-cover,
@@ -7158,7 +7161,9 @@ input.is-pressed,
   }
 
   .story-scene {
-    max-height: 34vh;
+    /* A phone is narrow, so the picture takes a squarer shape to stay big. */
+    aspect-ratio: 4 / 3;
+    max-height: 38vh;
   }
 }
 
