@@ -40,7 +40,7 @@ export const aboutContent = {
     {
       id: "rewards",
       title: "Rewards that feel great",
-      body: "Stars for effort unlock outfits for your child's animal, a sticker book of letters, numbers, and colors, and a growing nest. Every reward is earned by practicing, never bought.",
+      body: "Stars for effort unlock outfits for your child's animal, a sticker book of letters, numbers, colors, and baby animals, and a growing nest. Every reward is earned by practicing, never bought.",
     },
     {
       id: "math",
@@ -51,6 +51,11 @@ export const aboutContent = {
       id: "colors",
       title: MODULE_COLORS,
       body: "Hear a color and tap it, mix paints, and color their animal with colors they made. Every swatch shows the color word.",
+    },
+    {
+      id: "games",
+      title: "Games to play",
+      body: "Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. A miss just means try again.",
     },
     {
       id: "classroom",

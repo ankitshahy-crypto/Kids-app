@@ -86,6 +86,28 @@ export function SettingsFields({
         </div>
         <p className="adult-copy">A short tip for you at a lesson. Your child can keep going without reading it.</p>
       </fieldset>
+      <fieldset className="setting-group" data-setting="explore">
+        <legend>Show Explore</legend>
+        <div className="segment">
+          <button
+            type="button"
+            className={settings.showExplore ? "is-selected" : ""}
+            aria-pressed={settings.showExplore}
+            onClick={() => onChange({ showExplore: true })}
+          >
+            On
+          </button>
+          <button
+            type="button"
+            className={!settings.showExplore ? "is-selected" : ""}
+            aria-pressed={!settings.showExplore}
+            onClick={() => onChange({ showExplore: false })}
+          >
+            Off
+          </button>
+        </div>
+        <p className="adult-copy">On shows Numbers, Colors, and Games. Off keeps this device on reading only.</p>
+      </fieldset>
       <fieldset className="setting-group" data-setting="reading-goal">
         <legend>Daily reading goal</legend>
         <div className="segment segment-3">

@@ -8,6 +8,7 @@ import type { PlacementSource } from "../data/placement";
 import { isReviewDay } from "../data/schedule";
 import { dayProgress, todayKey, type ChildProfile, type LessonStep } from "../data/profiles";
 import { practiceTotal } from "../data/reading";
+import { sectionVisible } from "../explore/flags";
 import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
 import { StarIcon } from "./icons";
@@ -33,6 +34,7 @@ export function TodayPath({
   onNest,
   onCloset,
   onStickers,
+  onGames,
   goalMinutes,
   course,
   onCourse,
@@ -44,6 +46,7 @@ export function TodayPath({
   canTraceName,
   onTraceWord,
   onTraceName,
+  showExplore,
 }: {
   profile: ChildProfile;
   letters: string[];
@@ -56,6 +59,7 @@ export function TodayPath({
   onNest: () => void;
   onCloset: () => void;
   onStickers: () => void;
+  onGames: () => void;
   goalMinutes: number;
   course: "reading" | "math" | "colors";
   onCourse: (course: "reading" | "math" | "colors") => void;
@@ -67,7 +71,12 @@ export function TodayPath({
   canTraceName: boolean;
   onTraceWord: () => void;
   onTraceName: () => void;
+  showExplore: boolean;
 }) {
+  const showMath = sectionVisible("math", undefined, showExplore);
+  const showColors = sectionVisible("colors", undefined, showExplore);
+  const showGames = sectionVisible("games", undefined, showExplore);
+  const shown = course === "math" && showMath ? "math" : course === "colors" && showColors ? "colors" : "reading";
   const now = new Date();
   const review = isReviewDay(now);
   const done = dayProgress(profile, now);
@@ -80,10 +89,10 @@ export function TodayPath({
     <div
       className="today"
       data-screen="today"
-      data-subject={course === "math" ? MATH : course === "colors" ? COLORS : READING}
+      data-subject={shown === "math" ? MATH : shown === "colors" ? COLORS : READING}
       data-review={review ? "true" : "false"}
       data-source={placementSource}
-      data-stage={course === "math" ? mathLesson.stageId : course === "colors" ? colorLesson.stageId : stageId}
+      data-stage={shown === "math" ? mathLesson.stageId : shown === "colors" ? colorLesson.stageId : stageId}
       data-week={weekIndex}
       data-letters={letters.join("")}
     >
@@ -99,14 +108,14 @@ export function TodayPath({
           </p>
         </div>
       </div>
-      {review && course === "reading" ? <p className="today-review">Review</p> : null}
+      {review && shown === "reading" ? <p className="today-review">Review</p> : null}
 
       <div className="course-pick" role="group" aria-label="Today">
         <button
           type="button"
-          className={`course-button${course === "reading" ? " is-selected" : ""}`}
+          className={`course-button${shown === "reading" ? " is-selected" : ""}`}
           data-course="reading"
-          aria-pressed={course === "reading"}
+          aria-pressed={shown === "reading"}
           aria-label={MODULE_WORDS}
           onClick={() => onCourse("reading")}
         >
@@ -118,11 +127,11 @@ export function TodayPath({
             <span>Words</span>
           </span>
         </button>
-        <button
+        {showMath ? <button
           type="button"
-          className={`course-button${course === "math" ? " is-selected" : ""}`}
+          className={`course-button${shown === "math" ? " is-selected" : ""}`}
           data-course="math"
-          aria-pressed={course === "math"}
+          aria-pressed={shown === "math"}
           aria-label={MODULE_NUMBERS}
           onClick={() => onCourse("math")}
         >
@@ -133,12 +142,12 @@ export function TodayPath({
             <span className="course-brand">LittleNest</span>
             <span>Numbers</span>
           </span>
-        </button>
-        <button
+        </button> : null}
+        {showColors ? <button
           type="button"
-          className={`course-button${course === "colors" ? " is-selected" : ""}`}
+          className={`course-button${shown === "colors" ? " is-selected" : ""}`}
           data-course="colors"
-          aria-pressed={course === "colors"}
+          aria-pressed={shown === "colors"}
           aria-label={MODULE_COLORS}
           onClick={() => onCourse("colors")}
         >
@@ -149,13 +158,13 @@ export function TodayPath({
             <span className="course-brand">LittleNest</span>
             <span>Colors</span>
           </span>
-        </button>
+        </button> : null}
       </div>
 
-      {course === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
-      {course === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
+      {shown === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
+      {shown === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
 
-      {course === "reading" ? <div className="trail">
+      {shown === "reading" ? <div className="trail">
         <Hills />
         <svg className="trail-dots" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           <path
@@ -198,7 +207,7 @@ export function TodayPath({
         </span>
       </div> : null}
 
-      {course === "reading" ? (
+      {shown === "reading" ? (
         <div className="trace-practice">
           <button type="button" data-practice="word" disabled={!canTraceWord} onClick={onTraceWord}>
             Trace a word
@@ -224,6 +233,14 @@ export function TodayPath({
           </span>
           <span>Play library</span>
         </button>
+{showGames ? <button type="button" className="dock-button" data-dock="games" onClick={onGames}>
+          <span className="dock-art dock-games" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <ellipse cx="32" cy="36" rx="16" ry="20" fill="#FFF6E4" stroke="#E4C7A4" strokeWidth="3" />
+            </svg>
+          </span>
+          <span>Games</span>
+        </button> : null}
         <button type="button" className="dock-button" data-dock="nest" onClick={onNest}>
           <span className="dock-art dock-nest">
             <EggNest />

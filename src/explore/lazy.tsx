@@ -1,5 +1,7 @@
 import { lazy } from "react";
 
+export const Games = lazy(() => import("../components/Games").then((mod) => ({ default: mod.Games })));
+
 export const AddActivity = lazy(() => import("../components/MathPlay").then((mod) => ({ default: mod.AddActivity })));
 export const CountActivity = lazy(() => import("../components/MathPlay").then((mod) => ({ default: mod.CountActivity })));
 export const KnowActivity = lazy(() => import("../components/MathPlay").then((mod) => ({ default: mod.KnowActivity })));

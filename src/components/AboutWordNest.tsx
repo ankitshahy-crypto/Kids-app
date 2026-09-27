@@ -16,6 +16,7 @@ const tints: Record<AboutFeatureId, string> = {
   rewards: tint.blush,
   math: tint.mint,
   colors: tint.blush,
+  games: tint.peach,
   classroom: tint.sky,
   grownups: tint.mintCard,
 };

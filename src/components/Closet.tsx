@@ -1,4 +1,5 @@
 import type { ChildProfile } from "../data/profiles";
+import { itemUnlocked } from "../data/rewards";
 import { wardrobe } from "../data/wardrobe";
 import { Chevron } from "./icons";
 import { Hero } from "./Hero";
@@ -25,7 +26,7 @@ export function Closet({
       </div>
       <ul className="closet-grid">
         {wardrobe.map((item) => {
-          const open = profile.stars >= item.stars;
+          const open = itemUnlocked(profile, item.id);
           const worn = profile.outfit[item.slot] === item.id;
           return (
             <li key={item.id}>

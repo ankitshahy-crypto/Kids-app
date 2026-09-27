@@ -99,6 +99,39 @@ const colorTips: Record<string, { start: string; end: string }> = {
   },
 };
 
+const gameTips: Record<string, { start: string; end: string }> = {
+  hatch: {
+    start: "The word is spoken slowly. A wrong letter just wiggles. After two tries the right letter glows.",
+    end: "Ask: what sound did we hear at the start?",
+  },
+  pop: {
+    start: "Pop the balloons with the sound you hear. The others stay up.",
+    end: "Ask: what else starts with that sound?",
+  },
+  feed: {
+    start: "Drag or tap foods that start with the letter. Their animal is happy either way.",
+    end: "Ask: what food at home starts with that letter?",
+  },
+  rhyme: {
+    start: "Listen for words that end the same. Tap one, then its rhyme.",
+    end: "Ask: can you think of another word that rhymes?",
+  },
+  memory: {
+    start: "Flip two cards. A big letter matches its little letter, or a number matches its dots.",
+    end: "Ask: which pair did you find first?",
+  },
+  spin: {
+    start: "Flick the wheel or tap it. Each slice is something they already know. A miss only shows a hint.",
+    end: "Ask: which slice do you want to spin next?",
+  },
+};
+
+/** A short grown-up line for a game. */
+export function gameTip(game: string, when: "start" | "end"): ReadTip {
+  const tip = gameTips[game] ?? gameTips.hatch;
+  return { id: `game-${game}-${when}`, text: tip[when] };
+}
+
 /** A short grown-up line for a colors activity. */
 export function colorTip(step: string, when: "start" | "end"): ReadTip {
   const tip = colorTips[step] ?? colorTips.name;

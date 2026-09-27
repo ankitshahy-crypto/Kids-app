@@ -22,12 +22,14 @@ import { StarFlight } from "./components/StarFlight";
 import { StartScreen } from "./components/StartScreen";
 import { StickerBook } from "./components/StickerBook";
 import { TeacherView } from "./components/TeacherView";
+import type { GameId } from "./components/Games";
 import { TodayPath } from "./components/TodayPath";
-import { colorTip, mathTip, readTip, type ReadTip } from "./content/tips";
+import { colorTip, gameTip, mathTip, readTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
 import { ExploreFrame } from "./explore/frame";
 import {
   AddActivity,
+  Games,
   CountActivity,
   KnowActivity,
   MixActivity,
@@ -43,7 +45,7 @@ import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
-import { wordsForLetters } from "./data/schedule";
+import { lettersIntroduced, wordsForLetters } from "./data/schedule";
 import { blendedCvcWords, nameToTrace } from "./data/tracePractice";
 import { usePlacement } from "./hooks/usePlacement";
 import { useProfiles } from "./hooks/useProfiles";
@@ -53,7 +55,7 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | LessonStep | MathStep | ColorStep | "word" | "my-name";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | LessonStep | MathStep | ColorStep | "word" | "my-name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
@@ -61,7 +63,7 @@ const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
-  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel } = useProfiles();
+  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteSpin, giveGift } = useProfiles();
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
@@ -116,7 +118,7 @@ export default function App() {
     }
     if (screen === "draw" || screen === "word" || screen === "my-name") setMusicArea("focus");
     else if (screen === "story") setMusicArea("story");
-    else if (screen === "library") setMusicArea("play");
+    else if (screen === "library" || screen === "games") setMusicArea("play");
     else setMusicArea("today");
   }, [mode, screen]);
 
@@ -145,6 +147,7 @@ export default function App() {
     return colorLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, colorPlace?.weekIndex);
   }, [active, colorPlace]);
 
+  const introducedLetters = useMemo(() => lettersIntroduced(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
   const lessonWords = useMemo(() => wordsForLetters(lessonLetters), [lessonLetters]);
   const blendedWords = useMemo(() => blendedCvcWords(active?.stickers ?? []), [active]);
   const traceName = nameToTrace(active?.name ?? "");
@@ -168,6 +171,12 @@ export default function App() {
   useEffect(() => {
     if (!settings.showTips) setTip(null);
   }, [settings.showTips]);
+
+  useEffect(() => {
+    if (settings.showExplore) return;
+    if (course !== "reading") setCourse("reading");
+    if (sectionForScreen(screen)) setScreen("today");
+  }, [settings.showExplore, course, screen]);
 
   const reward = (step: LessonStep, learned: StickerInput[] = []) => {
     if (!active) return;
@@ -284,8 +293,27 @@ export default function App() {
     mathScreens.includes(screen as MathStep) ||
     colorScreens.includes(screen as ColorStep) ||
     screen === "word" ||
-    screen === "my-name";
+    screen === "my-name" ||
+    screen === "games";
   const exploreSection = sectionForScreen(screen);
+
+  const finishGame = (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string }) => {
+    if (!active) return;
+    if (game === "hatch") noteHatch(active.id);
+    if (game === "spin") noteSpin(active.id);
+    if (extra?.gift) giveGift(active.id, extra.gift);
+    const result = giveStar(active.id, extra?.step ?? `game-${game}`, learned);
+    if (result.awarded) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduce) setFlying(true);
+      if (result.milestones.length > 0) {
+        setCheer(result.milestones[result.milestones.length - 1] ?? null);
+        playEffect("cheer", settings);
+      } else playEffect("chime", settings);
+    }
+    if (settingsRef.current.showTips) setTip(gameTip(game, "end"));
+    else setTip(null);
+  };
 
   const practiceReward = (step: "word" | "name", learned: StickerInput[]) => {
     if (!active) return;
@@ -330,7 +358,15 @@ export default function App() {
           <>
             {inLesson ? (
               <div className="top-bar">
-                <button type="button" className="back-button" aria-label="Back" onClick={() => setScreen("today")}>
+                <button
+                  type="button"
+                  className="back-button"
+                  aria-label="Back"
+                  onClick={() => {
+                    if (screen === "games") setTip(null);
+                    setScreen("today");
+                  }}
+                >
                   <span className="gear-face">
                     <Chevron direction="left" />
                   </span>
@@ -381,6 +417,12 @@ export default function App() {
                     setScreen("my-name");
                     setTip(null);
                   }}
+                  onGames={() => {
+                    primeSpeech();
+                    setScreen("games");
+                    setTip(null);
+                  }}
+                  showExplore={settings.showExplore}
                 />
               ) : null}
               {screen === "library" ? <KidCorner kind="library" onBack={() => setScreen("today")} /> : null}
@@ -477,6 +519,21 @@ export default function App() {
                       onDone={(label) => finishColor("paint", label)}
                     />
                   ) : null}
+                  {screen === "games" ? (
+                    <Games
+                      profile={active}
+                      knownLetters={introducedLetters}
+                      count={mathLesson.count}
+                      color={colorLesson.hear}
+                      colorOptions={colorLesson.choices}
+                      settingsRef={settingsRef}
+                      onEnter={(game) => {
+                        if (settingsRef.current.showTips) setTip(gameTip(game, "start"));
+                        else setTip(null);
+                      }}
+                      onDone={finishGame}
+                    />
+                  ) : null}
                 </ExploreFrame>
               ) : null}
             </div>
@@ -509,6 +566,7 @@ export default function App() {
             onClassPlace={setClassPlace}
             onChildPlace={setChildPlace}
             onWritingLevel={setWritingLevel}
+            onHatchLevel={setHatchLevel}
             onClose={() => setMode("start")}
           />
         ) : null}
