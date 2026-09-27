@@ -374,10 +374,21 @@
     "engineer-tower": { "file": "prompts/engineer-tower.mp3", "say": "Stack a tower up to the nest.", "source": "neural" },
     "engineer-ramp": { "file": "prompts/engineer-ramp.mp3", "say": "Make the ball roll to the flag.", "source": "neural" },
     "engineer-machines": { "file": "prompts/engineer-machines.mp3", "say": "Lift it with a simple machine.", "source": "neural" },
-    "engineer-float": { "file": "prompts/engineer-float.mp3", "say": "Will it sink or float?", "source": "neural" },
     "engineer-balance": { "file": "prompts/engineer-balance.mp3", "say": "Balance the beam.", "source": "neural" },
     "engineer-again": { "file": "prompts/engineer-again.mp3", "say": "Try again.", "source": "neural" },
-    "engineer-wrong": { "file": "prompts/engineer-wrong.mp3", "say": "What went wrong?", "source": "neural" }
+    "engineer-wrong": { "file": "prompts/engineer-wrong.mp3", "say": "What went wrong?", "source": "neural" },
+    "science-life": { "file": "prompts/science-life.mp3", "say": "What comes next?", "source": "neural" },
+    "science-homes": { "file": "prompts/science-homes.mp3", "say": "Where does it live?", "source": "neural" },
+    "science-body": { "file": "prompts/science-body.mp3", "say": "Find the part.", "source": "neural" },
+    "science-mix": { "file": "prompts/science-mix.mp3", "say": "Watch what happens.", "source": "neural" },
+    "science-weather": { "file": "prompts/science-weather.mp3", "say": "Dress for the weather.", "source": "neural" },
+    "science-senses": { "file": "prompts/science-senses.mp3", "say": "What do you notice?", "source": "neural" },
+    "science-float": { "file": "prompts/science-float.mp3", "say": "Will it sink or float?", "source": "neural" },
+    "science-predict": { "file": "prompts/science-predict.mp3", "say": "What do you think will happen?", "source": "neural" },
+    "science-chain": { "file": "prompts/science-chain.mp3", "say": "Who eats what?", "source": "neural" },
+    "science-water": { "file": "prompts/science-water.mp3", "say": "Where does the rain come from?", "source": "neural" },
+    "science-again": { "file": "prompts/science-again.mp3", "say": "Try again.", "source": "neural" },
+    "science-grownup": { "file": "prompts/science-grownup.mp3", "say": "Do this with a grown-up. Do not taste it.", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },

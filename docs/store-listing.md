@@ -1,10 +1,10 @@
-# LittleNest Learning: ABC & 123
+# LittleNest: Early Learning
 
 Store and website copy. The in-app About screen reads the same words from `src/content/about.ts`. The version number comes from `package.json`.
 
-**Name:** LittleNest Learning: ABC & 123
+**Name:** LittleNest: Early Learning
 
-**Subtitle:** Letters, numbers & colors 3-5
+**Subtitle:** Read, math, science & coding
 
 **Tagline:** by TriageDesk
 
@@ -12,7 +12,7 @@ Store and website copy. The in-app About screen reads the same words from `src/c
 
 ## Description
 
-LittleNest Learning helps young children take their first steps into letters, numbers, colors, time and money, and building, one small step at a time. Made for ages 3 to 5, with harder clock, money, and building work for ages 5 to 7 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. LittleNest Words: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!" LittleNest Numbers: count objects, hear and trace numbers, match and trace shapes, and add small groups. LittleNest Colors: hear a color and tap it, mix two paints, and color their animal. LittleNest Time & Money: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. LittleNest Build: bridges, towers, ramps, simple machines, and sink or float.
+LittleNest Learning helps young children take their first steps into letters, numbers, colors, games and coding, time and money, building, and science, one small step at a time. Made for ages 3 to 7, with a gentle start for ages 3 to 5 and harder clock, money, coding, building, and science work for ages 5 to 7 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. LittleNest Words: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!" LittleNest Numbers: count objects, hear and trace numbers, match and trace shapes, and add small groups. LittleNest Colors: hear a color and tap it, mix two paints, and color their animal. Games, including Think & Code: hatch an egg, guide their animal home, and stack picture blocks that play. LittleNest Time & Money: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. LittleNest Build: bridges, towers, ramps, and simple machines. LittleNest Science: life cycles, homes, weather, senses, and sink or float. A pretend fizz stays on the screen and says to do it with a grown-up.
 
 ## What makes LittleNest Learning different
 
@@ -22,17 +22,18 @@ LittleNest Learning helps young children take their first steps into letters, nu
 - **Short daily lessons:** 5–10 minutes builds a habit without too much screen time.
 - **Stars for trying:** Effort, not perfection. No pressure, no scores.
 - **Rewards that feel great:** Stars for effort unlock outfits for your child's animal, a sticker book of letters, numbers, colors, clocks, coins, and baby animals, and a growing nest. Every reward is earned by practicing, never bought.
-- **LittleNest Build:** Build a bridge, stack a tower, roll a ball down a ramp, and try a lever, a pulley, and a wheel. Guess whether something sinks or floats. A wobbly bridge or a narrow tower just means try again. Ages 5 to 7 balance weights, use fewer pieces, and hear what went wrong.
-- **Games to play:** Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. Think and code games guide their animal home, continue a picture pattern, put morning pictures in order, and try an if-then garden. Build It stacks picture blocks that play: the animal moves, a song plays, weather grows a flower, and a robot makes a sandwich. Ages 5 to 7 use longer arrow paths, a repeat, a bug fix, a pond splash, a short line on each block, and can save a program on this device. A grown-up can turn on a Python view of that same program. A miss just means try again.
 - **LittleNest Numbers:** Count to 10, hear and trace numbers, match and trace shapes, compare groups, and add with pictures up to 5.
 - **LittleNest Colors:** Hear a color and tap it, mix paints, and color their animal with colors they made. Every swatch shows the color word.
+- **Games to play:** Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. Think and code games guide their animal home, continue a picture pattern, put morning pictures in order, and try an if-then garden. Build It stacks picture blocks that play: the animal moves, a song plays, weather grows a flower, and a robot makes a sandwich. Ages 5 to 7 use longer arrow paths, a repeat, a bug fix, a pond splash, a short line on each block, and can save a program on this device. A grown-up can turn on a Python view of that same program. A miss just means try again.
 - **LittleNest Time & Money:** Morning, afternoon, and night, then the daily routine and o'clock. Ages 5 to 7 set half hours, quarter hours, and five-minute steps, match a digital time, and ask how long until. Name a penny, nickel, dime, quarter, and one- and five-dollar bills drawn for this app, sort coins, and let their animal buy a snack. Later they count mixed coins, pay dollars and cents, make change, and compare prices. Pretend chores fill Save, Spend, and Share jars, a lemonade stand earns coins, and a shop says let's save for it when the price is too big. Needs and wants are sorted. Pretend debit and credit cards come later, with no interest and no real payments.
+- **LittleNest Build:** Build a bridge, stack a tower, roll a ball down a ramp, and try a lever, a pulley, and a wheel. A wobbly bridge or a narrow tower just means try again. Ages 5 to 7 balance weights, use fewer pieces, and hear what went wrong.
+- **LittleNest Science:** Put a seed, a sprout, and a plant in order, match animals to homes and foods, and find a wing or a beak. On the screen, ice melts, water turns to steam, and baking soda meets vinegar. Sort a solid, a liquid, and a gas. Dress their animal for sun, rain, or snow, and notice a sound, a texture, and day or night. Guess whether something sinks or floats. Ages 5 to 7 say what they think will happen, then test it, line up a food chain, and follow the water cycle. A real fizz is with a grown-up, and nothing is for tasting.
 - **Made for classrooms too:** Teachers can follow a class and share goals with parents.
 - **Grown-up tools:** They sit behind a simple check.
 
 ## How LittleNest Learning teaches
 
-LittleNest Learning has five modules. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7. LittleNest Build starts with a bridge, a tower, a ramp, simple machines, and sink or float. Ages 5 to 7 balance weights and test a design again.
+LittleNest Learning has seven sections. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. Games, including Think & Code, start with hatching, popping, feeding, rhymes, memory, and a spin, then a path home, a picture pattern, morning order, and an if-then garden. Build It stacks picture blocks that play. Ages 5 to 7 add longer paths, a repeat, a bug fix, and a short line on each block. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7. LittleNest Build starts with a bridge, a tower, a ramp, and simple machines. Ages 5 to 7 balance weights and test a design again. LittleNest Science starts with life cycles, homes, body parts, on-screen changes, weather, senses, and sink or float. Ages 5 to 7 predict a result, then test it, and follow a food chain and the water cycle.
 
 LittleNest Words:
 
@@ -53,6 +54,12 @@ LittleNest Colors:
 
 1. **Color names:** Hear a color and tap the matching object.
 2. **Mixing:** Mix two paints and see the new color.
+
+Games, including Think & Code:
+
+1. **Play:** Hatch an egg, pop balloons, feed their animal, match rhymes, flip memory cards, and spin.
+2. **Think & Code:** Guide their animal home, continue a picture pattern, put morning pictures in order, and try an if-then garden.
+3. **Build It:** Stack picture blocks that play. Ages 5 to 7 add a repeat, a bug fix, and a short line on each block.
 
 LittleNest Time & Money:
 
@@ -77,8 +84,20 @@ LittleNest Build:
 2. **Tall tower:** A wide base stays up. A narrow base topples softly.
 3. **Ramps and rolling:** A higher ramp rolls the ball farther.
 4. **Simple machines:** A lever, a pulley, and a wheel and axle.
-5. **Sink or float:** Guess, then drop the object in the water.
-6. **Balance:** Ages 5 to 7 balance weights, then test and fix.
+5. **Balance:** Ages 5 to 7 balance weights, then test and fix.
+
+LittleNest Science:
+
+1. **Life cycles:** Seed to plant, egg to bird, and caterpillar to butterfly.
+2. **Homes and foods:** Match an animal to where it lives and what it eats.
+3. **Body parts:** Find a wing, a beak, a tail, or a paw.
+4. **On-screen changes:** Ice melts, water turns to steam, and a pretend fizz. Sort solid, liquid, and gas. A real fizz is with a grown-up, and nothing is for tasting.
+5. **Weather:** Sun, rain, and snow. Dress their animal and name the season.
+6. **Senses:** A sound, a texture, and day or night.
+7. **Sink or float:** Guess, then drop the object in the water.
+8. **Predict and test:** Ages 5 to 7 say what they think will happen, then test it.
+9. **Food chain:** Ages 5 to 7 line up who eats what.
+10. **Water cycle:** Ages 5 to 7 follow a puddle up to a cloud and back to rain.
 
 ## Safe and private by design
 
@@ -90,7 +109,7 @@ Learning to read shouldn't be expensive. LittleNest Learning is priced so every 
 
 No price is shown in the app.
 
-LittleNest Learning is letters, numbers, colors, and time and money practice for young children. It is not a therapy or diagnostic tool.
+LittleNest Learning is reading, math, colors, games and coding, time and money, building, and science practice for young children. It is not a therapy or diagnostic tool.
 
 by TriageDesk
 

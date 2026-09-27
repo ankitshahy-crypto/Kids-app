@@ -6,15 +6,16 @@ export const PRODUCT_SHORT = "LittleNest";
 
 export const TAGLINE = "by TriageDesk";
 
-export const STORE_NAME = "LittleNest Learning: ABC & 123";
+export const STORE_NAME = "LittleNest: Early Learning";
 
-export const STORE_SUBTITLE = "Letters, numbers & colors 3-5";
+export const STORE_SUBTITLE = "Read, math, science & coding";
 
 export const MODULE_WORDS = "LittleNest Words";
 export const MODULE_NUMBERS = "LittleNest Numbers";
 export const MODULE_COLORS = "LittleNest Colors";
 export const MODULE_TIME = "LittleNest Time & Money";
 export const MODULE_BUILD = "LittleNest Build";
+export const MODULE_SCIENCE = "LittleNest Science";
 
 /**
  * Planned public site. The domain is not purchased yet, so sharing still

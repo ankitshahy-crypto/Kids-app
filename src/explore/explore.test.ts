@@ -70,8 +70,10 @@ describe("explore isolation", () => {
   });
 
   it("shows math and colors unless a flag is off", () => {
-    expect(visibleExplore()).toEqual(["math", "colors", "time", "build", "games"]);
+    expect(visibleExplore()).toEqual(["math", "colors", "time", "build", "science", "games"]);
     expect(sectionForScreen("bridge")).toBe("build");
+    expect(sectionForScreen("float")).toBe("science");
+    expect(sectionForScreen("change")).toBe("science");
     expect(sectionVisible("math", { math: false })).toBe(false);
     expect(sectionVisible("colors", { math: false })).toBe(true);
     expect(visibleExplore({}, false)).toEqual([]);

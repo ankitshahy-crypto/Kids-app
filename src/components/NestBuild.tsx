@@ -11,8 +11,6 @@ import {
   emptySpans,
   engineerLevel,
   firstOpenSpan,
-  floatSet,
-  floatVerdict,
   leverLifts,
   leverWeight,
   machinesReady,
@@ -32,8 +30,6 @@ import {
   type BeamWeight,
   type BlockWidth,
   type BuildActivity,
-  type FloatGuess,
-  type FloatId,
   type MachineId,
   type RampHeight,
   type SpanPiece,
@@ -49,7 +45,6 @@ const NAMES: Record<BuildActivity, string> = {
   tower: "Tower",
   ramp: "Ramps",
   machines: "Machines",
-  float: "Float",
   balance: "Balance",
 };
 
@@ -169,7 +164,6 @@ export function EngineerActivity({
   if (activity === "tower") return <TowerPlay {...shared} />;
   if (activity === "ramp") return <RampPlay {...shared} />;
   if (activity === "machines") return <MachinePlay {...shared} />;
-  if (activity === "float") return <FloatPlay {...shared} />;
   return <BalancePlay {...shared} />;
 }
 
@@ -562,68 +556,6 @@ function MachinePlay({ level, settingsRef, onDone }: PlayProps) {
   );
 }
 
-function FloatPlay({ level, settingsRef, onDone }: PlayProps) {
-  const objects = floatSet(level);
-  const speak = useSpeaker(settingsRef);
-  const [index, setIndex] = useState(0);
-  const [miss, setMiss] = useState("");
-  const [dropped, setDropped] = useState("");
-  const finished = useRef(false);
-  const current = objects[index];
-  useEffect(() => {
-    speak.prompt("engineer-float", "Will it sink or float?");
-  }, []);
-  const guess = (choice: FloatGuess) => {
-    if (!current) return;
-    const result = floatVerdict(current, choice);
-    if (!result.ok) {
-      setDropped("");
-      setMiss(result.hint);
-      noteMiss(level, result.hint, speak);
-      return;
-    }
-    setMiss("");
-    setDropped(choice);
-    const next = index + 1;
-    window.setTimeout(() => {
-      if (next >= objects.length) return;
-      setIndex(next);
-      setDropped("");
-    }, 350);
-  };
-  return (
-    <div className="math-play" data-engineer="float" data-level={level} data-object={current ?? ""} data-dropped={dropped} data-hint={miss} data-left={objects.length - index}>
-      <h1>Float</h1>
-      <div className="eng-stage eng-pond">
-        {current ? <FloatArt id={current} sunk={dropped === "sink"} /> : null}
-      </div>
-      <div className="eng-tray" role="group" aria-label="Guess">
-        <button type="button" className="eng-piece" data-guess="float" aria-label="Float" onClick={() => guess("float")}>
-          <span className="eng-float" />
-        </button>
-        <button type="button" className="eng-piece" data-guess="sink" aria-label="Sink" onClick={() => guess("sink")}>
-          <span className="eng-sink" />
-        </button>
-      </div>
-      <Miss level={level} hint={miss} show={Boolean(miss)} />
-      {current && index === objects.length - 1 && dropped ? (
-        <button
-          type="button"
-          className="start-button"
-          data-finish="float"
-          onClick={() => {
-            if (finished.current) return;
-            finished.current = true;
-            onDone();
-          }}
-        >
-          Done
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
 function BalancePlay({ level, settingsRef, onDone }: PlayProps) {
   const speak = useSpeaker(settingsRef);
   const [spots, setSpots] = useState<Partial<Record<BeamPos, BeamWeight>>>({});
@@ -719,7 +651,6 @@ function ActivityMark({ id }: { id: BuildActivity }) {
   if (id === "tower") return <span className="eng-layer eng-wide" />;
   if (id === "ramp") return <span className="eng-ball" />;
   if (id === "machines") return <span className="eng-wheel" />;
-  if (id === "float") return <span className="eng-float" />;
   return <span className="eng-rock eng-heavy" />;
 }
 
@@ -731,6 +662,3 @@ function PlankArt() {
   return <span className="eng-plank" />;
 }
 
-function FloatArt({ id, sunk }: { id: FloatId; sunk: boolean }) {
-  return <span className={`eng-object eng-${id}${sunk ? " is-sunk" : ""}`} data-float-art={id} />;
-}
