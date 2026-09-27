@@ -1,0 +1,102 @@
+name: Voice samples (Google)
+
+# Makes one short comparison clip per voice (two letter phrases, a sounded-out
+# word, two words, two prompts, two story lines) so a person can pick the
+# app's voice by ear, and pushes them to the voice-samples branch. Nothing
+# under public/audio changes. Needs the GOOGLE_TTS_API_KEY secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      voices:
+        description: "Comma-separated model:voice pairs (chirp3 voices are free; the Gemini models cost a few cents)"
+        default: "chirp3:Aoede,chirp3:Kore,chirp3:Leda,chirp3:Zephyr,chirp3:Sulafat,gemini-2.5-pro-tts:Aoede,gemini-2.5-pro-tts:Kore,gemini-2.5-flash-tts:Aoede"
+      prompt:
+        description: "Style prompt for the Gemini models (blank = the script's calm-teacher prompt)"
+        default: ""
+      speed:
+        description: "Speaking rate for the Chirp 3 HD voices (1 is normal)"
+        default: "0.95"
+
+permissions:
+  contents: write
+
+jobs:
+  samples:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Check the key
+        run: |
+          if [ -z "${{ secrets.GOOGLE_TTS_API_KEY }}" ]; then
+            echo "The GOOGLE_TTS_API_KEY repository secret is not set." >&2
+            exit 1
+          fi
+
+      - name: Make sample clips
+        env:
+          GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
+          VOICES: ${{ inputs.voices }}
+          PROMPT: ${{ inputs.prompt }}
+          SPEED: ${{ inputs.speed }}
+        run: |
+          args=(--sample "$VOICES" --sample-dir samples --speed "$SPEED" --force)
+          [ -n "$PROMPT" ] && args+=(--prompt "$PROMPT")
+          node scripts/generate-audio.mjs "${args[@]}"
+
+      - name: Join each voice into one clip
+        run: |
+          for dir in samples/*/; do
+            node scripts/join-audio.mjs "${dir%/}"
+          done
+          ls -la samples
+
+      - name: Push the voice-samples branch
+        env:
+          VOICES: ${{ inputs.voices }}
+          PROMPT: ${{ inputs.prompt }}
+          SPEED: ${{ inputs.speed }}
+        run: |
+          out=$(mktemp -d)
+          cp samples/*.mp3 "$out"/ 2>/dev/null || true
+          cp samples/*.error.txt "$out"/ 2>/dev/null || true
+          {
+            echo "# Voice samples"
+            echo
+            echo "Made by the \"Voice samples (Google)\" workflow on $(date -u +%Y-%m-%d). Each clip says, in this order:"
+            echo "two letter phrases (m, s), three bare letter sounds (m, a, t), two words (mat, sun), two prompts, and two story lines."
+            echo
+            echo "- Voices: \`$VOICES\`"
+            echo "- Chirp 3 HD speed: \`$SPEED\`"
+            [ -n "$PROMPT" ] && echo "- Gemini prompt: $PROMPT"
+            echo
+            for f in "$out"/*.mp3; do
+              [ -e "$f" ] || continue
+              echo "- $(basename "$f"): $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" | cut -c1-4) s"
+            done
+            for f in "$out"/*.error.txt; do
+              [ -e "$f" ] || continue
+              echo "- $(basename "$f" .error.txt): failed: $(cat "$f")"
+            done
+          } > "$out/README.md"
+          cd "$out"
+          git init -q
+          git checkout -q -b voice-samples
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Voice samples: $VOICES"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" voice-samples
+          echo "### Voice samples" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat README.md >> "$GITHUB_STEP_SUMMARY"

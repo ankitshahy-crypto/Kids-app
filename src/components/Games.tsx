@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { playLetter, playNumber, playOnDevice, playWord } from "../audio/player";
+import { playLetter, playLetterSound, playNumber, playOnDevice, playWord } from "../audio/player";
 import type { Settings } from "../settings";
 import { Illustration } from "../illustrations";
 import {
@@ -249,7 +249,7 @@ function HatchGame({
     play(async (signal) => {
       for (const letter of round.word.letters) {
         if (signal.aborted) return;
-        await playLetter(letter, settingsRef.current, signal);
+        await playLetterSound(letter, settingsRef.current, signal);
       }
       if (!signal.aborted) await playWord(round.word, settingsRef.current, signal);
     });

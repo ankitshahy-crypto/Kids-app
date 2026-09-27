@@ -30,6 +30,7 @@ describe("offline bundle", () => {
   it("keeps lesson clips on this device and the iOS app off a remote server", () => {
     const files = lessonAudioFiles();
     expect(files).toContain("letters/b.mp3");
+    expect(files).toContain("sounds/b.mp3");
     expect(files).toContain("words/cat.mp3");
     expect(files).toContain("sentences/lets-read.mp3");
     expect(files).toContain("prompts/pair-a.mp3");

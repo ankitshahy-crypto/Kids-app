@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
 
 const profile = {
   activeId: "mia",
@@ -52,6 +53,7 @@ async function dragAcross(page: Page, track: Locator) {
 }
 
 test("the letter of the week is the first card in Sound it out", async ({ page }) => {
+  await installAudioSpy(page);
   await install(page);
   await page.getByRole("button", { name: "Letters" }).click();
 
@@ -69,6 +71,14 @@ test("the letter of the week is the first card in Sound it out", async ({ page }
 
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
+  // A letter card says the phrase, then its example word: not the bare sound a blend uses.
+  await page.getByRole("button", { name: "Play sound" }).click();
+  await expect.poll(() => spokenLines(page), { timeout: 20000 }).toEqual(expect.arrayContaining(["m, as in moon", "moon"]));
+  if (clipShipped("sounds/m.mp3")) {
+    const clips = await playedClips(page);
+    expect(clips).toContain("letters/m.mp3");
+    expect(clips).not.toContain("sounds/m.mp3");
+  }
   await dragAcross(page, page.locator(".blend-track"));
   await expect(activity).toHaveAttribute("data-blended", "true");
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");

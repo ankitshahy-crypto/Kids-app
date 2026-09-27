@@ -11,23 +11,31 @@ export function themedLetterId(char: string, example: string): string {
   return `${char}-${example.trim().toLowerCase().replace(/\s+/g, "-")}`;
 }
 
-export type AudioKind = "letters" | "words" | "sentences" | "numbers" | "prompts" | "colors" | "stories";
+export type AudioKind = "letters" | "sounds" | "words" | "sentences" | "numbers" | "prompts" | "colors" | "stories";
 
 export type AudioCue = {
   file: string;
+  /**
+   * The line the clip says. For a "sounds" clip (the bare letter sound used
+   * when sounding out a word) this is the letter's example phrase, which is
+   * what the app says instead when that clip is not on the device.
+   */
   say: string;
-  /** "neural" clips are generated offline by scripts/generate-audio-kokoro.py. A person can replace any of them. */
+  /** "neural" clips are generated offline by scripts/generate-audio.mjs. A person can replace any of them. */
   source: "human" | "neural";
 };
 
-type Manifest = Record<Exclude<AudioKind, "stories">, Record<string, AudioCue>> & { stories?: Record<string, AudioCue> };
+type Manifest = Record<Exclude<AudioKind, "stories" | "sounds">, Record<string, AudioCue>> & {
+  sounds?: Record<string, AudioCue>;
+  stories?: Record<string, AudioCue>;
+};
 
 const book = manifest as Manifest;
 const ready = new Set<string>(available.files);
 const FILE_PATH = /^[a-z0-9]+(?:\/[a-z0-9-]+)*\.mp3$/;
 const BARE_SYLLABLE = /^(?:buh|duh|kuh|puh|guh|tuh|huh|aah|eh|ih|aw|uh|mmm|nnn|sss|fff|lll|kss)$/i;
 
-function assertCue(kind: AudioKind, id: string, cue: AudioCue | undefined): void {
+function assertCue(kind: AudioKind, id: string, cue: AudioCue | undefined): asserts cue is AudioCue {
   if (!cue || !FILE_PATH.test(cue.file) || !cue.say.trim()) {
     throw new Error(`Audio manifest is missing a usable ${kind} entry for "${id}"`);
   }
@@ -48,6 +56,17 @@ for (const [id, cue] of Object.entries(book.letters)) {
   assertCue("letters", id, cue);
   if (!/, as in /i.test(cue.say)) {
     throw new Error(`Letter phrase "${id}" should name an example word`);
+  }
+}
+
+// Every plain letter has a bare sound clip for sounding out words. It falls
+// back to the letter's example phrase, so the two must say the same thing.
+for (const [id, cue] of Object.entries(book.letters)) {
+  if (id.includes("-")) continue;
+  const sound = book.sounds?.[id];
+  assertCue("sounds", id, sound);
+  if (!sound.file.startsWith("sounds/") || sound.say !== cue.say) {
+    throw new Error(`Letter sound "${id}" should live under sounds/ and share the phrase "${cue.say}"`);
   }
 }
 

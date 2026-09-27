@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { installAudioSpy, spokenLines } from "./audioSpy";
+import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -63,11 +63,18 @@ test("week one's reader stars the child's animal, blends the words it can, and e
     expect(box!.height).toBeGreaterThanOrEqual(64);
   }
 
-  // Sounding out "am" plays m, then a, then the word.
+  // Sounding out "am" plays a, then m, then the word.
+  const heard = (await playedClips(page)).length;
   await page.locator(".story-word[data-word=am]").click();
   await expect(page.locator(".story-word[data-word=am]")).toHaveClass(/is-speaking/);
-  // Two letter phrases and the word, each a recorded clip with a short gap between.
+  // Two letter sounds and the word, each a recorded clip with a short gap between.
   await expect.poll(() => spokenLines(page), { timeout: 20000 }).toEqual(expect.arrayContaining(["m, as in moon", "a, as in apple", "am"]));
+  if (clipShipped("sounds/a.mp3")) {
+    // With bare sound clips on the device, a word is sounded out as "a", "m", not "a, as in apple".
+    const clips = (await playedClips(page)).slice(heard);
+    expect(clips).toEqual(expect.arrayContaining(["sounds/a.mp3", "sounds/m.mp3", "words/am.mp3"]));
+    expect(clips.filter((clip) => clip.startsWith("letters/"))).toEqual([]);
+  }
 
   for (let turn = 0; turn < 4; turn += 1) await page.getByRole("button", { name: "Next page" }).click();
   await expect(story).toHaveAttribute("data-page", "5");

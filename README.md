@@ -79,23 +79,24 @@ Decks live in `src/data/deck.ts`. A word has letters, a phoneme key for each let
 
 ## Recorded audio
 
-The 26 letter sounds, plus the extra phoneme ids in the manifest (short vowels and the x sound), should be recorded by a person. Save each clip at the path in the manifest, under `public/audio/` (for example `public/audio/letters/b.mp3`). Do not synthesize those phonemes. Several ids share one file when they are the same sound.
+Spoken lines and file names live in `src/data/audioManifest.json`: letter phrases ("m, as in moon"), bare letter sounds ("mmm", played when a word is sounded out), words, sentences, numbers, prompts, colors, and story lines. The app plays the file at each path under `public/audio/` when `src/data/audioAvailable.json` lists it, and the installed app never contacts a voice service.
 
-Words and short sentences can be generated ahead of time with a natural neural voice. From a machine that has Google Cloud credentials, not from the app:
+Clips are made ahead of time, not on the phone. The easiest way is the "Voice clips (Google)" workflow in the Actions tab, which needs the `GOOGLE_TTS_API_KEY` repository secret (an API key restricted to the Cloud Text-to-Speech API). It opens a pull request with the MP3s. The same script runs on any machine with a key:
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-# optional: export GOOGLE_TTS_VOICE=en-US-Neural2-F
-npm run generate-audio
+export GOOGLE_TTS_API_KEY=...            # or GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+npm run generate-audio -- --voice Aoede  # a Chirp 3 HD voice; --model gemini-2.5-pro-tts for a Gemini voice
 ```
 
-The voice must be an en-US Neural2, Studio, or Chirp HD voice. The script writes MP3s for words and sentences, skips every letter sound, and refreshes `src/data/audioAvailable.json`. After you drop human letter recordings in place, refresh the index without calling Google:
+Letter phrases and bare sounds are made with SSML phonemes in the same voice, so "m" is said as the sound /m/, never "em". The "Voice samples (Google)" workflow makes one short comparison clip per voice on the `voice-samples` branch, for picking a voice by ear. Kokoro, a free local model, is the other engine (`scripts/generate-audio-kokoro.py`, the "Voice clips" workflow).
+
+A person's recording can replace any clip: save it at the path in the manifest (for example `public/audio/sounds/m.mp3` or `public/audio/letters/m.mp3`), then refresh the index without calling Google:
 
 ```bash
 npm run generate-audio -- --index-only
 ```
 
-`--force` replaces word and sentence files that are already there. The installed app only plays local files and the phone's own voice. It does not contact Google or any other server. Log each shipped file in `ASSETS.md`.
+`--force` remakes files that are already there, `--only letters,sounds` limits the kinds, and `--dry-run` prints what would be sent. Log each shipped set in `ASSETS.md`.
 
 Until a clip is indexed, device speech says the manifest phrase. Letter sounds use an example such as "b, as in ball". The phone picks an Enhanced, Premium, or Siri-quality en-US voice when it has one, and skips compact and novelty voices. Speech rate stays near 0.9 (0.85 on Slower) and pitch stays at 1. In Safari, the iPhone silent switch can still mute Web Audio. The first tap on an iPhone shows a short note about that switch. The installed app asks iOS to play even when the switch is on.
 
