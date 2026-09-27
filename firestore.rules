@@ -33,6 +33,11 @@ service cloud.firestore {
       return !request.resource.data.keys().hasAny(['photo', 'photoSrc', 'image', 'picture', 'avatarUrl', 'lastName', 'email']);
     }
 
+    function codeOpen() {
+      return !('expiresAt' in resource.data)
+        || (resource.data.expiresAt is int && resource.data.expiresAt > request.time.toMillis());
+    }
+
     match /grownups/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
     }
@@ -78,11 +83,14 @@ service cloud.firestore {
     match /schools/{schoolId}/invites/{inviteId} {
       allow read: if isAdmin(schoolId) || (signedIn() && resource.data.email == request.auth.token.email);
       allow create: if isAdmin(schoolId)
-        && request.resource.data.keys().hasOnly(['email', 'createdBy'])
+        && request.resource.data.keys().hasOnly(['email', 'createdBy', 'code', 'expiresAt', 'status'])
         && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.email is string;
+        && request.resource.data.email is string
+        && request.resource.data.code is string
+        && request.resource.data.expiresAt is int;
+      allow update: if isAdmin(schoolId)
+        || (signedIn() && resource.data.email == request.auth.token.email);
       allow delete: if isAdmin(schoolId) || (signedIn() && resource.data.email == request.auth.token.email);
-      allow update: if false;
     }
 
     match /schools/{schoolId}/classes/{classId} {
@@ -92,14 +100,15 @@ service cloud.firestore {
         && request.resource.data.teacherUid == request.auth.uid
         && request.resource.data.schoolId == schoolId
         && noPhoto();
-      allow update: if teaches(schoolId, classId) && noPhoto();
-      allow delete: if teaches(schoolId, classId);
+      allow update: if (teaches(schoolId, classId) || isAdmin(schoolId)) && noPhoto();
+      allow delete: if teaches(schoolId, classId) || isAdmin(schoolId);
     }
 
     match /schools/{schoolId}/classes/{classId}/children/{childId} {
-      allow read: if teaches(schoolId, classId)
+      allow read: if isAdmin(schoolId) || teaches(schoolId, classId)
         || (signedIn() && resource.data.parentUid == request.auth.uid && resource.data.consented == true);
-      allow write: if teaches(schoolId, classId) && noPhoto();
+      allow create, update: if (teaches(schoolId, classId) || isAdmin(schoolId)) && noPhoto();
+      allow delete: if teaches(schoolId, classId) || isAdmin(schoolId);
     }
 
     match /schools/{schoolId}/classes/{classId}/parents/{parentUid} {
@@ -108,26 +117,54 @@ service cloud.firestore {
       allow delete: if signedIn() && request.auth.uid == parentUid || teaches(schoolId, classId);
     }
 
-    match /classCodes/{code} {
-      allow get: if signedIn();
+    match /inviteCodes/{code} {
+      allow get: if signedIn() && codeOpen();
       allow list: if false;
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['schoolId', 'classId', 'teacherUid'])
-        && request.resource.data.teacherUid == request.auth.uid
-        && teaches(request.resource.data.schoolId, request.resource.data.classId);
+        && request.resource.data.keys().hasOnly(['schoolId', 'inviteId', 'expiresAt'])
+        && request.resource.data.schoolId is string
+        && request.resource.data.inviteId is string
+        && request.resource.data.expiresAt is int
+        && isAdmin(request.resource.data.schoolId);
       allow update: if false;
-      allow delete: if signedIn() && resource.data.teacherUid == request.auth.uid;
+      allow delete: if signedIn() && (
+        isAdmin(resource.data.schoolId)
+        || get(/databases/$(database)/documents/schools/$(resource.data.schoolId)/invites/$(resource.data.inviteId)).data.email == request.auth.token.email
+      );
+    }
+
+    match /classCodes/{code} {
+      allow get: if signedIn() && codeOpen();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['schoolId', 'classId', 'teacherUid', 'expiresAt'])
+        && (isAdmin(request.resource.data.schoolId)
+          || (request.resource.data.teacherUid == request.auth.uid
+            && teaches(request.resource.data.schoolId, request.resource.data.classId)));
+      allow update: if false;
+      allow delete: if signedIn() && (resource.data.teacherUid == request.auth.uid || isAdmin(resource.data.schoolId));
     }
 
     match /parentCodes/{code} {
-      allow get: if signedIn();
+      allow get: if signedIn() && codeOpen();
       allow list: if false;
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['schoolId', 'classId', 'teacherUid'])
-        && request.resource.data.teacherUid == request.auth.uid
-        && teaches(request.resource.data.schoolId, request.resource.data.classId);
+        && request.resource.data.keys().hasOnly(['schoolId', 'classId', 'childId', 'teacherUid', 'expiresAt'])
+        && (isAdmin(request.resource.data.schoolId)
+          || (request.resource.data.teacherUid == request.auth.uid
+            && teaches(request.resource.data.schoolId, request.resource.data.classId)));
       allow update: if false;
-      allow delete: if signedIn() && resource.data.teacherUid == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.teacherUid == request.auth.uid || isAdmin(resource.data.schoolId));
+    }
+
+    match /codeAttempts/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['failures', 'windowStart'])
+        && request.resource.data.failures is int
+        && request.resource.data.failures >= 0
+        && request.resource.data.failures <= 5;
+      allow delete: if signedIn() && request.auth.uid == uid;
     }
 
     match /{document=**} {

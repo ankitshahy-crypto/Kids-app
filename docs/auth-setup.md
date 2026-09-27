@@ -148,7 +148,17 @@ Roles live in the database, on the school, not as a password in the app:
 - **Teacher** signs in with Google or email, creates classes, and each class gets a short code such as `BUNNY-42` plus a separate parent join code such as `NEST-18`. On a classroom device, the teacher enters the class code in **Grown-ups → Account**. That links the device to the class. Children still tap an animal. They never log in.
 - **Parent** is optional. The parent enters the join code and checks the consent box. Until they agree, they see none of the class. After they agree, they see only their own children. A class code does not show the roster.
 
-A teacher sees reading time, stars, the learning path, and the starting lesson for their own classes. A director sees the school totals only. Progress stored for a class is a first name or initial, an animal, stars, reading time, the path, and the starting lesson.
+A teacher sees reading time, stars, the learning path, and the starting lesson for their own classes, plus each child's first name or initial and animal. A director sees that same roster for the whole school, and can move a child from one class to another. A teacher cannot. Progress stored for a class is a first name or initial, an animal, stars, reading time, the path, and the starting lesson.
+
+Every invite has a short code and a QR code drawn in the app. Nothing is sent to a QR website.
+
+- A teacher invite code opens Account with that code filled in.
+- A class code links the classroom device.
+- A parent code belongs to one child. The teacher adds the child, then prints a pastel take-home sheet with the code, the QR, and the join steps.
+
+Codes last 14 days. Resend or New code starts another 14 days. Five wrong tries in 15 minutes makes the app wait. The rules also refuse an attempts counter above 5.
+
+The QR code uses a normal web link, such as `https://your-site/Kids-app/?parentCode=NEST-18`. The same path can become an iOS universal link later: add the domain under Associated Domains (`applinks:your-site`) and host `apple-app-site-association` for `com.triagedesk.littlenest`. That file is not in this version.
 
 Sign-in methods go through one provider list. Apple, Google, and email are stage 1. Clever, ClassLink, Microsoft, and district SAML are named for later and do not sign anyone in. Adding stage 2 means a new adapter in that list. This version does not build it.
 
@@ -156,5 +166,5 @@ Sign-in methods go through one provider list. Apple, Google, and email are stage
 
 - The child screen has no Sign in button.
 - With `.env` empty, Account says sign-in is not set up and does not show Apple, Google, or Create school.
-- A teacher cannot open another teacher's class. A director cannot open a child. A parent cannot open a child they did not agree to link.
+- A teacher cannot open another teacher's class. A director can see each child's first name or initial and animal, not a photo or a last name. A parent cannot open a child they did not agree to link.
 - Analytics is off. There is no ads SDK.

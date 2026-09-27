@@ -19,7 +19,7 @@ export const PARENT_NOTE =
   "A parent can link their own children with a join code from the teacher, and only after they agree. Children still tap their animal.";
 
 export const ADMIN_NOTE =
-  "A school admin creates the school and invites teachers. The summary is school totals. It does not list each child.";
+  "A school admin sees every teacher, class, and child in the school. A child is a first name or initial and an animal. Invites expire after 14 days.";
 
 export const BACKUP_NOTE =
   "A backup stores a first name or initial, an animal, an age range, stars, lesson progress, and these grown-up settings. Photos stay on this device. There are no ads and no analytics.";
@@ -33,5 +33,5 @@ export const PRIVACY_LINES = [
   "A grown-up can sign in from Account and turn on Back up & sync progress. Kids never log in.",
   "That backup stores a first name or initial, an animal, stars, lesson progress, and grown-up settings. The grown-up's email stays with Apple, Google, or the email sign-in. It is not the child's name.",
   "Delete all data and Delete account are in Account.",
-  "A school is optional. A teacher sees only their own classes. A director sees school totals, not each child. A parent sees only their own children. Clever, ClassLink, and district sign-in are not available yet.",
+  "A school is optional. A teacher sees only their own classes. A director sees the school roster: a first name or initial and an animal, not a photo. A parent sees only their own children. Clever, ClassLink, and district sign-in are not available yet.",
 ] as const;

@@ -4,6 +4,7 @@ import { ACCOUNT_OFF, ACCOUNT_ON_NOTE, ADMIN_NOTE, BACKUP_NOTE, KIDS_NEVER_LOGIN
 import type { GrownupUser } from "../auth/client";
 import { activeProviders, providerLabel, signInWithProvider, type Stage1Adapter } from "../auth/providers";
 import type { SchoolDesk, SchoolRole } from "../auth/school";
+import type { RosterCommand } from "../auth/useGrownupAccount";
 import type { ChildProfile } from "../data/profiles";
 import { SchoolPanel } from "./SchoolPanel";
 
@@ -31,6 +32,8 @@ export function AccountPanel({
   onCreateClass,
   onLinkDevice,
   onJoin,
+  onRoster,
+  onAcceptInvite,
   onSync,
   onDeleteData,
   onDeleteAccount,
@@ -58,6 +61,8 @@ export function AccountPanel({
   onCreateClass: (name: string) => void;
   onLinkDevice: (code: string) => void;
   onJoin: (code: string, consent: boolean, childIds: string[]) => void;
+  onRoster: (action: RosterCommand) => void;
+  onAcceptInvite: (code: string) => void;
   onSync: (on: boolean) => void;
   onDeleteData: () => void;
   onDeleteAccount: () => void;
@@ -172,6 +177,8 @@ export function AccountPanel({
             onCreateClass={onCreateClass}
             onLinkDevice={onLinkDevice}
             onJoin={onJoin}
+            onRoster={onRoster}
+            onAcceptInvite={onAcceptInvite}
           />
           <fieldset className="setting-group">
             <legend>{SYNC_LABEL}</legend>

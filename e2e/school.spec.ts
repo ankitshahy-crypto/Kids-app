@@ -86,10 +86,14 @@ test("a school admin creates a school and an invite link", async ({ page }, test
   await page.getByLabel("Teacher email").fill("teacher@example.com");
   await page.getByRole("button", { name: "Invite teacher" }).click();
   await expect(page.locator("[data-invite-link]")).toContainText("schoolInvite");
+  await expect(page.locator("[data-invite-state='pending']")).toBeVisible();
+  await expect(page.getByRole("img", { name: /QR code/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Resend invite" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Clever", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "ClassLink", exact: true })).toHaveCount(0);
   if (testInfo.project.name === "iphone") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/school_admin_iphone.png", fullPage: true });
+    await page.locator("[data-section='account']").screenshot({ path: "/opt/cursor/artifacts/school_admin_iphone.png" });
+    await page.locator("[data-invite-state='pending']").screenshot({ path: "/opt/cursor/artifacts/school_invite_iphone.png" });
   }
   if (testInfo.project.name === "pixel") {
     await page.screenshot({ path: "/opt/cursor/artifacts/school_admin_pixel.png", fullPage: true });
@@ -109,18 +113,33 @@ test("a teacher sees only their class and can link the classroom device", async 
   const account = page.locator("[data-section='account']");
   await expect(account).toHaveAttribute("data-role", "teacher");
   await expect(page.getByText("Kids Villa")).toBeVisible();
+  await expect(page.locator("[data-roster='teacher']")).toBeVisible();
   await expect(page.locator("[data-class-code='BUNNY-42']")).toBeVisible();
+  await expect(page.getByRole("img", { name: "QR code BUNNY-42" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Move to/ })).toHaveCount(0);
   const child = page.locator("[data-child='mia']");
   await expect(child).toContainText("Mia");
   await expect(child).toContainText("3 stars");
   await expect(child).toContainText("5 min");
   await expect(child).toContainText("Letters");
+  await expect(child).toHaveAttribute("data-parent-state", "pending");
+  const sheet = page.locator("[data-sheet='take-home']");
+  await expect(sheet).toContainText("LittleNest");
+  await expect(sheet).toContainText("NEST-18");
+  await expect(sheet).toContainText("A grown-up opens LittleNest.");
+  await expect(page.getByRole("button", { name: "Print take-home sheet" })).toBeVisible();
   await expect(page.getByText("Clever")).toBeVisible();
   await page.getByLabel("Class code on this device").fill("BUNNY-42");
   await page.getByRole("button", { name: "Link this device" }).click();
   await expect(page.getByText("This device is linked to BUNNY-42.")).toBeVisible();
   if (testInfo.project.name === "iphone") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/school_teacher_iphone.png", fullPage: true });
+    const classQr = page.getByRole("img", { name: "QR code BUNNY-42" });
+    await classQr.scrollIntoViewIfNeeded();
+    await classQr.screenshot({ path: "/opt/cursor/artifacts/school_class_qr_iphone.png" });
+    await page.getByRole("heading", { name: "Bunnies" }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: "/opt/cursor/artifacts/school_roster_iphone.png" });
+    await sheet.scrollIntoViewIfNeeded();
+    await sheet.screenshot({ path: "/opt/cursor/artifacts/school_take_home_iphone.png" });
   }
   if (testInfo.project.name === "pixel") {
     await page.screenshot({ path: "/opt/cursor/artifacts/school_teacher_pixel.png", fullPage: true });
@@ -155,4 +174,36 @@ test("a parent sees their child only after they agree", async ({ page }, testInf
   if (testInfo.project.name === "pixel") {
     await page.screenshot({ path: "/opt/cursor/artifacts/school_parent_pixel.png", fullPage: true });
   }
+});
+
+test("a link fills the code before the grown-up agrees", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("littlenest-auth-preview", "school-parent");
+  });
+  await page.goto("./?parentCode=nest-18");
+  await openMenu(page);
+  await page.getByRole("button", { name: /Account/ }).click();
+  await expect(page.getByLabel("Join code from the teacher")).toHaveValue("NEST-18");
+  await expect(page.locator("[data-child='mia']")).toHaveCount(0);
+});
+
+test("a teacher invite link fills the code", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("littlenest-auth-preview", "signed-in");
+  });
+  await page.goto("./?schoolInvite=owl-17");
+  await openMenu(page);
+  await page.getByRole("button", { name: /Account/ }).click();
+  await page.getByRole("button", { name: "Teacher", exact: true }).click();
+  await expect(page.getByLabel("Teacher invite code")).toHaveValue("OWL-17");
+});
+
+test("a class link fills the classroom code", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("littlenest-auth-preview", "school-teacher");
+  });
+  await page.goto("./?classCode=bunny-42");
+  await openMenu(page);
+  await page.getByRole("button", { name: /Account/ }).click();
+  await expect(page.getByLabel("Class code on this device")).toHaveValue("BUNNY-42");
 });
