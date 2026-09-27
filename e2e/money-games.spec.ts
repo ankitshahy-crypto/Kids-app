@@ -87,7 +87,7 @@ test("three jars earn coins and the save jar can reach the hat", async ({ page }
   await play.locator("[data-finish=jars]").click();
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
   await expect.poll(async () => page.evaluate(() => localStorage.getItem("kids-app-profiles-v1") ?? "")).toContain("hat-crown");
-  await page.getByRole("button", { name: "Pilot focus" }).click();
+  await page.getByRole("button", { name: "Reading", exact: true }).click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 

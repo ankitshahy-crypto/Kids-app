@@ -9,7 +9,7 @@ export const aboutContent = {
   promo:
     "Five happy minutes a day. No account, no ads, works offline, and nothing leaves your device. Your child's own animal is the hero of every story.",
   description:
-    `${PRODUCT_NAME} helps young children take their first steps into letters, numbers, colors, games and coding, time and money, building, and science, one small step at a time. Made for ages 3 to 7, with a gentle start for ages 3 to 5 and harder clock, money, coding, building, and science work for ages 5 to 7 (longer words and sentences for ages 5 to 7). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. ${MODULE_WORDS}: kids learn letters and their sounds, then drag their finger across a word to hear it come together: “c… a… t… cat!” ${MODULE_NUMBERS}: count objects, hear and trace numbers, match and trace shapes, and add small groups. ${MODULE_COLORS}: hear a color and tap it, mix two paints, and color their animal. Games, including Think & Code: hatch an egg, guide their animal home, and stack picture blocks that play. ${MODULE_TIME}: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. ${MODULE_BUILD}: bridges, towers, ramps, and simple machines. ${MODULE_SCIENCE}: life cycles, homes, weather, senses, and sink or float. A pretend fizz stays on the screen and says to do it with a grown-up.`,
+    `${PRODUCT_NAME} helps young children take their first steps into letters, numbers, colors, games and coding, time and money, building, and science, one small step at a time. Made for ages 3 to 7, with a gentle start for ages 3 to 5 and harder clock, money, coding, building, and science work for ages 5 to 7 (longer words and sentences for ages 5 to 7). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 2, 5, or 10 minutes, whichever you choose. ${MODULE_WORDS}: kids learn letters and their sounds, then drag their finger across a word to hear it come together: “c… a… t… cat!” ${MODULE_NUMBERS}: count objects, hear and trace numbers, match and trace shapes, and add small groups. ${MODULE_COLORS}: hear a color and tap it, mix two paints, and color their animal. Games, including Think & Code: hatch an egg, guide their animal home, and stack picture blocks that play. ${MODULE_TIME}: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. ${MODULE_BUILD}: bridges, towers, ramps, and simple machines. ${MODULE_SCIENCE}: life cycles, homes, weather, senses, and sink or float. A pretend fizz stays on the screen and says to do it with a grown-up.`,
   differentHeading: `What makes ${PRODUCT_NAME} different`,
   features: [
     {
@@ -40,7 +40,7 @@ export const aboutContent = {
     {
       id: "lesson",
       title: "Short daily lessons",
-      body: "5–10 minutes builds a habit without too much screen time.",
+      body: "You pick 2, 5, or 10 minutes. A little every day builds the habit without much screen time.",
     },
     {
       id: "stars",

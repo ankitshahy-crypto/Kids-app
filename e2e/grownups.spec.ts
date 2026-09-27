@@ -109,9 +109,9 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
 
   await page.getByRole("button", { name: /Account/ }).click();
   await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
-  await expect(page.getByText("Not signed in")).toBeVisible();
-  await expect(page.getByText("School sign-in is coming")).toBeVisible();
-  await expect(page.getByText("does not ask for a card")).toBeVisible();
+  await expect(page.getByText("No account needed")).toBeVisible();
+  await expect(page.getByText("works without an account")).toBeVisible();
+  await expect(page.getByText("nothing asks for an email, a card, or a payment")).toBeVisible();
   await expect(page.getByText(/\$|pricing|subscribe/i)).toHaveCount(0);
   await page.getByRole("button", { name: "Back", exact: true }).click();
 

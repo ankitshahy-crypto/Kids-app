@@ -97,6 +97,8 @@ export function TodayPath({
   const showBuild = sectionVisible("build", undefined, showExplore);
   const showScience = sectionVisible("science", undefined, showExplore);
   const showGames = sectionVisible("games", undefined, showExplore);
+  // The play library is not built yet. It stays out of the dock until it is.
+  const showLibrary = false;
   const shown =
     course === "math" && showMath
       ? "math"
@@ -157,7 +159,7 @@ export function TodayPath({
               aria-pressed={shown === "reading"}
               onClick={() => onCourse("reading")}
             >
-              Pilot focus
+              Reading
             </button>
             {shown === "reading" ? (
               <p className="chunk-strip" data-done={finishedCount} data-left={left} aria-live="polite">
@@ -344,12 +346,14 @@ export function TodayPath({
           <span className="dock-art dock-stickers" aria-hidden="true" />
           <span>Stickers</span>
         </button>
-        <button type="button" className="dock-button" data-dock="library" onClick={onLibrary}>
-          <span className="dock-art">
-            <ToyBox />
-          </span>
-          <span>Play library</span>
-        </button>
+        {showLibrary ? (
+          <button type="button" className="dock-button" data-dock="library" onClick={onLibrary}>
+            <span className="dock-art">
+              <ToyBox />
+            </span>
+            <span>Play library</span>
+          </button>
+        ) : null}
 {showGames ? <button type="button" className="dock-button" data-dock="games" onClick={onGames}>
           <span className="dock-art dock-games" aria-hidden="true">
             <svg viewBox="0 0 64 64">

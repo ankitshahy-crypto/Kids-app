@@ -162,11 +162,11 @@ export const STORIES: Story[] = [
     title: "Milk for the Kid",
     week: 10,
     pages: [
-      { text: "The kid is a small goat. {hero} met the kid.", setting: "farm", props: ["cub"], parent: "'Kid' is a small goat. Sound it out: k, i, d." },
+      { text: "The kid is a small goat. {hero} met the kid.", setting: "farm", props: ["goat"], parent: "'Kid' is a small goat. Sound it out: k, i, d." },
       { text: "The kid can skip. Skip, skip, kick!", setting: "farm", props: [] },
       { text: "{hero} has a cup of milk for the kid.", setting: "farm", props: ["milk", "cup"], parent: "Sound out 'milk': m, i, l, k." },
       { text: "Sip, sip. The kid drank it all up.", setting: "farm", props: ["milk"] },
-      { text: "The kid is glad. {hero} pats the kid. Ok, kid!", setting: "farm", props: ["cub"] },
+      { text: "The kid is glad. {hero} pats the kid. Ok, kid!", setting: "farm", props: ["goat"] },
     ],
     before: "Ask: did you know a baby goat is called a kid?",
     after: "Ask: what did {hero} bring the kid?",

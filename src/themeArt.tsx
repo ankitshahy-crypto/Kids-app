@@ -416,6 +416,26 @@ export function Duck() {
   );
 }
 
+export function Goat() {
+  return (
+    <svg className="art" viewBox="0 0 280 210" aria-hidden="true">
+      <Shadow />
+      <ellipse cx="128" cy="140" rx="62" ry="38" fill="#F1E9DC" />
+      <rect x="86" y="160" width="16" height="30" rx="7" fill="#D9CDBB" />
+      <rect x="150" y="160" width="16" height="30" rx="7" fill="#D9CDBB" />
+      <path d="M180 120c22-10 34-28 34-50" fill="none" stroke="#F1E9DC" strokeWidth="22" strokeLinecap="round" />
+      <ellipse cx="214" cy="84" rx="26" ry="24" fill="#F1E9DC" />
+      <path d="M204 64c-6-10-8-20-4-28M222 64c0-10 4-20 12-26" fill="none" stroke="#C9A27A" strokeWidth="6" strokeLinecap="round" />
+      <ellipse cx="192" cy="72" rx="12" ry="6" fill="#E7C7A6" transform="rotate(-30 192 72)" />
+      <path d="M190 88c-14 2-22 12-20 22 10 0 16-8 20-22Z" fill="#D9CDBB" />
+      <Eye x={220} y={82} />
+      <ellipse cx="232" cy="98" rx="6" ry="4" fill="#E7C7A6" />
+      <path d="M214 108c6 8 12 8 18 0" fill="none" stroke="#2C3A4F" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M66 132c-14-4-24 4-22 14 10-2 16-6 22-14Z" fill="#D9CDBB" />
+    </svg>
+  );
+}
+
 export const themeArt = {
   dinosaurs: Dinosaur,
   vehicles: Truck,
@@ -444,4 +464,5 @@ export const themeArt = {
   mat: Mat,
   pan: Pan,
   duck: Duck,
+  goat: Goat,
 };
