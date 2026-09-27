@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { installAudioSpy, spokenLines } from "./audioSpy";
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -200,43 +201,37 @@ test("the comfort settings save on this device and show on the child's screen", 
 });
 
 test("Hear it again repeats the last line as often as a child likes", async ({ page }) => {
+  await installAudioSpy(page);
   await page.addInitScript(() => {
-    // Record what the device voice is asked to say, and finish each line at once.
-    const spoken: string[] = [];
-    (window as unknown as { __spoken: string[] }).__spoken = spoken;
+    // Finish each device-voice line at once so the replays do not queue up.
     const synth = window.speechSynthesis;
     if (!synth) return;
     synth.speak = (utterance: SpeechSynthesisUtterance) => {
-      spoken.push(utterance.text);
+      const target = window as Window & { __audioAttempts?: { kind: string; detail: string }[] };
+      target.__audioAttempts?.push({ kind: "speech", detail: utterance.text });
       window.setTimeout(() => utterance.onend?.(new Event("end") as SpeechSynthesisEvent), 30);
     };
     synth.cancel = () => undefined;
   });
   await install(page, child({ themes: ["dinosaurs"] }));
   await page.getByRole("button", { name: "Mia" }).click();
-  await page.getByRole("button", { name: "Story" }).click();
-  await page.waitForTimeout(400);
-  const spokenBefore = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken.length);
-  await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.locator("[data-dock=surprise]").click();
   await expect(page.locator("[data-screen=surprise]")).toBeVisible();
-  await expect
-    .poll(() => page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken.length))
-    .toBeGreaterThan(spokenBefore);
-  const line = await page.locator(".surprise-line").innerText();
+  const line = (await page.locator(".surprise-line").innerText()).toLowerCase();
+  await expect.poll(() => spokenLines(page)).toContain(line);
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Story" }).click();
-  await page.waitForTimeout(300);
-  const count = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken.length);
+  // The cover reads the title. Hear it again says that title, not the surprise line.
+  await expect.poll(() => spokenLines(page)).toContain("i am fox");
+  const count = (await spokenLines(page)).length;
   for (let repeat = 0; repeat < 3; repeat += 1) {
     await page.locator("[data-hear-again]").click();
-    await page.waitForTimeout(120);
+    await page.waitForTimeout(150);
   }
-  const spoken = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken);
-  // The replays say the story screen's own line, not the surprise line from the screen before.
-  expect(spoken.length).toBeGreaterThanOrEqual(count + 3);
-  expect(spoken.slice(count)).not.toContain(line);
-  expect(new Set(spoken.slice(count)).size).toBe(1);
+  await expect.poll(async () => (await spokenLines(page)).length).toBeGreaterThanOrEqual(count + 3);
+  const replays = (await spokenLines(page)).slice(count);
+  expect(replays).not.toContain(line);
+  expect(new Set(replays)).toEqual(new Set(["i am fox"]));
 });
 
 test("a break keeps everything and comes back to Today", async ({ page }) => {
