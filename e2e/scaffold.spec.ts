@@ -90,7 +90,7 @@ test("a teacher sets a writing level and a parent can see it", async ({ page }, 
   await circle.getByRole("button", { name: "Circle level 4" }).click();
   await expect(circle).toHaveAttribute("data-writing-level", "4");
   if (testInfo.project.name === "chromium") {
-    await page.locator("[data-section=writing]").first().screenshot({ path: "/opt/cursor/artifacts/writing_levels_teacher.png" });
+    await page.locator("[data-section=writing]").first().screenshot({ path: "test-results/screenshots/writing_levels_teacher.png" });
   }
   await page.reload();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
@@ -120,7 +120,7 @@ test("memory writing accepts the letter path, rejects a scribble, and keeps the 
   await expect(root.locator(".letter-prompt").first()).toContainText(/Write big/i);
   await expect(root.locator(".stroke-guide")).toHaveCount(0);
   if (testInfo.project.name === "chromium") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/memory_writing_board.png" });
+    await page.screenshot({ path: "test-results/screenshots/memory_writing_board.png" });
   }
 
   const board = root.locator(".letter-board");
