@@ -17,15 +17,36 @@ export type Settings = {
   speed: SpeechSpeed;
   /** Device voice chosen in Settings. Null uses the best installed en-US voice. */
   voiceURI: string | null;
-  /** Daily active-reading goal. One bonus star, then no more for extra time. */
-  readingGoal: 5 | 10 | 15;
+  /**
+   * Lesson length in minutes of active play. One bonus star when it is reached,
+   * then a gentle wrap-up. The child never sees a clock.
+   */
+  readingGoal: LessonMinutes;
   /** Short grown-up prompts at the start or end of a lesson. */
   showTips: boolean;
   /** Numbers, colors, games, and later Explore courses. Off leaves reading only. */
   showExplore: boolean;
   /** Python for the same Build It program. Off until a grown-up turns it on. */
   showCode: boolean;
+  /** Less motion, softer colors, no confetti, no sudden sounds. */
+  calm: boolean;
+  /** How many times a day "One more?" is offered after the lesson or the time is done. */
+  extraChunks: ExtraChunks;
+  /** Wider tracing lanes. Calm mode turns this on as well. */
+  easierTracing: boolean;
+  /** A rounder, more open typeface for letters and words. */
+  readableFont: boolean;
+  /** Extra space between letters and words. */
+  letterSpacing: boolean;
+  /** Darker text on plainer backgrounds. */
+  highContrast: boolean;
 };
+
+export type LessonMinutes = 2 | 5 | 10;
+export const LESSON_MINUTES: readonly LessonMinutes[] = [2, 5, 10];
+
+export type ExtraChunks = 0 | 1 | 2 | 3;
+export const EXTRA_CHUNKS: readonly ExtraChunks[] = [0, 1, 2, 3];
 
 /**
  * speechSynthesis rate. 1 is a typical speaking pace.
@@ -47,11 +68,28 @@ export const DEFAULT_SETTINGS: Settings = {
   tapFeedback: true,
   speed: "slow",
   voiceURI: null,
-  readingGoal: 10,
+  readingGoal: 5,
   showTips: true,
   showExplore: true,
   showCode: false,
+  calm: false,
+  extraChunks: 1,
+  easierTracing: false,
+  readableFont: false,
+  letterSpacing: false,
+  highContrast: false,
 };
+
+/** Older saves kept a 5, 10, or 15 minute goal. 15 becomes 10, the longest lesson now. */
+function lessonMinutes(value: unknown): LessonMinutes {
+  if (value === 2 || value === 5 || value === 10) return value;
+  if (value === 15) return 10;
+  return DEFAULT_SETTINGS.readingGoal;
+}
+
+function extraChunks(value: unknown): ExtraChunks {
+  return value === 0 || value === 1 || value === 2 || value === 3 ? value : DEFAULT_SETTINGS.extraChunks;
+}
 
 function clampVolume(value: unknown, fallback: number): number {
   const number = typeof value === "number" ? value : fallback;
@@ -80,10 +118,16 @@ export function loadSettings(): Settings {
       tapFeedback: record.tapFeedback !== false,
       speed: record.speed === "slower" ? "slower" : "slow",
       voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
-      readingGoal: record.readingGoal === 5 || record.readingGoal === 15 ? record.readingGoal : 10,
+      readingGoal: lessonMinutes(record.readingGoal),
       showTips: record.showTips !== false,
       showExplore: record.showExplore !== false,
       showCode: record.showCode === true,
+      calm: record.calm === true,
+      extraChunks: extraChunks(record.extraChunks),
+      easierTracing: record.easierTracing === true,
+      readableFont: record.readableFont === true,
+      letterSpacing: record.letterSpacing === true,
+      highContrast: record.highContrast === true,
     };
   } catch {
     return DEFAULT_SETTINGS;

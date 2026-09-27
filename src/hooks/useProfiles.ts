@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import type { AnimalId } from "../data/animals";
 import {
   createChild,
   editChild,
@@ -7,7 +6,7 @@ import {
   saveStore,
   todayKey,
   storeSnapshot,
-  type AgeRange,
+  type ChildInput,
   type ChildProfile,
   type StickerInput,
 } from "../data/profiles";
@@ -37,7 +36,7 @@ export function useProfiles() {
     setStore((current) => ({ ...current, activeId: id }));
   };
 
-  const addChild = (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => {
+  const addChild = (input: ChildInput) => {
     const profile = createChild(input);
     setStore((current) => ({
       activeId: current.activeId ?? profile.id,
@@ -46,7 +45,7 @@ export function useProfiles() {
     return profile;
   };
 
-  const updateChild = (id: string, input: { name: string; ageRange: AgeRange; animal: AnimalId }) => {
+  const updateChild = (id: string, input: ChildInput) => {
     setStore((current) => ({
       ...current,
       profiles: current.profiles.map((profile) => (profile.id === id ? editChild(profile, input) : profile)),

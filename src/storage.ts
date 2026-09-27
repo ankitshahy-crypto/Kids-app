@@ -39,6 +39,8 @@ export const PROFILES_KEY = "littlenest-profiles-v1";
 export const SETTINGS_KEY = "littlenest-settings-v1";
 export const PLACEMENT_KEY = "littlenest-placement-v1";
 export const SILENT_HINT_KEY = "littlenest-silent-hint-v1";
+/** "One more?" chunks taken today, per child. Nothing else is kept here. */
+export const EXTRAS_KEY = "littlenest-extras-v1";
 export const OUTBOX_KEY = "littlenest-outbox-v1";
 
 export function readStored(storage: KeyValueStore, key: string): string | null {

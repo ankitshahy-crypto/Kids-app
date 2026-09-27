@@ -292,6 +292,9 @@ export function SoundItOut({
           </div>
         </div>
       </div>
+      <p className="chunk-strip chunk-strip-word" data-word-index={index % deck.length} data-word-count={deck.length}>
+        {word.letterCard ? "Letter" : "Word"} {(index % deck.length) + 1} of {deck.length}
+      </p>
       <div className="controls">
         <button type="button" className="nav-button" aria-label="Previous word" onClick={() => go(-1)}>
           <Chevron direction="left" />

@@ -24,7 +24,7 @@ import { letterForm, type TracePoint } from "../data/handwriting";
 import { wordsForStep, type LadderStep } from "../data/ladder";
 import type { StickerInput } from "../data/profiles";
 import { guideFor, letterItemId, writingLevel, type WritingMap } from "../data/scaffold";
-import { followStroke, stationsAttribute, strokeComplete } from "../data/trace";
+import { followStroke, stationsAttribute, strokeComplete, traceTolerance } from "../data/trace";
 import type { Settings } from "../settings";
 import { StrokeFigure } from "./StrokeFigure";
 
@@ -530,7 +530,7 @@ function MiniTrace({
     if (!tracing.current || !stroke || done) return;
     const point = pointFrom(event);
     if (!point) return;
-    const next = followStroke(stroke, coveredRef.current, point);
+    const next = followStroke(stroke, coveredRef.current, point, traceTolerance(settingsRef.current));
     if (next === coveredRef.current) return;
     coveredRef.current = next;
     setCovered(next);

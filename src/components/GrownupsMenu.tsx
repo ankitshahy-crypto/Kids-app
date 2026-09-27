@@ -4,9 +4,8 @@ import { shareMessage, shareUrl, showHelpContact } from "../config";
 import { PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
 import { tint } from "../palette";
 import { shareWordNest, type ShareResult } from "../share";
-import type { AnimalId } from "../data/animals";
 import type { PlacementDocument } from "../data/placement";
-import { lessonName, type AgeRange, type ChildProfile } from "../data/profiles";
+import { lessonName, type ChildInput, type ChildProfile } from "../data/profiles";
 import { corruptProfileNotice } from "../data/profiles";
 import type { Settings } from "../settings";
 import { storageQuotaNotice } from "../storage";
@@ -30,7 +29,7 @@ type GrownupsPage =
   | "offline";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
-  { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, the daily goal, and Explore", tint: tint.mint },
+  { id: "settings", title: "Settings", note: "Volume, voice, lesson length, calm mode, easier reading, tips, and Explore", tint: tint.mint },
   { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach },
   { id: "account", title: "Account", note: "School sign-in is coming", tint: tint.sky },
@@ -104,8 +103,8 @@ export function GrownupsMenu({
   active: ChildProfile | null;
   placement: PlacementDocument;
   onSelect: (id: string) => void;
-  onAdd: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
-  onUpdate: (id: string, input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
+  onAdd: (input: ChildInput) => void;
+  onUpdate: (id: string, input: ChildInput) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
 }) {

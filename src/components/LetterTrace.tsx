@@ -17,6 +17,7 @@ import {
 } from "../data/scaffold";
 import {
   followStroke,
+  traceTolerance,
   matchDistractor,
   reversalPartner,
   stationsAttribute,
@@ -197,7 +198,7 @@ export function LetterTrace({
     if (phase !== "trace" || !tracing.current || !stroke || doneStroke) return;
     const point = pointFrom(event);
     if (!point) return;
-    const next = followStroke(stroke, coveredRef.current, point);
+    const next = followStroke(stroke, coveredRef.current, point, traceTolerance(settingsRef.current));
     if (next === coveredRef.current) return;
     coveredRef.current = next;
     setCovered(next);

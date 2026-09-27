@@ -223,16 +223,23 @@ function tone(
 }
 
 /** Short, soft effects. The effects slider is the bus gain, not this peak. */
+/** Calm mode swaps the loud, sudden effects for the soft chime. */
+export function calmEffect(name: EffectName, settings: Pick<Settings, "calm"> | undefined): EffectName {
+  if (!settings?.calm) return name;
+  return name === "cheer" || name === "celebrate" ? "chime" : name;
+}
+
 export function playEffect(name: EffectName, settings?: Settings): void {
   if (settings) latest = settings;
   const current = latest;
   if (!current?.effects || clampVolume(current.effectsVolume) <= 0) return;
   const ctx = ensure();
   if (!ctx) return;
+  const sound = calmEffect(name, current);
   const run = () => {
     if (ctx.state !== "running") return;
     refreshGains();
-    startEffect(ctx, name);
+    startEffect(ctx, sound);
   };
   if (isBlocked(ctx.state)) void ctx.resume().then(run).catch(() => undefined);
   else run();

@@ -3,6 +3,14 @@ import type { TracePoint } from "./handwriting";
 /** How far a finger may stray, in the 0–100 letter box. Wide on purpose for ages 3–5. */
 export const TRACE_TOLERANCE = 16;
 
+/** Wider still, for calm mode or the "Easier tracing" switch. */
+export const EASY_TRACE_TOLERANCE = 24;
+
+/** The lane width a lesson uses. Calm mode is always the easier lane. */
+export function traceTolerance(settings: { calm: boolean; easierTracing: boolean }): number {
+  return settings.calm || settings.easierTracing ? EASY_TRACE_TOLERANCE : TRACE_TOLERANCE;
+}
+
 const STATION_SPACING = 4;
 
 function round(value: number): number {

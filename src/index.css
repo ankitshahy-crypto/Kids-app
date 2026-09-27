@@ -275,6 +275,15 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   min-height: 64px;
+  /* Room for the Grown-ups pill, so Hear again, Break, and the stars stay in view. */
+  padding-right: 136px;
+}
+
+@media (max-width: 480px) {
+  .top-bar .goal-ring,
+  .top-bar .star-count {
+    display: none;
+  }
 }
 
 .top-spacer {
@@ -1676,6 +1685,7 @@ button:focus-visible {
   border: 1px solid var(--line);
 }
 
+.app:is(.mode-parent, .mode-grownups) .segment button.is-selected,
 .app:is(.mode-parent, .mode-grownups) .age-grid button.is-selected,
 .app:is(.mode-parent, .mode-grownups) .animal-pick.is-selected {
   background: var(--mint-card);
@@ -1783,6 +1793,7 @@ button:focus-visible {
 }
 
 .today-avatar {
+  flex: 0 0 64px;
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -1824,7 +1835,16 @@ button:focus-visible {
   flex: 1 0 auto;
 }
 
+.lesson-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+}
+
 .pilot-label {
+  position: relative;
   align-self: flex-start;
   margin: 0;
   min-height: 32px;
@@ -1836,6 +1856,13 @@ button:focus-visible {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* A 64px touch area around the 32px pill, without taking more room. */
+.pilot-label::before {
+  content: "";
+  position: absolute;
+  inset: -16px 0;
 }
 
 .pilot-label.is-selected {
@@ -3672,8 +3699,9 @@ button:focus-visible {
 }
 
 @media (max-width: 767px) {
+  /* Keep the four stops apart on a short phone. The body scrolls instead. */
   .trail {
-    min-height: 0;
+    min-height: 240px;
   }
 }
 
@@ -5204,7 +5232,7 @@ input.is-pressed,
 }
 
 .trace-practice button {
-  min-height: 52px;
+  min-height: 64px;
   min-width: 140px;
   border-radius: 999px;
   background: var(--paper);
@@ -6475,3 +6503,426 @@ input.is-pressed,
 .sci-rabbit { background: #f7e1c8; border-radius: 50%; }
 .sci-puddle { background: #8eb4d6; border-radius: 50%; }
 .sci-listen { background: #6d5b86; border-radius: 50%; }
+
+/* ---------- Comfort settings and interest themes ---------- */
+
+/* Hear again and Break sit beside the goal ring, big enough for a small finger. */
+.hear-again,
+.break-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 0 12px;
+  border-radius: 20px;
+  background: #fffaf4;
+  color: var(--text-sage);
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+
+.hear-again svg,
+.break-button svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+.hear-again-icon {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+}
+
+.break-button {
+  color: var(--text-warm);
+}
+
+.today-tools .hear-again,
+.today-tools .break-button {
+  box-shadow: none;
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 420px) {
+  .hear-again-text,
+  .break-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .hear-again,
+  .break-button {
+    padding: 0;
+    width: 64px;
+  }
+}
+
+/* The short progress strip: "2 of 4 · 2 more!" No clock, no countdown. */
+.chunk-strip {
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-sage);
+  background: var(--mint-card);
+  border-radius: 999px;
+  padding: 5px 14px;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.chunk-strip-word {
+  margin: 4px auto 0;
+  font-size: 15px;
+  padding: 4px 14px;
+}
+
+.segment.segment-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Wrap-up: "That's today's lesson!" with One more? and All done. */
+.wrap-up {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(60, 50, 40, 0.28);
+}
+
+.wrap-up-card {
+  width: min(100%, 440px);
+  background: var(--paper);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  padding: 24px 20px 20px;
+  text-align: center;
+}
+
+.wrap-up-card h2 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.wrap-up-note {
+  margin: 0 0 16px;
+  font-size: 20px;
+  color: var(--text-sage);
+  font-weight: 700;
+}
+
+.wrap-up-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.wrap-up-actions .done-button {
+  width: 100%;
+}
+
+.wrap-up-actions .text-button {
+  min-height: 64px;
+  font-size: 18px;
+}
+
+/* Break screen: quiet, nothing to do but come back. */
+.break-screen {
+  width: 100%;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 16px;
+}
+
+.break-hero .hero {
+  display: block;
+  width: 160px;
+  height: 160px;
+}
+
+.break-hero .avatar-art {
+  width: 100%;
+  height: 100%;
+}
+
+.break-screen h1 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.break-note {
+  margin: 0;
+  max-width: 420px;
+  font-size: 19px;
+  color: var(--text-muted);
+}
+
+.break-ready {
+  width: min(100%, 320px);
+}
+
+.break-switch {
+  width: min(100%, 320px);
+  min-height: 64px;
+  font-size: 18px;
+}
+
+/* Favorites picker on the child form. */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.theme-pick {
+  min-height: 96px;
+  padding: 6px 4px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.15;
+  text-align: center;
+}
+
+.theme-pick .theme-art {
+  display: block;
+  width: 64px;
+  height: 48px;
+}
+
+.theme-pick .theme-art .art {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.theme-pick.is-selected {
+  background: var(--mint-card);
+  border-color: #b7e0c2;
+  box-shadow: inset 0 0 0 2px #b7e0c2;
+}
+
+.field-optional {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+@media (max-width: 420px) {
+  .theme-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Themed counting objects share the apple's slot. */
+.math-theme-object {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.math-theme-object .art {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Calm mode: softer surfaces, no motion, nothing bursts. */
+.app[data-calm="true"] {
+  --cream: #f6f3ee;
+  --paper: #fcfbf8;
+  --sand: #f1ede6;
+  --mint: #e3ebe6;
+  --mint-wash: #edf2ee;
+  --mint-card: #ebf1ec;
+  --peach: #f3ebe3;
+  --peach-deep: #ecdfd2;
+  --blush: #f4ece4;
+  --sky: #e3eaf1;
+  --sky-wash: #eaf0f5;
+  --butter: #f7f3e9;
+  --butter-edge: #e9dcc4;
+  --shadow: 0 8px 20px rgba(120, 90, 60, 0.05);
+}
+
+.app[data-calm="true"] *,
+.app[data-calm="true"] *::before,
+.app[data-calm="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.app[data-calm="true"] .confetti,
+.app[data-calm="true"] .star-flight,
+.app[data-calm="true"] .wave {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app *,
+  .app *::before,
+  .app *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .app .confetti,
+  .app .star-flight {
+    display: none !important;
+  }
+}
+
+/* Easier-to-read font. Falls back to Verdana until the font files are added. */
+.app[data-font="readable"] {
+  --font-readable: "Atkinson Hyperlegible", Verdana, "DejaVu Sans", sans-serif;
+}
+
+.app[data-font="readable"],
+.app[data-font="readable"] * {
+  font-family: var(--font-readable);
+}
+
+.app[data-font="readable"] :is(code, pre, .code-text, .code-line, .code-view *) {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+/* Extra letter spacing. Single-letter tiles stay centered. */
+.app[data-spacing="wide"] {
+  letter-spacing: 0.06em;
+  word-spacing: 0.16em;
+}
+
+.app[data-spacing="wide"] :is(.tile, .trail-letter, .letter-glyph, .gate-choice) {
+  letter-spacing: 0;
+}
+
+.app[data-spacing="wide"] :is(.card-label, .picture-card .label, .sound-label, .chunk-strip, .placeholder p, .wrap-up-note) {
+  letter-spacing: 0.1em;
+}
+
+/* High contrast: darker ink, plainer paper, firmer lines. */
+.app[data-contrast="high"] {
+  --ink: #101828;
+  --text: #101828;
+  --text-adult: #111111;
+  --text-muted: #3a413c;
+  --text-sage: #2f4a3c;
+  --text-warm: #6b3f14;
+  --text-sky: #2f4f6b;
+  --line: #a9a196;
+  --cream: #fffdf9;
+  --paper: #ffffff;
+  --sand: #f6f1ea;
+  --adult: #f7f5f1;
+  --action: #2f4a3c;
+}
+
+.app[data-contrast="high"] button:not(.tile):not(.trail-stop):not(.who-pick) {
+  outline: 1.5px solid rgba(16, 24, 40, 0.28);
+  outline-offset: -1.5px;
+}
+
+/* Today's surprise: a visitor, the same one all day. */
+.dock-surprise {
+  background: var(--blush);
+}
+
+.dock-surprise svg {
+  width: 56px;
+  height: 56px;
+}
+
+.surprise-scene {
+  position: relative;
+  width: min(100%, 360px);
+  height: 200px;
+  margin: 8px auto 0;
+}
+
+.surprise-host,
+.surprise-visitor {
+  position: absolute;
+  bottom: 0;
+  width: 150px;
+  height: 150px;
+}
+
+.surprise-host {
+  left: 8%;
+}
+
+.surprise-visitor {
+  right: 8%;
+  animation: surprise-peek 900ms ease-out;
+}
+
+.surprise-host .avatar-art,
+.surprise-visitor .avatar-art {
+  width: 100%;
+  height: 100%;
+}
+
+.surprise-gift {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 120px;
+  height: 90px;
+  transform: translateX(-50%);
+}
+
+.surprise-gift .art {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.surprise-line {
+  margin: 12px auto 0;
+  max-width: 420px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-sage);
+}
+
+.surprise-hear {
+  margin: 12px auto 0;
+}
+
+@keyframes surprise-peek {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}

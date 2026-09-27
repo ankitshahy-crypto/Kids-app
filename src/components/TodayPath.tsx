@@ -41,6 +41,7 @@ export function TodayPath({
   onCloset,
   onStickers,
   onGames,
+  onSurprise,
   goalMinutes,
   course,
   onCourse,
@@ -71,6 +72,7 @@ export function TodayPath({
   onCloset: () => void;
   onStickers: () => void;
   onGames: () => void;
+  onSurprise: () => void;
   goalMinutes: number;
   course: "reading" | "math" | "colors" | "time" | "build" | "science";
   onCourse: (course: "reading" | "math" | "colors" | "time" | "build" | "science") => void;
@@ -115,6 +117,9 @@ export function TodayPath({
   const timeDone = profile.days[todayKey(now)]?.[TIME] ?? {};
   const current = stops.find((stop) => !done[stop.id]) ?? stops[stops.length - 1];
   const letter = (letters[0] ?? "a").toUpperCase();
+  const finishedCount = stops.filter((stop) => done[stop.id]).length;
+  const left = stops.length - finishedCount;
+  const strip = left === 0 ? "All done today!" : finishedCount === 0 ? `${left} more!` : `${finishedCount} of ${stops.length} · ${left} more!`;
 
   return (
     <div
@@ -143,16 +148,23 @@ export function TodayPath({
 
       <div className="today-body">
         <section className="lesson">
-          <button
-            type="button"
-            className={`pilot-label${shown === "reading" ? " is-selected" : ""}`}
-            data-area="pilot"
-            data-course="reading"
-            aria-pressed={shown === "reading"}
-            onClick={() => onCourse("reading")}
-          >
-            Pilot focus
-          </button>
+          <div className="lesson-head">
+            <button
+              type="button"
+              className={`pilot-label${shown === "reading" ? " is-selected" : ""}`}
+              data-area="pilot"
+              data-course="reading"
+              aria-pressed={shown === "reading"}
+              onClick={() => onCourse("reading")}
+            >
+              Pilot focus
+            </button>
+            {shown === "reading" ? (
+              <p className="chunk-strip" data-done={finishedCount} data-left={left} aria-live="polite">
+                {strip}
+              </p>
+            ) : null}
+          </div>
 
           {shown === "reading" ? (
             <div className="trail">
@@ -351,6 +363,17 @@ export function TodayPath({
             <EggNest />
           </span>
           <span>My Nest</span>
+        </button>
+        <button type="button" className="dock-button" data-dock="surprise" onClick={onSurprise}>
+          <span className="dock-art dock-surprise" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <rect x="12" y="28" width="40" height="26" rx="6" fill="#F6C3CB" />
+              <rect x="8" y="20" width="48" height="12" rx="5" fill="#F4A9B8" />
+              <rect x="29" y="20" width="6" height="34" fill="#FFF6E4" />
+              <path d="M32 20c-6-10-16-8-14-2 2 4 8 4 14 2Zm0 0c6-10 16-8 14-2-2 4-8 4-14 2Z" fill="#E07A8A" />
+            </svg>
+          </span>
+          <span>Surprise</span>
         </button>
       </div>
     </div>
