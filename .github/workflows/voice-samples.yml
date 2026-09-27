@@ -53,14 +53,31 @@ jobs:
         run: |
           args=(--sample "$VOICES" --sample-dir samples --speed "$SPEED" --force)
           [ -n "$PROMPT" ] && args+=(--prompt "$PROMPT")
-          node scripts/generate-audio.mjs "${args[@]}"
+          # Errors become annotations, which can be read without the full log.
+          if ! node scripts/generate-audio.mjs "${args[@]}" 2>&1 | tee make.log; then
+            tail -n 5 make.log | sed 's/^/::error::/'
+            exit 1
+          fi
+          grep -h . samples/*.error.txt 2>/dev/null | sed 's/^/::warning::/' || true
 
       - name: Join each voice into one clip
+        continue-on-error: true
         run: |
+          command -v ffmpeg >/dev/null || sudo apt-get install -y -q ffmpeg
+          ffmpeg -version | head -n 1
           for dir in samples/*/; do
-            node scripts/join-audio.mjs "${dir%/}"
+            if ! node scripts/join-audio.mjs "${dir%/}" 2>&1 | tee join.log; then
+              echo "::error::join failed for $dir: $(tail -n 3 join.log | tr '\n' ' ')"
+            fi
           done
           ls -la samples
+
+      - name: Listen with a speech recognizer
+        continue-on-error: true
+        run: |
+          pip install -q faster-whisper
+          python3 scripts/hear-clips.py samples/*/ > heard.md
+          cat heard.md
 
       - name: Push the voice-samples branch
         env:
@@ -69,8 +86,13 @@ jobs:
           SPEED: ${{ inputs.speed }}
         run: |
           out=$(mktemp -d)
+          [ -s heard.md ] && cp heard.md "$out/heard.md"
           cp samples/*.mp3 "$out"/ 2>/dev/null || true
           cp samples/*.error.txt "$out"/ 2>/dev/null || true
+          # The separate parts too, in case a joined clip is missing.
+          for dir in samples/*/; do
+            mkdir -p "$out/parts/$(basename "$dir")" && cp "$dir"*.mp3 "$out/parts/$(basename "$dir")/" 2>/dev/null || true
+          done
           {
             echo "# Voice samples"
             echo
@@ -89,6 +111,14 @@ jobs:
               [ -e "$f" ] || continue
               echo "- $(basename "$f" .error.txt): failed: $(cat "$f")"
             done
+            if [ -s "$out/heard.md" ]; then
+              echo
+              echo "## What a speech recognizer heard"
+              echo
+              echo "Isolated sounds are hard for a recognizer; a blank or odd line means listen to that one."
+              echo
+              cat "$out/heard.md"
+            fi
           } > "$out/README.md"
           cd "$out"
           git init -q

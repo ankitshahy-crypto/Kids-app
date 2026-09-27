@@ -97,7 +97,25 @@ jobs:
             false|"") ;;
             *) args+=(--force "$FORCE") ;;
           esac
-          node scripts/generate-audio.mjs "${args[@]}"
+          # Errors become annotations, which can be read without the full log.
+          if ! node scripts/generate-audio.mjs "${args[@]}" 2>&1 | tee make.log; then
+            tail -n 5 make.log | sed 's/^/::error::/'
+            exit 1
+          fi
+
+      - name: Listen to the letter clips with a speech recognizer
+        id: hear
+        continue-on-error: true
+        run: |
+          pip install -q faster-whisper
+          python3 scripts/hear-clips.py public/audio/sounds public/audio/letters public/audio/words/mat.mp3 public/audio/words/sun.mp3 > heard.md
+          {
+            echo "report<<HEARD"
+            echo "What a speech recognizer heard in the letter clips (a blank or odd line means listen to that one):"
+            echo
+            cat heard.md
+            echo "HEARD"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Summary
         run: |
@@ -106,17 +124,27 @@ jobs:
           echo "- Voice: ${{ inputs.voice }} (${{ inputs.model }}), letters as ${{ inputs.letter_style }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Files: $(find public/audio -name '*.mp3' | wc -l)" >> "$GITHUB_STEP_SUMMARY"
           echo "- Size: $(du -sh public/audio | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          if [ -s heard.md ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            cat heard.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          rm -f heard.md make.log
 
       - name: Open pull request
         uses: peter-evans/create-pull-request@v7
         with:
           branch: voice/google-${{ inputs.model }}-${{ inputs.voice }}
+          add-paths: |
+            public/audio
+            src/data/audioAvailable.json
           title: "Voice clips: ${{ inputs.voice }} (${{ inputs.model }}), letters as ${{ inputs.letter_style }}"
           commit-message: |
             Add spoken clips made with Google Cloud Text-to-Speech (${{ inputs.voice }}, ${{ inputs.model }}).
 
             Generated offline by scripts/generate-audio.mjs. The app plays these
             files and never calls a voice service.
+
+            ${{ steps.hear.outputs.report }}
           body: |
             Spoken clips for `src/data/audioManifest.json`${{ inputs.only != '' && format(' (kinds: `{0}`)', inputs.only) || '' }}, made with Google Cloud Text-to-Speech on GitHub's machines.
 
