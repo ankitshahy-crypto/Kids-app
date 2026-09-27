@@ -6,7 +6,7 @@ export const PRODUCT_SHORT = "LittleNest";
 
 export const TAGLINE = "by TriageDesk";
 
-export const STORE_NAME = "LittleNest Learning: Ages 3-7";
+export const STORE_NAME = "LittleNest: Early Learning";
 
 export const STORE_SUBTITLE = "Read, math, science & coding";
 

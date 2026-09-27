@@ -135,7 +135,7 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
   await page.getByRole("button", { name: /About LittleNest Learning/ }).click();
   const about = page.locator("[data-section='about']");
   await expect(about.getByRole("heading", { name: "About LittleNest Learning" })).toBeVisible();
-  await expect(about.getByText("LittleNest Learning: Ages 3-7")).toBeVisible();
+  await expect(about.getByText("LittleNest: Early Learning")).toBeVisible();
   await expect(about.getByText("Read, math, science & coding")).toBeVisible();
   await expect(about.getByRole("heading", { name: "Your child is the hero" })).toBeVisible();
   await expect(about.getByRole("heading", { name: "Drag to blend" })).toBeVisible();

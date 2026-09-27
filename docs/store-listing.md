@@ -1,8 +1,8 @@
-# LittleNest Learning: Ages 3-7
+# LittleNest: Early Learning
 
 Store and website copy. The in-app About screen reads the same words from `src/content/about.ts`. The version number comes from `package.json`.
 
-**Name:** LittleNest Learning: Ages 3-7
+**Name:** LittleNest: Early Learning
 
 **Subtitle:** Read, math, science & coding
 
