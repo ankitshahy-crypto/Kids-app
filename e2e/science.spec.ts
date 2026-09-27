@@ -20,6 +20,30 @@ const older = {
   profiles: [{ ...profile.profiles[0], ageRange: "6-7" }],
 };
 
+async function clippedBox(page: Page, selector: string) {
+  return page.locator(selector).evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    let top = rect.top;
+    let bottom = rect.bottom;
+    let left = rect.left;
+    let right = rect.right;
+    let node: HTMLElement | null = el.parentElement;
+    while (node) {
+      const style = getComputedStyle(node);
+      const clips = (value: string) => value === "auto" || value === "scroll" || value === "hidden" || value === "clip";
+      if (clips(style.overflowY) || clips(style.overflowX)) {
+        const bounds = node.getBoundingClientRect();
+        top = Math.max(top, bounds.top);
+        bottom = Math.min(bottom, bounds.bottom);
+        left = Math.max(left, bounds.left);
+        right = Math.min(right, bounds.right);
+      }
+      node = node.parentElement;
+    }
+    return { x: left, y: top, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+  });
+}
+
 function overlaps(
   a: { x: number; y: number; width: number; height: number } | null,
   b: { x: number; y: number; width: number; height: number } | null,
@@ -241,7 +265,39 @@ test("the home dock stays on screen with Science", async ({ page }, testInfo) =>
   const bottom = await page.locator("[data-dock=nest]").evaluate((el) => el.getBoundingClientRect().bottom);
   const height = page.viewportSize()?.height ?? 0;
   expect(bottom, "science later").toBeLessThanOrEqual(height - 2);
+  await page.locator("[data-science=menu]").scrollIntoViewIfNeeded();
   const dock = await page.locator(".today-dock").boundingBox();
   const menu = await page.locator("[data-science=menu]").boundingBox();
   expect(overlaps(menu, dock)).toBe(false);
+  const bottomAfter = await page.locator("[data-dock=nest]").evaluate((el) => el.getBoundingClientRect().bottom);
+  expect(bottomAfter, "science later").toBeLessThanOrEqual(height - 2);
+});
+
+test("the home dock stays inside phone and iPad viewports when Science is selected", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "each size is checked once");
+  await install(page);
+  const sizes = [
+    { width: 390, height: 664, label: "iphone" },
+    { width: 768, height: 1024, label: "ipad-portrait" },
+    { width: 1024, height: 768, label: "ipad-landscape" },
+  ];
+  for (const size of sizes) {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    await page.locator("[data-course=science]").click();
+    const nest = page.locator("[data-dock=nest]");
+    const box = await nest.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom };
+    });
+    expect(box.bottom, size.label).toBeLessThanOrEqual(size.height - 2);
+    expect(box.top, size.label).toBeGreaterThanOrEqual(0);
+    await page.locator("[data-science=menu]").scrollIntoViewIfNeeded();
+    const dock = await clippedBox(page, ".today-dock");
+    const menu = await clippedBox(page, "[data-science=menu]");
+    expect(menu.height, size.label).toBeGreaterThan(40);
+    expect(dock.height, size.label).toBeGreaterThan(40);
+    expect(overlaps(menu, dock), size.label).toBe(false);
+    const dockAfter = await nest.evaluate((el) => el.getBoundingClientRect().bottom);
+    expect(dockAfter, size.label).toBeLessThanOrEqual(size.height - 2);
+  }
 });

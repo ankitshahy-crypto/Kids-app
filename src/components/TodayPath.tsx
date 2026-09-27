@@ -111,6 +111,7 @@ export function TodayPath({
       data-week={weekIndex}
       data-letters={letters.join("")}
     >
+      <div className="today-main">
       <div className="today-top">
         <button type="button" className="today-avatar" aria-label="Switch child" onClick={onLeave}>
           <Hero animal={profile.animal} outfit={profile.outfit} />
@@ -320,6 +321,7 @@ export function TodayPath({
       {course === "science" ? (
         <ScienceBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[SCIENCE] ?? {}} onOpen={onScience} />
       ) : null}
+      </div>
 
       <div className="today-dock">
         <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>

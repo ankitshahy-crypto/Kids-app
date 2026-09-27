@@ -40,6 +40,12 @@ describe("hatch rounds follow taught letters", () => {
     expect(round.choices.slice(0, 2)).toEqual(["a", "t"]);
   });
 
+  it("leaves the first letter showing when every letter in the word was taught", () => {
+    const round = hatchRound(lettersIntroduced(4), 2);
+    expect(round.word.word).toBe("cat");
+    expect(round.blanks).toEqual([1, 2]);
+  });
+
   it("uses a longer word once that level is reached", () => {
     const round = hatchRound(taught, 3);
     expect(round.word.word).toBe("apple");

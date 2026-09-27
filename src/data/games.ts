@@ -139,7 +139,7 @@ function pickWord(words: readonly DeckWord[], level: HatchLevel, known: Set<stri
   return pool[0];
 }
 
-/** One egg. Level 1 blanks the first sound. Later levels blank every taught letter. */
+/** One egg. Level 1 blanks the first sound. Later levels blank every taught letter and still leave one letter showing. */
 export function hatchRound(known: readonly string[], level: HatchLevel, words: readonly DeckWord[] = starterDeck.words): HatchRound {
   const taught = knownSet(known);
   const word = pickWord(words, level, taught);
@@ -153,6 +153,7 @@ export function hatchRound(known: readonly string[], level: HatchLevel, words: r
     if (taught.size === 0 || taught.has(char)) blanks.push(index);
   });
   if (blanks.length === 0) blanks.push(0);
+  if (level > 1 && word.letters.length > 1 && blanks.length === word.letters.length) blanks.shift();
   const needed = [...new Set(blanks.map((index) => word.letters[index].char.toLowerCase()))];
   const rest = [...taught].filter((letter) => !needed.includes(letter));
   const alphabet = "abcdefghijklmnopqrstuvwxyz".split("").filter((letter) => !needed.includes(letter) && !rest.includes(letter));

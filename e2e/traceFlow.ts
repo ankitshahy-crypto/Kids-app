@@ -79,9 +79,16 @@ export async function finishPathTrace(page: Page, screen: string) {
 
 async function pairOne(page: Page) {
   const root = page.locator("[data-screen=draw]");
-  const waiting = root.locator("[data-match-upper][data-paired=false]");
+  if ((await root.count()) === 0) return;
+  const waiting = root.locator('[data-match-upper][data-paired="false"]');
   if ((await waiting.count()) === 0) {
-    await expect(root).not.toHaveAttribute("data-phase", "match");
+    // The last pair leaves this screen, or moves on to a reversal. The draw
+    // screen is gone once that happens, so wait for the phase to change.
+    await expect.poll(async () => {
+      if ((await page.locator("[data-screen=today]").count()) > 0) return "today";
+      if ((await root.count()) === 0) return "gone";
+      return (await root.getAttribute("data-phase")) ?? "gone";
+    }).not.toBe("match");
     return;
   }
   const tile = waiting.first();

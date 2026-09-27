@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { pinnedReading } from "./pinLesson";
 import { finishLetterTracing } from "./traceFlow";
 
 const profile = {
@@ -18,9 +19,10 @@ const profile = {
 
 async function openDraw(page: Page) {
   await page.addInitScript((saved) => {
-    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved.profile));
+    localStorage.setItem("littlenest-placement-v1", JSON.stringify(saved.placed));
     localStorage.removeItem("kids-app-silent-hint-v1");
-  }, profile);
+  }, { profile, placed: pinnedReading });
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });

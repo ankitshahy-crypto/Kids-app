@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { pinnedReading } from "./pinLesson";
 
 const profile = {
   activeId: "mia",
@@ -11,6 +12,7 @@ const profile = {
       createdAt: "2026-09-01T15:00:00.000Z",
       stars: 1,
       days: {},
+      ladder: { step: 3, successes: 0 },
     },
   ],
 };
@@ -58,9 +60,10 @@ async function install(page: Page) {
         return speak.call(this, utterance);
       };
     }
-    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved.profile));
+    localStorage.setItem("littlenest-placement-v1", JSON.stringify(saved.placed));
     localStorage.removeItem("kids-app-silent-hint-v1");
-  }, profile);
+  }, { profile, placed: pinnedReading });
 }
 
 async function playCount(page: Page): Promise<number> {
@@ -90,6 +93,7 @@ test("dragging the track lights each letter in order and plays the word", async 
 
   const tiles = page.locator(".letters .tile-wrap");
   const track = page.locator(".blend-track");
+  await expect(page.locator(".activity")).toHaveAttribute("data-word", "cat");
   await expect(track).toBeVisible();
   await expect(tiles.nth(2)).toBeVisible();
   await expect(tiles.nth(0)).toHaveAttribute("data-lit", "false");

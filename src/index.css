@@ -6981,3 +6981,40 @@ input.is-pressed,
   background: var(--card, #fff);
   border-radius: 24px;
 }
+
+.today-main {
+  display: contents;
+}
+
+@media (max-width: 767px), (min-width: 768px) and (max-width: 1100px) and (max-height: 820px) {
+  .today {
+    overflow: hidden;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .today-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    gap: 8px;
+  }
+
+  .today-main > * {
+    flex-shrink: 0;
+  }
+
+  .today-main .trail {
+    min-height: 240px;
+    flex: 0 0 240px;
+  }
+
+  .today-dock {
+    flex: 0 0 auto;
+    background: var(--cream);
+    z-index: 2;
+    padding-bottom: 4px;
+  }
+}

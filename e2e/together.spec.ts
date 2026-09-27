@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { solvePrompt } from "./solveGate";
 import { shareUrl } from "../src/config";
+import { pinnedReading } from "./pinLesson";
 import { finishLetterTracing } from "./traceFlow";
 
 const WORDS: Record<string, number> = {
@@ -51,9 +52,10 @@ async function passGate(page: Page) {
 
 async function openChild(page: Page) {
   await page.addInitScript((saved) => {
-    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved.profile));
+    localStorage.setItem("littlenest-placement-v1", JSON.stringify(saved.placed));
     localStorage.removeItem("kids-app-silent-hint-v1");
-  }, profile);
+  }, { profile, placed: pinnedReading });
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
@@ -83,8 +85,9 @@ test("read-together tips can be dismissed and turned off", async ({ page }) => {
   await expect(page.locator(".grownup-tip")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Story" }).click();
+  await expect(page.locator("[data-screen=story]")).toBeVisible();
   await expect(page.locator(".grownup-tip")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "All done" })).toBeVisible();
+  await expect(page.locator("[data-screen=story] .start-button")).toBeVisible();
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
@@ -99,9 +102,10 @@ test("read-together tips can be dismissed and turned off", async ({ page }) => {
 
 test("parent and teacher show the learning path", async ({ page }) => {
   await page.addInitScript((saved) => {
-    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved.profile));
+    localStorage.setItem("littlenest-placement-v1", JSON.stringify(saved.placed));
     localStorage.removeItem("kids-app-silent-hint-v1");
-  }, profile);
+  }, { profile, placed: pinnedReading });
   await page.goto("./");
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
@@ -112,16 +116,17 @@ test("parent and teacher show the learning path", async ({ page }) => {
   }
   await expect(path.getByText("Phonics 5–7")).toBeVisible();
   await expect(path.locator("[data-later=true]")).toBeVisible();
-  await expect(path.locator("[data-state=current]")).toHaveCount(1);
-  const stage = await path.getAttribute("data-current-stage");
-  expect(["letters", "blending", "words", "stories"]).toContain(stage);
+  await expect(path.locator('[data-state=current]:not([data-stage="word-ladder"])')).toHaveCount(1);
+  await expect(path.locator("[data-stage=word-ladder]")).toHaveAttribute("data-state", "current");
+  await expect(path).toHaveAttribute("data-current-stage", "letters");
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
   const childPath = page.locator("[data-card=device] [data-section=path]");
   await expect(childPath).toContainText("Mia");
-  await expect(childPath.locator("[data-state=current]")).toHaveCount(1);
+  await expect(childPath.locator('[data-state=current]:not([data-stage="word-ladder"])')).toHaveCount(1);
+  await expect(childPath).toHaveAttribute("data-current-stage", "letters");
   await expect(childPath.locator("[data-later=true]")).toBeVisible();
 });
 
