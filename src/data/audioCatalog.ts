@@ -35,7 +35,7 @@ const ready = new Set<string>(available.files);
 const FILE_PATH = /^[a-z0-9]+(?:\/[a-z0-9-]+)*\.mp3$/;
 const BARE_SYLLABLE = /^(?:buh|duh|kuh|puh|guh|tuh|huh|aah|eh|ih|aw|uh|mmm|nnn|sss|fff|lll|kss)$/i;
 
-function assertCue(kind: AudioKind, id: string, cue: AudioCue | undefined): void {
+function assertCue(kind: AudioKind, id: string, cue: AudioCue | undefined): asserts cue is AudioCue {
   if (!cue || !FILE_PATH.test(cue.file) || !cue.say.trim()) {
     throw new Error(`Audio manifest is missing a usable ${kind} entry for "${id}"`);
   }
