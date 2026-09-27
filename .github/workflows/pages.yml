@@ -29,13 +29,37 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install
-        run: npm ci
-
-      - name: Build
-        run: npm run build
+      - name: Build the main demo
         env:
           VITE_BASE: /Kids-app/
+        run: |
+          npm ci
+          npm run build
+
+      - name: Checkout the preview branch
+        id: preview
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: preview
+          path: preview-src
+
+      - name: Build the preview
+        if: steps.preview.outcome == 'success'
+        working-directory: preview-src
+        env:
+          VITE_BASE: /Kids-app/preview/
+        run: |
+          npm ci
+          npm run build
+
+      - name: Keep /preview/ next to the main demo
+        if: steps.preview.outcome == 'success'
+        run: |
+          mkdir -p dist/preview
+          cp -a preview-src/dist/. dist/preview/
+          test -f dist/index.html
+          test -f dist/preview/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
