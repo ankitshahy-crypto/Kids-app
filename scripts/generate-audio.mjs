@@ -5,7 +5,8 @@
  * numbers, prompts, colors, stories) and writes src/data/audioAvailable.json
  * so the app knows which files exist. The app itself never calls Google.
  *
- *   GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json node scripts/generate-audio.mjs
+ *   GOOGLE_TTS_API_KEY=... node scripts/generate-audio.mjs             # an API key restricted to the Text-to-Speech API
+ *   GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json node scripts/generate-audio.mjs   # or a service-account key
  *   node scripts/generate-audio.mjs --index-only        # rewrite the index, no network
  *   node scripts/generate-audio.mjs --force             # remake clips that exist
  *   node scripts/generate-audio.mjs --only words,stories
@@ -152,14 +153,38 @@ if (todo.length === 0) {
   process.exit(0);
 }
 
+const apiKey = process.env.GOOGLE_TTS_API_KEY?.trim();
 const credentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-if (!credentials || !existsSync(credentials)) {
-  console.error("GOOGLE_APPLICATION_CREDENTIALS must point at a service-account JSON file. The app itself does not call Google.");
+if (!apiKey && (!credentials || !existsSync(credentials))) {
+  console.error(
+    "Set GOOGLE_TTS_API_KEY (an API key restricted to the Text-to-Speech API) or GOOGLE_APPLICATION_CREDENTIALS (a service-account JSON file). The app itself does not call Google.",
+  );
   process.exit(1);
 }
 
-const { TextToSpeechClient } = await import("@google-cloud/text-to-speech");
-const client = new TextToSpeechClient();
+/** With an API key, call the REST endpoint directly. With a key file, use the client library. */
+let synthesizeRaw;
+if (apiKey) {
+  synthesizeRaw = async (request) => {
+    const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(apiKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(body?.error?.message || `Text-to-Speech returned ${response.status}`);
+    }
+    return Buffer.from(body.audioContent ?? "", "base64");
+  };
+} else {
+  const { TextToSpeechClient } = await import("@google-cloud/text-to-speech");
+  const client = new TextToSpeechClient();
+  synthesizeRaw = async (request) => {
+    const [response] = await client.synthesizeSpeech(request);
+    return response.audioContent;
+  };
+}
 
 async function synthesize({ text, ssml, voice }) {
   const request = {
@@ -168,13 +193,11 @@ async function synthesize({ text, ssml, voice }) {
     audioConfig: { audioEncoding: "MP3", speakingRate: speed, sampleRateHertz: 24000 },
   };
   try {
-    const [response] = await client.synthesizeSpeech(request);
-    return response.audioContent;
+    return await synthesizeRaw(request);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (!/speaking_?rate|sample_?rate|pitch/i.test(message)) throw error;
-    const [response] = await client.synthesizeSpeech({ ...request, audioConfig: { audioEncoding: "MP3" } });
-    return response.audioContent;
+    return synthesizeRaw({ ...request, audioConfig: { audioEncoding: "MP3" } });
   }
 }
 

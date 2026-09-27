@@ -2,9 +2,9 @@ name: Voice clips (Google)
 
 # Makes the app's spoken clips with Google Cloud Text-to-Speech on GitHub's
 # machines, then pushes a branch and opens a pull request with the MP3s.
-# Needs the GOOGLE_TTS_KEY repository secret: the contents of a service
-# account JSON key for a project with the Text-to-Speech API enabled. The
-# app never calls Google; it only plays the files. Run it from the Actions tab.
+# Needs the GOOGLE_TTS_API_KEY repository secret: an API key from a project
+# with the Text-to-Speech API enabled, restricted to that API. The app never
+# calls Google; it only plays the files. Run it from the Actions tab.
 
 on:
   workflow_dispatch:
@@ -45,17 +45,16 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Write the key
+      - name: Check the key
         run: |
-          if [ -z "${{ secrets.GOOGLE_TTS_KEY }}" ]; then
-            echo "The GOOGLE_TTS_KEY repository secret is not set." >&2
+          if [ -z "${{ secrets.GOOGLE_TTS_API_KEY }}" ]; then
+            echo "The GOOGLE_TTS_API_KEY repository secret is not set." >&2
             exit 1
           fi
-          printf '%s' '${{ secrets.GOOGLE_TTS_KEY }}' > "$RUNNER_TEMP/google-tts-key.json"
 
       - name: Make clips
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/google-tts-key.json
+          GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
         run: |
           node scripts/generate-audio.mjs \
             --voice "${{ inputs.voice }}" \
@@ -63,10 +62,6 @@ jobs:
             --letter-style "${{ inputs.letter_style }}" \
             --speed "${{ inputs.speed }}" \
             $([ "${{ inputs.force }}" = "true" ] && echo --force)
-
-      - name: Remove the key
-        if: always()
-        run: rm -f "$RUNNER_TEMP/google-tts-key.json"
 
       - name: Summary
         run: |
