@@ -60,7 +60,7 @@ export const aboutContent = {
     {
       id: "games",
       title: "Games to play",
-      body: "Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. Think and code games guide their animal home, continue a picture pattern, put morning pictures in order, and try an if-then garden. Ages 5 to 7 use longer arrow paths, a repeat, and a bug fix. A miss just means try again.",
+      body: "Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. Think and code games guide their animal home, continue a picture pattern, put morning pictures in order, and try an if-then garden. Build It stacks picture blocks that play: the animal moves, a song plays, weather grows a flower, and a robot makes a sandwich. Ages 5 to 7 use longer arrow paths, a repeat, a bug fix, a pond splash, and can save a program on this device. A miss just means try again.",
     },
     {
       id: "classroom",
