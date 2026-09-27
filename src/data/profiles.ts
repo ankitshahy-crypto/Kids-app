@@ -118,6 +118,22 @@ export function lessonName(profile: Pick<ChildProfile, "name" | "animal">): stri
   return profile.name.trim();
 }
 
+/**
+ * The other child on this device the app could not tell apart from this one:
+ * the same lesson name and the same animal. Two initial-only profiles with one
+ * animal would both be "Fox", so the form asks for a different animal or a
+ * first name before that happens. Two Mias with different animals are fine.
+ */
+export function sameLessonName(
+  input: { name: string; animal: AnimalId },
+  others: readonly Pick<ChildProfile, "name" | "animal">[],
+): Pick<ChildProfile, "name" | "animal"> | null {
+  const name = normalizeChildName(input.name);
+  if (!name) return null;
+  const mine = lessonName({ name, animal: input.animal }).toLowerCase();
+  return others.find((other) => other.animal === input.animal && lessonName(other).toLowerCase() === mine) ?? null;
+}
+
 export function dayProgress(
   profile: ChildProfile,
   now = new Date(),

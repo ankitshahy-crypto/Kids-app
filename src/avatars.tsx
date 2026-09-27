@@ -132,6 +132,63 @@ function DuckAvatar() {
   );
 }
 
+function PigAvatar() {
+  return (
+    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+      <path d="M32 50 30 26l20 16Z" fill="#F4A9B8" />
+      <path d="M88 50 90 26 70 42Z" fill="#F4A9B8" />
+      <circle cx="60" cy="68" r="34" fill="#F8C4D0" />
+      <ellipse cx="60" cy="80" rx="15" ry="10" fill="#F0A0B4" />
+      <circle cx="54" cy="80" r="3" fill="#2C3A4F" />
+      <circle cx="66" cy="80" r="3" fill="#2C3A4F" />
+      <Eyes y={60} />
+    </svg>
+  );
+}
+
+function PenguinAvatar() {
+  return (
+    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+      <ellipse cx="60" cy="68" rx="34" ry="36" fill="#2C3A4F" />
+      <ellipse cx="60" cy="76" rx="24" ry="26" fill="#FFF8EE" />
+      <circle cx="46" cy="60" r="10" fill="#FFF8EE" />
+      <circle cx="74" cy="60" r="10" fill="#FFF8EE" />
+      <circle cx="47" cy="61" r="4.5" fill="#2C3A4F" />
+      <circle cx="75" cy="61" r="4.5" fill="#2C3A4F" />
+      <circle cx="48.5" cy="59.5" r="1.4" fill="#fff" />
+      <circle cx="76.5" cy="59.5" r="1.4" fill="#fff" />
+      <path d="M52 72h16l-8 10Z" fill="#F09A3A" />
+    </svg>
+  );
+}
+
+function LionAvatar() {
+  return (
+    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+      <circle cx="60" cy="66" r="44" fill="#D98B3E" />
+      <circle cx="60" cy="66" r="32" fill="#F2C069" />
+      <ellipse cx="60" cy="80" rx="16" ry="12" fill="#FBE4B8" />
+      <ellipse cx="60" cy="74" rx="6" ry="4.5" fill="#2C3A4F" />
+      <path d="M52 86c4 5 12 5 16 0" fill="none" stroke="#2C3A4F" strokeWidth="2" strokeLinecap="round" />
+      <Eyes y={60} />
+    </svg>
+  );
+}
+
+function KoalaAvatar() {
+  return (
+    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+      <circle cx="26" cy="52" r="18" fill="#A9A6AE" />
+      <circle cx="94" cy="52" r="18" fill="#A9A6AE" />
+      <circle cx="26" cy="52" r="9" fill="#E9C9CF" />
+      <circle cx="94" cy="52" r="9" fill="#E9C9CF" />
+      <circle cx="60" cy="68" r="34" fill="#C6C3CB" />
+      <ellipse cx="60" cy="76" rx="9" ry="12" fill="#2C3A4F" />
+      <Eyes y={60} />
+    </svg>
+  );
+}
+
 const avatars: Record<AnimalId, () => JSX.Element> = {
   cat: CatAvatar,
   dog: DogAvatar,
@@ -141,6 +198,10 @@ const avatars: Record<AnimalId, () => JSX.Element> = {
   owl: OwlAvatar,
   frog: FrogAvatar,
   duck: DuckAvatar,
+  pig: PigAvatar,
+  penguin: PenguinAvatar,
+  lion: LionAvatar,
+  koala: KoalaAvatar,
 };
 
 export function Avatar({ animal }: { animal: AnimalId }) {

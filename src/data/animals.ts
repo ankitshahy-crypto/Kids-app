@@ -7,6 +7,10 @@ export const animals = [
   { id: "owl", name: "Owl" },
   { id: "frog", name: "Frog" },
   { id: "duck", name: "Duck" },
+  { id: "pig", name: "Pig" },
+  { id: "penguin", name: "Penguin" },
+  { id: "lion", name: "Lion" },
+  { id: "koala", name: "Koala" },
 ] as const;
 
 export type AnimalId = (typeof animals)[number]["id"];
