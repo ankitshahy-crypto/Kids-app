@@ -23,6 +23,10 @@ export const face = {
   owl: "var(--face-owl)",
   frog: "var(--face-frog)",
   duck: "var(--face-duck)",
+  pig: "var(--face-pig)",
+  penguin: "var(--face-penguin)",
+  lion: "var(--face-lion)",
+  koala: "var(--face-koala)",
 } as const;
 
 export const stroke = {

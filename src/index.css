@@ -69,6 +69,10 @@
   --face-owl: #e7dcf4;
   --face-frog: #d7eedc;
   --face-duck: #fbe7b0;
+  --face-pig: #fbe0e6;
+  --face-penguin: #dde6ee;
+  --face-lion: #fbe2bf;
+  --face-koala: #e8e5ea;
   /* Color-lesson paints. Saturated on purpose, separate from the pastel UI. */
   --paint-red: #e10600;
   --paint-blue: #1f4bff;
@@ -1251,6 +1255,16 @@ button:focus-visible {
   height: 64px;
 }
 
+.animal-pick .animal-taken {
+  font-size: 11px;
+  line-height: 1.1;
+  color: var(--text-muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .text-button {
   width: 100%;
   color: var(--text-muted);
@@ -1660,6 +1674,13 @@ button:focus-visible {
   background: #faf8f5;
   box-shadow: none;
   border: 1px solid var(--line);
+}
+
+.app:is(.mode-parent, .mode-grownups) .age-grid button.is-selected,
+.app:is(.mode-parent, .mode-grownups) .animal-pick.is-selected {
+  background: var(--mint-card);
+  border-color: #b7e0c2;
+  box-shadow: inset 0 0 0 2px #b7e0c2;
 }
 
 .app:is(.mode-parent, .mode-grownups) .name-input {
