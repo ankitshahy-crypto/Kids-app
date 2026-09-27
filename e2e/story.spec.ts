@@ -66,7 +66,8 @@ test("week one's reader stars the child's animal, blends the words it can, and e
   // Sounding out "am" plays m, then a, then the word.
   await page.locator(".story-word[data-word=am]").click();
   await expect(page.locator(".story-word[data-word=am]")).toHaveClass(/is-speaking/);
-  await expect.poll(() => spokenLines(page)).toEqual(expect.arrayContaining(["m, as in moon", "a, as in apple", "am"]));
+  // Two letter phrases and the word, each a recorded clip with a short gap between.
+  await expect.poll(() => spokenLines(page), { timeout: 20000 }).toEqual(expect.arrayContaining(["m, as in moon", "a, as in apple", "am"]));
 
   for (let turn = 0; turn < 4; turn += 1) await page.getByRole("button", { name: "Next page" }).click();
   await expect(story).toHaveAttribute("data-page", "5");
