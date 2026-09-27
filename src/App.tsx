@@ -23,6 +23,7 @@ import { NestView } from "./components/NestView";
 import { ParentView } from "./components/ParentPanel";
 import { LetterTrace } from "./components/LetterTrace";
 import { NameTrace, WordTrace } from "./components/PathTrace";
+import { StartCheck } from "./components/StartCheck";
 import { StoryReader } from "./components/StoryReader";
 import { SoundItOut } from "./components/SoundItOut";
 import { SilentHint } from "./components/SilentHint";
@@ -81,7 +82,7 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors" | "time" | "build" | "science";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | "break" | "surprise" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | "break" | "surprise" | "check" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 
@@ -720,6 +721,23 @@ export default function App() {
                   }}
                 />
               ) : null}
+              {screen === "check" ? (
+                <StartCheck
+                  key={active.id}
+                  profile={active}
+                  settingsRef={settingsRef}
+                  onAccept={(result) => {
+                    setChildPlace(active.id, result.place);
+                    setLadderStep(active.id, result.ladderStep);
+                    setScreen("today");
+                    setMode("grownups");
+                  }}
+                  onSkip={() => {
+                    setScreen("today");
+                    setMode("grownups");
+                  }}
+                />
+              ) : null}
               {screen === "break" ? (
                 <BreakScreen
                   profile={active}
@@ -982,6 +1000,13 @@ export default function App() {
               placement={placement}
               onSelect={select}
               onAdd={addChild}
+              onCheck={(id) => {
+                primeSpeech();
+                select(id);
+                setTip(null);
+                setScreen("check");
+                setMode("kid");
+              }}
               onUpdate={updateChild}
               onRemove={removeChild}
               onClose={() => setMode(grownupsReturn)}

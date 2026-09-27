@@ -8,16 +8,18 @@ Store and website copy. The in-app About screen reads the same words from `src/c
 
 **Tagline:** by TriageDesk
 
-**Promotional text:** Five happy minutes a day. Your child's own animal is the hero of every story, with no ads, no tricks, and no surprise charges.
+**Promotional text:** Five happy minutes a day. No account, no ads, works offline, and nothing leaves your device. Your child's own animal is the hero of every story.
 
 ## Description
 
-LittleNest Learning helps young children take their first steps into letters, numbers, colors, games and coding, time and money, building, and science, one small step at a time. Made for ages 3 to 7, with a gentle start for ages 3 to 5 and harder clock, money, coding, building, and science work for ages 5 to 7 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. LittleNest Words: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!" LittleNest Numbers: count objects, hear and trace numbers, match and trace shapes, and add small groups. LittleNest Colors: hear a color and tap it, mix two paints, and color their animal. Games, including Think & Code: hatch an egg, guide their animal home, and stack picture blocks that play. LittleNest Time & Money: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. LittleNest Build: bridges, towers, ramps, and simple machines. LittleNest Science: life cycles, homes, weather, senses, and sink or float. A pretend fizz stays on the screen and says to do it with a grown-up.
+LittleNest Learning helps young children take their first steps into letters, numbers, colors, games and coding, time and money, building, and science, one small step at a time. Made for ages 3 to 7, with a gentle start for ages 3 to 5 and harder clock, money, coding, building, and science work for ages 5 to 7 (longer words and sentences for ages 5 to 7). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. LittleNest Words: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!" LittleNest Numbers: count objects, hear and trace numbers, match and trace shapes, and add small groups. LittleNest Colors: hear a color and tap it, mix two paints, and color their animal. Games, including Think & Code: hatch an egg, guide their animal home, and stack picture blocks that play. LittleNest Time & Money: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. LittleNest Build: bridges, towers, ramps, and simple machines. LittleNest Science: life cycles, homes, weather, senses, and sink or float. A pretend fizz stays on the screen and says to do it with a grown-up.
 
 ## What makes LittleNest Learning different
 
-- **Your child is the hero:** Stories star the animal they chose.
-- **Real, warm voices:** Natural voices, not a robot.
+- **Your child is the hero:** A short reader every week stars the animal they chose, read aloud page by page, with words they can sound out themselves and a line for you to read along.
+- **A warm voice, on the device:** One natural narrator reads every letter, word, and story. Nothing is fetched while your child plays.
+- **Calm by design:** No timers, no countdowns, nothing called wrong. Calm mode softens motion and sound, lessons run 2, 5, or 10 minutes, and an easier-to-read font, bigger spacing, and high contrast are one switch away.
+- **Their favorites, everywhere:** Pick dinosaurs, trucks, space, animals, bugs, the ocean, or castles, and the words, pictures, and stories lean that way.
 - **Drag to blend:** Slide across a word and hear each sound join into the whole word. Words grow on a ladder: one letter, then two, then short words, then four-letter words.
 - **Short daily lessons:** 5–10 minutes builds a habit without too much screen time.
 - **Stars for trying:** Effort, not perfection. No pressure, no scores.
@@ -109,7 +111,7 @@ Learning to read shouldn't be expensive. LittleNest Learning is priced so every 
 
 No price is shown in the app.
 
-LittleNest Learning is reading, math, colors, games and coding, time and money, building, and science practice for young children. It is not a therapy or diagnostic tool.
+LittleNest Learning is reading, math, colors, games and coding, time and money, building, and science practice for young children. It is play and practice, not a medical product.
 
 by TriageDesk
 

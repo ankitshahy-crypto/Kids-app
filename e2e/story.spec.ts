@@ -121,3 +121,73 @@ test("the Colors stop is a short color moment that earns the reading star", asyn
   expect(saved.profiles[0].days[today].reading.moment).toBe(true);
   expect(saved.profiles[0].stickers.some((sticker: { kind: string; label: string }) => sticker.kind === "color" && sticker.label === hear)).toBe(true);
 });
+
+async function passGate(page: Page) {
+  const dialog = page.getByRole("dialog");
+  const prompt = await dialog.getByRole("heading").innerText();
+  const sum = prompt.match(/(\d+)\s*\+\s*(\d+)/);
+  const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
+  const expected = sum ? Number(sum[1]) + Number(sum[2]) : (words[prompt.match(/number ([a-z]+)/i)?.[1]?.toLowerCase() ?? ""] ?? 0);
+  const choices = dialog.locator(".gate-choice");
+  const count = await choices.count();
+  for (let index = 0; index < count; index += 1) {
+    if (Number(await choices.nth(index).innerText()) === expected) {
+      await choices.nth(index).click();
+      return;
+    }
+  }
+  throw new Error(`No choice matched ${prompt}`);
+}
+
+test("the where-to-start check places a reader further along, and a grown-up accepts it", async ({ page }) => {
+  await install(page, child({ ageRange: "5" }), 0);
+  await page.getByRole("button", { name: /grown-ups/i }).click();
+  await passGate(page);
+  await page.getByRole("button", { name: /Child profiles/ }).click();
+  await page.getByRole("button", { name: "Where to start" }).click();
+  const check = page.locator("[data-screen=check]");
+  await expect(check).toHaveAttribute("data-part", "sound");
+  await expect(page.locator(".check-choice")).toHaveCount(3);
+  for (const choice of await page.locator(".check-choice").all()) {
+    const box = await choice.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(64);
+  }
+  await expect(page.getByText(/wrong|incorrect|oops/i)).toHaveCount(0);
+
+  for (let turn = 0; turn < 8; turn += 1) {
+    if ((await check.getAttribute("data-check")) === "done") break;
+    const answer = await check.getAttribute("data-answer");
+    await check.locator(`[data-choice='${answer}']`).click();
+    await expect(check).not.toHaveAttribute("data-answer", answer!, { timeout: 5000 }).catch(() => undefined);
+  }
+  await expect(check).toHaveAttribute("data-check", "done");
+  await expect(check).toHaveAttribute("data-week", "9");
+  await expect(check).toContainText("Week 10 · letter k · Four letters");
+  await page.getByRole("button", { name: "Use this start" }).click();
+  await expect(page.locator("[data-screen=grownups]")).toBeVisible();
+  const placed = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-placement-v1") ?? "{}"));
+  expect(placed.subjects.reading.byChildId.mia).toMatchObject({ subject: "reading", weekIndex: 9 });
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-profiles-v1") ?? "{}"));
+  expect(saved.profiles[0].ladder.step).toBe(4);
+});
+
+test("the check stops early when the sounds are new, and keeping things as they are changes nothing", async ({ page }) => {
+  await install(page, child(), 0);
+  await page.getByRole("button", { name: /grown-ups/i }).click();
+  await passGate(page);
+  await page.getByRole("button", { name: /Child profiles/ }).click();
+  await page.getByRole("button", { name: "Where to start" }).click();
+  const check = page.locator("[data-screen=check]");
+  for (let turn = 0; turn < 2; turn += 1) {
+    const answer = await check.getAttribute("data-answer");
+    const wrong = page.locator(`.check-choice:not([data-choice='${answer}'])`).first();
+    await wrong.click();
+    await page.waitForTimeout(1000);
+  }
+  await expect(check).toHaveAttribute("data-check", "done");
+  await expect(check).toHaveAttribute("data-week", "0");
+  await expect(check).toContainText("Great start!");
+  await page.getByRole("button", { name: "Keep it as it is" }).click();
+  const placed = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-placement-v1") ?? "{}"));
+  expect(placed.subjects?.reading?.byChildId?.mia).toBeUndefined();
+});
