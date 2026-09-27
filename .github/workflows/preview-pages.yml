@@ -3,7 +3,7 @@ name: Preview and demo
 on:
   push:
     branches:
-      - cursor/preview-deploy-df76
+      - preview
   workflow_dispatch:
 
 permissions:
