@@ -1,14 +1,25 @@
 #!/usr/bin/env node
 /**
- * Offline audio generator for words and sentences.
- * The installed app never calls Google. Letter sounds are human-recorded.
+ * Offline voice generator using Google Cloud Text-to-Speech. Makes every
+ * "neural" clip in src/data/audioManifest.json (letters, words, sentences,
+ * numbers, prompts, colors, stories) and writes src/data/audioAvailable.json
+ * so the app knows which files exist. The app itself never calls Google.
  *
- *   GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json npm run generate-audio
- *   npm run generate-audio -- --index-only
- *   npm run generate-audio -- --force
+ *   GOOGLE_TTS_API_KEY=... node scripts/generate-audio.mjs             # an API key restricted to the Text-to-Speech API
+ *   GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json node scripts/generate-audio.mjs   # or a service-account key
+ *   node scripts/generate-audio.mjs --index-only        # rewrite the index, no network
+ *   node scripts/generate-audio.mjs --force             # remake clips that exist
+ *   node scripts/generate-audio.mjs --only words,stories
  *
- * Optional: GOOGLE_TTS_VOICE (default en-US-Neural2-F).
- * Allowed: en-US Neural2, Studio, Chirp3-HD, or Chirp-HD.
+ * Voices (env or flags):
+ *   GOOGLE_TTS_VOICE / --voice          en-US-Chirp3-HD-Aoede (default), or any en-US
+ *                                       Chirp3-HD, Chirp-HD, Studio, or Neural2 voice.
+ *   GOOGLE_TTS_LETTER_VOICE / --letter-voice
+ *                                       en-US-Neural2-F (default). Letter phrases use SSML
+ *                                       with IPA so "b, as in ball" says the sound /b/, which
+ *                                       the Chirp voices cannot do. Pass --letter-style name
+ *                                       to say letter names instead, in the main voice.
+ *   --speed                             speaking rate, default 0.95.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -20,15 +31,17 @@ const manifestPath = join(root, "src/data/audioManifest.json");
 const indexPath = join(root, "src/data/audioAvailable.json");
 const audioRoot = resolve(root, "public/audio");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-const args = new Set(process.argv.slice(2));
+const argv = process.argv.slice(2);
+const flags = new Set(argv.filter((arg) => !arg.includes("=") && arg.startsWith("--")));
+const option = (name, fallback) => {
+  const at = argv.indexOf(name);
+  if (at !== -1 && argv[at + 1] && !argv[at + 1].startsWith("--")) return argv[at + 1];
+  const pair = argv.find((arg) => arg.startsWith(`${name}=`));
+  return pair ? pair.slice(name.length + 1) : fallback;
+};
 
-if (args.has("--help") || args.has("-h")) {
-  console.log(`Usage: npm run generate-audio -- [--index-only] [--force]
-
-Pre-generates MP3s for manifest words and sentences with Google Cloud
-Text-to-Speech. Reads GOOGLE_APPLICATION_CREDENTIALS. Does not synthesize
-letter sounds. --index-only rewrites src/data/audioAvailable.json from
-public/audio and does not contact Google.`);
+if (flags.has("--help") || flags.has("-h")) {
+  console.log(readFileSync(fileURLToPath(import.meta.url), "utf8").split("*/")[0]);
   process.exit(0);
 }
 
@@ -51,95 +64,156 @@ function writeIndex(files) {
   writeFileSync(indexPath, `${JSON.stringify({ files }, null, 2)}\n`);
 }
 
-if (args.has("--index-only")) {
+if (flags.has("--index-only")) {
   const files = scan();
   writeIndex(files);
   console.log(`Indexed ${files.length} audio file${files.length === 1 ? "" : "s"}.`);
   process.exit(0);
 }
 
-const letterFiles = [...new Set(Object.values(manifest.letters).map((entry) => entry.file))].sort();
-console.log(`Skipping ${letterFiles.length} letter-sound files. Record these with a person:`);
-for (const file of letterFiles) console.log(`  public/audio/${file}`);
+const voiceName = option("--voice", process.env.GOOGLE_TTS_VOICE || "en-US-Chirp3-HD-Aoede");
+const letterVoiceName = option("--letter-voice", process.env.GOOGLE_TTS_LETTER_VOICE || "en-US-Neural2-F");
+const letterStyle = option("--letter-style", "sound");
+const speed = Number(option("--speed", "0.95")) || 0.95;
+const only = option("--only", "")
+  .split(",")
+  .map((kind) => kind.trim())
+  .filter(Boolean);
+const force = flags.has("--force");
 
+const allowed = /^en-US-(Neural2-[A-Z]|Studio-[A-Z]|Chirp3-HD-[A-Za-z0-9]+|Chirp-HD-[A-Za-z0-9]+)$/;
+for (const name of [voiceName, letterVoiceName]) {
+  if (!allowed.test(name)) {
+    console.error(`Voices must be en-US Neural2, Studio, Chirp HD, or Chirp 3 HD. Got "${name}".`);
+    process.exit(1);
+  }
+}
+const supportsSsml = (name) => /Neural2|Studio|Wavenet|Standard/.test(name);
+
+/**
+ * IPA for a letter's sound, for the SSML phoneme tag. A short schwa after a
+ * stop ("bə") is how the sound is said to a child; continuants are held.
+ */
+const LETTER_IPA = {
+  a: "æ", b: "bə", c: "kə", d: "də", e: "ɛ", f: "fː", g: "ɡə", h: "hə", i: "ɪ", j: "dʒə", k: "kə", l: "lː",
+  m: "mː", n: "nː", o: "ɑ", p: "pə", q: "kwə", r: "ɹː", s: "sː", t: "tə", u: "ʌ", v: "vː", w: "wə", x: "ks",
+  y: "jə", z: "zː", ae: "æ", eh: "ɛ", ih: "ɪ", aw: "ɑ", uh: "ʌ", ks: "ks",
+};
+
+const LETTER_NAMES = {
+  a: "ay", b: "bee", c: "see", d: "dee", e: "ee", f: "eff", g: "jee", h: "aitch", i: "eye", j: "jay", k: "kay",
+  l: "ell", m: "em", n: "en", o: "oh", p: "pee", q: "cue", r: "ar", s: "ess", t: "tee", u: "you",
+  v: "vee", w: "double you", x: "ex", y: "why", z: "zee",
+};
+
+function escapeXml(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** What to send for one clip: plain text, or SSML for a letter sound. */
+function inputFor(kind, id, say) {
+  const match = kind === "letters" ? say.match(/^([a-z]), as in (.+)$/i) : null;
+  if (match) {
+    const char = match[1].toLowerCase();
+    const example = match[2].replace(/\.$/, "");
+    if (letterStyle === "name") return { text: `${LETTER_NAMES[char] ?? char}, as in ${example}.`, voice: voiceName };
+    if (supportsSsml(letterVoiceName)) {
+      const ipa = LETTER_IPA[char] ?? char;
+      return {
+        ssml: `<speak><phoneme alphabet="ipa" ph="${ipa}">${char}</phoneme><break time="250ms"/> as in ${escapeXml(example)}.</speak>`,
+        voice: letterVoiceName,
+      };
+    }
+    return { text: `${LETTER_NAMES[char] ?? char}, as in ${example}.`, voice: letterVoiceName };
+  }
+  let text = say.trim();
+  if (kind === "words" && text === "I") text = "I.";
+  else if (text && !/[.!?]$/.test(text)) text = `${text}.`;
+  return { text, voice: voiceName };
+}
+
+const jobs = new Map();
+for (const [kind, entries] of Object.entries(manifest)) {
+  if (only.length > 0 && !only.includes(kind)) continue;
+  for (const [id, entry] of Object.entries(entries)) {
+    if (entry.source !== "neural") continue;
+    if (typeof entry.file !== "string" || entry.file.includes("..") || entry.file.startsWith("/") || !entry.file.endsWith(".mp3")) {
+      throw new Error(`Refusing unsafe audio path "${entry.file}"`);
+    }
+    // Several ids share one file (a and ae). One clip per file.
+    if (!jobs.has(entry.file)) jobs.set(entry.file, { kind, id, say: entry.say });
+  }
+}
+const todo = [...jobs.entries()].filter(([file]) => force || !existsSync(resolve(audioRoot, file)));
+console.log(`${jobs.size} clips in the manifest, ${todo.length} to make. Voice ${voiceName}; letters ${letterStyle === "name" ? "as names" : `as sounds via ${letterVoiceName}`}.`);
+if (todo.length === 0) {
+  const files = scan();
+  writeIndex(files);
+  console.log(`Indexed ${files.length} audio files.`);
+  process.exit(0);
+}
+
+const apiKey = process.env.GOOGLE_TTS_API_KEY?.trim();
 const credentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-if (!credentials) {
+if (!apiKey && (!credentials || !existsSync(credentials))) {
   console.error(
-    "GOOGLE_APPLICATION_CREDENTIALS is not set. Point it at a service-account JSON file. The app itself does not call Google.",
+    "Set GOOGLE_TTS_API_KEY (an API key restricted to the Text-to-Speech API) or GOOGLE_APPLICATION_CREDENTIALS (a service-account JSON file). The app itself does not call Google.",
   );
   process.exit(1);
 }
-if (!existsSync(credentials)) {
-  console.error(`GOOGLE_APPLICATION_CREDENTIALS file was not found: ${credentials}`);
-  process.exit(1);
-}
 
-const voiceName = process.env.GOOGLE_TTS_VOICE || "en-US-Neural2-F";
-const allowed = /^en-US-(Neural2-[A-Z]|Studio-[A-Z]|Chirp3-HD-[A-Za-z0-9]+|Chirp-HD-[A-Za-z0-9]+)$/;
-if (!allowed.test(voiceName)) {
-  console.error(`GOOGLE_TTS_VOICE must be an en-US Neural2, Studio, or Chirp HD voice. Got "${voiceName}".`);
-  process.exit(1);
-}
-
-const jobs = [];
-for (const kind of ["words", "sentences", "numbers", "prompts", "colors"]) {
-  for (const [id, entry] of Object.entries(manifest[kind])) {
-    if (entry.source === "human" || letterFiles.includes(entry.file)) {
-      console.log(`Skipping ${kind} ${id}; that clip is recorded by a person.`);
-      continue;
-    }
-    jobs.push({ kind, id, file: entry.file, say: entry.say });
-  }
-}
-
-const destinationFor = (file) => {
-  if (typeof file !== "string" || file.includes("..") || file.startsWith("/") || !file.endsWith(".mp3")) {
-    throw new Error(`Refusing unsafe audio path "${file}"`);
-  }
-  const dest = resolve(audioRoot, file);
-  if (!dest.startsWith(`${audioRoot}${sep}`)) throw new Error(`Refusing unsafe audio path "${file}"`);
-  return dest;
-};
-
-const { TextToSpeechClient } = await import("@google-cloud/text-to-speech");
-const client = new TextToSpeechClient();
-const force = args.has("--force");
-
-async function synthesize(text) {
-  const voice = { languageCode: "en-US", name: voiceName };
-  const input = { text };
-  try {
-    const [response] = await client.synthesizeSpeech({
-      input,
-      voice,
-      audioConfig: { audioEncoding: "MP3", speakingRate: 0.9, pitch: 0 },
+/** With an API key, call the REST endpoint directly. With a key file, use the client library. */
+let synthesizeRaw;
+if (apiKey) {
+  synthesizeRaw = async (request) => {
+    const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(apiKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
     });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(body?.error?.message || `Text-to-Speech returned ${response.status}`);
+    }
+    return Buffer.from(body.audioContent ?? "", "base64");
+  };
+} else {
+  const { TextToSpeechClient } = await import("@google-cloud/text-to-speech");
+  const client = new TextToSpeechClient();
+  synthesizeRaw = async (request) => {
+    const [response] = await client.synthesizeSpeech(request);
     return response.audioContent;
+  };
+}
+
+async function synthesize({ text, ssml, voice }) {
+  const request = {
+    input: ssml ? { ssml } : { text },
+    voice: { languageCode: "en-US", name: voice },
+    audioConfig: { audioEncoding: "MP3", speakingRate: speed, sampleRateHertz: 24000 },
+  };
+  try {
+    return await synthesizeRaw(request);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (!/pitch|speaking_?rate/i.test(message)) throw error;
-    const [response] = await client.synthesizeSpeech({
-      input,
-      voice,
-      audioConfig: { audioEncoding: "MP3" },
-    });
-    return response.audioContent;
+    if (!/speaking_?rate|sample_?rate|pitch/i.test(message)) throw error;
+    return synthesizeRaw({ ...request, audioConfig: { audioEncoding: "MP3" } });
   }
 }
 
-for (const job of jobs) {
-  const dest = destinationFor(job.file);
-  if (!force && existsSync(dest)) {
-    console.log(`Keeping public/audio/${job.file}`);
-    continue;
-  }
-  const audio = await synthesize(job.say);
+let made = 0;
+for (const [file, job] of todo) {
+  const dest = resolve(audioRoot, file);
+  if (!dest.startsWith(`${audioRoot}${sep}`)) throw new Error(`Refusing unsafe audio path "${file}"`);
+  const input = inputFor(job.kind, job.id, job.say);
+  const audio = await synthesize(input);
   if (!audio || audio.length === 0) throw new Error(`Google returned empty audio for ${job.kind} ${job.id}`);
   mkdirSync(dirname(dest), { recursive: true });
   writeFileSync(dest, Buffer.isBuffer(audio) ? audio : Buffer.from(audio));
-  console.log(`Wrote public/audio/${job.file}`);
+  made += 1;
+  if (made % 50 === 0 || made === todo.length) console.log(`${made}/${todo.length}  public/audio/${file}`);
 }
 
 const files = scan();
 writeIndex(files);
-console.log(`Indexed ${files.length} audio file${files.length === 1 ? "" : "s"}.`);
+console.log(`Made ${made} clips. Indexed ${files.length} audio files.`);
