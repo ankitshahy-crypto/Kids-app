@@ -5226,6 +5226,142 @@ input.is-pressed,
   font-weight: 700;
 }
 
+.game-section {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 22px;
+  color: var(--ink);
+}
+
+.code-grid {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 280px);
+}
+
+.code-cell {
+  position: relative;
+  min-height: 52px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: #e7f6ee;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.code-cell[data-nest="true"] {
+  background: #f6e3b4;
+}
+
+.code-cell .avatar-art {
+  width: 78%;
+  height: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.nest-mark {
+  position: absolute;
+  width: 78%;
+  bottom: 2px;
+}
+
+.code-arrows,
+.code-queue,
+.pattern-row,
+.pattern-choices,
+.garden-causes,
+.morning-cards,
+.morning-slots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: min(100%, 440px);
+}
+
+.code-arrow,
+.code-chip,
+.pattern-choice,
+.garden-cause,
+.morning-slot {
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  touch-action: manipulation;
+}
+
+.code-arrow svg,
+.code-chip svg,
+.pattern-choice svg,
+.pattern-token svg,
+.morning-card svg,
+.morning-slot svg,
+.garden-cause svg,
+.garden-scene svg {
+  width: 48px;
+  height: 48px;
+}
+
+.code-loop,
+.pattern-missing {
+  margin: 0;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.pattern-token,
+.pattern-missing {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+}
+
+.morning-card {
+  min-width: 96px;
+  min-height: 96px;
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
+  font-size: 14px;
+  font-weight: 800;
+  touch-action: none;
+}
+
+.morning-card[data-used="true"] {
+  opacity: 0.35;
+}
+
+.morning-slot {
+  width: 76px;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-sage);
+}
+
+.garden-scene {
+  width: 120px;
+  height: 100px;
+  display: grid;
+  place-items: center;
+}
+
 .hatch-row,
 .feed-row {
   display: flex;
@@ -5326,7 +5462,12 @@ input.is-pressed,
 .balloon[data-wiggle="true"],
 .food-bit[data-wiggle="true"],
 .rhyme-card[data-wiggle="true"],
-.math-choices button[data-wiggle="true"] {
+.math-choices button[data-wiggle="true"],
+.code-arrow[data-wiggle="true"],
+.pattern-choice[data-wiggle="true"],
+.morning-card[data-wiggle="true"],
+.garden-cause[data-wiggle="true"],
+.start-button[data-wiggle="true"] {
   animation: game-wiggle 0.45s ease;
 }
 
@@ -5441,7 +5582,12 @@ input.is-pressed,
   .balloon[data-wiggle="true"],
   .food-bit[data-wiggle="true"],
   .rhyme-card[data-wiggle="true"],
-  .math-choices button[data-wiggle="true"] {
+  .math-choices button[data-wiggle="true"],
+  .code-arrow[data-wiggle="true"],
+  .pattern-choice[data-wiggle="true"],
+  .morning-card[data-wiggle="true"],
+  .garden-cause[data-wiggle="true"],
+  .start-button[data-wiggle="true"] {
     animation: none;
     outline: 3px solid #c9846a;
   }
