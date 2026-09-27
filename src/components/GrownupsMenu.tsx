@@ -30,7 +30,7 @@ type GrownupsPage =
   | "offline";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
-  { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, and the daily goal", tint: tint.mint },
+  { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, the daily goal, and Explore", tint: tint.mint },
   { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach },
   { id: "account", title: "Account", note: "School sign-in is coming", tint: tint.sky },

@@ -172,6 +172,12 @@ export default function App() {
     if (!settings.showTips) setTip(null);
   }, [settings.showTips]);
 
+  useEffect(() => {
+    if (settings.showExplore) return;
+    if (course !== "reading") setCourse("reading");
+    if (sectionForScreen(screen)) setScreen("today");
+  }, [settings.showExplore, course, screen]);
+
   const reward = (step: LessonStep, learned: StickerInput[] = []) => {
     if (!active) return;
     const result = giveStar(active.id, step, learned);
@@ -416,6 +422,7 @@ export default function App() {
                     setScreen("games");
                     setTip(null);
                   }}
+                  showExplore={settings.showExplore}
                 />
               ) : null}
               {screen === "library" ? <KidCorner kind="library" onBack={() => setScreen("today")} /> : null}
