@@ -14,7 +14,7 @@ If the parent does not agree to that sentence, the app writes no request and no 
 
 ## What stays on the device
 
-Profiles, letters, stars, outfits, stickers, and recordings stay in `localStorage` on the device until a grown-up turns on backup. Stars are not synced. The server then stores:
+Profiles, letters, stars, outfits, stickers, and recordings stay in `localStorage` on the device until a grown-up turns on backup. Stars are never written to school or class documents and never trigger a flush. They stay in the parent's own backup (`grownups/{uid}`) so a restore keeps them. The server then stores:
 
 - the grown-up account
 - that parent's backup at `grownups/{uid}`
@@ -35,13 +35,15 @@ After sign-in, the client subscribes with `onSnapshot`. It does not build the de
 
 ### Role-scoped reads
 
-- **Admin.** Subscribes to everything in the school: members, invites, classes, children, requests, sessions, and totals.
-- **Teacher.** Subscribes to their own classes and the children in those classes, and to `classes/{c}/totals` for those classes. The rules deny a teacher read of session documents.
+- **Admin.** Subscribes to members, invites, classes, children, requests, and totals. An admin does not subscribe to session documents.
+- **Teacher.** Subscribes to their own classes and the children in those classes, and to `classes/{c}/totals` for those classes. A teacher does not subscribe to session documents.
 - **Parent.** Subscribes to children where `parentUid == uid`, to the class documents they are linked to, and to their own request documents. Parents never subscribe to `members` or `invites`.
+
+The rules deny session reads to admins and teachers alike. Only the Cloud Function reads sessions. Teachers and admins read totals. This matches `docs/auth-setup.md`: an admin cannot open an individual child.
 
 ## Pending request
 
-The request path is `schools/{s}/classes/{c}/requests/{uid}`. There is one request per child. The document holds the child's avatar, an initial or animal name, a `consented` flag, and a timestamp. It does not hold a first name.
+The request path is `schools/{s}/classes/{c}/requests/{requestId}`. There is one request per child, so one parent can have two children in the same class. The document holds the device profile id (an opaque UUID, not personal data), the child's avatar, an initial or animal name, a `consented` flag, and a timestamp. It does not hold a first name.
 
 The callable validates the code and writes the request itself. The client never writes a request. The rules never trust a class id supplied by the client. The callable resolves the class from the code.
 
@@ -57,18 +59,21 @@ If the batch fails, nothing from that approval is left half-applied. A parent st
 
 The home device has its own profile id. The server has a roster child id. Those ids are not the same.
 
-Approval returns the server child id. The parent device stores that link per child. Session documents are written under the server child id. One request per child.
+The request carries the device profile id. Approval happens on the teacher's device and copies that id onto the roster child document, `schools/{s}/children/{childId}`. The parent device then matches its local profile to the server child from its snapshot of children where `parentUid == uid`. Session documents are written under that server child id. One request per child.
 
 ## Session day document
 
-The day document is `schools/{s}/classes/{c}/children/{childId}/sessions/{YYYY-MM-DD}`, where `{childId}` is the server roster id. It holds `minutes` and `sessionLengths`. It is written with `setDoc` and merge. It does not hold a name, and it does not hold a star total.
+The day document is `schools/{s}/classes/{c}/children/{childId}/sessions/{YYYY-MM-DD}`, where `{childId}` is the server roster id. It holds `minutes` and `sessionLengths`. It is written with `setDoc` and merge. It does not hold a name, a star total, `parentUid`, or `consented`.
 
-The security rule allows the write only when all of these are true:
+The security rule does not trust the payload. A signed-in user must not be able to write a session under any child id by putting their own `parentUid` on the document. Authorization is read from the child document:
 
-- `parentUid == uid`
-- `consented == true`
-- `hasOnly(['parentUid', 'consented', 'minutes', 'sessionLengths'])`
-- `minutes` and each value in `sessionLengths` are bounded integers
+`get(/databases/$(database)/documents/schools/{s}/children/{childId}).data.parentUid == request.auth.uid`, and that child document's `consented == true`.
+
+The write is allowed only when that check passes and all of these are true:
+
+- `hasOnly(['minutes', 'sessionLengths'])`
+- `minutes` is an integer from 0 to 1440
+- `sessionLengths` has at most 50 entries, and each entry is an integer from 0 to 240
 
 ### Retention
 
@@ -78,15 +83,17 @@ Unlink deletes that child's session documents. Account deletion does that cleanu
 
 ## Class totals
 
-A Cloud Function runs on session writes and maintains `classes/{c}/totals`. The document carries a `linkedFamilies` count. The function writes the total numbers only when `linkedFamilies` is 5 or more. Below that floor the count is present and the numbers are not, so a small class cannot be read back as one child's time.
+A Cloud Function runs on session writes and maintains `classes/{c}/totals`. `linkedFamilies` is the number of distinct consented `parentUid` values in the class. A parent with two children counts as one family.
 
-The rules deny teachers reading session documents. Teachers and admins read `classes/{c}/totals`. Those class totals are also the school-level pilot numbers. A pilot reads the totals documents and does not read session documents.
+The function writes the total numbers only when `linkedFamilies` is 5 or more. Those fields are the same five as `aggregates.ts`: practice days, active minutes, session lengths, median session, and last active week. Below that floor the count is present and those fields are not, so a small class cannot be read back as one child's time.
+
+The rules deny session reads to admins and teachers. Only the Cloud Function reads session documents. Teachers and admins read `classes/{c}/totals`. Those class totals are also the school-level pilot numbers. A pilot reads the totals documents and does not read session documents.
 
 The client does not aggregate sessions, and the client does not write `classes/{c}/totals`.
 
 ## Debounce
 
-Stars are not synced. A new star does not flush a day document and does not flush the backup.
+Stars are never written to school or class documents and never trigger a flush. They stay in the parent's own backup (`grownups/{uid}`) so a restore keeps them.
 
 The day document and the backup at `grownups/{uid}` flush on the same schedule:
 
@@ -141,12 +148,12 @@ The app does not redirect the browser to `littlenest://join`.
 Sign-in and schools stay off in the app until this document is approved. The rebuilt feature is tested with two auth users, a teacher and a parent, in one Firebase emulator. Rules tests use `@firebase/rules-unit-testing` and run in CI with `firebase emulators:exec`. The suite is not two emulator projects, and it is not a dev-only in-memory fake.
 
 1. Teacher creates a school and a class. Parent signs in on the other client and sees an empty desk until a snapshot includes them. A missing `directory/{uid}` does not fall back to a saved school cache.
-2. Role-scoped reads. An admin read of members, invites, classes, children, and totals succeeds. A teacher read of another teacher's class fails. A teacher read of a session document is denied. A parent read succeeds for a child with `parentUid == uid`, for a class document they are linked to, and for their own request. A parent read of `members` or `invites` is denied.
-3. Pending request. The callable writes `schools/{s}/classes/{c}/requests/{uid}` with the avatar, an initial or animal name, `consented`, and a timestamp. A client write of that request is denied. A client-supplied class id is ignored. Approval is one batch that writes the child link, both parents documents, and deletes the request. One request per child. Approval returns the server child id, and later session writes use that id, not the device profile id.
+2. Role-scoped reads. An admin read of members, invites, classes, children, and totals succeeds. An admin read of a session document is denied. A teacher read of another teacher's class fails. A teacher read of a session document is denied. A parent read succeeds for a child with `parentUid == uid`, for a class document they are linked to, and for their own request. A parent read of `members` or `invites` is denied.
+3. Pending request. The callable writes `schools/{s}/classes/{c}/requests/{requestId}` with the device profile id, the avatar, an initial or animal name, `consented`, and a timestamp. A client write of that request is denied. A client-supplied class id is ignored. One parent can create two requests for two children in the same class. Approval is one batch that writes the child link, both parents documents, and deletes the request. Approval copies the device profile id onto `schools/{s}/children/{childId}`. The parent matches that child from the snapshot of children where `parentUid == uid`.
 4. Codes. The callable enforces the rate limit, and the limit still holds after local storage is deleted. A second client cannot `get` or `list` codes. A colliding code is rejected. A code shorter than 8 characters, including a short word plus a short number, is rejected. A code older than 14 days is rejected. A parent code fails on the second use. An admin can regenerate a teacher invite. A class teacher or an admin can regenerate a class code or a parent code. A parent-code response is the class name, the roster child's avatar, and the initial, and nothing more.
-5. Session rules. After consent, `setDoc` merge writes `sessions/{YYYY-MM-DD}` with `minutes` and `sessionLengths`. The rules reject a write whose `parentUid` is someone else, a write with `consented` false, a key outside `hasOnly(['parentUid', 'consented', 'minutes', 'sessionLengths'])`, and an integer outside the bound. Refusing consent writes no request and no session. A session past the school year, or past 90 days, whichever comes first, is deleted. Unlink deletes that child's sessions.
-6. Server totals. A session write updates `classes/{c}/totals` and its `linkedFamilies` count. Below 5 the numbers are absent. At 5 or more the numbers are present. A teacher read of the session documents is denied. A client write of the totals document is denied. The numbers contain no child first name. The same totals documents are what a school-level pilot reads.
-7. Debounce. A new star does not flush the day document or the backup. A test advances the clock and expects a flush when the day changes, when the app is hidden, and at most once per 60 seconds while the app is active.
+5. Session rules. After consent, `setDoc` merge writes `sessions/{YYYY-MM-DD}` with `minutes` and `sessionLengths` only. A stranger who forges `parentUid` on the payload is denied, because the rule reads `parentUid` and `consented` from `schools/{s}/children/{childId}` and the session document does not carry those fields. The rules reject a key outside `hasOnly(['minutes', 'sessionLengths'])`, `minutes` outside 0–1440, a `sessionLengths` list longer than 50, and an entry outside 0–240. Refusing consent writes no request and no session. A session past the school year, or past 90 days, whichever comes first, is deleted. Unlink deletes that child's sessions.
+6. Server totals. A session write updates `classes/{c}/totals`. `linkedFamilies` counts distinct consented `parentUid` values, so two children of one parent count as one family. Below 5 the number fields are absent. At 5 or more the fields are practice days, active minutes, session lengths, median session, and last active week. An admin read of session documents is denied, and a teacher read is denied. A client write of the totals document is denied. The numbers contain no child first name. The same totals documents are what a school-level pilot reads.
+7. Debounce. A new star does not flush the day document or the backup, and the star stays in `grownups/{uid}`. A test advances the clock and expects a flush when the day changes, when the app is hidden, and at most once per 60 seconds while the app is active.
 8. Backup rules. A first name is allowed only on `grownups/{uid}`. The same rules test rejects a first name on the school, the class, the child, the request, and the session document. `grownups/{uid}` rejects a photo field and rejects a key outside the allowlist. Deleting a child writes a tombstone, and merging the backup does not bring that child back.
 9. Deleting the auth user runs `onDelete`. The membership documents, the linked session documents, and `grownups/{uid}` are gone.
 10. Web sign-in in the emulator uses the popup path at every width. The iOS test taps the open-in-app control and does not auto-redirect. It does not expect the Firebase plugin in `Package.swift`.
