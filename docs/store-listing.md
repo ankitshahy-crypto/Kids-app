@@ -6,13 +6,15 @@ Store and website copy. The in-app About screen reads the same words from `src/c
 
 **Subtitle:** Read, math, science & coding
 
-**Tagline:** by TriageDesk
+**Tagline:** Made by a parent, for parents
+
+**Credit:** LittleNest Learning by TriageDesk AI LLC
 
 **Promotional text:** Five happy minutes a day. Your child's own animal is the hero of every story, with no ads, no tricks, and no surprise charges.
 
 ## Description
 
-LittleNest Learning helps young children take their first steps into letters, numbers, colors, games and coding, time and money, building, and science, one small step at a time. Made for ages 3 to 7, with a gentle start for ages 3 to 5 and harder clock, money, coding, building, and science work for ages 5 to 7 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. LittleNest Words: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!" LittleNest Numbers: count objects, hear and trace numbers, match and trace shapes, and add small groups. LittleNest Colors: hear a color and tap it, mix two paints, and color their animal. Games, including Think & Code: hatch an egg, guide their animal home, and stack picture blocks that play. LittleNest Time & Money: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. LittleNest Build: bridges, towers, ramps, and simple machines. LittleNest Science: life cycles, homes, weather, senses, and sink or float. A pretend fizz stays on the screen and says to do it with a grown-up.
+Made by a parent, for parents. LittleNest Learning by TriageDesk AI LLC helps young children take their first steps into letters, numbers, colors, games and coding, time and money, building, and science, one small step at a time. Made for ages 3 to 7, with a gentle start for ages 3 to 5 and harder clock, money, coding, building, and science work for ages 5 to 7 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. LittleNest Words: kids learn letters and their sounds, then drag their finger across a word to hear it come together: "c… a… t… cat!" LittleNest Numbers: count objects, hear and trace numbers, match and trace shapes, and add small groups. LittleNest Colors: hear a color and tap it, mix two paints, and color their animal. Games, including Think & Code: hatch an egg, guide their animal home, and stack picture blocks that play. LittleNest Time & Money: morning, afternoon, and night, a daily routine, a friendly clock, and a pretend shop with coins and bills. LittleNest Build: bridges, towers, ramps, and simple machines. LittleNest Science: life cycles, homes, weather, senses, and sink or float. A pretend fizz stays on the screen and says to do it with a grown-up.
 
 ## What makes LittleNest Learning different
 
@@ -111,6 +113,10 @@ No price is shown in the app.
 
 LittleNest Learning is reading, math, colors, games and coding, time and money, building, and science practice for young children. It is not a therapy or diagnostic tool.
 
-by TriageDesk
+LittleNest Learning by TriageDesk AI LLC
+
+Made by a parent, for parents
+
+© 2026 TriageDesk AI LLC
 
 **Version:** 0.1.0

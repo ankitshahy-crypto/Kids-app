@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TAGLINE } from "../brand";
+import { COPYRIGHT, MAKER_CREDIT, TAGLINE } from "../brand";
 import { ModuleMark } from "./ModuleMark";
 import { face } from "../palette";
 import type { AnimalId } from "../data/animals";
@@ -39,7 +39,9 @@ export function StartScreen({
         <span className="wordmark-nest">LittleNest</span>
         <span className="wordmark-word">Learning</span>
       </h1>
-      <p className="byline">{TAGLINE}</p>
+      <p className="parent-line">{TAGLINE}</p>
+      <p className="byline">{MAKER_CREDIT}</p>
+      <p className="copyright-line">{COPYRIGHT}</p>
       <div className="who-card">
         {profiles.length === 0 ? (
           <p className="who-empty">Ask a grown-up to tap Grown-ups.</p>

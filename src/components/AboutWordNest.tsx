@@ -149,7 +149,11 @@ export function AboutWordNest() {
       <p className="about-lead">{about.affordable}</p>
 
       <p className="about-note">{about.disclaimer}</p>
+      <p className="about-credit" data-parent-line>
+        {about.parentLine}
+      </p>
       <p className="about-credit">{about.maker}</p>
+      <p className="about-credit">{about.copyright}</p>
       <p className="about-version">Version {about.version}</p>
     </section>
   );

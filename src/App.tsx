@@ -9,13 +9,13 @@ import { GoalRing } from "./components/GoalRing";
 import { GrownupsButton } from "./components/GrownupsButton";
 import { GrownupsMenu } from "./components/GrownupsMenu";
 import { Chevron, StarIcon } from "./components/icons";
-import { KidCorner } from "./components/KidCorner";
 import { MilestoneCheer } from "./components/MilestoneCheer";
 import { NestView } from "./components/NestView";
 import { ParentView } from "./components/ParentPanel";
 import { LetterTrace } from "./components/LetterTrace";
 import { NameTrace, WordTrace } from "./components/PathTrace";
-import { PlaceholderStep } from "./components/PlaceholderStep";
+import { ColorMoment } from "./components/ColorMoment";
+import { StoryRead } from "./components/StoryRead";
 import { SoundItOut } from "./components/SoundItOut";
 import { SilentHint } from "./components/SilentHint";
 import { StarFlight } from "./components/StarFlight";
@@ -521,7 +521,6 @@ export default function App() {
                   weekIndex={lessonPlace?.weekIndex ?? 0}
                   onLeave={() => setMode("start")}
                   onOpen={openStep}
-                  onLibrary={() => setScreen("library")}
                   onNest={() => setScreen("nest")}
                   onCloset={() => setScreen("closet")}
                   onStickers={() => setScreen("stickers")}
@@ -559,7 +558,6 @@ export default function App() {
                   }}
                 />
               ) : null}
-              {screen === "library" ? <KidCorner kind="library" onBack={() => setScreen("today")} /> : null}
               {screen === "nest" ? <NestView profile={active} onBack={() => setScreen("today")} /> : null}
               {screen === "closet" ? (
                 <Closet profile={active} onWear={(itemId) => wear(active.id, itemId)} onBack={() => setScreen("today")} />
@@ -654,9 +652,10 @@ export default function App() {
                   onDone={() => practiceReward("name", [{ kind: "word", label: traceName }])}
                 />
               ) : null}
-              {screen === "story" || screen === "moment" ? (
-                <PlaceholderStep step={screen} profile={active} onDone={() => finishStep(screen)} />
+              {screen === "story" ? (
+                <StoryRead profile={active} settingsRef={settingsRef} onDone={() => finishStep("story")} />
               ) : null}
+              {screen === "moment" ? <ColorMoment settingsRef={settingsRef} onDone={() => finishStep("moment")} /> : null}
               {screen === "count" ? (
                 <CountActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("count", label)} />
               ) : null}

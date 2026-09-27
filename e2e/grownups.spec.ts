@@ -143,7 +143,9 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
   await expect(about.getByText("Read, math, science & coding")).toBeVisible();
   await expect(about.getByRole("heading", { name: "Your child is the hero" })).toBeVisible();
   await expect(about.getByRole("heading", { name: "Drag to blend" })).toBeVisible();
-  await expect(about.getByText("by TriageDesk")).toBeVisible();
+  await expect(about.getByText("Made by a parent, for parents")).toBeVisible();
+  await expect(about.getByText("LittleNest Learning by TriageDesk AI LLC")).toBeVisible();
+  await expect(about.getByText("© 2026 TriageDesk AI LLC")).toBeVisible();
   await expect(about.getByText("Version 0.1.0")).toBeVisible();
   await expect(about.getByText("not a therapy or diagnostic tool")).toBeVisible();
   await expect(about.getByText(/\$\d|per month/)).toHaveCount(0);

@@ -18,7 +18,7 @@ import { StarIcon } from "./icons";
 import { EngineerBoard } from "./NestBuild";
 import { ScienceBoard } from "./SciencePlay";
 import { ModuleMark } from "./ModuleMark";
-import { BookMark, EggNest, Hills, PencilMark, ShapesMark, ToyBox } from "./sceneArt";
+import { BookMark, EggNest, Hills, PencilMark, ShapesMark } from "./sceneArt";
 
 const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
   { id: "letter", label: "Letters", left: "50%", top: "18%" },
@@ -35,7 +35,6 @@ export function TodayPath({
   weekIndex,
   onOpen,
   onLeave,
-  onLibrary,
   onNest,
   onCloset,
   onStickers,
@@ -64,7 +63,6 @@ export function TodayPath({
   weekIndex: number;
   onOpen: (step: LessonStep) => void;
   onLeave: () => void;
-  onLibrary: () => void;
   onNest: () => void;
   onCloset: () => void;
   onStickers: () => void;
@@ -122,7 +120,8 @@ export function TodayPath({
       </div>
       {review && course === "reading" ? <p className="today-review">Review</p> : null}
 
-      <div className="course-pick" role="group" aria-label="Today">
+      <div className="pilot-hero">
+        <p className="pilot-kicker">Pilot focus</p>
         <button
           type="button"
           className={`course-button${course === "reading" ? " is-selected" : ""}`}
@@ -139,97 +138,7 @@ export function TodayPath({
             <span>Words</span>
           </span>
         </button>
-        <button
-          type="button"
-          className={`course-button${course === "math" ? " is-selected" : ""}`}
-          data-course="math"
-          aria-pressed={course === "math"}
-          aria-label={MODULE_NUMBERS}
-          onClick={() => onCourse("math")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="numbers" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Numbers</span>
-          </span>
-        </button>
-        <button
-          type="button"
-          className={`course-button${course === "colors" ? " is-selected" : ""}`}
-          data-course="colors"
-          aria-pressed={course === "colors"}
-          aria-label={MODULE_COLORS}
-          onClick={() => onCourse("colors")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="colors" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Colors</span>
-          </span>
-        </button>
-        <button
-          type="button"
-          className={`course-button${course === "time" ? " is-selected" : ""}`}
-          data-course="time"
-          aria-pressed={course === "time"}
-          aria-label={MODULE_TIME}
-          onClick={() => onCourse("time")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="time" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Time & Money</span>
-          </span>
-        </button>
-        <button
-          type="button"
-          className={`course-button${course === "build" ? " is-selected" : ""}`}
-          data-course="build"
-          aria-pressed={course === "build"}
-          aria-label={MODULE_BUILD}
-          onClick={() => onCourse("build")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="build" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Build</span>
-          </span>
-        </button>
-        <button
-          type="button"
-          className={`course-button${course === "science" ? " is-selected" : ""}`}
-          data-course="science"
-          aria-pressed={course === "science"}
-          aria-label={MODULE_SCIENCE}
-          onClick={() => onCourse("science")}
-        >
-          <span className="course-art" aria-hidden="true">
-            <ModuleMark name="science" />
-          </span>
-          <span className="course-name">
-            <span className="course-brand">LittleNest</span>
-            <span>Science</span>
-          </span>
-        </button>
       </div>
-
-      {course === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
-      {course === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
-      {course === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
-      {course === "build" ? (
-        <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} />
-      ) : null}
-      {course === "science" ? (
-        <ScienceBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[SCIENCE] ?? {}} onOpen={onScience} />
-      ) : null}
 
       {course === "reading" ? <div className="trail">
         <Hills />
@@ -285,6 +194,121 @@ export function TodayPath({
         </div>
       ) : null}
 
+      <section className="explore-block" aria-label="Explore" data-explore="sections">
+        <h2 className="explore-title">Explore</h2>
+        <div className="explore-grid">
+        <button
+          type="button"
+          className={`course-button${course === "math" ? " is-selected" : ""}`}
+          data-course="math"
+          aria-pressed={course === "math"}
+          aria-label={MODULE_NUMBERS}
+          onClick={() => onCourse("math")}
+        >
+          <span className="try-tag">New - try it!</span>
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="numbers" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Numbers</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`course-button${course === "colors" ? " is-selected" : ""}`}
+          data-course="colors"
+          aria-pressed={course === "colors"}
+          aria-label={MODULE_COLORS}
+          onClick={() => onCourse("colors")}
+        >
+          <span className="try-tag">New - try it!</span>
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="colors" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Colors</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`course-button${course === "time" ? " is-selected" : ""}`}
+          data-course="time"
+          aria-pressed={course === "time"}
+          aria-label={MODULE_TIME}
+          onClick={() => onCourse("time")}
+        >
+          <span className="try-tag">New - try it!</span>
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="time" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Time & Money</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`course-button${course === "build" ? " is-selected" : ""}`}
+          data-course="build"
+          aria-pressed={course === "build"}
+          aria-label={MODULE_BUILD}
+          onClick={() => onCourse("build")}
+        >
+          <span className="try-tag">New - try it!</span>
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="build" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Build</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`course-button${course === "science" ? " is-selected" : ""}`}
+          data-course="science"
+          aria-pressed={course === "science"}
+          aria-label={MODULE_SCIENCE}
+          onClick={() => onCourse("science")}
+        >
+          <span className="try-tag">New - try it!</span>
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="science" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Science</span>
+          </span>
+        </button>
+        <button type="button" className="course-button" data-course="games" aria-label="Games" onClick={onGames}>
+          <span className="try-tag">New - try it!</span>
+          <span className="course-art" aria-hidden="true">
+            <svg className="games-mark" viewBox="0 0 64 64">
+              <rect x="8" y="14" width="20" height="16" rx="4" fill="#F7D5E3" />
+              <rect x="32" y="14" width="20" height="16" rx="4" fill="#D7EBF7" />
+              <rect x="20" y="34" width="20" height="16" rx="4" fill="#F8E7B0" />
+            </svg>
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Games</span>
+          </span>
+        </button>
+        </div>
+      </section>
+
+      {course === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
+      {course === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
+      {course === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
+      {course === "build" ? (
+        <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} />
+      ) : null}
+      {course === "science" ? (
+        <ScienceBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[SCIENCE] ?? {}} onOpen={onScience} />
+      ) : null}
+
       <div className="today-dock">
         <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>
           <span className="dock-art dock-dress" aria-hidden="true" />
@@ -293,12 +317,6 @@ export function TodayPath({
         <button type="button" className="dock-button" data-dock="stickers" onClick={onStickers}>
           <span className="dock-art dock-stickers" aria-hidden="true" />
           <span>Stickers</span>
-        </button>
-        <button type="button" className="dock-button" data-dock="library" onClick={onLibrary}>
-          <span className="dock-art">
-            <ToyBox />
-          </span>
-          <span>Play library</span>
         </button>
         <button type="button" className="dock-button" data-dock="games" onClick={onGames}>
           <span className="dock-art dock-games" aria-hidden="true">

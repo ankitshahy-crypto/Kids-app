@@ -1,5 +1,5 @@
 import { version } from "../../package.json";
-import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME, MODULE_WORDS, PRODUCT_NAME, STORE_NAME, STORE_SUBTITLE, TAGLINE } from "../brand";
+import { COPYRIGHT, MAKER_CREDIT, MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME, MODULE_WORDS, PRODUCT_NAME, STORE_NAME, STORE_SUBTITLE, TAGLINE } from "../brand";
 
 /** Marketing copy for About and for docs/store-listing.md. Edit it here. */
 export const aboutContent = {
@@ -93,7 +93,9 @@ export const aboutContent = {
   affordable:
     `Learning to read shouldn't be expensive. ${PRODUCT_NAME} is priced so every family can use it, and through partner schools it's included for families at little or no extra cost. No creeping subscriptions or endless add-ons.`,
   disclaimer: `${PRODUCT_NAME} is reading, math, colors, games and coding, time and money, building, and science practice for young children. It is not a therapy or diagnostic tool.`,
-  maker: TAGLINE,
+  parentLine: TAGLINE,
+  maker: MAKER_CREDIT,
+  copyright: COPYRIGHT,
   /** Matches package.json. The About screen shows this number. */
   version,
 } as const;

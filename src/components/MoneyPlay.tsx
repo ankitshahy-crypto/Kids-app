@@ -42,6 +42,58 @@ const tiles: { id: MoneyGame; label: string; name: string }[] = [
   { id: "cards", label: "Cards", name: "Pretend cards" },
 ];
 
+function MoneyTileArt({ id }: { id: MoneyGame }) {
+  if (id === "jars") {
+    return (
+      <svg className="money-tile-art" viewBox="0 0 80 56" aria-hidden="true">
+        <rect x="6" y="16" width="16" height="32" rx="4" fill="#d7eee3" stroke="#b7d4c4" strokeWidth="2" />
+        <rect x="32" y="10" width="16" height="38" rx="4" fill="#f8e7b0" stroke="#e7d4a0" strokeWidth="2" />
+        <rect x="58" y="18" width="16" height="30" rx="4" fill="#f7d5e3" stroke="#e7c4d2" strokeWidth="2" />
+      </svg>
+    );
+  }
+  if (id === "lemonade") {
+    return (
+      <svg className="money-tile-art" viewBox="0 0 80 56" aria-hidden="true">
+        <rect x="22" y="18" width="28" height="28" rx="6" fill="#f8e7a8" stroke="#e4c98a" strokeWidth="2" />
+        <circle cx="54" cy="16" r="8" fill="#f6e27a" stroke="#e2b84a" strokeWidth="2" />
+      </svg>
+    );
+  }
+  if (id === "choose") {
+    return (
+      <svg className="money-tile-art" viewBox="0 0 80 56" aria-hidden="true">
+        <circle cx="28" cy="30" r="14" fill="#f4b4b4" />
+        <circle cx="52" cy="28" r="12" fill="#f8e7a8" />
+      </svg>
+    );
+  }
+  if (id === "needs") {
+    return (
+      <svg className="money-tile-art" viewBox="0 0 80 56" aria-hidden="true">
+        <path fill="#f7d5e3" d="M40 46 18 28a10 10 0 0 1 16-12l6 6 6-6a10 10 0 0 1 16 12Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="money-tile-art" viewBox="0 0 80 56" aria-hidden="true">
+      <rect x="18" y="10" width="44" height="32" rx="6" fill="#d7ebf7" stroke="#b7cfe0" strokeWidth="2" />
+      <rect x="26" y="20" width="20" height="4" rx="2" fill="#fffdfb" />
+    </svg>
+  );
+}
+
+function LemonadeArt() {
+  return (
+    <svg className="lemonade-art" viewBox="0 0 120 96" aria-hidden="true">
+      <rect x="34" y="40" width="52" height="40" rx="8" fill="#f8e7a8" stroke="#e4c98a" strokeWidth="3" />
+      <path d="M28 40h64" stroke="#f4d27a" strokeWidth="6" strokeLinecap="round" />
+      <circle cx="86" cy="30" r="12" fill="#f6e27a" stroke="#e2b84a" strokeWidth="3" />
+      <rect x="56" y="14" width="5" height="30" rx="2" fill="#f7d5e3" />
+    </svg>
+  );
+}
+
 export function MoneyBoard({
   done,
   onOpen,
@@ -60,6 +112,7 @@ export function MoneyBoard({
           aria-label={tile.name}
           onClick={() => onOpen(tile.id)}
         >
+          <MoneyTileArt id={tile.id} />
           <span>{tile.label}</span>
         </button>
       ))}
@@ -193,10 +246,11 @@ export function LemonadeActivity({
         <Avatar animal={animal} />
         <p className="math-prompt">Serve a cup. Work earns a coin.</p>
       </div>
-      <button type="button" className="math-hear" onClick={() => speak.prompt("time-lemonade")}>
+      <LemonadeArt />
+      <button type="button" className="hear-label" onClick={() => speak.prompt("time-lemonade")}>
         Hear it
       </button>
-      <button type="button" className="math-activity" data-serve="cup" onClick={serve}>
+      <button type="button" className="serve-button" data-serve="cup" onClick={serve}>
         Serve
       </button>
       <div className="coin-pile" aria-hidden="true">

@@ -33,19 +33,19 @@ export const mixBlobs = ["red", "yellow", "blue", "white"] as const;
 type Swatch = { fill: string; pattern: string; patternLabel: string };
 
 /**
- * True paints for the color lesson. Same hexes as `--paint-*` in `src/index.css`.
- * They are not the pastel UI tokens. Yellow is not the gold star color.
+ * Soft pastel paints. Same hexes as `--paint-*` in `src/index.css`.
+ * Patterns still separate colors that look alike. Yellow is not the gold star color.
  */
 export const paintFill: Record<ColorId, string> = {
-  red: "#e10600",
-  blue: "#1f4bff",
-  yellow: "#ffe200",
-  green: "#12b33a",
-  orange: "#ff7a00",
-  purple: "#7a2fe0",
-  pink: "#ff4d8d",
-  brown: "#8b4513",
-  black: "#1a1a1a",
+  red: "#f0c8c8",
+  blue: "#c5d8f0",
+  yellow: "#f4ead2",
+  green: "#cfe4d6",
+  orange: "#f3dcc8",
+  purple: "#ddd3ee",
+  pink: "#f6e3ea",
+  brown: "#e6d3c2",
+  black: "#8b93a3",
   white: "#ffffff",
 };
 

@@ -1,4 +1,4 @@
-import { directionArrow, letterForm, numberSpot, strokePath, type LetterCase, type TracePoint } from "../data/handwriting";
+import { directionArrow, letterForm, numberSpot, spreadNumberSpots, strokePath, type LetterCase, type TracePoint } from "../data/handwriting";
 import { strokeStations } from "../data/trace";
 
 function inkPath(stroke: TracePoint[], covered: number): TracePoint[] {
@@ -35,6 +35,7 @@ export function StrokeFigure({
   guideOpacity?: number;
 }) {
   const form = strokes ? { letter: label ?? "", strokes } : letterForm(letter ?? "a", casing);
+  const numberSpots = spreadNumberSpots(form.strokes.map((stroke) => numberSpot(stroke)));
   const glyph = label || form.letter;
   const caption = glyph.length === 1 ? glyph : "";
   return (
@@ -53,7 +54,7 @@ export function StrokeFigure({
       ) : null}
       {form.strokes.map((stroke, index) => {
         const arrow = directionArrow(stroke);
-        const spot = numberSpot(stroke);
+        const spot = numberSpots[index] ?? numberSpot(stroke);
         const start = stroke[0];
         const covered = guide === "model" || guide === "none" ? 0 : (progress?.[index] ?? 0);
         const ink = inkPath(stroke, covered);
@@ -71,7 +72,7 @@ export function StrokeFigure({
                 ) : null}
                 {showStart && start ? <circle className="stroke-start" cx={start.x} cy={start.y} r="4.2" /> : null}
                 {showPath ? (
-                  <text className="stroke-number" x={spot.x} y={spot.y} textAnchor="middle" dominantBaseline="central">
+                  <text className="stroke-number" x={spot.x} y={spot.y} fontSize="8" textAnchor="middle" dominantBaseline="central">
                     {index + 1}
                   </text>
                 ) : null}

@@ -396,7 +396,7 @@ export function ClockActivity({
       <p className="math-prompt">{lesson.match ? `Match ${digital}. ${lesson.clockSay}` : lesson.clockSay}</p>
       <button
         type="button"
-        className="math-hear"
+        className="hear-label"
         onClick={() => speak.prompt(lesson.match ? "time-match" : lesson.clockCueId, lesson.clockSay)}
       >
         Hear it

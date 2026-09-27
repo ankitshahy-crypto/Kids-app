@@ -16,7 +16,7 @@ import {
 } from "../data/schedule";
 import type { Settings } from "../settings";
 import { ChildForm } from "./ChildForm";
-import { StarIcon } from "./icons";
+import { MenuIcon, StarIcon } from "./icons";
 import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME } from "../brand";
 import { tint } from "../palette";
 import { COLORS, colorIntroduced } from "../data/colors";
@@ -115,7 +115,9 @@ export function ParentView({
           {rows.map((row) => (
             <li key={row.id}>
               <button type="button" className="parent-row" onClick={() => setPage(row.id)}>
-                <span className="row-icon" style={{ background: row.tint }} aria-hidden="true" />
+                <span className="row-icon" style={{ background: row.tint }} aria-hidden="true">
+                  <MenuIcon name={row.id} />
+                </span>
                 <span>{row.label}</span>
               </button>
             </li>
@@ -436,7 +438,9 @@ function ParentHome({
         {rows.map((row) => (
           <li key={row.id}>
             <button type="button" className="parent-row" onClick={() => onOpen(row.id)}>
-              <span className="row-icon" style={{ background: row.tint }} aria-hidden="true" />
+              <span className="row-icon" style={{ background: row.tint }} aria-hidden="true">
+                <MenuIcon name={row.id} />
+              </span>
               <span>{row.label}</span>
             </button>
           </li>

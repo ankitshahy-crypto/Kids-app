@@ -86,6 +86,76 @@ export function ReviewBadge() {
   );
 }
 
+/** Small mark inside a Grown-ups or parent menu circle. */
+export function MenuIcon({ name }: { name: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
+      {name === "settings" ? (
+        <>
+          <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M12 3.2v2.2M12 18.6v2.2M3.2 12h2.2M18.6 12h2.2M5.8 5.8l1.6 1.6M16.6 16.6l1.6 1.6M18.2 5.8l-1.6 1.6M7.4 16.6 5.8 18.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </>
+      ) : null}
+      {name === "offline" ? (
+        <path fill="currentColor" d="M7.2 16.5h9.2a3.4 3.4 0 0 0 .4-6.8 5 5 0 0 0-9.6-1.2 3.2 3.2 0 0 0 0 8Z" />
+      ) : null}
+      {name === "profiles" || name === "children" ? (
+        <>
+          <circle cx="12" cy="8" r="3" fill="currentColor" />
+          <path fill="currentColor" d="M6.2 18.6c.4-2.8 2.6-4.4 5.8-4.4s5.4 1.6 5.8 4.4c.1.7-.4 1.4-1.2 1.4H7.4c-.8 0-1.3-.7-1.2-1.4Z" />
+        </>
+      ) : null}
+      {name === "account" ? (
+        <>
+          <rect x="6" y="10.5" width="12" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M9 10.5V8.2a3 3 0 0 1 6 0v2.3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </>
+      ) : null}
+      {name === "help" ? (
+        <>
+          <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M9.4 9.4a2.6 2.6 0 1 1 3.4 2.5c-.7.3-1.2.9-1.2 1.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="11.6" cy="16.2" r="0.9" fill="currentColor" />
+        </>
+      ) : null}
+      {name === "privacy" ? (
+        <path fill="currentColor" d="M12 3.2 5.2 6v5.2c0 3.6 2.6 6.4 6.8 8.1 4.2-1.7 6.8-4.5 6.8-8.1V6L12 3.2Z" />
+      ) : null}
+      {name === "about" ? (
+        <>
+          <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M12 11v5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="12" cy="8" r="0.9" fill="currentColor" />
+        </>
+      ) : null}
+      {name === "share" ? (
+        <>
+          <circle cx="7" cy="12" r="2.1" fill="currentColor" />
+          <circle cx="16.5" cy="7" r="2.1" fill="currentColor" />
+          <circle cx="16.5" cy="17" r="2.1" fill="currentColor" />
+          <path d="m8.8 11.1 6-3.2M8.8 12.9l6 3.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        </>
+      ) : null}
+      {name === "printables" || name === "teacher" ? (
+        <>
+          <path d="M7 4.5h10v6H7z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M6 10.5h12v7H6z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M9 14.2h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </>
+      ) : null}
+      {name === "join" ? (
+        <path fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" d="M8 12h8M12 8v8" />
+      ) : null}
+      {name === "progress" ? (
+        <path fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" d="M5 16.5 9.2 12l3 2.4L19 7.5" />
+      ) : null}
+      {name === "rewards" ? (
+        <path fill="currentColor" d="M12 3.2 14.2 8l5.2.4-4 3.4 1.3 5-4.7-2.8L7.3 16.8 8.6 11.8 4.6 8.4 9.8 8 12 3.2Z" />
+      ) : null}
+    </svg>
+  );
+}
+
 export function PlayGlyph() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">

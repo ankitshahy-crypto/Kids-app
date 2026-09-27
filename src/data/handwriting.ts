@@ -261,6 +261,23 @@ export function numberSpot(stroke: TracePoint[]): TracePoint {
   };
 }
 
+/** Nudge a later stroke number so "1" and "2" do not sit on the same spot and read as "21". */
+export function spreadNumberSpots(spots: TracePoint[]): TracePoint[] {
+  const placed: TracePoint[] = [];
+  for (const spot of spots) {
+    let x = spot.x;
+    let y = spot.y;
+    for (let pass = 0; pass < 4; pass += 1) {
+      const hit = placed.find((earlier) => Math.hypot(x - earlier.x, y - earlier.y) < 18);
+      if (!hit) break;
+      x = Math.min(90, Math.max(10, hit.x + 18));
+      y = Math.max(14, Math.min(88, hit.y - 14));
+    }
+    placed.push({ x: round(x), y: round(y) });
+  }
+  return placed;
+}
+
 export function strokePath(stroke: TracePoint[]): string {
   return stroke.map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`).join(" ");
 }

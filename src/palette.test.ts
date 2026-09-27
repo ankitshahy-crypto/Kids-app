@@ -65,14 +65,15 @@ function saturation(hex: string): number {
 describe("color lesson paints", () => {
   const color = tokens();
 
-  it("matches the saturated paint tokens and stays off the pastel gold", () => {
+  it("matches the pastel paint tokens and stays off the gold star", () => {
     for (const [name, fill] of Object.entries(paintFill)) {
       expect(color.get(`--paint-${name}`)).toBe(fill);
     }
     expect(paintFill.yellow).not.toBe(color.get("--gold"));
     expect(paintFill.white).toBe("#ffffff");
     for (const name of ["red", "blue", "yellow", "green", "orange", "purple", "pink"] as const) {
-      expect(saturation(paintFill[name]), name).toBeGreaterThanOrEqual(0.65);
+      expect(saturation(paintFill[name]), name).toBeLessThan(0.65);
+      expect(luminance(paintFill[name]), name).toBeGreaterThan(0.45);
     }
   });
 });

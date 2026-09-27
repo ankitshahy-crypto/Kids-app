@@ -1,6 +1,6 @@
 # LittleNest Learning
 
-LittleNest Learning is a TriageDesk product (by TriageDesk): a calm, offline app for ages 3–5 first (and phonics as children grow toward 6–7). The modules are LittleNest Words, LittleNest Numbers, LittleNest Colors, and LittleNest Time & Money. The child is the hero. It is practice, not therapy. The product direction lives in `docs/PRODUCT.md`.
+LittleNest Learning by TriageDesk AI LLC (“Made by a parent, for parents”): a calm, offline app for ages 3–5 first (and phonics as children grow toward 6–7). The modules are LittleNest Words, LittleNest Numbers, LittleNest Colors, and LittleNest Time & Money. The child is the hero. It is practice, not therapy. The product direction lives in `docs/PRODUCT.md`.
 
 The planned site is littlenestlearning.app. That domain is not purchased yet. Sharing and the demo stay at the GitHub Pages address below. The repository name and the `/Kids-app/` path stay as they are.
 

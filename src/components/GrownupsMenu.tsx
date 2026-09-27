@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
-import { PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
+import { COPYRIGHT, PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
 import { tint } from "../palette";
 import { shareWordNest, type ShareResult } from "../share";
 import type { AnimalId } from "../data/animals";
@@ -13,7 +13,7 @@ import type { useGrownupAccount } from "../auth/useGrownupAccount";
 import { AboutWordNest } from "./AboutWordNest";
 import { AccountPanel } from "./AccountPanel";
 import { ChildForm } from "./ChildForm";
-import { Chevron } from "./icons";
+import { Chevron, MenuIcon } from "./icons";
 import { OfflinePanel } from "./OfflinePanel";
 import { Printables } from "./Printables";
 import { SettingsFields } from "./SettingsFields";
@@ -153,7 +153,9 @@ export function GrownupsMenu({
             {rows.map((row) => (
               <li key={row.id}>
                 <button type="button" className="grownups-row" onClick={() => setPage(row.id)}>
-                  <span className="row-icon" style={{ background: row.tint }} aria-hidden="true" />
+                  <span className="row-icon" style={{ background: row.tint }} aria-hidden="true">
+                    <MenuIcon name={row.id} />
+                  </span>
                   <span className="grownups-row-copy">
                     <span className="grownups-row-title">{row.title}</span>
                     <small>{row.note}</small>
@@ -310,6 +312,7 @@ export function GrownupsMenu({
               <li key={line}>{line}</li>
             ))}
           </ul>
+          <p className="about-credit">{COPYRIGHT}</p>
         </section>
       ) : null}
 
