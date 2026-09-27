@@ -48,6 +48,8 @@ import { usePlacement } from "./hooks/usePlacement";
 import { useProfiles } from "./hooks/useProfiles";
 import { useReadingTime } from "./hooks/useReadingTime";
 import { useSettings } from "./hooks/useSettings";
+import { ExploreFrame } from "./explore/frame";
+import { sectionForScreen } from "./explore/sections";
 import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
@@ -511,6 +513,7 @@ export default function App() {
               </div>
             ) : null}
             <div className={`screen-body${screen === "today" ? " is-fit" : ""}`}>
+              <ExploreFrame section={sectionForScreen(screen)} childId={active.id}>
               {tip ? <GrownupTip tip={tip} onDismiss={() => setTip(null)} /> : null}
               {screen === "today" ? (
                 <TodayPath
@@ -739,6 +742,7 @@ export default function App() {
                   onDone={(label) => finishColor("paint", label)}
                 />
               ) : null}
+              </ExploreFrame>
             </div>
           </>
         ) : null}
