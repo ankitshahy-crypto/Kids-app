@@ -203,6 +203,7 @@ export function GrownupsMenu({
             <ChildForm
               key={editing.id}
               initial={editing}
+              others={profiles.filter((profile) => profile.id !== editing.id)}
               submitLabel="Save changes"
               onSave={(input) => {
                 onUpdate(editing.id, input);
@@ -213,6 +214,7 @@ export function GrownupsMenu({
           ) : null}
           {adding ? (
             <ChildForm
+              others={profiles}
               submitLabel="Save child"
               onSave={(input) => {
                 onAdd(input);

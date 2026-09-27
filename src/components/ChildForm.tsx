@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { Avatar } from "../avatars";
-import { animals, type AnimalId } from "../data/animals";
-import { ageRanges, normalizeChildName, type AgeRange, type ChildProfile } from "../data/profiles";
+import { animalById, animals, type AnimalId } from "../data/animals";
+import { ageRanges, lessonName, normalizeChildName, sameLessonName, type AgeRange, type ChildProfile } from "../data/profiles";
 
 export function ChildForm({
   initial,
+  others = [],
   submitLabel,
   onSave,
   onCancel,
 }: {
   initial?: Pick<ChildProfile, "name" | "ageRange" | "animal">;
+  /** The other children on this device, so a taken animal is marked. */
+  others?: readonly Pick<ChildProfile, "name" | "animal">[];
   submitLabel: string;
   onSave: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
   onCancel?: () => void;
@@ -27,6 +30,15 @@ export function ChildForm({
     }
     if (!ageRange || !animal) {
       setError("Choose an age and an animal.");
+      return;
+    }
+    const twin = sameLessonName({ name, animal }, others);
+    if (twin) {
+      setError(
+        twin.name.trim().length <= 1
+          ? `Another child here is already called ${lessonName(twin)}. Pick a different animal, or add a first name.`
+          : `Another child here is already ${lessonName(twin)} the ${animalById(animal).name.toLowerCase()}. Pick a different animal.`,
+      );
       return;
     }
     onSave({ name, ageRange, animal });
@@ -74,19 +86,29 @@ export function ChildForm({
       </div>
       <p className="field-label">Animal</p>
       <div className="animal-grid">
-        {animals.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`animal-pick${animal === item.id ? " is-selected" : ""}`}
-            aria-pressed={animal === item.id}
-            data-animal={item.id}
-            onClick={() => setAnimal(item.id)}
-          >
-            <Avatar animal={item.id} />
-            <span>{item.name}</span>
-          </button>
-        ))}
+        {animals.map((item) => {
+          const takenBy = others
+            .filter((other) => other.animal === item.id)
+            .map((other) => (other.name.trim().length <= 1 ? other.name.trim().toUpperCase() : lessonName(other)));
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`animal-pick${animal === item.id ? " is-selected" : ""}${takenBy.length ? " is-taken" : ""}`}
+              aria-pressed={animal === item.id}
+              aria-label={takenBy.length ? `${item.name}, also ${takenBy.join(" and ")}'s` : undefined}
+              data-animal={item.id}
+              onClick={() => {
+                setAnimal(item.id);
+                setError("");
+              }}
+            >
+              <Avatar animal={item.id} />
+              <span>{item.name}</span>
+              {takenBy.length ? <small className="animal-taken">{takenBy.join(", ")}</small> : null}
+            </button>
+          );
+        })}
       </div>
       {error ? <p className="field-error">{error}</p> : null}
       <button type="submit" className="save-child">
