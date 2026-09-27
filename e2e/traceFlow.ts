@@ -66,7 +66,9 @@ export async function finishPathTrace(page: Page, screen: string) {
       await traceCurrentStroke(page, screen);
     } else if (phase === "cheer") {
       await expect(root).toHaveAttribute("data-spoken", /.+/);
-      await root.getByRole("button", { name: "Done" }).click();
+      // The cheer leaves on its own after a moment, so Done may already be gone.
+      await root.getByRole("button", { name: "Done" }).click({ timeout: 1500 }).catch(() => undefined);
+      await expect(root).toHaveCount(0, { timeout: 5000 }).catch(() => undefined);
       return;
     } else if (phase === "pick") {
       throw new Error(`Pick a ${screen} before tracing`);

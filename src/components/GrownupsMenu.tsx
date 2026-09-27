@@ -32,7 +32,7 @@ const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; ti
   { id: "settings", title: "Settings", note: "Volume, voice, lesson length, calm mode, easier reading, tips, and Explore", tint: tint.mint },
   { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach },
-  { id: "account", title: "Account", note: "School sign-in is coming", tint: tint.sky },
+  { id: "account", title: "Account", note: "None needed. Everything stays on this device", tint: tint.sky },
   { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: tint.blush },
   { id: "privacy", title: "Privacy", note: "What stays on this device", tint: tint.mintCard },
   { id: "about", title: `About ${PRODUCT_NAME}`, note: "Version and who makes the app", tint: tint.sky },
@@ -242,10 +242,10 @@ export function GrownupsMenu({
       {page === "account" ? (
         <section className="adult-section" data-section="account">
           <h2>Account</h2>
-          <p className="account-status">Not signed in</p>
+          <p className="account-status">No account needed</p>
           <p className="adult-copy">
-            School sign-in is coming. A grown-up will be able to connect this device to a class later. There is no
-            account to create in this version, and {PRODUCT_NAME} does not ask for a card or a payment.
+            {PRODUCT_NAME} works without an account. Progress stays on this device, and nothing asks for an email, a
+            card, or a payment. A school can connect a class later, with a parent's say-so, but that is optional.
           </p>
         </section>
       ) : null}

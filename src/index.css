@@ -263,7 +263,7 @@ button:focus-visible {
   flex-direction: column;
   overflow: hidden;
   padding:
-    env(safe-area-inset-top)
+    calc(8px + env(safe-area-inset-top))
     calc(16px + env(safe-area-inset-right))
     calc(12px + env(safe-area-inset-bottom))
     calc(16px + env(safe-area-inset-left));
@@ -2241,8 +2241,8 @@ button:focus-visible {
 .grownups-launch {
   position: absolute;
   z-index: 4;
-  top: 8px;
-  right: 12px;
+  top: calc(8px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -3726,6 +3726,25 @@ button:focus-visible {
     width: 84px;
     height: 84px;
   }
+}
+
+/* iPad held upright: one row of dock stops and a shorter trail, so the trace
+   buttons and Explore show under the path without a long scroll. */
+@media (min-width: 768px) and (orientation: portrait) {
+  .today-dock {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px 8px;
+  }
+
+  .dock-art {
+    width: 76px;
+    height: 76px;
+  }
+
+  .trail {
+    height: min(46dvh, 520px);
+    min-height: 380px;
+  }
 
   .closet-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3911,6 +3930,7 @@ button:focus-visible {
 
 .about-modules {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
   margin: 4px 0 8px;
@@ -3920,6 +3940,18 @@ button:focus-visible {
   width: 72px;
   height: 72px;
   border-radius: 18px;
+}
+
+@media (max-width: 480px) {
+  .about-modules {
+    gap: 8px;
+  }
+
+  .about-modules .module-mark {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
 }
 
 .path-stages,

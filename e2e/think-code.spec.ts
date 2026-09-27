@@ -72,7 +72,7 @@ test("arrows take the animal home, then a plan can be tried again", async ({ pag
   await board.locator("[data-finish=bird]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "Pilot focus" }).click();
+  await page.getByRole("button", { name: "Reading", exact: true }).click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 

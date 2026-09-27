@@ -218,7 +218,7 @@ test("letters and numbers stay large on iPad", async ({ page }) => {
     expect(numbers).toBeTruthy();
     expect(numbers!.height).toBeGreaterThanOrEqual(100);
     expect(numbers!.width).toBeGreaterThan(140);
-    await page.getByRole("button", { name: "Pilot focus" }).click();
+    await page.getByRole("button", { name: "Reading", exact: true }).click();
     const trail = await page.locator(".trail").boundingBox();
     expect(trail).toBeTruthy();
     expect(trail!.height).toBeGreaterThanOrEqual(100);
