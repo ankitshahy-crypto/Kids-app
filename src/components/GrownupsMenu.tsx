@@ -4,7 +4,6 @@ import { shareMessage, shareUrl, showHelpContact } from "../config";
 import { PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
 import { tint } from "../palette";
 import { shareWordNest, type ShareResult } from "../share";
-import type { AnimalId } from "../data/animals";
 import type { PlacementDocument } from "../data/placement";
 import { lessonName, type ChildInput, type ChildProfile } from "../data/profiles";
 import { corruptProfileNotice } from "../data/profiles";
