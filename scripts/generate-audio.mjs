@@ -272,9 +272,15 @@ function trimAndEncode(wav, label) {
   return whole.stdout;
 }
 
-async function synthesize({ text, ssml, plain, voice }, label = "") {
+async function synthesize({ text, ssml, plain, voice, pron, encoding }, label = "") {
   await connect();
   const input = ssml ? { ssml } : voice.modelName ? { prompt: voice.prompt, text } : { text };
+  // Custom pronunciations: { phrase: ipa } pairs applied to the text (Chirp 3 HD, en-US).
+  if (pron && Object.keys(pron).length > 0) {
+    input.customPronunciations = {
+      pronunciations: Object.entries(pron).map(([phrase, pronunciation]) => ({ phrase, phoneticEncoding: encoding || "PHONETIC_ENCODING_IPA", pronunciation })),
+    };
+  }
   const audioConfig = { audioEncoding: trim ? "LINEAR16" : "MP3", sampleRateHertz: 24000, ...(voice.rate ? { speakingRate: speed } : {}) };
   const request = {
     input,
@@ -376,7 +382,9 @@ async function makeTries() {
     const label = line.slice(0, at).trim().replace(/[^A-Za-z0-9.-]+/g, "-");
     const what = line.slice(at + 1).trim();
     const dest = join(dir, `${label}.mp3`);
-    const input = what.startsWith("<speak>") ? { ssml: what, voice: mainVoice.ssml ? mainVoice : letterVoice } : { text: what, voice: mainVoice };
+    // A JSON value can carry custom pronunciations: {"text":"mmm.","pron":{"mmm":"mː"}}
+    const spec = what.startsWith("{") ? JSON.parse(what) : what.startsWith("<speak>") ? { ssml: what } : { text: what };
+    const input = { ...spec, voice: spec.ssml && !mainVoice.ssml ? letterVoice : mainVoice };
     if (dryRun) {
       console.log(`${relative(root, dest)}  ${input.voice.label}  ${JSON.stringify(what)}`);
       continue;
