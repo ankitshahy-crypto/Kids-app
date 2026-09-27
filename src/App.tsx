@@ -1,6 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
-import { primeSpeech, resumeSpeech } from "./audio/player";
+import { clearLastCue, primeSpeech, replayLastCue, resumeSpeech } from "./audio/player";
+import { BreakScreen } from "./components/BreakScreen";
+import { HearAgainButton, BreakButton } from "./components/ComfortButtons";
+import { WrapUpSheet } from "./components/WrapUpSheet";
+import { extraAllowed, noteExtra } from "./data/extras";
+import { themeForDay } from "./data/themes";
+import { installReadableFont } from "./readableFont";
 import { Background } from "./components/Background";
 import { Closet } from "./components/Closet";
 import { GrownupTip } from "./components/GrownupTip";
@@ -21,6 +27,7 @@ import { SilentHint } from "./components/SilentHint";
 import { StarFlight } from "./components/StarFlight";
 import { StartScreen } from "./components/StartScreen";
 import { StickerBook } from "./components/StickerBook";
+import { SurpriseView } from "./components/SurpriseView";
 import { TeacherView } from "./components/TeacherView";
 import type { GameId } from "./components/Games";
 import { TodayPath } from "./components/TodayPath";
@@ -58,7 +65,7 @@ import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { TIME, lessonForChild as timeLessonForChild, type MoneyGame, type TimeStep } from "./data/timeMoney";
 import { BUILD, type BuildActivity } from "./data/engineer";
 import { SCIENCE, type ScienceActivity as ScienceId } from "./data/science";
-import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
+import { lessonName, todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
 import { blendList, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
@@ -72,9 +79,31 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors" | "time" | "build" | "science";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | "break" | "surprise" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
+
+/** A short chunk of learning: a lesson stop, a practice, a game, or an Explore activity. */
+function isChunkScreen(screen: Screen): boolean {
+  return (
+    lessonScreens.includes(screen as LessonStep) ||
+    mathScreens.includes(screen as MathStep) ||
+    colorScreens.includes(screen as ColorStep) ||
+    timeScreens.includes(screen as TimeStep) ||
+    moneyScreens.includes(screen as MoneyGame) ||
+    screen === "money-play" ||
+    screen === "word" ||
+    screen === "my-name" ||
+    screen === "games" ||
+    buildScreens.includes(screen as BuildActivity) ||
+    scienceScreens.includes(screen as ScienceId)
+  );
+}
+
+/** The device asks for less motion. Calm mode follows it even when the switch is off. */
+function reducedMotion(): boolean {
+  return typeof window !== "undefined" && Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+}
 const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
 const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 const timeScreens: TimeStep[] = ["day", "routine", "clock", "coins", "shop"];
@@ -94,6 +123,14 @@ export default function App() {
   const [goalMet, setGoalMet] = useState(false);
   const [tip, setTip] = useState<ReadTip | null>(null);
   const [course, setCourse] = useState<Course>("reading");
+  // Set once the day's lesson is done or the lesson length is reached. From
+  // then on, each chunk that ends is followed by "One more?" until the
+  // parent's limit, then "All done".
+  const [wrappingUp, setWrappingUp] = useState<"lesson" | "time" | null>(null);
+  const [offer, setOffer] = useState(false);
+  const [extrasTick, setExtrasTick] = useState(0);
+  const previousScreen = useRef<Screen>("today");
+  const calm = settings.calm || reducedMotion();
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -129,6 +166,37 @@ export default function App() {
   useEffect(() => {
     applyAudioSettings(settings);
   }, [settings]);
+
+  useEffect(() => {
+    if (settings.readableFont) installReadableFont();
+  }, [settings.readableFont]);
+
+  // A new screen starts with nothing to replay until it speaks. The screen's
+  // own first line is spoken in its effects, after this time, so it is kept.
+  const screenChangedAt = useMemo(() => Date.now(), [screen, mode]);
+  useEffect(() => {
+    clearLastCue(screenChangedAt);
+  }, [screenChangedAt]);
+
+  useEffect(() => {
+    // Each child starts the visit fresh. Today's "One more?" count is kept on the device.
+    setWrappingUp(null);
+    setOffer(false);
+  }, [active?.id]);
+
+  useEffect(() => {
+    const before = previousScreen.current;
+    previousScreen.current = screen;
+    if (screen !== "today" || !wrappingUp) return;
+    // Back from a chunk, not from the closet, the nest, or a break.
+    if (isChunkScreen(before)) setOffer(true);
+  }, [screen, wrappingUp]);
+
+  useEffect(() => {
+    if (wrappingUp && screen === "today") setOffer(true);
+    // Only when the wrap-up first begins. Later returns are handled above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wrappingUp]);
 
   useEffect(() => bindPressFeedback(() => settingsRef.current), [settingsRef]);
 
@@ -182,7 +250,9 @@ export default function App() {
   // The step the open lesson was built on. Moving up mid-lesson would swap the
   // card under the child, so the new step waits for the next visit.
   const [lessonLadderStep, setLessonLadderStep] = useState<LadderStep>(ladderStep);
-  const lessonWords = useMemo(() => blendList(lessonLadderStep, lessonLetters), [lessonLadderStep, lessonLetters]);
+  const themes = active?.themes ?? [];
+  const themeToday = themeForDay(themes, todayKey());
+  const lessonWords = useMemo(() => blendList(lessonLadderStep, lessonLetters, themes), [lessonLadderStep, lessonLetters, themes]);
   const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
   const phonicsReady = phonicsOpen(introducedLetters.length);
   const traceName = nameToTrace(active?.name ?? "");
@@ -218,13 +288,13 @@ export default function App() {
     if (!active) return;
     const result = giveStar(active.id, step, learned);
     if (!result.awarded) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!reduce) setFlying(true);
+    if (!calm) setFlying(true);
     if (result.milestones.length > 0) {
       setCheer(result.milestones[result.milestones.length - 1] ?? null);
-      playEffect("cheer", settings);
-    } else if (result.lessonComplete) playEffect("celebrate", settings);
+      playEffect(calm ? "chime" : "cheer", settings);
+    } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
     else playEffect("chime", settings);
+    if (result.lessonComplete) setWrappingUp((current) => current ?? "lesson");
   };
 
   const finishStep = (step: LessonStep) => {
@@ -234,15 +304,16 @@ export default function App() {
   };
 
   const celebrateGoal = (result: ReadingCredit) => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!reduce) setFlying(true);
+    const quiet = settingsRef.current.calm || reducedMotion();
+    if (!quiet) setFlying(true);
     if (result.milestones.length > 0) {
       setCheer(result.milestones[result.milestones.length - 1] ?? null);
-      playEffect("cheer", settingsRef.current);
+      playEffect(quiet ? "chime" : "cheer", settingsRef.current);
     } else {
-      setGoalMet(true);
+      if (!quiet) setGoalMet(true);
       playEffect("chime", settingsRef.current);
     }
+    setWrappingUp((current) => current ?? "time");
   };
 
   useReadingTime(
@@ -276,12 +347,11 @@ export default function App() {
     const learned: StickerInput[] = label ? [{ subject: MATH, kind, label }] : [];
     const result = giveStar(active.id, step, learned, MATH);
     if (result.awarded) {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce) setFlying(true);
+      if (!calm) setFlying(true);
       if (result.milestones.length > 0) {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
-        playEffect("cheer", settings);
-      } else if (result.lessonComplete) playEffect("celebrate", settings);
+        playEffect(calm ? "chime" : "cheer", settings);
+      } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
     }
     setScreen("today");
@@ -301,12 +371,11 @@ export default function App() {
     const learned: StickerInput[] = label ? [{ subject: COLORS, kind: "color", label }] : [];
     const result = giveStar(active.id, step, learned, COLORS);
     if (result.awarded) {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce) setFlying(true);
+      if (!calm) setFlying(true);
       if (result.milestones.length > 0) {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
-        playEffect("cheer", settings);
-      } else if (result.lessonComplete) playEffect("celebrate", settings);
+        playEffect(calm ? "chime" : "cheer", settings);
+      } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
     }
     setScreen("today");
@@ -327,12 +396,11 @@ export default function App() {
     const learned: StickerInput[] = label ? [{ subject: TIME, kind, label }] : [];
     const result = giveStar(active.id, step, learned, TIME);
     if (result.awarded) {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce) setFlying(true);
+      if (!calm) setFlying(true);
       if (result.milestones.length > 0) {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
-        playEffect("cheer", settings);
-      } else if (result.lessonComplete) playEffect("celebrate", settings);
+        playEffect(calm ? "chime" : "cheer", settings);
+      } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
     }
     setScreen("today");
@@ -353,11 +421,10 @@ export default function App() {
     const learned: StickerInput[] = label ? [{ subject: TIME, kind: "coin", label }] : [];
     const result = giveStar(active.id, step, learned, TIME);
     if (result.awarded) {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce) setFlying(true);
+      if (!calm) setFlying(true);
       if (result.milestones.length > 0) {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
-        playEffect("cheer", settings);
+        playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
     setScreen("today");
@@ -383,11 +450,10 @@ export default function App() {
     const learned: StickerInput[] = [{ subject: BUILD, kind: "build", label: activity }];
     const result = giveStar(active.id, activity, learned, BUILD);
     if (result.awarded) {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce) setFlying(true);
+      if (!calm) setFlying(true);
       if (result.milestones.length > 0) {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
-        playEffect("cheer", settings);
+        playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
     setScreen("today");
@@ -407,11 +473,10 @@ export default function App() {
     const learned: StickerInput[] = [{ subject: SCIENCE, kind: "science", label: activity }];
     const result = giveStar(active.id, activity, learned, SCIENCE);
     if (result.awarded) {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce) setFlying(true);
+      if (!calm) setFlying(true);
       if (result.milestones.length > 0) {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
-        playEffect("cheer", settings);
+        playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
     setScreen("today");
@@ -437,18 +502,7 @@ export default function App() {
     showTip("letter", "end", word.letters[0]?.char ?? word.word);
   };
 
-  const inLesson =
-    lessonScreens.includes(screen as LessonStep) ||
-    mathScreens.includes(screen as MathStep) ||
-    colorScreens.includes(screen as ColorStep) ||
-    timeScreens.includes(screen as TimeStep) ||
-    moneyScreens.includes(screen as MoneyGame) ||
-    screen === "money-play" ||
-    screen === "word" ||
-    screen === "my-name" ||
-    screen === "games" ||
-    buildScreens.includes(screen as BuildActivity) ||
-    scienceScreens.includes(screen as ScienceId);
+  const inLesson = isChunkScreen(screen);
   const exploreSection = sectionForScreen(screen);
 
   const finishGame = (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string; ladder?: boolean }) => {
@@ -463,11 +517,10 @@ export default function App() {
       for (const word of words.length > 0 ? words : [`game:${game}`]) noteLadder(active.id, phonicsReady, word);
     }
     if (result.awarded) {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce) setFlying(true);
+      if (!calm) setFlying(true);
       if (result.milestones.length > 0) {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
-        playEffect("cheer", settings);
+        playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
     if (settingsRef.current.showTips) setTip(gameTip(game, "end"));
@@ -482,11 +535,10 @@ export default function App() {
     }
     const result = giveStar(active.id, step, learned);
     if (result.awarded) {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce) setFlying(true);
+      if (!calm) setFlying(true);
       if (result.milestones.length > 0) {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
-        playEffect("cheer", settings);
+        playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
     setScreen("today");
@@ -497,8 +549,24 @@ export default function App() {
     setMode("grownups");
   };
 
+  const takeBreak = () => {
+    setTip(null);
+    setOffer(false);
+    setScreen("break");
+  };
+
+  const extrasLeft = active ? extraAllowed(localStorage, active.id, todayKey(), settingsRef.current.extraChunks) : false;
+
   return (
-    <div className={`app mode-${mode}`} data-mode={mode}>
+    <div
+      className={`app mode-${mode}`}
+      data-mode={mode}
+      data-calm={calm ? "true" : "false"}
+      data-font={settings.readableFont ? "readable" : "default"}
+      data-spacing={settings.letterSpacing ? "wide" : "default"}
+      data-contrast={settings.highContrast ? "high" : "default"}
+      data-extras={extrasTick}
+    >
       {pastel ? <Background /> : null}
       <SilentHint />
       <main className="stage">
@@ -541,6 +609,8 @@ export default function App() {
                   </span>
                 </button>
                 <div className="today-tools">
+                  <HearAgainButton onHear={() => void replayLastCue(settingsRef.current)} />
+                  <BreakButton onBreak={takeBreak} />
                   <GoalRing ms={practiceTotal(active)[todayKey()] ?? 0} goalMinutes={settings.readingGoal} />
                   <p className="star-count" data-stars={active.stars}>
                     <StarIcon />
@@ -562,6 +632,11 @@ export default function App() {
                   onOpen={openStep}
                   onLibrary={() => setScreen("library")}
                   onNest={() => setScreen("nest")}
+                  onSurprise={() => {
+                    primeSpeech();
+                    setTip(null);
+                    setScreen("surprise");
+                  }}
                   onCloset={() => setScreen("closet")}
                   onStickers={() => setScreen("stickers")}
                   goalMinutes={settings.readingGoal}
@@ -599,8 +674,36 @@ export default function App() {
                   showExplore={settings.showExplore}
                 />
               ) : null}
+              {screen === "today" && offer && wrappingUp ? (
+                <WrapUpSheet
+                  name={lessonName(active)}
+                  reason={wrappingUp}
+                  canTakeMore={extrasLeft}
+                  onMore={() => {
+                    noteExtra(localStorage, active.id, todayKey());
+                    setExtrasTick((tick) => tick + 1);
+                    setOffer(false);
+                  }}
+                  onDone={() => {
+                    setOffer(false);
+                    setTip(null);
+                    setMode("start");
+                  }}
+                />
+              ) : null}
+              {screen === "break" ? (
+                <BreakScreen
+                  profile={active}
+                  onReady={() => setScreen("today")}
+                  onSwitch={() => {
+                    setScreen("today");
+                    setMode("start");
+                  }}
+                />
+              ) : null}
               {screen === "library" ? <KidCorner kind="library" onBack={() => setScreen("today")} /> : null}
               {screen === "nest" ? <NestView profile={active} onBack={() => setScreen("today")} /> : null}
+              {screen === "surprise" ? <SurpriseView profile={active} settingsRef={settingsRef} onBack={() => setScreen("today")} /> : null}
               {screen === "closet" ? (
                 <Closet profile={active} onWear={(itemId) => wear(active.id, itemId)} onBack={() => setScreen("today")} />
               ) : null}
@@ -652,12 +755,12 @@ export default function App() {
                 />
               ) : null}
               {screen === "story" || screen === "moment" ? (
-                <PlaceholderStep step={screen} profile={active} onDone={() => finishStep(screen)} />
+                <PlaceholderStep step={screen} profile={active} settingsRef={settingsRef} onDone={() => finishStep(screen)} />
               ) : null}
               {exploreSection ? (
                 <ExploreFrame section={exploreSection} childId={active.id}>
                   {screen === "count" ? (
-                    <CountActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("count", label)} />
+                    <CountActivity lesson={mathLesson} settingsRef={settingsRef} theme={themeToday ?? undefined} onDone={(label) => finishMath("count", label)} />
                   ) : null}
                   {screen === "know" ? (
                     <KnowActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("know", label)} />
