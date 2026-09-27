@@ -51,7 +51,7 @@ test("arrows take the animal home, then a plan can be tried again", async ({ pag
   await expect(board).toHaveAttribute("data-mode", "tap");
   await expect(page.locator("[data-tip=game-bird-start]")).toBeVisible();
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/code_bird.png" });
+    await board.screenshot({ path: "test-results/screenshots/code_bird.png" });
   }
   await board.locator("[data-arrow=left]").click();
   await expect(board.locator("[data-arrow=left]")).toHaveAttribute("data-wiggle", "true");
@@ -82,7 +82,7 @@ test("picture patterns continue AB, then ABB, then ABC", async ({ page }, testIn
   const board = page.locator("[data-game=pattern] .game-board");
   await expect(board).toHaveAttribute("data-rule", "AB");
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/code_pattern.png" });
+    await board.screenshot({ path: "test-results/screenshots/code_pattern.png" });
   }
   await board.locator("[data-choice=yellow]").click();
   await expect(board.locator("[data-choice=yellow]")).toHaveAttribute("data-wiggle", "true");
@@ -102,7 +102,7 @@ test("morning pictures accept a tap and a drag, and a wrong one wiggles", async 
   const board = page.locator("[data-game=morning] .game-board");
   await expect(board).toHaveAttribute("data-order", "wake,brush,eat");
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/code_morning.png" });
+    await board.screenshot({ path: "test-results/screenshots/code_morning.png" });
   }
   await board.locator("[data-card=eat]").click();
   await expect(board.locator("[data-card=eat]")).toHaveAttribute("data-wiggle", "true");
@@ -123,7 +123,7 @@ test("rain grows the flower and sun melts the ice", async ({ page }, testInfo) =
   const board = page.locator("[data-game=garden] .game-board");
   await expect(board).toHaveAttribute("data-cause", "rain");
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/code_garden.png" });
+    await board.screenshot({ path: "test-results/screenshots/code_garden.png" });
   }
   await board.locator("[data-cause=sun]").click();
   await expect(board.locator("[data-cause=sun]")).toHaveAttribute("data-wiggle", "true");
@@ -154,7 +154,7 @@ test("ages 5 to 7 repeat a move and fix one wrong arrow", async ({ page }, testI
   await board.locator("[data-next=round]").click();
   await expect(board).toHaveAttribute("data-mode", "bug");
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/code_bug.png" });
+    await board.screenshot({ path: "test-results/screenshots/code_bug.png" });
   }
   await board.locator("[data-go=run]").click();
   await expect(board).toHaveAttribute("data-again", "true");
