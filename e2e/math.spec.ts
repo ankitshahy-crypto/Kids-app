@@ -143,7 +143,7 @@ test("shape matching finds the prompted shape, then tracing finishes it", async 
   await play.getByRole("button", { name: "Your turn" }).click();
   await scribbleCorner(page, "shape");
   if (testInfo.project.name === "chromium") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/shape_trace_board.png" });
+    await page.screenshot({ path: "test-results/screenshots/shape_trace_board.png" });
   }
   await finishPathTrace(page, "shape");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");

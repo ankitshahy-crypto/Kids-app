@@ -38,7 +38,7 @@ test("tracing a blended word plays the word and keeps the name on this device", 
   await word.getByRole("button", { name: "Your turn" }).click();
   await scribbleCorner(page, "word");
   if (testInfo.project.name === "chromium") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/word_trace_board.png" });
+    await page.screenshot({ path: "test-results/screenshots/word_trace_board.png" });
   }
   await finishPathTrace(page, "word");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
@@ -56,7 +56,7 @@ test("tracing the child's name uses the profile and does not send the name", asy
   await name.getByRole("button", { name: "Your turn" }).click();
   await scribbleCorner(page, "my-name");
   if (testInfo.project.name === "chromium") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/name_trace_board.png" });
+    await page.screenshot({ path: "test-results/screenshots/name_trace_board.png" });
   }
   await finishPathTrace(page, "my-name");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
