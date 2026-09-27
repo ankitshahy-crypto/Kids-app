@@ -1,0 +1,77 @@
+name: Preview and demo
+
+on:
+  push:
+    branches:
+      - cursor/preview-deploy-df76
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main demo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: mainline
+
+      - name: Checkout preview stack
+        uses: actions/checkout@v4
+        with:
+          path: stack
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build the main demo
+        working-directory: mainline
+        env:
+          VITE_BASE: /Kids-app/
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build the preview
+        working-directory: stack
+        env:
+          VITE_BASE: /Kids-app/preview/
+        run: |
+          npm ci
+          npm run build
+
+      - name: Combine into one Pages artifact
+        run: |
+          rm -rf dist
+          mkdir -p dist/preview
+          cp -a mainline/dist/. dist/
+          cp -a stack/dist/. dist/preview/
+          test -f dist/index.html
+          test -f dist/preview/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

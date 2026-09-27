@@ -493,6 +493,9 @@ export default function App() {
 
   return (
     <div className={`app mode-${mode}`} data-mode={mode}>
+      {import.meta.env.BASE_URL.includes("/preview/") ? (
+        <p className="preview-ribbon" data-preview="build">Preview build</p>
+      ) : null}
       {pastel ? <Background /> : null}
       <SilentHint />
       <main className="stage">

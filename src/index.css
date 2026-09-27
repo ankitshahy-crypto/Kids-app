@@ -6962,6 +6962,17 @@ input.is-pressed,
   }
 }
 
+.preview-ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  margin: 0;
+  padding: 6px 12px;
+  text-align: center;
+  font-weight: 800;
+  background: var(--butter, #f8e7b0);
+}
+
 .explore-error {
   margin: 24px auto;
   max-width: 28rem;
