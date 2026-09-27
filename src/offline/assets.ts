@@ -38,6 +38,9 @@ function unshippedAudio(name: string, shipped: ReadonlySet<string>): boolean {
     const index = url.pathname.indexOf(marker);
     if (index === -1) return false;
     const file = decodeURIComponent(url.pathname.slice(index + marker.length));
+    // Source modules such as /src/audio/manager.ts also contain /audio/.
+    // Only public clips (letters/b.mp3) are optional; the app must still cache its code.
+    if (!SHIPPED_AUDIO.test(file)) return false;
     return !shipped.has(file);
   } catch {
     return false;

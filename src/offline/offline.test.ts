@@ -52,11 +52,13 @@ describe("offline bundle", () => {
     vi.stubGlobal("performance", {
       getEntriesByType: () => [
         { name: "http://127.0.0.1:5173/Kids-app/audio/letters/b.mp3" },
+        { name: "http://127.0.0.1:5173/Kids-app/src/audio/manager.ts" },
         { name: "http://127.0.0.1:5173/Kids-app/favicon.svg" },
       ],
     });
     const urls = offlineUrls();
-    expect(urls.some((url) => url.includes("/audio/"))).toBe(false);
+    expect(urls.some((url) => url.includes("/audio/letters/"))).toBe(false);
+    expect(urls.some((url) => url.includes("/src/audio/manager.ts"))).toBe(true);
     expect(urls.some((url) => url.endsWith("/favicon.svg"))).toBe(true);
   });
 
