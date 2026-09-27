@@ -23,6 +23,8 @@ export type Settings = {
   showTips: boolean;
   /** Numbers, colors, games, and later Explore courses. Off leaves reading only. */
   showExplore: boolean;
+  /** Python for the same Build It program. Off until a grown-up turns it on. */
+  showCode: boolean;
 };
 
 /**
@@ -48,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   readingGoal: 10,
   showTips: true,
   showExplore: true,
+  showCode: false,
 };
 
 function clampVolume(value: unknown, fallback: number): number {
@@ -80,6 +83,7 @@ export function loadSettings(): Settings {
       readingGoal: record.readingGoal === 5 || record.readingGoal === 15 ? record.readingGoal : 10,
       showTips: record.showTips !== false,
       showExplore: record.showExplore !== false,
+      showCode: record.showCode === true,
     };
   } catch {
     return DEFAULT_SETTINGS;
