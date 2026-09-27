@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AnimalId } from "../data/animals";
 import { COLORS, colorIntroduced } from "../data/colors";
+import { TIME, timeIntroduced } from "../data/timeMoney";
 import { MATH, mathIntroduced } from "../data/math";
 import { practiceTotal } from "../data/reading";
 import { lettersIntroduced } from "../data/schedule";
@@ -109,6 +110,7 @@ function DeviceRewards({
           resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length;
         const mathResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH);
         const colorResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS);
+        const timeResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, TIME);
         return (
           <div key={profile.id}>
             <WritingLevels
@@ -135,6 +137,13 @@ function DeviceRewards({
               subject={COLORS}
               section="path-colors"
               placedIntroduced={colorResolved.source === "calendar" ? undefined : colorIntroduced(colorResolved.weekIndex)}
+            />
+            <LearningPath
+              profile={profile}
+              name={lessonName(profile)}
+              subject={TIME}
+              section="path-time"
+              placedIntroduced={timeResolved.source === "calendar" ? undefined : timeIntroduced(timeResolved.weekIndex)}
             />
           </div>
         );

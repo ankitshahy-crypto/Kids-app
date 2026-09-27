@@ -6,6 +6,7 @@ export type ExploreFlags = Partial<Record<ExploreSection, boolean>>;
 export const EXPLORE_FLAGS: ExploreFlags = {
   math: true,
   colors: true,
+  time: true,
   games: true,
 };
 

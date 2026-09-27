@@ -132,6 +132,35 @@ export function gameTip(game: string, when: "start" | "end"): ReadTip {
   return { id: `game-${game}-${when}`, text: tip[when] };
 }
 
+const timeTips: Record<string, { start: string; end: string }> = {
+  day: {
+    start: "Talk about morning, afternoon, and night. Later, ask how many hours until something they know.",
+    end: "Ask: what do we do at that time of day?",
+  },
+  routine: {
+    start: "Tap the next part of the day. A wrong tap just wiggles.",
+    end: "Ask: what do we do after school?",
+  },
+  clock: {
+    start: "Move the hands, or use Next hour and Next minute. The clock starts at 12.",
+    end: "Ask: where is the hour hand?",
+  },
+  coins: {
+    start: "Name the coin or bill out loud. The pictures are our own drawings, not real money.",
+    end: "Ask: which coin is the biggest?",
+  },
+  shop: {
+    start: "Their animal buys a snack. Early on, one coin is enough. Later, count the change.",
+    end: "Ask: what else could we buy?",
+  },
+};
+
+/** A short grown-up line for a time and money activity. */
+export function timeTip(step: string, when: "start" | "end"): ReadTip {
+  const tip = timeTips[step] ?? timeTips.day;
+  return { id: `time-${step}-${when}`, text: tip[when] };
+}
+
 /** A short grown-up line for a colors activity. */
 export function colorTip(step: string, when: "start" | "end"): ReadTip {
   const tip = colorTips[step] ?? colorTips.name;

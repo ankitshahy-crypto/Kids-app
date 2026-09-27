@@ -18,6 +18,7 @@ Everything visual or audible in LittleNest Learning is listed here. There are no
 | LittleNest Words icon | `public/icons/module-words.png` | Approved Words mark (A block and picture book). Inner field recolored from mint to pastel pink. Cropped from `logos/words.png` | Original. |
 | LittleNest Numbers icon | `public/icons/module-numbers.png` | Approved Numbers mark (eggs labeled 1 2 3) on a blue field. Cropped from `logos/numbers.png` | Original. |
 | LittleNest Colors icon | `public/icons/module-colors.png` | Approved Colors mark (rainbow egg, brush, paint splashes) on a yellow field. Cropped from `logos/colors.png` | Original. |
+| LittleNest Time & Money icon | `public/icons/module-time.svg` | Original nest-style mark: mint and lavender rounded square, an egg clock face, and a plain coin. Not a photograph and not a currency engraving. | Original. No third-party artwork. |
 | Path and classroom marks | `src/components/sceneArt.tsx` | Original pencil, book, shapes, toy box, egg nest, hills, star jar, lock, and tab marks | Original. No third-party artwork. |
 | Approved screen references | `docs/mockups/` | Layout references supplied for this project. Not drawn into the app. | Reference only. Not runtime artwork. |
 | Browser tab icon | `public/favicon.svg` | The LittleNest app icon | Original. |
