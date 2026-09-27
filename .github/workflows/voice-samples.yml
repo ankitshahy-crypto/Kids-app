@@ -87,7 +87,9 @@ jobs:
         continue-on-error: true
         run: |
           pip install -q faster-whisper
-          python3 scripts/hear-clips.py samples/*/ > heard.md
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q transformers
+          python3 scripts/hear-clips.py --phonemes samples/*/ > heard.md
           cat heard.md
 
       - name: Push the voice-samples branch
