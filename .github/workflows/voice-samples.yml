@@ -17,6 +17,9 @@ on:
       speed:
         description: "Speaking rate for the Chirp 3 HD voices (1 is normal)"
         default: "0.95"
+      tries:
+        description: "Experiments, one per line: label=text or label=<speak>ssml</speak>, made in the first voice listed instead of the samples"
+        default: ""
 
 permissions:
   contents: write
@@ -53,9 +56,16 @@ jobs:
           VOICES: ${{ inputs.voices }}
           PROMPT: ${{ inputs.prompt }}
           SPEED: ${{ inputs.speed }}
+          TRIES: ${{ inputs.tries }}
         run: |
           args=(--sample "$VOICES" --sample-dir samples --speed "$SPEED" --force)
           [ -n "$PROMPT" ] && args+=(--prompt "$PROMPT")
+          if [ -n "$TRIES" ]; then
+            printf '%s\n' "$TRIES" > tries.txt
+            first="${VOICES%%,*}"
+            model=chirp3; [ "${first%%:*}" != "$first" ] && model="${first%%:*}"
+            args=(--voice "${first#*:}" --model "$model" --try tries.txt --sample-dir samples --speed "$SPEED")
+          fi
           # Errors become annotations, which can be read without the full log.
           if ! node scripts/generate-audio.mjs "${args[@]}" 2>&1 | tee make.log; then
             tail -n 5 make.log | sed 's/^/::error::/'
