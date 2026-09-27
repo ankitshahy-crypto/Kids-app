@@ -158,7 +158,7 @@ Every invite has a short code and a QR code drawn in the app. Nothing is sent to
 
 Codes last 14 days. Resend or New code starts another 14 days. Five wrong tries in 15 minutes makes the app wait. The rules also refuse an attempts counter above 5.
 
-The QR code uses a normal web link, such as `https://your-site/Kids-app/?parentCode=NEST-18`. The same path can become an iOS universal link later: add the domain under Associated Domains (`applinks:your-site`) and host `apple-app-site-association` for `com.triagedesk.littlenest`. That file is not in this version.
+A class QR code uses an https link such as `https://your-site/Kids-app/?classCode=BUNNY-42&open=app`. On iPhone that link opens the LittleNest app first when `public/.well-known/apple-app-site-association` is hosted for `com.triagedesk.littlenest`. The website is the fallback. See `docs/universal-links.md`. Replace `TEAMID` in that file before shipping. `assetlinks.json` is for a later Android app and is not in this version.
 
 Sign-in methods go through one provider list. Apple, Google, and email are stage 1. Clever, ClassLink, Microsoft, and district SAML are named for later and do not sign anyone in. Adding stage 2 means a new adapter in that list. This version does not build it.
 

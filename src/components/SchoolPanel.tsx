@@ -7,6 +7,7 @@ import { lessonName } from "../data/profiles";
 import { animals } from "../data/animals";
 import { qrMatrix } from "../auth/qr";
 import type { RosterCommand } from "../auth/useGrownupAccount";
+import { classQrLink } from "../auth/nativeOpen";
 import {
   adminTotals,
   codeLink,
@@ -404,7 +405,7 @@ function ClassCard({
 }) {
   const [childName, setChildName] = useState("");
   const [animal, setAnimal] = useState("fox");
-  const link = codeLink(window.location.href, "class", room.code);
+  const link = classQrLink(window.location.href, room.code);
   const codeState = inviteState({ expiresAt: room.codeExpiresAt });
   return (
     <article className="school-card" data-class-code={room.code} data-code-state={codeState}>
@@ -414,6 +415,7 @@ function ClassCard({
         <span className="school-status">{stateLabel(codeState)}</span>
       </p>
       <QrMark text={link} label={`QR code ${room.code}`} />
+      <p className="adult-copy" data-open="app-first">On iPhone this opens the LittleNest app. Otherwise this page opens.</p>
       <p className="school-link">{link}</p>
       <button type="button" className="account-email-new" onClick={() => onRoster({ type: "regen-class", classId: room.id })}>
         New class code

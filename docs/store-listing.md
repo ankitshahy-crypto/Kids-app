@@ -6,6 +6,8 @@ Store and website copy. The in-app About screen reads the same words from `src/c
 
 **Subtitle:** Read, math, science & coding
 
+**Kids Category age band:** 5 and under
+
 **Tagline:** Made by a parent, for parents
 
 **Credit:** LittleNest Learning by TriageDesk AI LLC

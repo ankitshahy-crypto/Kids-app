@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.triagedesk.littlenest",
+        "paths": ["/Kids-app/", "/Kids-app/*"]
+      }
+    ]
+  }
+}

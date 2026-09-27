@@ -62,6 +62,7 @@ import { resolvePlacement } from "./data/placement";
 import { blendList, phonicsOpen, wordsToTrace } from "./data/ladder";
 import { lettersIntroduced } from "./data/schedule";
 import { nameToTrace } from "./data/tracePractice";
+import { nativeJoinUrl, shouldOpenNative } from "./auth/nativeOpen";
 import { useGrownupAccount } from "./auth/useGrownupAccount";
 import { usePlacement } from "./hooks/usePlacement";
 import { useProfiles } from "./hooks/useProfiles";
@@ -103,6 +104,15 @@ export default function App() {
       if (window.speechSynthesis?.paused) window.speechSynthesis.resume();
     }, 4000);
     return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!shouldOpenNative(navigator.userAgent, window.location.search)) return;
+    const code = new URLSearchParams(window.location.search).get("classCode") ?? "";
+    const key = `littlenest-native-tried:${code}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    window.location.assign(nativeJoinUrl("class", code));
   }, []);
 
   useEffect(() => {
