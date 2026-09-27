@@ -1,4 +1,4 @@
-import { PROFILES_KEY, readStored, stashCorrupt, writeStored, type KeyValueStore } from "../storage";
+import { PROFILES_KEY, corruptKey, readStored, stashCorrupt, writeStored, type KeyValueStore } from "../storage";
 import { animalById, isAnimalId, type AnimalId } from "./animals";
 import { READING, isSubjectKey, readingSteps, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
@@ -228,10 +228,6 @@ export function createChild(input: { name: string; ageRange: AgeRange; animal: A
   };
 }
 
-function isStoredDay(value: unknown): boolean {
-  return normalizeDay(value) !== null;
-}
-
 function isSticker(value: unknown): value is Sticker {
   if (!value || typeof value !== "object") return false;
   const sticker = value as Partial<Sticker>;
@@ -361,8 +357,8 @@ function isProfile(value: unknown): value is ChildProfile {
   if (typeof profile.createdAt !== "string" || typeof profile.stars !== "number") return false;
   if (!isAgeRange(String(profile.ageRange)) || !isAnimalId(String(profile.animal))) return false;
   if (profile.stars < 0 || !Number.isFinite(profile.stars)) return false;
-  if (!profile.days || typeof profile.days !== "object") return false;
-  return Object.values(profile.days).every(isStoredDay);
+  if (!profile.days || typeof profile.days !== "object" || Array.isArray(profile.days)) return false;
+  return true;
 }
 
 const emptyStore = (): ProfileStore => ({ activeId: null, profiles: [] });
@@ -389,29 +385,90 @@ export function loadStore(storage: KeyValueStore = localStorage): ProfileStore {
   } catch {
     return emptyStore();
   }
-  if (!raw) return emptyStore();
+  if (!raw) return adoptCorruptStash(storage, emptyStore());
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
     stashCorrupt(storage, STORAGE_KEY, raw);
-    return emptyStore();
+    return adoptCorruptStash(storage, emptyStore());
   }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     stashCorrupt(storage, STORAGE_KEY, raw);
-    return emptyStore();
+    return adoptCorruptStash(storage, emptyStore());
   }
   const store = parsed as Partial<ProfileStore>;
   if (!Array.isArray(store.profiles)) {
     stashCorrupt(storage, STORAGE_KEY, raw);
-    return emptyStore();
+    return adoptCorruptStash(storage, emptyStore());
   }
   if (store.profiles.some((profile) => !isProfile(profile))) {
     stashCorrupt(storage, STORAGE_KEY, raw);
   }
   const profiles = store.profiles.filter(isProfile).map(withRewards);
   const activeId = profiles.some((profile) => profile.id === store.activeId) ? (store.activeId ?? null) : null;
+  return adoptCorruptStash(storage, { activeId, profiles });
+}
+
+const CORRUPT_NOTICE = "A saved profile on this device could not be read.";
+
+/** Profiles this version understands, or null when the stash is still unreadable. */
+function parseCurrentStore(raw: string): ProfileStore | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  const store = parsed as Partial<ProfileStore>;
+  if (!Array.isArray(store.profiles) || store.profiles.some((profile) => !isProfile(profile))) return null;
+  const profiles = store.profiles.map(withRewards);
+  const activeId = profiles.some((profile) => profile.id === store.activeId) ? (store.activeId ?? null) : null;
   return { activeId, profiles };
+}
+
+/**
+ * If the corrupt copy is readable in this version, fold its children back in
+ * and delete the copy. Anything this version still cannot read stays put.
+ */
+function adoptCorruptStash(storage: KeyValueStore, loaded: ProfileStore): ProfileStore {
+  let raw: string | null = null;
+  try {
+    raw = storage.getItem(corruptKey(STORAGE_KEY));
+  } catch {
+    return loaded;
+  }
+  if (!raw) return loaded;
+  const recovered = parseCurrentStore(raw);
+  if (!recovered) return loaded;
+  const seen = new Set(loaded.profiles.map((profile) => profile.id));
+  const extra = recovered.profiles.filter((profile) => !seen.has(profile.id));
+  const merged: ProfileStore =
+    extra.length === 0
+      ? loaded
+      : {
+          activeId: loaded.activeId ?? (extra.some((profile) => profile.id === recovered.activeId) ? recovered.activeId : extra[0]?.id ?? null),
+          profiles: [...loaded.profiles, ...extra],
+        };
+  try {
+    storage.removeItem?.(corruptKey(STORAGE_KEY));
+  } catch {
+    // The merged children are still returned below.
+  }
+  if (extra.length > 0) saveStore(merged, storage);
+  return merged;
+}
+
+/** One line for Grown-ups when the corrupt copy still cannot be read. */
+export function corruptProfileNotice(storage: KeyValueStore = localStorage): string | null {
+  try {
+    const raw = storage.getItem(corruptKey(STORAGE_KEY));
+    if (!raw || parseCurrentStore(raw)) return null;
+    return CORRUPT_NOTICE;
+  } catch {
+    return null;
+  }
 }
 
 export function saveStore(store: ProfileStore, storage: KeyValueStore = localStorage): void {

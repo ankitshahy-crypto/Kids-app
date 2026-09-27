@@ -7,7 +7,9 @@ import { shareWordNest, type ShareResult } from "../share";
 import type { AnimalId } from "../data/animals";
 import type { PlacementDocument } from "../data/placement";
 import { lessonName, type AgeRange, type ChildProfile } from "../data/profiles";
+import { corruptProfileNotice } from "../data/profiles";
 import type { Settings } from "../settings";
+import { storageQuotaNotice } from "../storage";
 import { AboutWordNest } from "./AboutWordNest";
 import { ChildForm } from "./ChildForm";
 import { Chevron } from "./icons";
@@ -111,6 +113,8 @@ export function GrownupsMenu({
   const [adding, setAdding] = useState(profiles.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = profiles.find((profile) => profile.id === editingId) ?? null;
+  const quotaNotice = storageQuotaNotice();
+  const profileNotice = corruptProfileNotice();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -143,6 +147,8 @@ export function GrownupsMenu({
           <header className="adult-head">
             <h1>Grown-ups</h1>
             <p className="adult-note">Help, settings, and profiles. A child stays on the lesson path.</p>
+            {quotaNotice ? <p className="adult-copy" data-notice="quota">{quotaNotice}</p> : null}
+            {profileNotice ? <p className="adult-copy" data-notice="profiles">{profileNotice}</p> : null}
           </header>
           <ul className="grownups-rows">
             {rows.map((row) => (

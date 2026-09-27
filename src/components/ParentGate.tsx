@@ -13,7 +13,8 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
   const [missed, setMissed] = useState(false);
   const [passed, setPassed] = useState(false);
   const [attempts, setAttempts] = useState<PinAttempts>(() => readPinAttempts());
-  const locked = mode === "pin" && pinLocked(attempts);
+  const [answer, setAnswer] = useState("");
+  const locked = pinLocked(attempts);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -35,16 +36,23 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
     if (value === check.answer) {
       if (mode === "recover") {
         setMissed(false);
+        setAnswer("");
         setDigits("");
         setMode("newpin");
         return;
       }
+      clearPinAttempts();
+      setAttempts(readPinAttempts());
       setPassed(true);
       onPass();
       return;
     }
+    const next = noteWrongPin();
+    setAttempts(next);
     setMissed(true);
+    if (pinLocked(next)) return;
     setCheck(mode === "recover" ? createPinRecovery() : createGrownupCheck());
+    setAnswer("");
   };
 
   const submitPin = () => {
@@ -86,14 +94,45 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
         <h2 id={titleId}>{title}</h2>
         {locked ? <p className="gate-miss">Wait a moment, then try again.</p> : null}
         {missed && !locked ? <p className="gate-miss">Try another one.</p> : null}
-        {mode === "math" || mode === "recover" ? (
+        {mode === "math" ? (
           <div className="gate-choices">
             {check.choices.map((choice) => (
-              <button key={`${check.prompt}-${choice}`} type="button" className="gate-choice" onClick={() => choose(choice)}>
+              <button
+                key={`${check.prompt}-${choice}`}
+                type="button"
+                className="gate-choice"
+                disabled={locked}
+                onClick={() => choose(choice)}
+              >
                 {choice}
               </button>
             ))}
           </div>
+        ) : mode === "recover" ? (
+          <form
+            className="pin-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!answer) return;
+              choose(Number(answer));
+            }}
+          >
+            <input
+              className="name-input"
+              inputMode="numeric"
+              autoComplete="off"
+              value={answer}
+              aria-label="Answer"
+              disabled={locked}
+              onChange={(event) => {
+                setAnswer(event.target.value.replace(/\D/g, "").slice(0, 6));
+                setMissed(false);
+              }}
+            />
+            <button type="submit" className="save-child" disabled={locked || answer.length === 0}>
+              Check
+            </button>
+          </form>
         ) : (
           <form
             className="pin-form"
@@ -129,6 +168,7 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
               if (locked) return;
               setCheck(createPinRecovery());
               setMissed(false);
+              setAnswer("");
               setMode("recover");
             }}
           >

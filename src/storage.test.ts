@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROFILES_KEY, readStored, writeStored } from "./storage";
+import { PROFILES_KEY, readStored, resetStorageQuotaNotice, storageQuotaNotice, writeStored } from "./storage";
 
 function memory() {
   const data = new Map<string, string>();
@@ -32,5 +32,21 @@ describe("stored progress", () => {
       },
     };
     expect(() => writeStored(storage, PROFILES_KEY, "{\"activeId\":null}")).not.toThrow();
+  });
+
+  it("surfaces a full-device error once", () => {
+    resetStorageQuotaNotice();
+    const storage = {
+      getItem: () => null,
+      setItem: () => {
+        const error = new Error("full");
+        error.name = "QuotaExceededError";
+        throw error;
+      },
+    };
+    writeStored(storage, PROFILES_KEY, "a");
+    writeStored(storage, PROFILES_KEY, "b");
+    expect(storageQuotaNotice()).toBe("This device is full, so a change could not be saved.");
+    resetStorageQuotaNotice();
   });
 });

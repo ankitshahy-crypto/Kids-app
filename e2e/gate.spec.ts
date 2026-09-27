@@ -75,6 +75,20 @@ test("the right answer opens Parent and Teacher", async ({ page }) => {
   await expect(page.locator("[data-screen='teacher']")).toBeVisible();
 });
 
+test("five wrong answers lock the math check, and a reload keeps the lock", async ({ page }) => {
+  await openGate(page, "Parent");
+  for (let attempt = 0; attempt < 5; attempt += 1) await choose(page, false);
+  await expect(page.getByText("Wait a moment, then try again.")).toBeVisible();
+  await expect(page.locator("[data-locked=true]")).toBeVisible();
+  await expect(page.locator(".gate-choice").first()).toBeDisabled();
+  const saved = await page.evaluate(() => localStorage.getItem("littlenest-grownup-pin-attempts-v1"));
+  expect(saved).toBeTruthy();
+  await page.reload();
+  await openGate(page, "Parent");
+  await expect(page.locator("[data-locked=true]")).toBeVisible();
+  await expect(page.locator("[data-screen='parent']")).toHaveCount(0);
+});
+
 test("Enter on Parent opens the check", async ({ page }) => {
   await page.getByRole("button", { name: "Parent", exact: true }).focus();
   await page.keyboard.press("Enter");

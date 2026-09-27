@@ -60,17 +60,14 @@ export function createGrownupCheck(random: () => number = Math.random): GrownupC
   };
 }
 
-/** Forgot PIN. Two-digit multiplication, then the grown-up picks a new PIN. */
+/** Forgot PIN. Two-digit multiplication, typed in. Then the grown-up picks a new PIN. */
 export function createPinRecovery(random: () => number = Math.random): GrownupCheck {
   const left = 12 + index(random, 18);
   const right = 12 + index(random, 18);
-  const answer = left * right;
-  const low = Math.max(100, answer - 40);
-  const high = answer + 40;
   return {
     kind: "recover",
     prompt: `${left} × ${right}`,
-    choices: shuffle([answer, ...distractors(answer, random, low, high)], random),
-    answer,
+    choices: [],
+    answer: left * right,
   };
 }

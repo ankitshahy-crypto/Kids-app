@@ -1,7 +1,26 @@
 export type KeyValueStore = {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem?(key: string): void;
 };
+
+const QUOTA_NOTICE = "This device is full, so a change could not be saved.";
+let quotaNotice: string | null = null;
+
+function isQuotaError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const name = (error as { name?: string }).name;
+  return name === "QuotaExceededError" || name === "NS_ERROR_DOM_QUOTA_REACHED";
+}
+
+/** The first quota failure, shown once in Grown-ups. Later failures stay quiet. */
+export function storageQuotaNotice(): string | null {
+  return quotaNotice;
+}
+
+export function resetStorageQuotaNotice(): void {
+  quotaNotice = null;
+}
 
 /**
  * New keys, with the previous `kids-app-*` copies still read and written.
@@ -60,7 +79,8 @@ export function stashCorrupt(storage: KeyValueStore, key: string, raw: string): 
 export function writeStored(storage: KeyValueStore, key: string, value: string): void {
   try {
     storage.setItem(key, value);
-  } catch {
+  } catch (error) {
+    if (!quotaNotice && isQuotaError(error)) quotaNotice = QUOTA_NOTICE;
     return;
   }
   const legacy = LEGACY_KEYS[key];
