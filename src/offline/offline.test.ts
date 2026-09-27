@@ -43,7 +43,11 @@ describe("offline bundle", () => {
   });
 
   it("prefetches only audio files listed as shipped", () => {
-    expect(shippedAudioFiles()).toEqual([]);
+    const shipped = shippedAudioFiles();
+    expect(shipped.length).toBeGreaterThan(0);
+    expect(shipped).toContain("letters/m.mp3");
+    expect(shipped).toContain("words/cat.mp3");
+    for (const file of shipped) expect(file).toMatch(/^[a-z0-9/-]+\.mp3$/);
     expect(shippedAudioFiles(["letters/b.mp3", "../secret.mp3", "notes.txt", "words/cat.mp3"])).toEqual([
       "letters/b.mp3",
       "words/cat.mp3",
