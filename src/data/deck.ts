@@ -13,8 +13,9 @@ export type LetterTile = {
   audioSrc?: string;
   /** When set, this tile is a word in a short sentence, not a letter sound. */
   wordId?: string;
-  /** When set, the device voice says this phrase and no recording is used. */
+  /** A themed letter phrase: the manifest letter id to play, and what the device voice says without it. */
   say?: string;
+  sayId?: string;
 };
 
 export type DeckWord = {

@@ -1,0 +1,79 @@
+name: Voice clips
+
+# Makes the app's spoken clips with Kokoro, an open-source voice model, on
+# GitHub's machines, then opens a pull request with the MP3s. Nothing runs at
+# app time; the app only plays the files. Run it from the Actions tab.
+
+on:
+  workflow_dispatch:
+    inputs:
+      voice:
+        description: "Kokoro voice (af_heart, af_bella, af_nicole, af_sarah, af_sky)"
+        default: af_heart
+      speed:
+        description: "Speaking speed (1 is normal)"
+        default: "0.92"
+      letter_style:
+        description: "Letter phrases say the sound (buh, as in ball) or the name (bee, as in ball)"
+        default: sound
+      force:
+        description: "Remake clips that already exist (true/false)"
+        default: "false"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg espeak-ng
+
+      - name: Install Kokoro
+        run: pip install --quiet kokoro soundfile numpy
+
+      - name: Make clips
+        run: |
+          python3 scripts/generate-audio-kokoro.py \
+            --voice "${{ inputs.voice }}" \
+            --speed "${{ inputs.speed }}" \
+            --letter-style "${{ inputs.letter_style }}" \
+            $([ "${{ inputs.force }}" = "true" ] && echo --force)
+
+      - name: Summary
+        run: |
+          echo "### Voice clips" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Files: $(find public/audio -name '*.mp3' | wc -l)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Size: $(du -sh public/audio | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: voice/kokoro-${{ inputs.voice }}
+          title: "Voice clips: ${{ inputs.voice }}, letters as ${{ inputs.letter_style }}"
+          commit-message: |
+            Add spoken clips made with Kokoro (${{ inputs.voice }}, letters as ${{ inputs.letter_style }}).
+
+            Generated offline by scripts/generate-audio-kokoro.py. The app plays
+            these files and never calls a voice service.
+          body: |
+            Spoken clips for every line in `src/data/audioManifest.json`, made with the open-source Kokoro voice model (Apache 2.0) on GitHub's machines.
+
+            - Voice: `${{ inputs.voice }}`, speed `${{ inputs.speed }}`, letter phrases as `${{ inputs.letter_style }}`
+            - The app plays these files offline. It never contacts a voice service.
+            - `src/data/audioAvailable.json` lists every file so the app knows what it has.
+
+            Listen on a phone before merging: a few letter phrases, a few words, a prompt. If the letter sounds come out wrong, rerun the workflow with letter style `name`.
+          labels: audio
+          delete-branch: true
