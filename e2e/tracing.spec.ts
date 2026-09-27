@@ -50,10 +50,10 @@ test("tracing the letter path completes and a far stroke does not", async ({ pag
   await expect(root).toHaveAttribute("data-stroke-done", "false");
 
   if (testInfo.project.name === "chromium") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/letter_trace_board.png" });
+    await page.screenshot({ path: "test-results/screenshots/letter_trace_board.png" });
   }
   if (testInfo.project.name === "iphone") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/letter_trace_iphone.png" });
+    await page.screenshot({ path: "test-results/screenshots/letter_trace_iphone.png" });
   }
   await finishLetterTracing(page);
   await expect(page.locator("[data-screen=today]")).toBeVisible();
@@ -97,7 +97,7 @@ test("upper and lower letters can be matched by tap or drag", async ({ page }, t
   await expect(other).toHaveAttribute("data-paired", "true");
 
   if (testInfo.project.name === "chromium") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/letter_trace_match.png" });
+    await page.screenshot({ path: "test-results/screenshots/letter_trace_match.png" });
   }
 });
 
@@ -115,5 +115,5 @@ test("tracing fits an iPad in both orientations", async ({ page }, testInfo) => 
   await expect(board).toBeVisible();
   const landscape = await board.boundingBox();
   expect(landscape && landscape.width).toBeGreaterThan(200);
-  await page.screenshot({ path: "/opt/cursor/artifacts/letter_trace_ipad_landscape.png" });
+  await page.screenshot({ path: "test-results/screenshots/letter_trace_ipad_landscape.png" });
 });
