@@ -22,16 +22,35 @@ import { StarFlight } from "./components/StarFlight";
 import { StartScreen } from "./components/StartScreen";
 import { StickerBook } from "./components/StickerBook";
 import { TeacherView } from "./components/TeacherView";
-import { Games, type GameId } from "./components/Games";
-import { EngineerActivity } from "./components/NestBuild";
-import { ScienceActivity } from "./components/SciencePlay";
+import type { GameId } from "./components/Games";
 import { TodayPath } from "./components/TodayPath";
 import { colorTip, engineerTip, gameTip, mathTip, readTip, scienceTip, timeTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
-import { MixActivity, NameActivity, PaintActivity } from "./components/ColorPlay";
-import { AddActivity, CountActivity, KnowActivity, MoreActivity, ShapeActivity, TraceActivity } from "./components/MathPlay";
-import { CardsActivity, ChooseActivity, JarsActivity, LemonadeActivity, MoneyBoard, NeedsActivity } from "./components/MoneyPlay";
-import { ClockActivity, CoinsActivity, DayActivity, RoutineActivity, ShopActivity } from "./components/TimePlay";
+import {
+  AddActivity,
+  CardsActivity,
+  ChooseActivity,
+  ClockActivity,
+  CoinsActivity,
+  CountActivity,
+  DayActivity,
+  EngineerActivity,
+  Games,
+  JarsActivity,
+  KnowActivity,
+  LemonadeActivity,
+  MixActivity,
+  MoneyBoard,
+  MoreActivity,
+  NameActivity,
+  NeedsActivity,
+  PaintActivity,
+  RoutineActivity,
+  ScienceActivity,
+  ShapeActivity,
+  ShopActivity,
+  TraceActivity,
+} from "./explore/lazy";
 import { COLORS, colorFill, colorLessonForChild, type ColorStep } from "./data/colors";
 import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { TIME, lessonForChild as timeLessonForChild, type MoneyGame, type TimeStep } from "./data/timeMoney";
@@ -50,6 +69,7 @@ import { useReadingTime } from "./hooks/useReadingTime";
 import { useSettings } from "./hooks/useSettings";
 import { ExploreFrame } from "./explore/frame";
 import { sectionForScreen } from "./explore/sections";
+import { exploreSectionsShown } from "./auth/school";
 import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
@@ -549,6 +569,7 @@ export default function App() {
                     setScreen("word");
                     setTip(null);
                   }}
+                  exploreOn={settings.showExplore && exploreSectionsShown(account.desk)}
                   onTraceName={() => {
                     primeSpeech();
                     setScreen("my-name");

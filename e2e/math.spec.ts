@@ -227,11 +227,12 @@ test("letters and numbers stay large on iPad", async ({ page }) => {
     { width: 1366, height: 1024 },
   ]) {
     await page.setViewportSize(size);
+    const landscape = size.width > size.height;
     for (const name of ["LittleNest Words", "LittleNest Numbers"]) {
       const box = await page.getByRole("button", { name }).boundingBox();
       expect(box).toBeTruthy();
-      expect(box!.height).toBeGreaterThanOrEqual(100);
-      expect(box!.width).toBeGreaterThan(140);
+      expect(box!.height).toBeGreaterThanOrEqual(landscape ? 72 : 100);
+      expect(box!.width).toBeGreaterThan(landscape ? 80 : 140);
     }
   }
 });

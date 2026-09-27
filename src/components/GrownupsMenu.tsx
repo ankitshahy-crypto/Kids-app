@@ -258,6 +258,7 @@ export function GrownupsMenu({
           onJoin={(code, consent, childIds) => account.joinClass(code, consent, childIds)}
           onRoster={(action) => account.roster(action)}
           onAcceptInvite={(code) => account.acceptInvite(code)}
+          onShowExplore={(on) => account.setShowExplore(on)}
           onSync={(on) => void account.setSync(on)}
           onDeleteData={() => void account.deleteData()}
           onDeleteAccount={() => void account.deleteAccount()}

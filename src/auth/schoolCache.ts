@@ -26,6 +26,7 @@ export function readSchoolCache(storage: CacheStore = localStorage): SchoolDesk 
       invites: parsed.invites,
       classes: parsed.classes,
       deviceLink: parsed.deviceLink ?? null,
+      ...(parsed.showExplore === false ? { showExplore: false } : {}),
     };
   } catch {
     return null;

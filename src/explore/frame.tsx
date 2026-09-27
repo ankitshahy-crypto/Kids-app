@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { Suspense, useEffect, type ReactNode } from "react";
 import { ExploreBoundary } from "./boundary";
 import { writeSection } from "./sectionStore";
 import type { ExploreSection } from "./sections";
@@ -30,9 +30,11 @@ export function ExploreFrame({
   if (!section) return children;
   return (
     <ExploreBoundary section={section}>
-      <Remember section={section} childId={childId} />
-      <CrashProbe section={section} />
-      {children}
+      <Suspense fallback={<p className="adult-copy" data-explore-loading={section}>Loading</p>}>
+        <Remember section={section} childId={childId} />
+        <CrashProbe section={section} />
+        {children}
+      </Suspense>
     </ExploreBoundary>
   );
 }

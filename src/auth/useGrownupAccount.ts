@@ -38,6 +38,7 @@ import {
   type CodeAttempts,
   saveDeviceLink,
   saveSchoolRole,
+  setExploreVisibility,
   teacherPreviewDesk,
   type SchoolDesk,
   type SchoolRole,
@@ -440,6 +441,10 @@ export function useGrownupAccount({
       } else {
         applySchool(moveChildDesk(desk, { adminUid: uid, childId: action.childId, fromClassId: action.fromClassId, toClassId: action.toClassId }));
       }
+    },
+    setShowExplore(on: boolean) {
+      if (!user) return;
+      applySchool(setExploreVisibility(desk, on));
     },
     async setSync(next: boolean) {
       setSyncState(next);

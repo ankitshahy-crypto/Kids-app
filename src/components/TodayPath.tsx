@@ -17,6 +17,7 @@ import { Hero } from "./Hero";
 import { StarIcon } from "./icons";
 import { EngineerBoard } from "./NestBuild";
 import { ScienceBoard } from "./SciencePlay";
+import { sectionVisible } from "../explore/flags";
 import { ModuleMark } from "./ModuleMark";
 import { BookMark, EggNest, Hills, PencilMark, ShapesMark } from "./sceneArt";
 
@@ -55,6 +56,7 @@ export function TodayPath({
   canTraceName,
   onTraceWord,
   onTraceName,
+  exploreOn,
 }: {
   profile: ChildProfile;
   letters: string[];
@@ -83,7 +85,10 @@ export function TodayPath({
   canTraceName: boolean;
   onTraceWord: () => void;
   onTraceName: () => void;
+  exploreOn: boolean;
 }) {
+  const showExplore = (section: "math" | "colors" | "time" | "money" | "build" | "science" | "games") =>
+    exploreOn && sectionVisible(section);
   const now = new Date();
   const review = isReviewDay(now);
   const done = dayProgress(profile, now);
@@ -199,10 +204,11 @@ export function TodayPath({
         </div>
       ) : null}
 
+      {showExplore("math") || showExplore("colors") || showExplore("time") || showExplore("build") || showExplore("science") || showExplore("games") ? (
       <section className="explore-block" aria-label="Explore" data-explore="sections">
         <h2 className="explore-title">Explore</h2>
         <div className="explore-grid">
-        <button
+        {showExplore("math") ? <button
           type="button"
           className={`course-button${course === "math" ? " is-selected" : ""}`}
           data-course="math"
@@ -218,8 +224,8 @@ export function TodayPath({
             <span className="course-brand">LittleNest</span>
             <span>Numbers</span>
           </span>
-        </button>
-        <button
+        </button> : null}
+        {showExplore("colors") ? <button
           type="button"
           className={`course-button${course === "colors" ? " is-selected" : ""}`}
           data-course="colors"
@@ -235,8 +241,8 @@ export function TodayPath({
             <span className="course-brand">LittleNest</span>
             <span>Colors</span>
           </span>
-        </button>
-        <button
+        </button> : null}
+        {showExplore("time") ? <button
           type="button"
           className={`course-button${course === "time" ? " is-selected" : ""}`}
           data-course="time"
@@ -252,8 +258,8 @@ export function TodayPath({
             <span className="course-brand">LittleNest</span>
             <span>Time & Money</span>
           </span>
-        </button>
-        <button
+        </button> : null}
+        {showExplore("build") ? <button
           type="button"
           className={`course-button${course === "build" ? " is-selected" : ""}`}
           data-course="build"
@@ -269,8 +275,8 @@ export function TodayPath({
             <span className="course-brand">LittleNest</span>
             <span>Build</span>
           </span>
-        </button>
-        <button
+        </button> : null}
+        {showExplore("science") ? <button
           type="button"
           className={`course-button${course === "science" ? " is-selected" : ""}`}
           data-course="science"
@@ -286,8 +292,8 @@ export function TodayPath({
             <span className="course-brand">LittleNest</span>
             <span>Science</span>
           </span>
-        </button>
-        <button type="button" className="course-button" data-course="games" aria-label="Games" onClick={onGames}>
+        </button> : null}
+        {showExplore("games") ? <button type="button" className="course-button" data-course="games" aria-label="Games" onClick={onGames}>
           <span className="try-tag">New - try it!</span>
           <span className="course-art" aria-hidden="true">
             <svg className="games-mark" viewBox="0 0 64 64">
@@ -300,13 +306,14 @@ export function TodayPath({
             <span className="course-brand">LittleNest</span>
             <span>Games</span>
           </span>
-        </button>
+        </button> : null}
         </div>
       </section>
+      ) : null}
 
       {course === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
       {course === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
-      {course === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
+      {course === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={showExplore("money") ? onMoneyPlay : undefined} /> : null}
       {course === "build" ? (
         <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} />
       ) : null}

@@ -79,6 +79,8 @@ export type SchoolDesk = {
   invites: SchoolInvite[];
   classes: SchoolClass[];
   deviceLink: DeviceLink | null;
+  /** Director switch. Missing means Explore stays on. */
+  showExplore?: boolean;
 };
 
 export type SchoolWrite =
@@ -149,6 +151,20 @@ export function schoolRole(value: unknown): SchoolRole {
 
 export function emptyDesk(): SchoolDesk {
   return { school: null, members: [], invites: [], classes: [], deviceLink: null };
+}
+
+/** Directors leave Explore on unless they turn this off. The write is the server copy. */
+export function exploreSectionsShown(desk: Pick<SchoolDesk, "showExplore">): boolean {
+  return desk.showExplore !== false;
+}
+
+export function setExploreVisibility(desk: SchoolDesk, showExplore: boolean): SchoolResult {
+  const schoolId = desk.school?.id;
+  return {
+    desk: { ...desk, showExplore },
+    error: null,
+    writes: schoolId ? [{ op: "set", path: `schools/${schoolId}/settings/explore`, data: { showExplore } }] : [],
+  };
 }
 
 export function classCodeAt(wordIndex: number, number: number): string {

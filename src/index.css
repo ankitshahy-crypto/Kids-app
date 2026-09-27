@@ -6584,6 +6584,10 @@ input.is-pressed,
   margin: 0 auto;
 }
 
+.pilot-hero .course-button {
+  width: 100%;
+}
+
 .pilot-kicker,
 .week-letter {
   margin: 0;

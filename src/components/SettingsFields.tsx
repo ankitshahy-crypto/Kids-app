@@ -65,6 +65,28 @@ export function SettingsFields({
         <p className="adult-copy">On a classroom device, a child is an animal and a nickname. A real first name is not stored.</p>
       </fieldset>
       <PinSetter />
+      <fieldset className="setting-group" data-setting="explore">
+        <legend>Show Explore sections</legend>
+        <div className="segment">
+          <button
+            type="button"
+            className={settings.showExplore ? "is-selected" : ""}
+            aria-pressed={settings.showExplore}
+            onClick={() => onChange({ showExplore: true })}
+          >
+            On
+          </button>
+          <button
+            type="button"
+            className={!settings.showExplore ? "is-selected" : ""}
+            aria-pressed={!settings.showExplore}
+            onClick={() => onChange({ showExplore: false })}
+          >
+            Off
+          </button>
+        </div>
+        <p className="adult-copy">Numbers, colors, time, build, science, and games. Reading stays on the home screen.</p>
+      </fieldset>
       <fieldset className="setting-group" data-mix="taps">
         <legend>Tap sounds & buzz</legend>
         <div className="segment">

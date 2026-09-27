@@ -34,6 +34,7 @@ export function AccountPanel({
   onJoin,
   onRoster,
   onAcceptInvite,
+  onShowExplore,
   onSync,
   onDeleteData,
   onDeleteAccount,
@@ -63,6 +64,7 @@ export function AccountPanel({
   onJoin: (code: string, consent: boolean, childIds: string[]) => void;
   onRoster: (action: RosterCommand) => void;
   onAcceptInvite: (code: string) => void;
+  onShowExplore: (on: boolean) => void;
   onSync: (on: boolean) => void;
   onDeleteData: () => void;
   onDeleteAccount: () => void;
@@ -179,6 +181,7 @@ export function AccountPanel({
             onJoin={onJoin}
             onRoster={onRoster}
             onAcceptInvite={onAcceptInvite}
+            onShowExplore={onShowExplore}
           />
           <fieldset className="setting-group">
             <legend>{SYNC_LABEL}</legend>

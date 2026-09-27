@@ -36,6 +36,7 @@ export function SchoolPanel({
   onJoin,
   onRoster,
   onAcceptInvite,
+  onShowExplore,
 }: {
   role: SchoolRole;
   desk: SchoolDesk;
@@ -51,6 +52,7 @@ export function SchoolPanel({
   onJoin: (code: string, consent: boolean, childIds: string[]) => void;
   onRoster: (action: RosterCommand) => void;
   onAcceptInvite: (code: string) => void;
+  onShowExplore: (on: boolean) => void;
 }) {
   if (role === "admin") {
     return (
@@ -62,6 +64,7 @@ export function SchoolPanel({
         onRemoveTeacher={onRemoveTeacher}
         onCancelInvite={onCancelInvite}
         onRoster={onRoster}
+        onShowExplore={onShowExplore}
       />
     );
   }
@@ -88,6 +91,7 @@ function AdminSchool({
   onRemoveTeacher,
   onCancelInvite,
   onRoster,
+  onShowExplore,
 }: {
   desk: SchoolDesk;
   uid: string;
@@ -96,6 +100,7 @@ function AdminSchool({
   onRemoveTeacher: (uid: string) => void;
   onCancelInvite: (inviteId: string) => void;
   onRoster: (action: RosterCommand) => void;
+  onShowExplore: (on: boolean) => void;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -123,6 +128,18 @@ function AdminSchool({
   return (
     <div className="school-card" data-school={totals.name}>
       <h3>{totals.name}</h3>
+      <fieldset className="setting-group" data-setting="school-explore">
+        <legend>Show Explore sections</legend>
+        <div className="segment">
+          <button type="button" className={desk.showExplore !== false ? "is-selected" : ""} aria-pressed={desk.showExplore !== false} onClick={() => onShowExplore(true)}>
+            On
+          </button>
+          <button type="button" className={desk.showExplore === false ? "is-selected" : ""} aria-pressed={desk.showExplore === false} onClick={() => onShowExplore(false)}>
+            Off
+          </button>
+        </div>
+        <p className="adult-copy">On for the school unless you turn it off. Reading stays available.</p>
+      </fieldset>
       <p className="adult-copy">
         {totals.teacherCount === 1 ? "1 teacher" : `${totals.teacherCount} teachers`}.{" "}
         {totals.classCount === 1 ? "1 class" : `${totals.classCount} classes`}. {totals.childCount} children. {totals.totalStars}{" "}

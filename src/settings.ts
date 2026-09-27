@@ -25,6 +25,8 @@ export type Settings = {
   showCode: boolean;
   /** A classroom iPad stores a nickname, not a real first name. */
   classroomDevice: boolean;
+  /** Explore sections on the home screen. On unless a grown-up turns them off. */
+  showExplore: boolean;
 };
 
 /**
@@ -51,6 +53,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showTips: true,
   showCode: false,
   classroomDevice: false,
+  showExplore: true,
 };
 
 function clampVolume(value: unknown, fallback: number): number {
@@ -81,6 +84,7 @@ export function normalizeSettings(value: unknown): Settings {
     showTips: record.showTips !== false,
     showCode: record.showCode === true,
     classroomDevice: record.classroomDevice === true,
+    showExplore: record.showExplore !== false,
   };
 }
 
