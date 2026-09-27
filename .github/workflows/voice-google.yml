@@ -111,7 +111,9 @@ jobs:
         continue-on-error: true
         run: |
           pip install -q faster-whisper
-          python3 scripts/hear-clips.py public/audio/sounds public/audio/letters public/audio/words/mat.mp3 public/audio/words/sun.mp3 > heard.md
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q transformers
+          python3 scripts/hear-clips.py --phonemes public/audio/sounds public/audio/letters public/audio/words/mat.mp3 public/audio/words/sun.mp3 > heard.md
           {
             echo "report<<HEARD"
             echo "What a speech recognizer heard in the letter clips (a blank or odd line means listen to that one):"
