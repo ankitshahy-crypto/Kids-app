@@ -85,7 +85,7 @@ test("sliders drive the channel gains, and speech volume follows the browser", a
   if (await hint.count()) await hint.click();
   await page.getByRole("button", { name: "Settings" }).click();
 
-  const ios = testInfo.project.name === "iphone";
+  const ios = testInfo.project.name === "iphone" || testInfo.project.name === "ipad";
   const note = page.getByText("volume buttons");
   if (ios) await expect(note).toBeVisible();
   else await expect(note).toHaveCount(0);

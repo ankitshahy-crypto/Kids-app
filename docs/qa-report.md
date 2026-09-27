@@ -168,7 +168,7 @@ Build It after (Play on screen):
 
 ## Full-stack QA
 
-Checked on the stack tip after the privacy, Explore, flag, and class-QR branches.
+Checked again after the lesson-week, Hatch, and home-dock fixes.
 
 | Check | Result |
 | --- | --- |
@@ -176,17 +176,22 @@ Checked on the stack tip after the privacy, Explore, flag, and class-QR branches
 | Pastel tokens in `src/palette.ts` and `:root` | Pass |
 | Store name “LittleNest Learning: Ages 3-7” and subtitle “Read, math, science & coding” | Pass |
 | App icon name band from the earlier icon pass | Pass. Not regenerated |
-| Natural-voice recordings | Blocked. `public/audio` has no mp3 files. `npm run generate-audio` was not run |
-| Unit tests | 182 passed |
-| Playwright on Chromium, Firefox, WebKit, iPhone 13, and Pixel 7 | 511 passed, 36 failed, 18 skipped |
+| Natural-voice recordings | Not generated. `npm run generate-audio` exits until `GOOGLE_APPLICATION_CREDENTIALS` points at a Google Cloud Text-to-Speech service account. Letter sounds stay human-recorded and are not synthesized. `public/audio` has no mp3 files |
+| Unit tests | 183 passed |
+| Playwright on Chromium, Firefox, WebKit, iPhone 13, and Pixel 7 | 553 passed, 0 failed, 22 skipped (14.5m) |
+| Playwright on iPad (gen 7) | 109 passed, 0 failed, 6 skipped |
 
-The 36 Playwright failures are seven cases, repeated on each browser, plus one iPhone-only layout check:
-
-- Letter of the week is currently **k** (one new letter). Blend and tracing specs still assume an earlier three-letter word, so the third tile is missing and the trace helper stays on the match step. That blocks the star, cheer, tip, and learning-path specs that trace first.
-- Hatch level 2 does not show a blank tile (`data-blank="shown"` count is 0).
-- On iPhone, the home dock can sit past the bottom of the screen when Science is selected.
+Blend, tracing, star, cheer, tip, and learning-path specs seed reading week 0 (M and A) in `e2e/pinLesson.ts`, so a new letter of the week does not change them. The last letter match waits until the draw screen moves on. Hatch level 2 leaves the first letter showing when every letter in the word was taught. On a phone, and on a short tablet, the home dock stays inside the viewport with Science selected. That layout is also checked at iPhone 13 (390×664), iPad portrait (768×1024), and iPad landscape (1024×768).
 
 PIN recovery, the five-family metrics floor, Explore crash isolation, and class QR specs passed inside this run.
+
+### Preview deploy
+
+The combined site is published from the branch named `preview` by the workflow **Preview and demo**. The main demo is `/Kids-app/` and the stack is `/Kids-app/preview/`.
+
+GitHub Pages will not deploy that branch until `preview` is allowed on the `github-pages` environment (Settings → Environments → github-pages → Deployment branches). After it is allowed, re-run **Preview and demo** on the branch `preview` from Actions → Preview and demo → Run workflow. A later push to `preview` runs the same workflow.
+
+A separate, unmerged change to the main Pages workflow builds the `preview` branch into `/Kids-app/preview/` on a future push to `main`, so that publish does not drop the preview site.
 
 Home during this pass:
 
