@@ -1768,6 +1768,73 @@ button:focus-visible {
   color: var(--text-warm);
 }
 
+.today-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lesson {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 0 auto;
+}
+
+.pilot-label {
+  align-self: flex-start;
+  margin: 0;
+  min-height: 32px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #f3faf4;
+  color: var(--text-sage);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pilot-label.is-selected {
+  box-shadow: inset 0 0 0 2px var(--sage-soft);
+}
+
+.explore-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.explore-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.explore-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.explore-tag {
+  margin: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--butter);
+  color: var(--text-warm);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .trail {
   position: relative;
   flex: 1 1 auto;
@@ -2957,7 +3024,7 @@ button:focus-visible {
     grid-template-areas:
       "top top"
       "review review"
-      "trail dock";
+      "body dock";
     justify-content: center;
     align-items: center;
     column-gap: 36px;
@@ -2972,11 +3039,16 @@ button:focus-visible {
     grid-area: review;
   }
 
-  .trail {
-    grid-area: trail;
-    width: min(100%, 500px);
-    height: min(70dvh, 520px);
+  .today-body {
+    grid-area: body;
     min-height: 0;
+    max-height: min(70dvh, 520px);
+  }
+
+  .trail {
+    width: min(100%, 500px);
+    height: min(52dvh, 380px);
+    min-height: 220px;
   }
 
   .today-dock {
@@ -6303,27 +6375,8 @@ input.is-pressed,
   }
 
   [data-science="menu"] {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
     width: 100%;
     max-width: 100%;
-    gap: 8px;
-    padding-bottom: 4px;
-  }
-
-  [data-science="menu"] .math-activity {
-    flex: 0 0 84px;
-    width: 84px;
-    min-width: 84px;
-    min-height: 72px;
-  }
-}
-
-@media (min-width: 768px) and (orientation: landscape) {
-  [data-science="menu"] {
-    grid-area: trail;
-    align-self: start;
   }
 }
 
@@ -6370,4 +6423,3 @@ input.is-pressed,
 .sci-rabbit { background: #f7e1c8; border-radius: 50%; }
 .sci-puddle { background: #8eb4d6; border-radius: 50%; }
 .sci-listen { background: #6d5b86; border-radius: 50%; }
-.sci-mark { width: 28px; height: 28px; border-radius: 8px; background: #b7e6d8; display: block; }

@@ -136,6 +136,101 @@ function Finish({ id, onDone }: { id: ScienceActivity; onDone: () => void }) {
   );
 }
 
+function ScienceGlyph({ id }: { id: ScienceActivity }) {
+  if (id === "life") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 52V30" stroke="#6e9a74" strokeWidth="4" strokeLinecap="round" />
+        <path d="M32 38c-12-1-16-12-12-18 8 2 12 10 12 18Z" fill="#7dba8f" />
+        <path d="M32 34c12-2 18-10 14-16-8 2-14 8-14 16Z" fill="#8fcb7a" />
+        <circle cx="32" cy="24" r="4" fill="#f6e7a8" />
+      </svg>
+    );
+  }
+  if (id === "homes") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M10 36 32 16l22 20" fill="none" stroke="#E4C7A4" strokeWidth="4" strokeLinejoin="round" />
+        <path d="M18 34v16h28V34" fill="#f6e7a8" stroke="#E4C7A4" strokeWidth="3" />
+        <path d="M28 50v-10h8v10" fill="#e4c7a4" />
+      </svg>
+    );
+  }
+  if (id === "body") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="16" r="7" fill="#f7c9d4" />
+        <path d="M32 24c-10 2-14 12-14 20h28c0-8-4-18-14-20Z" fill="#9ec9e8" />
+        <path d="M18 30c-6 2-8 8-6 12" fill="none" stroke="#f7c9d4" strokeWidth="4" strokeLinecap="round" />
+        <path d="M46 30c6 2 8 8 6 12" fill="none" stroke="#f7c9d4" strokeWidth="4" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (id === "change") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="24" cy="34" r="12" fill="#9ec9e8" />
+        <circle cx="40" cy="34" r="12" fill="#f6e7a8" />
+        <circle cx="32" cy="28" r="4" fill="#fff" opacity="0.8" />
+        <circle cx="22" cy="30" r="3" fill="#fff" opacity="0.7" />
+      </svg>
+    );
+  }
+  if (id === "weather") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="24" cy="24" r="10" fill="#f6e7a8" />
+        <path d="M22 36h22a10 10 0 0 0 0-20 14 14 0 0 0-26 6 8 8 0 0 0 4 14Z" fill="#eef6fb" stroke="#c5d5e0" strokeWidth="3" />
+      </svg>
+    );
+  }
+  if (id === "senses") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M10 32c8-12 14-16 22-16s14 4 22 16c-8 12-14 16-22 16S18 44 10 32Z" fill="#fff6e4" stroke="#E4C7A4" strokeWidth="3" />
+        <circle cx="32" cy="32" r="7" fill="#6d5b86" />
+        <circle cx="34" cy="30" r="2" fill="#fff" />
+      </svg>
+    );
+  }
+  if (id === "float") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M8 40c6 4 10 4 16 0s10-4 16 0 10 4 16 0" fill="none" stroke="#8eb4d6" strokeWidth="4" strokeLinecap="round" />
+        <path d="M18 40 32 22l14 18H18Z" fill="#e4b08a" stroke="#E4C7A4" strokeWidth="3" strokeLinejoin="round" />
+        <path d="M32 22v-8" stroke="#6e9a74" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (id === "predict") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M14 18h28a8 8 0 0 1 0 16H28L18 44V34h-4a8 8 0 0 1 0-16Z" fill="#f7c9d4" stroke="#E4C7A4" strokeWidth="3" />
+        <circle cx="24" cy="26" r="2" fill="#6d5b86" />
+        <circle cx="32" cy="26" r="2" fill="#6d5b86" />
+        <circle cx="40" cy="26" r="2" fill="#6d5b86" />
+      </svg>
+    );
+  }
+  if (id === "chain") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="16" cy="40" r="8" fill="#7dba8f" />
+        <circle cx="32" cy="28" r="8" fill="#f7c9d4" />
+        <circle cx="48" cy="16" r="8" fill="#e7b089" />
+        <path d="M22 36 26 32M38 24 42 20" stroke="#E4C7A4" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M14 28h28a8 8 0 0 1 0 16H22" fill="#eef6fb" stroke="#c5d5e0" strokeWidth="3" />
+      <path d="M24 44c2 6 6 8 8 12" fill="none" stroke="#8eb4d6" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="30" cy="58" r="3" fill="#8eb4d6" />
+    </svg>
+  );
+}
+
 export function ScienceBoard({
   ageRange,
   done,
@@ -158,7 +253,7 @@ export function ScienceBoard({
           onClick={() => onOpen(id)}
         >
           <span className="math-activity-art" aria-hidden="true">
-            <span className={`sci-mark sci-${id}`} />
+            <ScienceGlyph id={id} />
           </span>
           <span>{NAMES[id]}</span>
         </button>

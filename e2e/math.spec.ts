@@ -230,11 +230,15 @@ test("letters and numbers stay large on iPad", async ({ page }) => {
     { width: 1366, height: 1024 },
   ]) {
     await page.setViewportSize(size);
-    for (const name of ["LittleNest Words", "LittleNest Numbers"]) {
-      const box = await page.getByRole("button", { name }).boundingBox();
-      expect(box).toBeTruthy();
-      expect(box!.height).toBeGreaterThanOrEqual(100);
-      expect(box!.width).toBeGreaterThan(140);
-    }
+    const numbers = await page.getByRole("button", { name: "LittleNest Numbers" }).boundingBox();
+    expect(numbers).toBeTruthy();
+    expect(numbers!.height).toBeGreaterThanOrEqual(100);
+    expect(numbers!.width).toBeGreaterThan(140);
+    await page.getByRole("button", { name: "Pilot focus" }).click();
+    const trail = await page.locator(".trail").boundingBox();
+    expect(trail).toBeTruthy();
+    expect(trail!.height).toBeGreaterThanOrEqual(100);
+    expect(trail!.width).toBeGreaterThan(140);
+    await page.getByRole("button", { name: "LittleNest Numbers" }).click();
   }
 });
