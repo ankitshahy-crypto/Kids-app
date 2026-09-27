@@ -71,7 +71,10 @@ jobs:
             tail -n 5 make.log | sed 's/^/::error::/'
             exit 1
           fi
-          grep -h . samples/*.error.txt 2>/dev/null | sed 's/^/::warning::/' || true
+          for f in samples/*.error.txt samples/*/*.error.txt; do
+            [ -e "$f" ] && echo "::warning::$(basename "$f" .error.txt): $(head -c 300 "$f")"
+          done
+          true
 
       - name: Join each voice into one clip
         continue-on-error: true
@@ -104,7 +107,7 @@ jobs:
           cp samples/*.error.txt "$out"/ 2>/dev/null || true
           # The separate parts too, in case a joined clip is missing.
           for dir in samples/*/; do
-            mkdir -p "$out/parts/$(basename "$dir")" && cp "$dir"*.mp3 "$out/parts/$(basename "$dir")/" 2>/dev/null || true
+            mkdir -p "$out/parts/$(basename "$dir")" && cp "$dir"*.mp3 "$dir"*.error.txt "$out/parts/$(basename "$dir")/" 2>/dev/null || true
           done
           {
             echo "# Voice samples"
@@ -120,7 +123,7 @@ jobs:
               [ -e "$f" ] || continue
               echo "- $(basename "$f"): $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" | cut -c1-4) s"
             done
-            for f in "$out"/*.error.txt; do
+            for f in "$out"/*.error.txt "$out"/parts/*/*.error.txt; do
               [ -e "$f" ] || continue
               echo "- $(basename "$f" .error.txt): failed: $(cat "$f")"
             done
