@@ -18,6 +18,12 @@ const BY_SCREEN: Record<string, ExploreSection> = {
   clock: "time",
   coins: "time",
   shop: "time",
+  jars: "time",
+  lemonade: "time",
+  choose: "time",
+  needs: "time",
+  cards: "time",
+  "money-play": "time",
   games: "games",
 };
 

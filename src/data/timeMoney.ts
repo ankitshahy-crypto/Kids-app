@@ -19,6 +19,11 @@ export const timeStages = [
   { id: "minutes", title: "Minutes", detail: "Quarter hours, then five-minute steps, and how long until.", size: 4 },
   { id: "values", title: "Coin values", detail: "Count mixed coins, and pay dollars and cents.", size: 4 },
   { id: "change", title: "Making change", detail: "Make change and compare prices.", size: 3 },
+  { id: "jars", title: "Three jars", detail: "Earn pretend coins and split them into save, spend, and share.", size: 4 },
+  { id: "earn", title: "Lemonade stand", detail: "Earn coins by serving customers.", size: 3 },
+  { id: "choose", title: "Choose and save", detail: "Buy what the coins can cover, and save for the rest.", size: 3 },
+  { id: "needs", title: "Needs and wants", detail: "Sort needs and wants.", size: 3 },
+  { id: "cards", title: "Cards", detail: "A debit card uses saved money. A credit card is paid back later.", size: 4 },
 ] as const;
 
 export type TimeStageId = (typeof timeStages)[number]["id"];
@@ -28,7 +33,7 @@ export type TimeStageId = (typeof timeStages)[number]["id"];
  * last week, which fills the path. `learningPlace` treats an exact boundary as
  * the start of the next stage, so these counts stay off those edges.
  */
-const timeWeeks = [1, 5, 10, 15, 20, 23, 26, 28, 31, 35, 36] as const;
+const timeWeeks = [1, 5, 10, 15, 20, 23, 26, 28, 31, 35, 36, 38, 41, 44, 47, 50, 53] as const;
 
 const stageStart: Record<TimeStageId, number> = {
   day: 0,
@@ -40,6 +45,11 @@ const stageStart: Record<TimeStageId, number> = {
   minutes: 25,
   values: 29,
   change: 33,
+  jars: 36,
+  earn: 40,
+  choose: 43,
+  needs: 46,
+  cards: 49,
 };
 
 export const dayParts = [
@@ -84,6 +94,52 @@ export type ClockMode = "hour" | "half" | "quarter" | "five";
 export type DayTask = "parts" | "until";
 export type CoinTask = "name" | "sort" | "count" | "compare";
 export type ShopTask = "one" | "pay" | "change";
+
+export const moneyGames = ["jars", "lemonade", "choose", "needs", "cards"] as const;
+export type MoneyGame = (typeof moneyGames)[number];
+
+export const chores = [
+  { id: "tidy", title: "Tidy toys" },
+  { id: "feed", title: "Feed the pet" },
+  { id: "help", title: "Help at home" },
+] as const;
+
+export const jarNames = [
+  { id: "save", title: "Save" },
+  { id: "spend", title: "Spend" },
+  { id: "share", title: "Share" },
+] as const;
+
+export type JarId = (typeof jarNames)[number]["id"];
+
+/** Pretend coins earned before they are split. The save jar needs this many to reach the hat. */
+export const EARN_COINS = 3;
+export const SAVE_GOAL = 2;
+export const GOAL_ITEM = "hat-crown";
+export const GOAL_NAME = "Paper crown";
+
+export const lemonadeServes = 3;
+
+export const shopWalletCents = 10;
+
+export const shopGoods = [
+  { id: "cookie", name: "Cookie", cents: 5 },
+  { id: "apple", name: "Apple", cents: 10 },
+  { id: "milk", name: "Milk", cents: 25 },
+] as const;
+
+export const sortItems = [
+  { id: "apple", title: "Apple", kind: "need" as const },
+  { id: "milk", title: "Milk", kind: "need" as const },
+  { id: "cookie", title: "Cookie", kind: "want" as const },
+  { id: "crown", title: "Paper crown", kind: "want" as const },
+] as const;
+
+export type SortKind = "need" | "want";
+
+/** Pretend save-jar coins before a card tap. No interest. */
+export const cardSaveStart = 4;
+export const cardPrice = 1;
 
 const hourWords = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
 
@@ -144,6 +200,15 @@ export type TimeLesson = {
   payChoices: MoneyId[];
   changeCents: number;
   changeChoices: number[];
+  cardsOpen: boolean;
+  earnCoins: number;
+  saveGoal: number;
+  goalItem: string;
+  goalName: string;
+  walletCents: number;
+  cardSave: number;
+  cardPrice: number;
+  needsOrder: (typeof sortItems)[number]["id"][];
 };
 
 export function timeWeekCount(): number {
@@ -187,6 +252,19 @@ export function coinSum(pieces: { cents: number; count: number }[]): number {
 
 export function changeAmount(paidCents: number, priceCents: number): number {
   return Math.max(0, paidCents - priceCents);
+}
+
+export function canAfford(walletCents: number, priceCents: number): boolean {
+  return walletCents >= priceCents;
+}
+
+export function saveGoalMet(saved: number, goal = SAVE_GOAL): boolean {
+  return saved >= goal;
+}
+
+/** A debit tap spends saved coins. The balance never goes below zero. */
+export function saveAfterPay(saved: number, price: number): number {
+  return Math.max(0, saved - price);
 }
 
 export function snapMinute(minute: number, mode: ClockMode): number {
@@ -345,6 +423,18 @@ export function lessonForWeek(weekIndexValue: number): TimeLesson {
     payChoices: ["one", "dime", "nickel", "quarter"],
     changeCents: changeAmount(25, 15),
     changeChoices: rotate([10, 5, 25], week),
+    cardsOpen: stageId === "cards",
+    earnCoins: EARN_COINS,
+    saveGoal: SAVE_GOAL,
+    goalItem: GOAL_ITEM,
+    goalName: GOAL_NAME,
+    walletCents: shopWalletCents,
+    cardSave: cardSaveStart,
+    cardPrice,
+    needsOrder: shuffleIds(
+      sortItems.map((item) => item.id),
+      week + 4,
+    ),
   };
 }
 
@@ -370,7 +460,7 @@ export function timeManifestEntries(): ManifestEntry[] {
     seen.add(key);
     entries.push({ kind, id, say, file: `${kind}/${id}.mp3` });
   };
-  for (const id of ["morning", "afternoon", "night", "wake", "eat", "school", "bath", "penny", "nickel", "dime", "quarter", "cookie", "banana"]) {
+  for (const id of ["morning", "afternoon", "night", "wake", "eat", "school", "bath", "penny", "nickel", "dime", "quarter", "cookie", "banana", "save", "spend", "share", "need", "want", "lemonade", "tidy", "feed", "help", "debit", "credit"]) {
     add("words", id, id);
   }
   const prompts: [string, string][] = [
@@ -383,6 +473,16 @@ export function timeManifestEntries(): ManifestEntry[] {
     ["time-change", "How much change?"],
     ["time-sort", "Sort the coins."],
     ["time-match", "Match the clock."],
+    ["time-jars", "Put each coin in a jar."],
+    ["time-chore", "Do a pretend chore."],
+    ["time-lemonade", "Serve a cup of lemonade."],
+    ["time-earn", "You worked and earned a coin."],
+    ["time-save", "Let's save for it!"],
+    ["time-needs", "Is it a need or a want?"],
+    ["time-debit", "A debit card pays with money you saved."],
+    ["time-credit", "A credit card borrows money. We pay it back later."],
+    ["time-goal", "The save jar reached the hat."],
+    ["time-payback", "Pay the borrowed coin back."],
     ["one-dollar", "one dollar"],
     ["five-dollars", "five dollars"],
   ];

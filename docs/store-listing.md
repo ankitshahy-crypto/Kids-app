@@ -25,13 +25,13 @@ LittleNest Learning helps young children take their first steps into letters, nu
 - **Games to play:** Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. A miss just means try again.
 - **LittleNest Numbers:** Count to 10, hear and trace numbers, match and trace shapes, compare groups, and add with pictures up to 5.
 - **LittleNest Colors:** Hear a color and tap it, mix paints, and color their animal with colors they made. Every swatch shows the color word.
-- **LittleNest Time & Money:** Morning, afternoon, and night, then the daily routine and o'clock. Ages 5 to 7 set half hours, quarter hours, and five-minute steps, match a digital time, and ask how long until. Name a penny, nickel, dime, quarter, and one- and five-dollar bills drawn for this app, sort coins, and let their animal buy a snack. Later they count mixed coins, pay dollars and cents, make change, and compare prices.
+- **LittleNest Time & Money:** Morning, afternoon, and night, then the daily routine and o'clock. Ages 5 to 7 set half hours, quarter hours, and five-minute steps, match a digital time, and ask how long until. Name a penny, nickel, dime, quarter, and one- and five-dollar bills drawn for this app, sort coins, and let their animal buy a snack. Later they count mixed coins, pay dollars and cents, make change, and compare prices. Pretend chores fill Save, Spend, and Share jars, a lemonade stand earns coins, and a shop says let's save for it when the price is too big. Needs and wants are sorted. Pretend debit and credit cards come later, with no interest and no real payments.
 - **Made for classrooms too:** Teachers can follow a class and share goals with parents.
 - **Grown-up tools:** They sit behind a simple check.
 
 ## How LittleNest Learning teaches
 
-LittleNest Learning has four modules. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change.
+LittleNest Learning has four modules. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7.
 
 LittleNest Words:
 
@@ -64,6 +64,11 @@ LittleNest Time & Money:
 7. **Minutes:** Quarter hours, then five-minute steps, and how long until.
 8. **Coin values:** Count mixed coins, and pay dollars and cents.
 9. **Making change:** Make change and compare prices.
+10. **Three jars:** Earn pretend coins and split them into save, spend, and share.
+11. **Lemonade stand:** Earn coins by serving customers.
+12. **Choose and save:** Buy what the coins can cover, and save for the rest.
+13. **Needs and wants:** Sort needs and wants.
+14. **Cards:** A debit card uses saved money. A credit card is paid back later.
 
 ## Safe and private by design
 

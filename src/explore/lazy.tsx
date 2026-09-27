@@ -16,3 +16,9 @@ export const CoinsActivity = lazy(() => import("../components/TimePlay").then((m
 export const DayActivity = lazy(() => import("../components/TimePlay").then((mod) => ({ default: mod.DayActivity })));
 export const RoutineActivity = lazy(() => import("../components/TimePlay").then((mod) => ({ default: mod.RoutineActivity })));
 export const ShopActivity = lazy(() => import("../components/TimePlay").then((mod) => ({ default: mod.ShopActivity })));
+export const CardsActivity = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.CardsActivity })));
+export const ChooseActivity = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.ChooseActivity })));
+export const JarsActivity = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.JarsActivity })));
+export const LemonadeActivity = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.LemonadeActivity })));
+export const MoneyBoard = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.MoneyBoard })));
+export const NeedsActivity = lazy(() => import("../components/MoneyPlay").then((mod) => ({ default: mod.NeedsActivity })));

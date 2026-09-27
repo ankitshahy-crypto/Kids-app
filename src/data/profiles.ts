@@ -147,6 +147,11 @@ export const activitySteps = [
   "game-feed",
   "game-rhyme",
   "game-memory",
+  "jars",
+  "lemonade",
+  "choose",
+  "needs",
+  "cards",
 ] as const;
 
 const activityStepSet = new Set<string>(activitySteps);

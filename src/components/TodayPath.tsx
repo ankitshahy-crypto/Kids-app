@@ -46,6 +46,7 @@ export function TodayPath({
   onColor,
   timeLesson,
   onTime,
+  onMoneyPlay,
   canTraceWord,
   canTraceName,
   onTraceWord,
@@ -73,6 +74,7 @@ export function TodayPath({
   onColor: (step: ColorStep) => void;
   timeLesson: TimeLesson;
   onTime: (step: TimeStep) => void;
+  onMoneyPlay: () => void;
   canTraceWord: boolean;
   canTraceName: boolean;
   onTraceWord: () => void;
@@ -188,7 +190,7 @@ export function TodayPath({
 
       {shown === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
       {shown === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
-      {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} /> : null}
+      {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
 
       {shown === "reading" ? <div className="trail">
         <Hills />

@@ -29,15 +29,21 @@ import type { DeckWord } from "./data/deck";
 import { ExploreFrame } from "./explore/frame";
 import {
   AddActivity,
+  CardsActivity,
+  ChooseActivity,
   ClockActivity,
   CoinsActivity,
   CountActivity,
   DayActivity,
   Games,
+  JarsActivity,
   KnowActivity,
+  LemonadeActivity,
   MixActivity,
+  MoneyBoard,
   MoreActivity,
   NameActivity,
+  NeedsActivity,
   PaintActivity,
   RoutineActivity,
   ShapeActivity,
@@ -47,7 +53,7 @@ import {
 import { sectionForScreen } from "./explore/sections";
 import { COLORS, colorFill, colorLessonForChild, type ColorStep } from "./data/colors";
 import { MATH, lessonForChild, type MathStep } from "./data/math";
-import { TIME, lessonForChild as timeLessonForChild, type TimeStep } from "./data/timeMoney";
+import { TIME, lessonForChild as timeLessonForChild, type MoneyGame, type TimeStep } from "./data/timeMoney";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
@@ -62,12 +68,13 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors" | "time";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | LessonStep | MathStep | ColorStep | TimeStep | "word" | "my-name";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | "word" | "my-name";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
 const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 const timeScreens: TimeStep[] = ["day", "routine", "clock", "coins", "shop"];
+const moneyScreens: MoneyGame[] = ["jars", "lemonade", "choose", "needs", "cards"];
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
@@ -126,7 +133,7 @@ export default function App() {
     }
     if (screen === "draw" || screen === "word" || screen === "my-name") setMusicArea("focus");
     else if (screen === "story") setMusicArea("story");
-    else if (screen === "library" || screen === "games") setMusicArea("play");
+    else if (screen === "library" || screen === "games" || screen === "money-play" || moneyScreens.includes(screen as MoneyGame)) setMusicArea("play");
     else setMusicArea("today");
   }, [mode, screen]);
 
@@ -326,6 +333,37 @@ export default function App() {
     else setTip(null);
   };
 
+  const finishMoney = (step: MoneyGame, label: string, gift?: string) => {
+    if (!active) return;
+    if (gift) giveGift(active.id, gift);
+    const learned: StickerInput[] = label ? [{ subject: TIME, kind: "coin", label }] : [];
+    const result = giveStar(active.id, step, learned, TIME);
+    if (result.awarded) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduce) setFlying(true);
+      if (result.milestones.length > 0) {
+        setCheer(result.milestones[result.milestones.length - 1] ?? null);
+        playEffect("cheer", settings);
+      } else playEffect("chime", settings);
+    }
+    setScreen("today");
+    if (settingsRef.current.showTips) setTip(timeTip(step, "end"));
+    else setTip(null);
+  };
+
+  const openMoneyPlay = () => {
+    primeSpeech();
+    setScreen("money-play");
+    setTip(null);
+  };
+
+  const openMoney = (step: MoneyGame) => {
+    primeSpeech();
+    setScreen(step);
+    if (settingsRef.current.showTips) setTip(timeTip(step, "start"));
+    else setTip(null);
+  };
+
   const finishLetter = (word: DeckWord) => {
     const learned: StickerInput[] = [
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
@@ -343,6 +381,8 @@ export default function App() {
     mathScreens.includes(screen as MathStep) ||
     colorScreens.includes(screen as ColorStep) ||
     timeScreens.includes(screen as TimeStep) ||
+    moneyScreens.includes(screen as MoneyGame) ||
+    screen === "money-play" ||
     screen === "word" ||
     screen === "my-name" ||
     screen === "games";
@@ -429,7 +469,12 @@ export default function App() {
                   className="back-button"
                   aria-label="Back"
                   onClick={() => {
-                    if (screen === "games") setTip(null);
+                    if (moneyScreens.includes(screen as MoneyGame)) {
+                      setTip(null);
+                      setScreen("money-play");
+                      return;
+                    }
+                    if (screen === "games" || screen === "money-play") setTip(null);
                     setScreen("today");
                   }}
                 >
@@ -473,6 +518,7 @@ export default function App() {
                   onColor={openColor}
                   timeLesson={timeLesson}
                   onTime={openTime}
+                  onMoneyPlay={openMoneyPlay}
                   canTraceWord={blendedWords.length > 0}
                   canTraceName={Boolean(traceName)}
                   onTraceWord={() => {
@@ -600,6 +646,31 @@ export default function App() {
                   {screen === "coins" ? (
                     <CoinsActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishTime("coins", label)} />
                   ) : null}
+                  {screen === "jars" ? (
+                    <JarsActivity
+                      lesson={timeLesson}
+                      animal={active.animal}
+                      settingsRef={settingsRef}
+                      onDone={(label, goalMet) => finishMoney("jars", label, goalMet ? timeLesson.goalItem : undefined)}
+                    />
+                  ) : null}
+                  {screen === "lemonade" ? (
+                    <LemonadeActivity animal={active.animal} settingsRef={settingsRef} onDone={(label) => finishMoney("lemonade", label)} />
+                  ) : null}
+                  {screen === "choose" ? (
+                    <ChooseActivity
+                      lesson={timeLesson}
+                      animal={active.animal}
+                      settingsRef={settingsRef}
+                      onDone={(label) => finishMoney("choose", label)}
+                    />
+                  ) : null}
+                  {screen === "needs" ? (
+                    <NeedsActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishMoney("needs", label)} />
+                  ) : null}
+                  {screen === "cards" ? (
+                    <CardsActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishMoney("cards", label)} />
+                  ) : null}
                   {screen === "shop" ? (
                     <ShopActivity
                       lesson={timeLesson}
@@ -607,6 +678,13 @@ export default function App() {
                       settingsRef={settingsRef}
                       onDone={(label) => finishTime("shop", label)}
                     />
+                  ) : null}
+                  {screen === "money-play" ? (
+                    <div className="math-play" data-screen="money-play">
+                      <h1>Money play</h1>
+                      <p className="math-prompt">Pretend coins only.</p>
+                      <MoneyBoard done={active.days[todayKey()]?.[TIME] ?? {}} onOpen={openMoney} />
+                    </div>
                   ) : null}
                   {screen === "games" ? (
                     <Games
