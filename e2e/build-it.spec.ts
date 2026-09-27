@@ -46,7 +46,7 @@ test("tapped and dragged blocks play on the animal", async ({ page }, testInfo) 
   await board.locator("[data-block=jump]").dragTo(board.locator("[data-drop=script]"));
   await expect(board).toHaveAttribute("data-script", "walk,jump");
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/build_move.png" });
+    await board.screenshot({ path: "test-results/screenshots/build_move.png" });
   }
   await board.locator("[data-play=run]").click();
   await expect(board).toHaveAttribute("data-lit", /0/);
@@ -69,7 +69,7 @@ test("a repeat block plays the drum three times", async ({ page }, testInfo) => 
   await board.locator("[data-play=run]").click();
   await expect(board).toHaveAttribute("data-ran", "drum,repeat,drum,drum");
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/build_music.png" });
+    await board.screenshot({ path: "test-results/screenshots/build_music.png" });
   }
   await board.locator("[data-finish=music]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
@@ -91,7 +91,7 @@ test("rain before the flower makes it grow", async ({ page }, testInfo) => {
   await board.locator("[data-play=run]").click();
   await expect(board).toHaveAttribute("data-flower", "grown");
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/build_scene.png" });
+    await board.screenshot({ path: "test-results/screenshots/build_scene.png" });
   }
   await board.locator("[data-finish=scene]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
@@ -109,7 +109,7 @@ test("a mixed-up sandwich is silly and the right order is ready", async ({ page 
   await expect(board.locator(".build-again")).toHaveText("Try again.");
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "0");
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/build_chef.png" });
+    await board.screenshot({ path: "test-results/screenshots/build_chef.png" });
   }
   await board.locator("[data-index='0']").click();
   await board.locator("[data-index='0']").click();
@@ -137,7 +137,7 @@ test("ages 5 to 7 splash at the pond and save on this device", async ({ page }, 
   await expect(board).toHaveAttribute("data-splash", "true");
   await expect(board).toHaveAttribute("data-steps", "3");
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "/opt/cursor/artifacts/build_splash.png" });
+    await board.screenshot({ path: "test-results/screenshots/build_splash.png" });
   }
   const before = requests.length;
   await board.locator("[data-save=device]").click();
