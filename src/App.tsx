@@ -152,29 +152,29 @@ export default function App() {
 
   const mathPlace = useMemo(() => {
     if (!active) return null;
-    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, MATH);
+    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, MATH, active.ageRange);
   }, [active, placement]);
 
   const mathLesson = useMemo(() => {
-    return lessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, mathPlace?.weekIndex);
+    return lessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, mathPlace?.weekIndex, active?.ageRange);
   }, [active, mathPlace]);
 
   const colorPlace = useMemo(() => {
     if (!active) return null;
-    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, COLORS);
+    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, COLORS, active.ageRange);
   }, [active, placement]);
 
   const colorLesson = useMemo(() => {
-    return colorLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, colorPlace?.weekIndex);
+    return colorLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, colorPlace?.weekIndex, active?.ageRange);
   }, [active, colorPlace]);
 
   const timePlace = useMemo(() => {
     if (!active) return null;
-    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, TIME);
+    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, TIME, active.ageRange);
   }, [active, placement]);
 
   const timeLesson = useMemo(() => {
-    return timeLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, timePlace?.weekIndex);
+    return timeLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, timePlace?.weekIndex, active?.ageRange);
   }, [active, timePlace]);
 
   const introducedLetters = useMemo(() => lettersIntroduced(lessonPlace?.weekIndex ?? 0), [lessonPlace]);

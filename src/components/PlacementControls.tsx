@@ -14,6 +14,7 @@ import {
   weekLabel,
   type LessonPlace,
   type PlacementDocument,
+  type ResolvedPlacement,
 } from "../data/placement";
 import { READING, type SubjectId } from "../data/subject";
 import { lessonName, type ChildProfile } from "../data/profiles";
@@ -84,6 +85,16 @@ function PlaceEditor({
       </button>
     </fieldset>
   );
+}
+
+/** Where a course lesson comes from, for a grown-up. */
+function placeNote(resolved: ResolvedPlacement): string {
+  if (resolved.source === "child") return "Set for this child.";
+  if (resolved.source === "class") return "Using the class lesson.";
+  if (resolved.ageCap) {
+    return `Following this child's weeks. The calendar stops at ${stageTitle(resolved.ageCap, resolved.subject)} for this age. Pick a stage to move them up.`;
+  }
+  return "Following this child's weeks.";
 }
 
 export function PlacementControls({
@@ -207,7 +218,7 @@ function MathPlacement({
       </div>
       {profiles.map((profile) => {
         const override = math.byChildId[profile.id] ?? null;
-        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH);
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH, profile.ageRange);
         return (
           <div
             key={profile.id}
@@ -226,7 +237,7 @@ function MathPlacement({
               onChange={(place) => onChildPlace(profile.id, place)}
             />
             <p className="adult-copy">
-              {stageTitle(resolved.stageId, MATH)}. {resolved.source === "child" ? "Set for this child." : resolved.source === "class" ? "Using the class lesson." : "Following this child's weeks."}
+              {stageTitle(resolved.stageId, MATH)}. {placeNote(resolved)}
             </p>
           </div>
         );
@@ -271,7 +282,7 @@ function ColorPlacement({
       </div>
       {profiles.map((profile) => {
         const override = colors.byChildId[profile.id] ?? null;
-        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS);
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS, profile.ageRange);
         return (
           <div
             key={profile.id}
@@ -290,7 +301,7 @@ function ColorPlacement({
               onChange={(place) => onChildPlace(profile.id, place)}
             />
             <p className="adult-copy">
-              {stageTitle(resolved.stageId, COLORS)}. {resolved.source === "child" ? "Set for this child." : resolved.source === "class" ? "Using the class lesson." : "Following this child's weeks."}
+              {stageTitle(resolved.stageId, COLORS)}. {placeNote(resolved)}
             </p>
           </div>
         );
@@ -335,7 +346,7 @@ function TimePlacement({
       </div>
       {profiles.map((profile) => {
         const override = time.byChildId[profile.id] ?? null;
-        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, TIME);
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, TIME, profile.ageRange);
         return (
           <div
             key={profile.id}
@@ -354,7 +365,7 @@ function TimePlacement({
               onChange={(place) => onChildPlace(profile.id, place)}
             />
             <p className="adult-copy">
-              {stageTitle(resolved.stageId, TIME)}. {resolved.source === "child" ? "Set for this child." : resolved.source === "class" ? "Using the class lesson." : "Following this child's weeks."}
+              {stageTitle(resolved.stageId, TIME)}. {placeNote(resolved)}
             </p>
           </div>
         );

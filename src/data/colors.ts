@@ -1,4 +1,6 @@
 import { MODULE_COLORS } from "../brand";
+import { calendarStageCap, lastWeekWithinStage } from "./ageBand";
+import type { AgeRange } from "./profiles";
 import { weekIndex } from "./schedule";
 import { defineSubject } from "./subject";
 import { deviceTimeZone } from "./time";
@@ -185,13 +187,31 @@ function stageFromIntroduced(introduced: number): string {
   return colorStages[colorStages.length - 1]?.id ?? "names";
 }
 
+/** The last color week whose stage is still this stage or an earlier one. */
+export function lastColorWeekForStage(stageId: string): number {
+  return lastWeekWithinStage(
+    stageId,
+    colorWeeks.length,
+    colorStages.map((stage) => stage.id),
+    (week) => stageFromIntroduced(colorIntroduced(week)),
+  );
+}
+
+/** The calendar week for this age. Colors has no age cap today; the hook keeps every course alike. */
+export function colorCalendarWeek(createdAt: string, ageRange?: AgeRange | string, now = new Date(), timeZone = deviceTimeZone()): number {
+  const week = weekIndex(createdAt, now, timeZone);
+  const cap = calendarStageCap(COLORS, ageRange);
+  return cap ? Math.min(week, lastColorWeekForStage(cap)) : week;
+}
+
 export function colorLessonForChild(
   createdAt: string,
   now = new Date(),
   timeZone = deviceTimeZone(),
   placedWeek?: number,
+  ageRange?: AgeRange | string,
 ): ColorLesson {
-  const week = placedWeek ?? weekIndex(createdAt, now, timeZone);
+  const week = placedWeek ?? colorCalendarWeek(createdAt, ageRange, now, timeZone);
   return colorLessonForWeek(week);
 }
 

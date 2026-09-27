@@ -1,4 +1,6 @@
 import { MODULE_NUMBERS } from "../brand";
+import { calendarStageCap, lastWeekWithinStage } from "./ageBand";
+import type { AgeRange } from "./profiles";
 import { weekIndex } from "./schedule";
 import { defineSubject } from "./subject";
 import { deviceTimeZone } from "./time";
@@ -272,13 +274,31 @@ function stageFromIntroduced(introduced: number): string {
   return stages[stages.length - 1]?.id ?? "counting";
 }
 
+/** The last math week whose stage is still this stage or an earlier one. */
+export function lastMathWeekForStage(stageId: string): number {
+  return lastWeekWithinStage(
+    stageId,
+    mathWeeks.length,
+    mathStages.map((stage) => stage.id),
+    (week) => stageFromIntroduced(mathIntroduced(week)),
+  );
+}
+
+/** The calendar week for this age. A placed week is a grown-up's choice and is not capped. */
+export function mathCalendarWeek(createdAt: string, ageRange?: AgeRange | string, now = new Date(), timeZone = deviceTimeZone()): number {
+  const week = weekIndex(createdAt, now, timeZone);
+  const cap = calendarStageCap(MATH, ageRange);
+  return cap ? Math.min(week, lastMathWeekForStage(cap)) : week;
+}
+
 export function lessonForChild(
   createdAt: string,
   now = new Date(),
   timeZone = deviceTimeZone(),
   placedWeek?: number,
+  ageRange?: AgeRange | string,
 ): MathLesson {
-  const week = placedWeek ?? weekIndex(createdAt, now, timeZone);
+  const week = placedWeek ?? mathCalendarWeek(createdAt, ageRange, now, timeZone);
   return lessonForWeek(week);
 }
 
