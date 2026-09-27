@@ -61,7 +61,7 @@ import { SCIENCE, type ScienceActivity as ScienceId } from "./data/science";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
-import { blendList, phonicsOpen, wordsToTrace } from "./data/ladder";
+import { blendList, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
 import { lettersIntroduced } from "./data/schedule";
 import { nameToTrace } from "./data/tracePractice";
 import { usePlacement } from "./hooks/usePlacement";
@@ -179,7 +179,10 @@ export default function App() {
 
   const introducedLetters = useMemo(() => lettersIntroduced(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
   const ladderStep = active?.ladder.step ?? 1;
-  const lessonWords = useMemo(() => blendList(ladderStep, lessonLetters), [ladderStep, lessonLetters]);
+  // The step the open lesson was built on. Moving up mid-lesson would swap the
+  // card under the child, so the new step waits for the next visit.
+  const [lessonLadderStep, setLessonLadderStep] = useState<LadderStep>(ladderStep);
+  const lessonWords = useMemo(() => blendList(lessonLadderStep, lessonLetters), [lessonLadderStep, lessonLetters]);
   const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
   const phonicsReady = phonicsOpen(introducedLetters.length);
   const traceName = nameToTrace(active?.name ?? "");
@@ -194,6 +197,7 @@ export default function App() {
 
   const openStep = (step: LessonStep) => {
     primeSpeech();
+    if (step === "letter") setLessonLadderStep(ladderStep);
     setScreen(step);
     // The letter track stays clear. The tip waits until the word is blended.
     if (step === "letter") setTip(null);
@@ -423,13 +427,12 @@ export default function App() {
   };
 
   const finishLetter = (word: DeckWord) => {
+    // A letter card earns the letter sticker; a blended word also earns its word sticker.
     const learned: StickerInput[] = [
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
-      { kind: "word" as const, label: word.word },
+      ...(word.letterCard ? [] : [{ kind: "word" as const, label: word.word }]),
     ];
-    if (active && !active.stickers.some((sticker) => sticker.kind === "word" && sticker.label === word.word)) {
-      noteLadder(active.id, phonicsReady);
-    }
+    if (active) noteLadder(active.id, phonicsReady, word.letterCard ? `letter:${word.letters[0]?.char ?? word.word}` : word.word);
     reward("letter", learned);
     showTip("letter", "end", word.letters[0]?.char ?? word.word);
   };
@@ -456,12 +459,8 @@ export default function App() {
     const result = giveStar(active.id, extra?.step ?? `game-${game}`, learned);
     const words = learned.filter((sticker) => sticker.kind === "word").map((sticker) => sticker.label);
     const countsLadder = game === "hatch" || game === "rhyme" || Boolean(extra?.ladder);
-    if (
-      result.awarded &&
-      countsLadder &&
-      words.some((word) => !active.stickers.some((sticker) => sticker.kind === "word" && sticker.label === word))
-    ) {
-      noteLadder(active.id, phonicsReady);
+    if (result.awarded && countsLadder) {
+      for (const word of words.length > 0 ? words : [`game:${game}`]) noteLadder(active.id, phonicsReady, word);
     }
     if (result.awarded) {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -479,9 +478,7 @@ export default function App() {
     if (!active) return;
     if (step === "word") {
       const label = learned.find((sticker) => sticker.kind === "word")?.label;
-      if (label && !active.stickers.some((sticker) => sticker.kind === "word" && sticker.label === label)) {
-        noteLadder(active.id, phonicsReady);
-      }
+      if (label) noteLadder(active.id, phonicsReady, `trace:${label}`);
     }
     const result = giveStar(active.id, step, learned);
     if (result.awarded) {
@@ -614,7 +611,7 @@ export default function App() {
                   words={lessonWords}
                   animal={active.animal}
                   outfit={active.outfit}
-                  ladderStep={ladderStep}
+                  ladderStep={lessonLadderStep}
                   onFinished={finishLetter}
                 />
               ) : null}

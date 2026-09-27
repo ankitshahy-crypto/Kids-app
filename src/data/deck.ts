@@ -26,6 +26,10 @@ export type DeckWord = {
   photoSrc?: string;
   /** When set, blending this card speaks a short sentence instead of one word. */
   sentenceId?: string;
+  /** A letter-sound card: one tile, the letter's sound, then its example word. */
+  letterCard?: boolean;
+  /** Shown as a big letter on the picture card when the example word has no drawing. */
+  glyph?: string;
 };
 
 export type Deck = {

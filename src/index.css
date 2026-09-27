@@ -334,6 +334,25 @@ button:focus-visible {
   width: 100%;
 }
 
+/* A letter-sound card with no drawing: the letter, then its example word. */
+.letter-glyph {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(96px, 26vmin, 168px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--sage-deep, #2f4a3c);
+}
+
+.letter-glyph small {
+  font-size: clamp(18px, 3.2vmin, 26px);
+  font-weight: 600;
+  color: var(--text-sage, #5f7a68);
+  letter-spacing: 0.02em;
+}
+
 .picture-card {
   position: relative;
   width: 100%;

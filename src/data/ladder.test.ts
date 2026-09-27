@@ -7,6 +7,10 @@ import {
   emptyLadder,
   ladderClips,
   ladderDetail,
+  letterCard,
+  letterCards,
+  letterExample,
+  normalizeLadder,
   phonicsOpen,
   recordLadderSuccess,
   sentencesForStep,
@@ -97,7 +101,8 @@ describe("word ladder progression", () => {
     expect(traced.map((word) => word.word)).toEqual(["cat"]);
     expect(wordGlyphs("I").map((glyph) => glyph.label)).toEqual(["I"]);
     const blends = blendList(1, ["m", "a"]);
-    expect(blends.map((word) => word.word)).toEqual(["a", "I"]);
+    expect(blends.map((word) => word.word)).toEqual(["moon", "apple", "a", "I"]);
+    expect(blends.filter((word) => !word.letterCard).map((word) => word.word)).toEqual(["a", "I"]);
     const rhymes = rhymeRound("abcdefghijklmnopqrstuvwxyz".split(""), 0, 4);
     expect(rhymes.some((card) => card.word.length === 4)).toBe(true);
     expect(rhymeRound(["m", "a", "s", "t", "p", "i", "n"], 0).map((card) => card.word).sort()).toEqual([
@@ -106,5 +111,63 @@ describe("word ladder progression", () => {
       "tap",
       "tin",
     ]);
+  });
+});
+
+describe("letter of the week cards", () => {
+  it("names the example word from the letter phrase", () => {
+    expect(letterExample("m")).toBe("moon");
+    expect(letterExample("a")).toBe("apple");
+    expect(letterExample("S")).toBe("sun");
+  });
+
+  it("builds one-tile cards, with a drawing when it matches the phrase", () => {
+    const m = letterCard("m");
+    expect(m.id).toBe("letter-m");
+    expect(m.letterCard).toBe(true);
+    expect(m.word).toBe("moon");
+    expect(m.glyph).toBe("M");
+    expect(m.letters.map((tile) => tile.char)).toEqual(["m"]);
+    expect(m.letters[0].phoneme).toBe("m");
+    const a = letterCard("a");
+    expect(a.illustration).toBe("apple");
+    expect(a.glyph).toBeUndefined();
+    expect(a.letters[0].phoneme).toBe("ae");
+  });
+
+  it("leads step 1 with the week's letters, then the one-letter words", () => {
+    expect(blendList(1, ["m", "a"]).map((word) => word.id)).toEqual(["letter-m", "letter-a", "a", "i"]);
+    expect(blendList(1, ["M", "m", "?"]).map((word) => word.id)).toEqual(["letter-m", "a", "i"]);
+    expect(blendList(2, ["m", "a"]).some((word) => word.letterCard)).toBe(false);
+    expect(letterCards([]).length).toBe(0);
+  });
+});
+
+describe("one ladder try per word per day", () => {
+  it("counts a replay once today and again tomorrow", () => {
+    let ladder = recordLadderSuccess(emptyLadder(), { word: "cat", day: "2026-09-27" }).ladder;
+    expect(ladder.successes).toBe(1);
+    ladder = recordLadderSuccess(ladder, { word: "cat", day: "2026-09-27" }).ladder;
+    ladder = recordLadderSuccess(ladder, { word: "CAT ", day: "2026-09-27" }).ladder;
+    expect(ladder.successes).toBe(1);
+    expect(ladder.words).toEqual(["cat"]);
+    ladder = recordLadderSuccess(ladder, { word: "sun", day: "2026-09-27" }).ladder;
+    expect(ladder.successes).toBe(2);
+    const tomorrow = recordLadderSuccess(ladder, { word: "cat", day: "2026-09-28" });
+    expect(tomorrow.advanced).toBe(true);
+    expect(tomorrow.ladder.step).toBe(2);
+    expect(tomorrow.ladder.day).toBe("2026-09-28");
+    expect(tomorrow.ladder.words).toEqual(["cat"]);
+  });
+
+  it("keeps the day memo through storage and drops a stale one", () => {
+    expect(normalizeLadder({ step: 2, successes: 1, day: "2026-09-27", words: ["at", "at", 3] })).toEqual({
+      step: 2,
+      successes: 1,
+      day: "2026-09-27",
+      words: ["at"],
+    });
+    expect(normalizeLadder({ step: 2, successes: 1, day: "yesterday", words: ["at"] })).toEqual({ step: 2, successes: 1 });
+    expect(recordLadderSuccess(emptyLadder()).ladder).toEqual({ step: 1, successes: 1 });
   });
 });

@@ -178,6 +178,7 @@ export function SoundItOut({
     <div
       className="activity"
       data-word={word.id}
+      data-letter-card={word.letterCard ? "true" : "false"}
       data-ladder-step={ladderStep}
       data-sentence={word.sentenceId ? "true" : "false"}
       data-revealed={Math.max(revealed, lit.filter(Boolean).length)}
@@ -207,6 +208,11 @@ export function SoundItOut({
       <PictureCard label={word.word}>
         {word.photoSrc ? (
           <img className="photo" src={word.photoSrc} alt="" />
+        ) : word.glyph ? (
+          <span className="letter-glyph" data-glyph={word.glyph} aria-hidden="true">
+            {word.glyph}
+            <small>{word.word}</small>
+          </span>
         ) : (
           <Illustration name={word.illustration} />
         )}
