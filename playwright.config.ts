@@ -4,10 +4,11 @@ const baseURL = "http://127.0.0.1:5173/Kids-app/";
 
 export default defineConfig({
   testDir: "e2e",
+  outputDir: "test-results",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
-  reporter: [["list"], ["json", { outputFile: "e2e-results.json" }]],
+  reporter: [["list"], ["json", { outputFile: "test-results/e2e-results.json" }]],
   use: {
     baseURL,
     trace: "retain-on-failure",
@@ -15,7 +16,7 @@ export default defineConfig({
   webServer: {
     command: "npm run dev -- --host 127.0.0.1 --port 5173",
     url: baseURL,
-    reuseExistingServer: true,
+    reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
   projects: [
