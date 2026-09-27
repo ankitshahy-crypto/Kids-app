@@ -146,6 +146,39 @@ const gameTips: Record<string, { start: string; end: string }> = {
   },
 };
 
+const engineerTips: Record<string, { start: string; end: string }> = {
+  bridge: {
+    start: "They choose blocks and planks so their animal can cross. A long plank sags, then they try again.",
+    end: "Ask: where did the bridge need a block?",
+  },
+  tower: {
+    start: "A wide base stays up. A narrow base topples softly, then they stack again.",
+    end: "Ask: which shape should be on the bottom?",
+  },
+  ramp: {
+    start: "A higher ramp rolls the ball farther. They can tap a height or drag the ramp.",
+    end: "Ask: what happened when the ramp got higher?",
+  },
+  machines: {
+    start: "A lever, a pulley, and a wheel each lift or move something. The other choice just means try again.",
+    end: "Ask: which machine lifted the basket?",
+  },
+  float: {
+    start: "They guess sink or float, then the object drops. A miss is try again, not a score.",
+    end: "Ask: which ones floated?",
+  },
+  balance: {
+    start: "Ages 5 to 7 put weights on the beam. If it tips, they hear what went wrong and try again.",
+    end: "Ask: which side was heavier?",
+  },
+};
+
+/** A short grown-up line for LittleNest Build. */
+export function engineerTip(activity: string, when: "start" | "end"): ReadTip {
+  const tip = engineerTips[activity] ?? engineerTips.bridge;
+  return { id: `engineer-${activity}-${when}`, text: tip[when] };
+}
+
 /** A short grown-up line for a game. */
 export function gameTip(game: string, when: "start" | "end"): ReadTip {
   const tip = gameTips[game] ?? gameTips.hatch;

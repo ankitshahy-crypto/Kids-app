@@ -21,7 +21,7 @@ export type DayRecord = Record<string, Record<string, boolean>>;
 
 export type Sticker = {
   subject: SubjectId;
-  kind: "letter" | "word" | "number" | "color" | "shape" | "animal" | "time" | "coin";
+  kind: "letter" | "word" | "number" | "color" | "shape" | "animal" | "time" | "coin" | "build";
   /** Lowercase letter, word, numeral, or color. Stored once per subject. */
   label: string;
 };
@@ -160,6 +160,7 @@ export const activitySteps = [
   "choose",
   "needs",
   "cards",
+  "balance",
 ] as const;
 
 const activityStepSet = new Set<string>(activitySteps);
@@ -274,7 +275,8 @@ function isSticker(value: unknown): value is Sticker {
       sticker.kind === "shape" ||
       sticker.kind === "animal" ||
       sticker.kind === "time" ||
-      sticker.kind === "coin") &&
+      sticker.kind === "coin" ||
+      sticker.kind === "build") &&
     typeof sticker.label === "string" &&
     sticker.label.length > 0
   );

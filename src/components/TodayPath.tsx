@@ -1,10 +1,11 @@
-import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
+import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME, MODULE_WORDS } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
 import { TimeBoard } from "./TimePlay";
 import { COLORS, type ColorLesson, type ColorStep } from "../data/colors";
 import { MATH, type MathLesson, type MathStep } from "../data/math";
 import { TIME, type TimeLesson, type TimeStep } from "../data/timeMoney";
+import { BUILD, type BuildActivity } from "../data/engineer";
 import { READING } from "../data/subject";
 import type { PlacementSource } from "../data/placement";
 import { isReviewDay } from "../data/schedule";
@@ -14,6 +15,7 @@ import { sectionVisible } from "../explore/flags";
 import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
 import { StarIcon } from "./icons";
+import { EngineerBoard } from "./NestBuild";
 import { ModuleMark } from "./ModuleMark";
 import { BookMark, EggNest, Hills, PencilMark, ShapesMark, ToyBox } from "./sceneArt";
 
@@ -47,6 +49,7 @@ export function TodayPath({
   timeLesson,
   onTime,
   onMoneyPlay,
+  onBuild,
   canTraceWord,
   canTraceName,
   onTraceWord,
@@ -66,8 +69,8 @@ export function TodayPath({
   onStickers: () => void;
   onGames: () => void;
   goalMinutes: number;
-  course: "reading" | "math" | "colors" | "time";
-  onCourse: (course: "reading" | "math" | "colors" | "time") => void;
+  course: "reading" | "math" | "colors" | "time" | "build";
+  onCourse: (course: "reading" | "math" | "colors" | "time" | "build") => void;
   mathLesson: MathLesson;
   onMath: (step: MathStep) => void;
   colorLesson: ColorLesson;
@@ -75,6 +78,7 @@ export function TodayPath({
   timeLesson: TimeLesson;
   onTime: (step: TimeStep) => void;
   onMoneyPlay: () => void;
+  onBuild: (activity: BuildActivity) => void;
   canTraceWord: boolean;
   canTraceName: boolean;
   onTraceWord: () => void;
@@ -84,9 +88,18 @@ export function TodayPath({
   const showMath = sectionVisible("math", undefined, showExplore);
   const showColors = sectionVisible("colors", undefined, showExplore);
   const showTime = sectionVisible("time", undefined, showExplore);
+  const showBuild = sectionVisible("build", undefined, showExplore);
   const showGames = sectionVisible("games", undefined, showExplore);
   const shown =
-    course === "math" && showMath ? "math" : course === "colors" && showColors ? "colors" : course === "time" && showTime ? "time" : "reading";
+    course === "math" && showMath
+      ? "math"
+      : course === "colors" && showColors
+        ? "colors"
+        : course === "time" && showTime
+          ? "time"
+          : course === "build" && showBuild
+            ? "build"
+            : "reading";
   const now = new Date();
   const review = isReviewDay(now);
   const done = dayProgress(profile, now);
@@ -100,7 +113,7 @@ export function TodayPath({
     <div
       className="today"
       data-screen="today"
-      data-subject={shown === "math" ? MATH : shown === "colors" ? COLORS : shown === "time" ? TIME : READING}
+      data-subject={shown === "math" ? MATH : shown === "colors" ? COLORS : shown === "time" ? TIME : shown === "build" ? BUILD : READING}
       data-review={review ? "true" : "false"}
       data-source={placementSource}
       data-stage={shown === "math" ? mathLesson.stageId : shown === "colors" ? colorLesson.stageId : shown === "time" ? timeLesson.stageId : stageId}
@@ -186,11 +199,30 @@ export function TodayPath({
             <span>Time & Money</span>
           </span>
         </button> : null}
+        {showBuild ? <button
+          type="button"
+          className={`course-button${shown === "build" ? " is-selected" : ""}`}
+          data-course="build"
+          aria-pressed={shown === "build"}
+          aria-label={MODULE_BUILD}
+          onClick={() => onCourse("build")}
+        >
+          <span className="course-art" aria-hidden="true">
+            <ModuleMark name="build" />
+          </span>
+          <span className="course-name">
+            <span className="course-brand">LittleNest</span>
+            <span>Build</span>
+          </span>
+        </button> : null}
       </div>
 
       {shown === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
       {shown === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
       {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
+      {shown === "build" ? (
+        <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} />
+      ) : null}
 
       {shown === "reading" ? <div className="trail">
         <Hills />

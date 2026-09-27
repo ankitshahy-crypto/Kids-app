@@ -6,6 +6,7 @@ const files = {
   numbers: "icons/module-numbers.png",
   colors: "icons/module-colors.png",
   time: "icons/module-time.svg",
+  build: "icons/module-build.svg",
 } as const;
 
 export type ModuleMarkName = keyof typeof files;
