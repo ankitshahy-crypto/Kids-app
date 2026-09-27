@@ -67,7 +67,7 @@ import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { TIME, lessonForChild as timeLessonForChild, type MoneyGame, type TimeStep } from "./data/timeMoney";
 import { BUILD, type BuildActivity } from "./data/engineer";
 import { SCIENCE, type ScienceActivity as ScienceId } from "./data/science";
-import { lessonName, todayKey, type LessonStep, type StickerInput } from "./data/profiles";
+import { lessonName, todayKey, type ChildInput, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
 import { blendList, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
@@ -567,6 +567,17 @@ export default function App() {
     setMode("grownups");
   };
 
+  /** The first child on a device goes straight to their Today screen. */
+  const addFromParent = (input: ChildInput) => {
+    const first = profiles.length === 0;
+    addChild(input);
+    if (first) {
+      primeSpeech();
+      setScreen("today");
+      setMode("kid");
+    }
+  };
+
   const takeBreak = () => {
     setTip(null);
     setOffer(false);
@@ -935,7 +946,7 @@ export default function App() {
               active={active}
               placement={placement}
               onSelect={select}
-              onAdd={addChild}
+              onAdd={addFromParent}
               onUpdate={updateChild}
               onRemove={removeChild}
               onClose={() => setMode("start")}

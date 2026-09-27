@@ -42,7 +42,12 @@ export function StartScreen({
       <p className="byline">{TAGLINE}</p>
       <div className="who-card">
         {profiles.length === 0 ? (
-          <p className="who-empty">Ask a grown-up to tap Grown-ups.</p>
+          <div className="who-welcome" data-first-run="true">
+            <p className="who-empty">Welcome! Add your child to begin. It takes a minute, and nothing leaves this device.</p>
+            <button type="button" className="done-button who-start" onClick={() => setAsk("parent")}>
+              Add a child
+            </button>
+          </div>
         ) : (
           <div className="who-grid">
             {profiles.map((profile) => (
