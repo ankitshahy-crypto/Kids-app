@@ -36,7 +36,7 @@ export type SubjectDefinition = {
 
 /** Ages 3–5 reading, in teaching order. Sizes add up to the letter plan. */
 export const readingStages = [
-  { id: "letters", title: "Letters", detail: "Hear each letter sound.", size: 8 },
+  { id: "letters", title: "Letters", detail: "Hear each letter sound and trace big and little.", size: 8 },
   { id: "blending", title: "Blending", detail: "Slide sounds together into a word.", size: 8 },
   { id: "words", title: "Words", detail: "Read short words.", size: 6 },
   { id: "stories", title: "Stories", detail: "A tiny story with their animal.", size: 4 },

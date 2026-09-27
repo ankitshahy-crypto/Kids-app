@@ -33,7 +33,7 @@ LittleNest Learning has three modules. LittleNest Words starts with letter sound
 
 LittleNest Words:
 
-1. **Letters:** Hear each letter sound.
+1. **Letters:** Hear each letter sound and trace big and little.
 2. **Blending:** Slide sounds together into a word.
 3. **Words:** Read short words.
 4. **Stories:** A tiny story with their animal.

@@ -32,6 +32,8 @@ describe("offline bundle", () => {
     expect(files).toContain("letters/b.mp3");
     expect(files).toContain("words/cat.mp3");
     expect(files).toContain("sentences/lets-read.mp3");
+    expect(files).toContain("prompts/pair-a.mp3");
+    expect(files).toContain("prompts/pair-z.mp3");
     for (const file of files) {
       expect(file).toMatch(/^[a-z0-9/-]+\.mp3$/);
       expect(file.startsWith("http")).toBe(false);

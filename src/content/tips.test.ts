@@ -8,7 +8,7 @@ describe("read-together tips", () => {
   });
 
   it("uses the lesson line when a letter prompt is not the end of sound-it-out", () => {
-    expect(readTip("draw", "start").text).toContain("air");
+    expect(readTip("draw", "start").text).toContain("finger");
     expect(readTip("story", "end").id).toBe("story-end");
     expect(readTip("letter", "end").text).toContain("this sound");
   });

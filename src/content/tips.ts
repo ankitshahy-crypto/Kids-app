@@ -36,8 +36,8 @@ const stepTips: Record<LessonStep, { start: string; end: string }> = {
     end: "Ask: what other words start with this sound?",
   },
   draw: {
-    start: "Tracing can be in the air. Big and messy is fine.",
-    end: "Ask them to write the letter in the air one more time.",
+    start: "Trace the big letter, then the little one. A finger or a pencil is fine.",
+    end: "Ask them to match the big letter with the little letter.",
   },
   story: {
     start: "The story stars their animal. Read a line, then pause on one word.",
