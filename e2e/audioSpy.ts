@@ -29,11 +29,20 @@ export async function installAudioSpy(page: Page): Promise<void> {
       target.__audioAttempts?.push({ kind: "clip", detail: this.currentSrc || this.src || "" });
       return play.apply(this);
     };
+    // A clip counts when its bytes are read to play, not when the offline
+    // download caches it in the background.
     const fetchWas = window.fetch.bind(window);
-    window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-      if (url.includes("/audio/") && url.endsWith(".mp3")) target.__audioAttempts?.push({ kind: "clip", detail: url });
-      return fetchWas(input, init);
+      const response = await fetchWas(input, init);
+      if (url.includes("/audio/") && url.endsWith(".mp3")) {
+        const read = response.arrayBuffer.bind(response);
+        response.arrayBuffer = () => {
+          target.__audioAttempts?.push({ kind: "clip", detail: url });
+          return read();
+        };
+      }
+      return response;
     };
   });
 }
