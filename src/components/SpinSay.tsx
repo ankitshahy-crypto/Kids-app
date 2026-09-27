@@ -331,7 +331,7 @@ function Challenge({
           glow={glow}
           onCorrect={() => {
             play((signal) => playWord(round.word, settingsRef.current, signal));
-            onDone();
+            onDone([{ kind: "word", label: round.word.word }]);
           }}
           onMiss={() => {
             play((signal) => playOnDevice("Try again.", settingsRef.current, signal));

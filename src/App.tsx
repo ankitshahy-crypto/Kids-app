@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
 import { primeSpeech, resumeSpeech } from "./audio/player";
 import { Background } from "./components/Background";
@@ -153,7 +153,6 @@ export default function App() {
   const lessonWords = useMemo(() => blendList(ladderStep, lessonLetters), [ladderStep, lessonLetters]);
   const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
   const phonicsReady = phonicsOpen(introducedLetters.length);
-  const ladderWords = useRef(new Set<string>());
   const traceName = nameToTrace(active?.name ?? "");
 
   const showTip = (step: LessonStep, when: "start" | "end", letter?: string) => {
@@ -288,8 +287,7 @@ export default function App() {
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
       { kind: "word" as const, label: word.word },
     ];
-    if (active && !ladderWords.current.has(word.word)) {
-      ladderWords.current.add(word.word);
+    if (active && !active.stickers.some((sticker) => sticker.kind === "word" && sticker.label === word.word)) {
       noteLadder(active.id, phonicsReady);
     }
     reward("letter", learned);
@@ -309,9 +307,17 @@ export default function App() {
     if (!active) return;
     if (game === "hatch") noteHatch(active.id);
     if (game === "spin") noteSpin(active.id);
-    if (game === "hatch" || game === "rhyme" || extra?.ladder) noteLadder(active.id, phonicsReady);
     if (extra?.gift) giveGift(active.id, extra.gift);
     const result = giveStar(active.id, extra?.step ?? `game-${game}`, learned);
+    const words = learned.filter((sticker) => sticker.kind === "word").map((sticker) => sticker.label);
+    const countsLadder = game === "hatch" || game === "rhyme" || Boolean(extra?.ladder);
+    if (
+      result.awarded &&
+      countsLadder &&
+      words.some((word) => !active.stickers.some((sticker) => sticker.kind === "word" && sticker.label === word))
+    ) {
+      noteLadder(active.id, phonicsReady);
+    }
     if (result.awarded) {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (!reduce) setFlying(true);
@@ -327,9 +333,8 @@ export default function App() {
   const practiceReward = (step: "word" | "name", learned: StickerInput[]) => {
     if (!active) return;
     if (step === "word") {
-      const label = learned.map((sticker) => sticker.label).join(" ");
-      if (label && !ladderWords.current.has(label)) {
-        ladderWords.current.add(label);
+      const label = learned.find((sticker) => sticker.kind === "word")?.label;
+      if (label && !active.stickers.some((sticker) => sticker.kind === "word" && sticker.label === label)) {
         noteLadder(active.id, phonicsReady);
       }
     }

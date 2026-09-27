@@ -119,8 +119,8 @@ export function Games({
           knownLetters={knownLetters}
           ladderStep={profile.ladder.step}
           settingsRef={settingsRef}
-          onDone={() => {
-            onDone("rhyme", [], { ladder: true });
+          onDone={(learned) => {
+            onDone("rhyme", learned, { ladder: true });
             setGame("home");
           }}
         />
@@ -282,7 +282,7 @@ function HatchGame({
         ))}
       </div>
       {hatched ? (
-        <button type="button" className="start-button" onClick={() => onDone([{ kind: "animal", label: baby }])}>
+        <button type="button" className="start-button" onClick={() => onDone([{ kind: "animal", label: baby }, { kind: "word", label: round.word.word }])}>
           Done
         </button>
       ) : null}
@@ -513,7 +513,7 @@ function RhymeGame({
   knownLetters: string[];
   ladderStep: LadderStep;
   settingsRef: { current: Settings };
-  onDone: () => void;
+  onDone: (learned: StickerInput[]) => void;
 }) {
   const cards = rhymeRound(knownLetters, 0, ladderStep);
   const [picked, setPicked] = useState<string | null>(null);
@@ -567,7 +567,11 @@ function RhymeGame({
         ))}
       </div>
       {done ? (
-        <button type="button" className="start-button" onClick={onDone}>
+        <button
+          type="button"
+          className="start-button"
+          onClick={() => onDone([...new Set(cards.map((card) => card.word))].map((label) => ({ kind: "word", label })))}
+        >
           Done
         </button>
       ) : null}
