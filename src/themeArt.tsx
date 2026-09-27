@@ -341,6 +341,81 @@ export function Gem() {
   );
 }
 
+export function Bag() {
+  return (
+    <svg className="art" viewBox="0 0 280 210" aria-hidden="true">
+      <Shadow />
+      <path d="M70 90h140l14 92H56Z" fill="#F4A261" />
+      <path d="M96 90c0-30 16-46 44-46s44 16 44 46" fill="none" stroke="#A67B5B" strokeWidth="10" strokeLinecap="round" />
+      <rect x="76" y="96" width="128" height="16" rx="6" fill="#E07A8A" />
+      <circle cx="140" cy="140" r="14" fill="#FFF1E0" />
+    </svg>
+  );
+}
+
+export function Box() {
+  return (
+    <svg className="art" viewBox="0 0 280 210" aria-hidden="true">
+      <Shadow />
+      <path d="M56 84h168v96H56Z" fill="#C9A27A" />
+      <path d="M56 84l84-32 84 32-84 26Z" fill="#E7C7A6" />
+      <path d="M140 110v70" stroke="#A67B5B" strokeWidth="4" />
+      <path d="M56 84l-14 30 98 30M224 84l14 30-98 30" fill="none" stroke="#A67B5B" strokeWidth="6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function Log() {
+  return (
+    <svg className="art" viewBox="0 0 280 210" aria-hidden="true">
+      <Shadow />
+      <rect x="40" y="90" width="200" height="72" rx="36" fill="#A67B5B" />
+      <ellipse cx="240" cy="126" rx="22" ry="36" fill="#E7C7A6" />
+      <ellipse cx="240" cy="126" rx="10" ry="18" fill="#C9A27A" />
+      <path d="M70 108c30 6 60 6 90 0M80 140c30 6 60 6 90 0" fill="none" stroke="#8A6242" strokeWidth="4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function Mat() {
+  return (
+    <svg className="art" viewBox="0 0 280 210" aria-hidden="true">
+      <Shadow />
+      <path d="M40 120l60-40h160l-60 40Z" fill="#9BD1A8" />
+      <path d="M40 120h160v40H40Z" fill="#79B98C" />
+      <path d="M200 120l60-40v40l-60 40Z" fill="#5FA274" />
+      <path d="M60 130h120M60 145h120" stroke="#E5F4EA" strokeWidth="4" strokeLinecap="round" opacity="0.7" />
+    </svg>
+  );
+}
+
+export function Pan() {
+  return (
+    <svg className="art" viewBox="0 0 280 210" aria-hidden="true">
+      <Shadow />
+      <ellipse cx="120" cy="130" rx="84" ry="40" fill="#2C3A4F" />
+      <ellipse cx="120" cy="122" rx="70" ry="30" fill="#8FA9B8" />
+      <rect x="196" y="112" width="70" height="18" rx="9" fill="#2C3A4F" />
+      <circle cx="120" cy="122" r="18" fill="#F7D774" />
+      <circle cx="120" cy="122" r="8" fill="#F4A261" />
+    </svg>
+  );
+}
+
+export function Duck() {
+  return (
+    <svg className="art" viewBox="0 0 280 210" aria-hidden="true">
+      <Shadow />
+      <ellipse cx="130" cy="140" rx="70" ry="44" fill="#F6C445" />
+      <circle cx="176" cy="94" r="34" fill="#F6C445" />
+      <path d="M204 96l30 6-30 10Z" fill="#F09A3A" />
+      <Eye x={184} y={88} />
+      <path d="M70 130c-20-10-30 4-26 18 12-4 20-10 26-18Z" fill="#F09A3A" />
+      <path d="M100 184v14M150 184v14" stroke="#F09A3A" strokeWidth="6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export const themeArt = {
   dinosaurs: Dinosaur,
   vehicles: Truck,
@@ -363,4 +438,10 @@ export const themeArt = {
   sub: Sub,
   flag: Flag,
   gem: Gem,
+  bag: Bag,
+  box: Box,
+  log: Log,
+  mat: Mat,
+  pan: Pan,
+  duck: Duck,
 };

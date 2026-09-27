@@ -45,12 +45,14 @@ function ProfileRow({
   selected,
   onSelect,
   onEdit,
+  onCheck,
   onRemove,
 }: {
   profile: ChildProfile;
   selected: boolean;
   onSelect: () => void;
   onEdit: () => void;
+  onCheck: () => void;
   onRemove: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -70,6 +72,9 @@ function ProfileRow({
       <div className="child-actions">
         <button type="button" className="edit-child" onClick={onEdit}>
           Edit
+        </button>
+        <button type="button" className="edit-child check-child" onClick={onCheck}>
+          Where to start
         </button>
         {confirming ? (
           <button type="button" className="remove-child" data-confirm="ready" onClick={onRemove}>
@@ -93,6 +98,7 @@ export function GrownupsMenu({
   placement,
   onSelect,
   onAdd,
+  onCheck,
   onUpdate,
   onRemove,
   onClose,
@@ -104,6 +110,8 @@ export function GrownupsMenu({
   placement: PlacementDocument;
   onSelect: (id: string) => void;
   onAdd: (input: ChildInput) => void;
+  /** Open the two-minute "where to start" check for this child. */
+  onCheck: (id: string) => void;
   onUpdate: (id: string, input: ChildInput) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
@@ -194,6 +202,7 @@ export function GrownupsMenu({
                   setAdding(false);
                   setEditingId(profile.id);
                 }}
+                onCheck={() => onCheck(profile.id)}
                 onRemove={() => onRemove(profile.id)}
               />
             ))}

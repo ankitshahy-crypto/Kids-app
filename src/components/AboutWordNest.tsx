@@ -13,6 +13,8 @@ import { GrownupIcon, SpeakerIcon, StarIcon } from "./icons";
 const tints: Record<AboutFeatureId, string> = {
   hero: tint.peach,
   voice: tint.sky,
+  calm: tint.mintCard,
+  themes: tint.butter,
   blend: tint.mint,
   lesson: tint.blush,
   stars: tint.peach,
@@ -163,12 +165,31 @@ function FeatureIcon({ id }: { id: AboutFeatureId }) {
   if (id === "blend") return <BlendIcon />;
   if (id === "lesson") return <LessonIcon />;
   if (id === "rewards") return <RewardIcon />;
+  if (id === "calm") return <CalmIcon />;
+  if (id === "themes") return <ThemesIcon />;
   if (id === "math") return <ModuleMark name="numbers" className="about-module-mark" />;
   if (id === "colors") return <ModuleMark name="colors" className="about-module-mark" />;
   if (id === "time") return <ModuleMark name="time" className="about-module-mark" />;
   if (id === "build") return <ModuleMark name="build" className="about-module-mark" />;
   if (id === "science") return <ModuleMark name="science" className="about-module-mark" />;
   return <ClassIcon />;
+}
+
+function CalmIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
+      <path d="M3 15c3-4 6-4 9 0s6 4 9 0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="12" cy="7" r="2.6" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ThemesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
+      <path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.4l-5.3 2.8 1.1-5.9L3.5 9.2l5.9-.8Z" fill="currentColor" />
+    </svg>
+  );
 }
 
 function HeroIcon() {

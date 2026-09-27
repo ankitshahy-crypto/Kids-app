@@ -67,6 +67,13 @@ async function dragAcross(page: Page, track: Locator) {
   await page.mouse.up();
 }
 
+/** Read today's story to the end and tap All done. */
+async function finishStory(page: Page) {
+  await page.getByRole("button", { name: "Read", exact: true }).click();
+  for (let turn = 0; turn < 5; turn += 1) await page.getByRole("button", { name: "Next page" }).click();
+  await page.getByRole("button", { name: "All done" }).click();
+}
+
 async function openSettings(page: Page) {
   await page.getByRole("button", { name: /grown-ups/i }).click();
   await passGate(page);
@@ -258,7 +265,7 @@ test("finishing the lesson offers One more? up to the parent's limit, then All d
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator(".chunk-strip")).toHaveText("3 of 4 · 1 more!");
   await page.getByRole("button", { name: "Story" }).click();
-  await page.getByRole("button", { name: "All done" }).click();
+  await finishStory(page);
   const sheet = page.locator("[data-wrap-up]");
   await expect(sheet).toHaveAttribute("data-wrap-up", "lesson");
   await expect(sheet).toContainText("That's today's lesson, Mia!");
@@ -271,7 +278,7 @@ test("finishing the lesson offers One more? up to the parent's limit, then All d
 
   // The extra chunk. Leaving it brings the wrap-up back with no extras left.
   await page.getByRole("button", { name: "Story" }).click();
-  await page.getByRole("button", { name: "All done" }).click();
+  await finishStory(page);
   await expect(sheet).toHaveAttribute("data-more", "false");
   await expect(sheet).toContainText("All done for now");
   await expect(page.getByRole("button", { name: "One more" })).toHaveCount(0);
@@ -288,7 +295,7 @@ test("the lesson length ends with a friendly wrap-up and no clock", async ({ pag
     await page.mouse.click(10, 300);
     await page.waitForTimeout(700);
   }
-  await page.getByRole("button", { name: "All done" }).click();
+  await finishStory(page);
   const sheet = page.locator("[data-wrap-up]");
   await expect(sheet).toHaveAttribute("data-wrap-up", "time");
   await expect(sheet).toContainText("Nice work, Mia!");

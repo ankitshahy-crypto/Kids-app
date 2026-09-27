@@ -11,7 +11,7 @@ export function themedLetterId(char: string, example: string): string {
   return `${char}-${example.trim().toLowerCase().replace(/\s+/g, "-")}`;
 }
 
-export type AudioKind = "letters" | "words" | "sentences" | "numbers" | "prompts" | "colors";
+export type AudioKind = "letters" | "words" | "sentences" | "numbers" | "prompts" | "colors" | "stories";
 
 export type AudioCue = {
   file: string;
@@ -20,7 +20,7 @@ export type AudioCue = {
   source: "human" | "neural";
 };
 
-type Manifest = Record<AudioKind, Record<string, AudioCue>>;
+type Manifest = Record<Exclude<AudioKind, "stories">, Record<string, AudioCue>> & { stories?: Record<string, AudioCue> };
 
 const book = manifest as Manifest;
 const ready = new Set<string>(available.files);
@@ -106,6 +106,13 @@ for (const [id, cue] of Object.entries(book.prompts)) {
   }
 }
 
+for (const [id, cue] of Object.entries(book.stories ?? {})) {
+  assertCue("stories", id, cue);
+  if (cue.source !== "neural") {
+    throw new Error(`Story line "${id}" should be marked for offline neural audio`);
+  }
+}
+
 for (const [id, cue] of Object.entries(book.colors)) {
   assertCue("colors", id, cue);
   if (cue.source !== "neural") {
@@ -115,7 +122,7 @@ for (const [id, cue] of Object.entries(book.colors)) {
 
 /** Bundled clip for this id, or nothing when that file has not been added yet. */
 export function recordedSrc(kind: AudioKind, id: string): string | undefined {
-  const cue = book[kind][id];
+  const cue = book[kind]?.[id];
   if (!cue || !ready.has(cue.file)) return undefined;
   const base = import.meta.env.BASE_URL;
   return `${base}audio/${cue.file}`;
@@ -123,5 +130,5 @@ export function recordedSrc(kind: AudioKind, id: string): string | undefined {
 
 /** Example phrase or word used only when no recording is on the device. */
 export function spokenLine(kind: AudioKind, id: string, fallback: string): string {
-  return book[kind][id]?.say ?? fallback;
+  return book[kind]?.[id]?.say ?? fallback;
 }
