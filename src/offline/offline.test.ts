@@ -43,7 +43,11 @@ describe("offline bundle", () => {
   });
 
   it("prefetches only audio files listed as shipped", () => {
-    expect(shippedAudioFiles()).toEqual([]);
+    const shipped = shippedAudioFiles();
+    expect(shipped.length).toBeGreaterThan(0);
+    expect(shipped).toContain("letters/m.mp3");
+    expect(shipped).toContain("words/cat.mp3");
+    for (const file of shipped) expect(file).toMatch(/^[a-z0-9/-]+\.mp3$/);
     expect(shippedAudioFiles(["letters/b.mp3", "../secret.mp3", "notes.txt", "words/cat.mp3"])).toEqual([
       "letters/b.mp3",
       "words/cat.mp3",
@@ -52,12 +56,14 @@ describe("offline bundle", () => {
     vi.stubGlobal("performance", {
       getEntriesByType: () => [
         { name: "http://127.0.0.1:5173/Kids-app/audio/letters/b.mp3" },
+        { name: "http://127.0.0.1:5173/Kids-app/audio/words/not-recorded-yet.mp3" },
         { name: "http://127.0.0.1:5173/Kids-app/src/audio/manager.ts" },
         { name: "http://127.0.0.1:5173/Kids-app/favicon.svg" },
       ],
     });
     const urls = offlineUrls();
-    expect(urls.some((url) => url.includes("/audio/letters/"))).toBe(false);
+    expect(urls.some((url) => url.endsWith("/audio/letters/b.mp3"))).toBe(true);
+    expect(urls.some((url) => url.includes("not-recorded-yet"))).toBe(false);
     expect(urls.some((url) => url.includes("/src/audio/manager.ts"))).toBe(true);
     expect(urls.some((url) => url.endsWith("/favicon.svg"))).toBe(true);
   });

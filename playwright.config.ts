@@ -8,7 +8,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
-  reporter: [["list"], ["json", { outputFile: "test-results/e2e-results.json" }]],
+  reporter: process.env.CI
+    ? [["list"], ["github"], ["json", { outputFile: "test-results/e2e-results.json" }]]
+    : [["list"], ["json", { outputFile: "test-results/e2e-results.json" }]],
   use: {
     baseURL,
     trace: "retain-on-failure",
