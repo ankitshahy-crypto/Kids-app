@@ -119,6 +119,11 @@ export function TodayPath({
         </div>
       </div>
       {review && course === "reading" ? <p className="today-review">Review</p> : null}
+      {course === "reading" && placementSource === "week" ? (
+        <p className="week-letter" data-letter-week={letter}>
+          Letter of the week · {letter}
+        </p>
+      ) : null}
 
       <div className="pilot-hero">
         <p className="pilot-kicker">Pilot focus</p>

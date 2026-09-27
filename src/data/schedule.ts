@@ -40,6 +40,15 @@ export function weekIndex(createdAt: string, now = new Date(), timeZone = device
   return calendarWeeksBetween(created, now, timeZone);
 }
 
+/** A Monday. Every child shares this clock for the letter of the week. */
+const LETTER_WEEK_EPOCH = "2026-01-05T12:00:00.000Z";
+
+/** The reading plan week for this calendar week. Same letter for every child. */
+export function letterOfTheWeekIndex(now = new Date(), timeZone = deviceTimeZone()): number {
+  const raw = weekIndex(LETTER_WEEK_EPOCH, now, timeZone);
+  return ((raw % letterSchedule.length) + letterSchedule.length) % letterSchedule.length;
+}
+
 /** New letters from the first lesson week through this one. */
 export function lettersIntroduced(index: number): string[] {
   const count = Math.min(Math.max(index, 0) + 1, letterSchedule.length);

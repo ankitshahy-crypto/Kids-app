@@ -160,7 +160,7 @@ test("a parent sees their child only after they agree", async ({ page }, testInf
   await expect(page.getByText("No child is linked yet.")).toBeVisible();
   await expect(page.locator("[data-child='mia']")).toHaveCount(0);
   await page.getByLabel("Join code from the teacher").fill("BUNNY-42");
-  await page.getByRole("checkbox", { name: /I agree to share/ }).check();
+  await page.getByRole("checkbox", { name: "practice days, active minutes, and session length, as class totals, with no names" }).check();
   await page.getByRole("button", { name: "Join class" }).click();
   await expect(page.getByText("That join code was not found.")).toBeVisible();
   await expect(page.locator("[data-child='mia']")).toHaveCount(0);

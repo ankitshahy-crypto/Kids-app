@@ -10,7 +10,7 @@ import {
   withChildPlace,
   withClassPlace,
 } from "./placement";
-import { isReviewDay, planForWeek, practiceLetters, weekIndex } from "./schedule";
+import { isReviewDay, letterOfTheWeekIndex, planForWeek, practiceLetters } from "./schedule";
 import { blendingWords, pictureForLetter, scheduleLetters } from "./sheets";
 
 function memory() {
@@ -62,10 +62,13 @@ describe("lesson placement", () => {
     expect(classmate.source).toBe("class");
     expect(classmate.letters[0]).toBe("o");
 
-    const calendar = resolvePlacement(emptyPlacement(), "mia", created, now, "UTC");
-    expect(calendar.source).toBe("calendar");
-    expect(calendar.weekIndex).toBe(weekIndex(created, now, "UTC"));
-    expect(calendar.letters).toEqual(practiceLetters(planForWeek(calendar.weekIndex), isReviewDay(now, "UTC")));
+    const week = resolvePlacement(emptyPlacement(), "mia", created, now, "UTC");
+    expect(week.source).toBe("week");
+    expect(week.weekIndex).toBe(letterOfTheWeekIndex(now, "UTC"));
+    expect(week.letters).toEqual(practiceLetters(planForWeek(week.weekIndex), isReviewDay(now, "UTC")));
+    const otherChild = resolvePlacement(emptyPlacement(), "leo", "2020-01-01T00:00:00.000Z", now, "UTC");
+    expect(otherChild.weekIndex).toBe(week.weekIndex);
+    expect(otherChild.letters[0]).toBe(week.letters[0]);
   });
 
   it("trusts the lesson week when a saved stage does not match", () => {

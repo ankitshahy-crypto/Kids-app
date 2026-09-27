@@ -15,6 +15,7 @@ import { WordLadder } from "./WordLadder";
 import { WritingLevels } from "./WritingLevels";
 import { Avatar } from "../avatars";
 import { LearningPath } from "./LearningPath";
+import { ClassMetrics } from "./ClassMetrics";
 import { PlacementControls } from "./PlacementControls";
 import { Printables } from "./Printables";
 import { ReadingChart } from "./ReadingChart";
@@ -206,6 +207,7 @@ export function TeacherView({
 
   return (
     <div className="teacher-shell" data-screen="teacher" data-demo="true" data-timezone={classroom.timeZone}>
+      <ClassMetrics linked={0} />
       <div className="teacher-scroll">
         <button type="button" className="quiet-back" onClick={onClose}>
           Back

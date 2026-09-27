@@ -117,13 +117,13 @@ export function PlacementControls({
       </p>
       <div
         data-place="class"
-        data-stage={reading.classDefault?.stageId ?? "calendar"}
+        data-stage={reading.classDefault?.stageId ?? "week"}
         data-week={reading.classDefault ? String(reading.classDefault.weekIndex) : ""}
       >
         <PlaceEditor
           label="Whole class"
           place={reading.classDefault}
-          clearLabel="Follow the calendar"
+          clearLabel="Letter of the week"
           clearKind="class"
           subject={READING}
           stages={pathStages}

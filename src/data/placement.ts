@@ -21,7 +21,7 @@ import {
   timeWeekCount,
 } from "./timeMoney";
 import { learningPlace, type PathStageId } from "./path";
-import { isReviewDay, letterSchedule, lettersIntroduced, planForWeek, practiceLetters, weekIndex } from "./schedule";
+import { isReviewDay, letterOfTheWeekIndex, letterSchedule, lettersIntroduced, planForWeek, practiceLetters, weekIndex } from "./schedule";
 import { READING, isSubjectKey, readingStages, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone } from "./time";
 
@@ -57,7 +57,7 @@ export type LessonPlace = {
   weekIndex: number;
 };
 
-export type PlacementSource = "child" | "class" | "calendar";
+export type PlacementSource = "child" | "class" | "week" | "calendar";
 
 export type ResolvedPlacement = {
   subject: SubjectId;
@@ -307,7 +307,11 @@ export function savePlacement(doc: PlacementDocument, storage: KeyValueStore = l
   writeStored(storage, PLACEMENT_STORAGE_KEY, JSON.stringify(doc));
 }
 
-/** Child override, then the class place, then that subject's calendar. Reading uses weeks since the profile was created. */
+/**
+ * Child override, then the class place.
+ * Reading with neither set uses the shared letter of the week.
+ * Other subjects use weeks since the profile was created.
+ */
 export function resolvePlacement(
   doc: PlacementDocument,
   childId: string,
@@ -319,8 +323,9 @@ export function resolvePlacement(
   const slot = placesFor(doc, subject);
   const childPlace = slot.byChildId[childId] ?? null;
   const chosen = childPlace ?? slot.classDefault;
-  const source: PlacementSource = childPlace ? "child" : slot.classDefault ? "class" : "calendar";
-  const index = chosen ? chosen.weekIndex : weekIndex(createdAt, now, timeZone);
+  const letterWeek = subject === READING && !chosen;
+  const source: PlacementSource = childPlace ? "child" : slot.classDefault ? "class" : letterWeek ? "week" : "calendar";
+  const index = chosen ? chosen.weekIndex : letterWeek ? letterOfTheWeekIndex(now, timeZone) : weekIndex(createdAt, now, timeZone);
   const stageId = chosen ? chosen.stageId : learningPlace(subject, introducedFor(subject, index)).currentId;
   const letters = subject === READING ? practiceLetters(planForWeek(index), isReviewDay(now, timeZone)) : [];
   return { subject, source, weekIndex: index, stageId, letters };

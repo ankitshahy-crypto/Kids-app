@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { CONSENT_TEXT } from "../data/aggregates";
+import { ClassMetrics } from "./ClassMetrics";
 import { PRODUCT_SHORT } from "../brand";
 import type { ChildProfile } from "../data/profiles";
 import { lessonName } from "../data/profiles";
@@ -266,7 +268,10 @@ function TeacherSchool({
       </form>
       <div data-roster="teacher">
         {classes.map((room) => (
-          <ClassCard key={room.id} room={room} canMove={false} canAdd classes={classes} onRoster={onRoster} />
+          <div key={room.id}>
+            <ClassCard room={room} canMove={false} canAdd classes={classes} onRoster={onRoster} />
+            <ClassMetrics linked={room.children.filter((child) => child.consented && child.parentUid).length} />
+          </div>
         ))}
       </div>
       <form
@@ -357,7 +362,7 @@ function ParentSchool({
         ))}
         <label className="school-check">
           <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-          <span>I agree to share a first name or initial, the animal, and progress with this class.</span>
+          <span data-consent="class">{CONSENT_TEXT}</span>
         </label>
         <button type="submit" className="account-email-go" disabled={!consent}>
           Join class
