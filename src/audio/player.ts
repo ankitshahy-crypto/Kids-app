@@ -366,6 +366,18 @@ export function playPrompt(id: string, settings: Settings, signal: AbortSignal, 
   );
 }
 
+/** A story page, read by the bundled narrator when the line is recorded, else the device voice. */
+export function playStoryLine(id: string, text: string, settings: Settings, signal: AbortSignal): Promise<void> {
+  return playCue(
+    {
+      src: recordedSrc("stories", id),
+      text,
+    },
+    settings,
+    signal,
+  );
+}
+
 export function playSentence(id: string, settings: Settings, signal: AbortSignal): Promise<void> {
   return playCue(
     {

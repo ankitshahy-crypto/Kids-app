@@ -88,7 +88,8 @@ test("read-together tips can be dismissed and turned off", async ({ page }) => {
 
   await page.getByRole("button", { name: "Story" }).click();
   await expect(page.locator(".grownup-tip")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "All done" })).toBeVisible();
+  await expect(page.locator(".story-parent")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Read", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();

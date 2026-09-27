@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
 import { clearLastCue, primeSpeech, replayLastCue, resumeSpeech } from "./audio/player";
 import { BreakScreen } from "./components/BreakScreen";
@@ -6,6 +6,8 @@ import { HearAgainButton, BreakButton } from "./components/ComfortButtons";
 import { WrapUpSheet } from "./components/WrapUpSheet";
 import { extraAllowed, noteExtra } from "./data/extras";
 import { themeForDay } from "./data/themes";
+import { storyForDay } from "./data/stories";
+import { animalById } from "./data/animals";
 import { installReadableFont } from "./readableFont";
 import { Background } from "./components/Background";
 import { Closet } from "./components/Closet";
@@ -21,7 +23,7 @@ import { NestView } from "./components/NestView";
 import { ParentView } from "./components/ParentPanel";
 import { LetterTrace } from "./components/LetterTrace";
 import { NameTrace, WordTrace } from "./components/PathTrace";
-import { PlaceholderStep } from "./components/PlaceholderStep";
+import { StoryReader } from "./components/StoryReader";
 import { SoundItOut } from "./components/SoundItOut";
 import { SilentHint } from "./components/SilentHint";
 import { StarFlight } from "./components/StarFlight";
@@ -252,6 +254,7 @@ export default function App() {
   const [lessonLadderStep, setLessonLadderStep] = useState<LadderStep>(ladderStep);
   const themes = active?.themes ?? [];
   const themeToday = themeForDay(themes, todayKey());
+  const todayStory = useMemo(() => storyForDay(lessonPlace?.weekIndex ?? 0, themes, todayKey()), [lessonPlace, themes]);
   const lessonWords = useMemo(() => blendList(lessonLadderStep, lessonLetters, themes), [lessonLadderStep, lessonLetters, themes]);
   const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
   const phonicsReady = phonicsOpen(introducedLetters.length);
@@ -269,8 +272,8 @@ export default function App() {
     primeSpeech();
     if (step === "letter") setLessonLadderStep(ladderStep);
     setScreen(step);
-    // The letter track stays clear. The tip waits until the word is blended.
-    if (step === "letter") setTip(null);
+    // The letter track stays clear, and the story carries its own grown-up lines.
+    if (step === "letter" || step === "story") setTip(null);
     else showTip(step, "start");
   };
 
@@ -301,6 +304,21 @@ export default function App() {
     reward(step);
     setScreen("today");
     showTip(step, "end");
+  };
+
+  /** The story's own closing question stands in for the generic end tip. */
+  const finishStory = (after: string) => {
+    reward("story");
+    setScreen("today");
+    if (settingsRef.current.showTips && after) setTip({ id: "story-after", text: after });
+    else setTip(null);
+  };
+
+  /** The color moment names a color; the sticker is a color, the star is a reading step. */
+  const finishMoment = (label: string) => {
+    reward("moment", label ? [{ subject: COLORS, kind: "color", label }] : []);
+    setScreen("today");
+    showTip("moment", "end");
   };
 
   const celebrateGoal = (result: ReadingCredit) => {
@@ -754,8 +772,25 @@ export default function App() {
                   onDone={() => practiceReward("name", [{ kind: "word", label: traceName }])}
                 />
               ) : null}
-              {screen === "story" || screen === "moment" ? (
-                <PlaceholderStep step={screen} profile={active} settingsRef={settingsRef} onDone={() => finishStep(screen)} />
+              {screen === "story" ? (
+                <StoryReader
+                  key={todayStory.id}
+                  story={todayStory}
+                  hero={{ name: animalById(active.animal).name, kind: active.animal }}
+                  animal={active.animal}
+                  outfit={active.outfit}
+                  letters={introducedLetters}
+                  showTips={settings.showTips}
+                  settingsRef={settingsRef}
+                  onDone={finishStory}
+                />
+              ) : null}
+              {screen === "moment" ? (
+                <Suspense fallback={<p className="adult-copy">Loading</p>}>
+                  <div className="color-moment" data-screen="moment">
+                    <NameActivity lesson={colorLesson} settingsRef={settingsRef} onDone={(label) => finishMoment(label)} />
+                  </div>
+                </Suspense>
               ) : null}
               {exploreSection ? (
                 <ExploreFrame section={exploreSection} childId={active.id}>

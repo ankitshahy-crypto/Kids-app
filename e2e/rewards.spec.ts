@@ -110,7 +110,7 @@ test("finishing a step earns a star and unlocks a closet item", async ({ page },
 
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "Story" }).click();
-  await expect(page.locator(".placeholder .hero")).toHaveAttribute("data-hat", "hat-leaf");
+  await expect(page.locator(".story-scene .hero").first()).toHaveAttribute("data-hat", "hat-leaf");
 
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "My Nest" }).click();
