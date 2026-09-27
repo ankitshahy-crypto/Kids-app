@@ -1,6 +1,6 @@
 # Design and branding check
 
-This note covers the branding and layout pass on `cursor/brand-design-df76`. It is the before/after review for that work. The later full-stack QA pass (every section, PIN recovery, a crashed Explore section, and the teacher floor of five families) is still ahead of the preview build.
+This note covers the branding and layout pass on `cursor/brand-design-df76`, then the full-stack QA pass on `cursor/final-qa-df76`.
 
 Before shots are the parent branch `cursor/school-roster-df76`, opened in Chromium at iPhone 13 (390×844) and iPad landscape (1024×768). After shots are this branch, from Playwright on the iPhone 13 project and on Chromium at the same iPad size.
 
@@ -165,3 +165,37 @@ Build It before (Play below the blocks):
 Build It after (Play on screen):
 
 ![Build It after, iPhone](qa-screenshots/after_build_iphone.png)
+
+## Full-stack QA
+
+Checked on the stack tip after the privacy, Explore, flag, and class-QR branches.
+
+| Check | Result |
+| --- | --- |
+| Product name LittleNest Learning, bundle id `com.triagedesk.littlenest`, storage keys `littlenest-*-v1` | Pass |
+| Pastel tokens in `src/palette.ts` and `:root` | Pass |
+| Store name “LittleNest Learning: Ages 3-7” and subtitle “Read, math, science & coding” | Pass |
+| App icon name band from the earlier icon pass | Pass. Not regenerated |
+| Natural-voice recordings | Blocked. `public/audio` has no mp3 files. `npm run generate-audio` was not run |
+| Unit tests | 182 passed |
+| Playwright on Chromium, Firefox, WebKit, iPhone 13, and Pixel 7 | 511 passed, 36 failed, 18 skipped |
+
+The 36 Playwright failures are seven cases, repeated on each browser, plus one iPhone-only layout check:
+
+- Letter of the week is currently **k** (one new letter). Blend and tracing specs still assume an earlier three-letter word, so the third tile is missing and the trace helper stays on the match step. That blocks the star, cheer, tip, and learning-path specs that trace first.
+- Hatch level 2 does not show a blank tile (`data-blank="shown"` count is 0).
+- On iPhone, the home dock can sit past the bottom of the screen when Science is selected.
+
+PIN recovery, the five-family metrics floor, Explore crash isolation, and class QR specs passed inside this run.
+
+Home during this pass:
+
+![Home, iPhone](qa-screenshots/qa_home_iphone.png)
+
+![Home, iPad landscape WebKit](qa-screenshots/qa_home_ipad.png)
+
+![Home, iPad portrait](qa-screenshots/qa_home_ipad_portrait.png)
+
+![Home, Android](qa-screenshots/qa_home_android.png)
+
+![Home, desktop](qa-screenshots/qa_home_desktop.png)
