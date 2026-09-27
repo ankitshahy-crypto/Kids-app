@@ -1,6 +1,7 @@
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { requestReward, resetRewardRequests } from "../rewards/request";
 import { ExploreBoundary } from "./boundary";
 import { sectionVisible, visibleExplore } from "./flags";
 import { readSection, sectionStorageKey, writeSection } from "./sectionStore";
@@ -39,11 +40,21 @@ describe("explore isolation", () => {
     expect(forbiddenSpecifier("../data/profiles")).toBe(true);
     expect(forbiddenSpecifier("../../data/rewards")).toBe(true);
     expect(forbiddenSpecifier("../storage")).toBe(true);
-    expect(forbiddenSpecifier("../rewards/request")).toBe(false);
     expect(valueSpecifiers('import type { ChildProfile } from "../data/profiles";\nimport { MATH } from "../data/math";')).toEqual([
       "../data/math",
     ]);
     expect(exploreImportViolations()).toEqual([]);
+  });
+
+  it("follows relative imports past the section file", () => {
+    const dir = mkdtempSync(join(tmpdir(), "explore-guard-"));
+    writeFileSync(join(dir, "lazy.tsx"), 'export const Play = () => import("./MathPlay");\n');
+    writeFileSync(join(dir, "MathPlay.tsx"), 'import { Trace } from "./PathTrace";\n');
+    writeFileSync(join(dir, "PathTrace.tsx"), 'import { loadStore } from "./data/profiles";\n');
+    expect(exploreImportViolations(join(dir, "lazy.tsx"))).toEqual([
+      `${join(dir, "PathTrace.tsx")}: ./data/profiles`,
+    ]);
+    rmSync(dir, { recursive: true });
   });
 
   it("writes only the section key", () => {
@@ -61,17 +72,5 @@ describe("explore isolation", () => {
     expect(sectionVisible("math", { math: false })).toBe(false);
     expect(sectionVisible("colors", { math: false })).toBe(true);
     expect(visibleExplore({}, false)).toEqual([]);
-  });
-});
-
-describe("requestReward", () => {
-  it("grants one effort star and refuses the rest", () => {
-    resetRewardRequests();
-    expect(requestReward({ section: "math", reason: "finished" }, 1_000)).toEqual({ granted: true, stars: 1 });
-    expect(requestReward({ section: "math", reason: "finished" }, 1_500)).toEqual({ granted: false, stars: 0 });
-    expect(requestReward({ section: "colors", reason: "tried" }, 1_500)).toEqual({ granted: true, stars: 1 });
-    expect(requestReward({ section: "math", reason: "bought" }, 3_000)).toEqual({ granted: false, stars: 0 });
-    expect(requestReward({ section: "letter", reason: "finished" }, 3_000)).toEqual({ granted: false, stars: 0 });
-    expect(requestReward({ section: "math", reason: "finished" }, 3_000)).toEqual({ granted: true, stars: 1 });
   });
 });

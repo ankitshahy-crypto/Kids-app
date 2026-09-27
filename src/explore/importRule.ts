@@ -20,6 +20,14 @@ export function valueSpecifiers(text: string): string[] {
   return specs;
 }
 
+/** Shared app modules may use storage. Section files and the components they draw may not. */
+function inSharedModule(path: string): boolean {
+  const normalized = path.replace(/\\/g, "/");
+  return ["/src/audio/", "/src/settings.ts", "/src/data/", "/src/hooks/", "/src/offline/", "/src/storage.ts"].some(
+    (part) => normalized.includes(part),
+  );
+}
+
 function resolveRelative(fromFile: string, specifier: string): string | null {
   if (!specifier.startsWith(".")) return null;
   const base = resolve(dirname(fromFile), specifier);
@@ -28,19 +36,25 @@ function resolveRelative(fromFile: string, specifier: string): string | null {
 }
 
 /**
- * Scan the files `lazy.tsx` loads, not the Explore folder. Those are the real
- * section modules. `import type` lines are ignored.
+ * Scan the files `lazy.tsx` loads, then every relative import they reach.
+ * `import type` lines are ignored. The Explore folder itself is not the list.
  */
 export function exploreImportViolations(file = join(process.cwd(), "src/explore/lazy.tsx")): string[] {
   if (!existsSync(file)) return [];
   const violations: string[] = [];
-  const targets = valueSpecifiers(readFileSync(file, "utf8"))
-    .map((specifier) => ({ specifier, path: resolveRelative(file, specifier) }))
-    .filter((item): item is { specifier: string; path: string } => item.path !== null);
-  for (const target of targets) {
-    for (const specifier of valueSpecifiers(readFileSync(target.path, "utf8"))) {
-      if (forbiddenSpecifier(specifier)) violations.push(`${target.path}: ${specifier}`);
+  const seen = new Set<string>();
+  const walk = (path: string) => {
+    if (seen.has(path)) return;
+    seen.add(path);
+    for (const specifier of valueSpecifiers(readFileSync(path, "utf8"))) {
+      if (forbiddenSpecifier(specifier)) violations.push(`${path}: ${specifier}`);
+      const next = resolveRelative(path, specifier);
+      if (next && !inSharedModule(next)) walk(next);
     }
+  };
+  for (const specifier of valueSpecifiers(readFileSync(file, "utf8"))) {
+    const target = resolveRelative(file, specifier);
+    if (target) walk(target);
   }
   return violations;
 }

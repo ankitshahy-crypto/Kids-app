@@ -36,7 +36,6 @@ import {
   TraceActivity,
 } from "./explore/lazy";
 import { sectionForScreen } from "./explore/sections";
-import { requestReward } from "./rewards/request";
 import { COLORS, colorFill, colorLessonForChild, type ColorStep } from "./data/colors";
 import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
@@ -217,10 +216,6 @@ export default function App() {
 
   const finishMath = (step: MathStep, label: string) => {
     if (!active) return;
-    if (!requestReward({ section: "math", reason: "finished" }).granted) {
-      setScreen("today");
-      return;
-    }
     const learned: StickerInput[] = label ? [{ subject: MATH, kind: "number", label }] : [];
     const result = giveStar(active.id, step, learned, MATH);
     if (result.awarded) {
@@ -246,10 +241,6 @@ export default function App() {
 
   const finishColor = (step: ColorStep, label: string) => {
     if (!active) return;
-    if (!requestReward({ section: "colors", reason: "finished" }).granted) {
-      setScreen("today");
-      return;
-    }
     const learned: StickerInput[] = label ? [{ subject: COLORS, kind: "color", label }] : [];
     const result = giveStar(active.id, step, learned, COLORS);
     if (result.awarded) {
