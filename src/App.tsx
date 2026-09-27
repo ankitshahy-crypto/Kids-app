@@ -23,8 +23,19 @@ import { TeacherView } from "./components/TeacherView";
 import { TodayPath } from "./components/TodayPath";
 import { colorTip, mathTip, readTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
-import { MixActivity, NameActivity, PaintActivity } from "./components/ColorPlay";
-import { AddActivity, CountActivity, KnowActivity, MoreActivity, ShapeActivity, TraceActivity } from "./components/MathPlay";
+import { ExploreFrame } from "./explore/frame";
+import {
+  AddActivity,
+  CountActivity,
+  KnowActivity,
+  MixActivity,
+  MoreActivity,
+  NameActivity,
+  PaintActivity,
+  ShapeActivity,
+  TraceActivity,
+} from "./explore/lazy";
+import { sectionForScreen } from "./explore/sections";
 import { COLORS, colorFill, colorLessonForChild, type ColorStep } from "./data/colors";
 import { MATH, lessonForChild, type MathStep } from "./data/math";
 import { todayKey, type LessonStep, type StickerInput } from "./data/profiles";
@@ -266,6 +277,7 @@ export default function App() {
     lessonScreens.includes(screen as LessonStep) ||
     mathScreens.includes(screen as MathStep) ||
     colorScreens.includes(screen as ColorStep);
+  const exploreSection = sectionForScreen(screen);
   const pastel = mode === "start" || mode === "kid";
   const openGrownups = () => {
     setGrownupsReturn(mode === "kid" ? "kid" : "start");
@@ -356,37 +368,41 @@ export default function App() {
               {screen === "draw" || screen === "story" || screen === "moment" ? (
                 <PlaceholderStep step={screen} profile={active} onDone={() => finishStep(screen)} />
               ) : null}
-              {screen === "count" ? (
-                <CountActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("count", label)} />
-              ) : null}
-              {screen === "know" ? (
-                <KnowActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("know", label)} />
-              ) : null}
-              {screen === "trace" ? (
-                <TraceActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("trace", label)} />
-              ) : null}
-              {screen === "shape" ? (
-                <ShapeActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("shape", label)} />
-              ) : null}
-              {screen === "more" ? (
-                <MoreActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("more", label)} />
-              ) : null}
-              {screen === "add" ? (
-                <AddActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("add", label)} />
-              ) : null}
-              {screen === "name" ? (
-                <NameActivity lesson={colorLesson} settingsRef={settingsRef} onDone={(label) => finishColor("name", label)} />
-              ) : null}
-              {screen === "mix" ? <MixActivity settingsRef={settingsRef} onDone={(label) => finishColor("mix", label)} /> : null}
-              {screen === "paint" ? (
-                <PaintActivity
-                  animal={active.animal}
-                  outfit={active.outfit}
-                  made={active.stickers
-                    .filter((sticker) => sticker.subject === COLORS && sticker.kind === "color" && colorFill(sticker.label))
-                    .map((sticker) => sticker.label)}
-                  onDone={(label) => finishColor("paint", label)}
-                />
+              {exploreSection ? (
+                <ExploreFrame section={exploreSection} childId={active.id}>
+                  {screen === "count" ? (
+                    <CountActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("count", label)} />
+                  ) : null}
+                  {screen === "know" ? (
+                    <KnowActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("know", label)} />
+                  ) : null}
+                  {screen === "trace" ? (
+                    <TraceActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("trace", label)} />
+                  ) : null}
+                  {screen === "shape" ? (
+                    <ShapeActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("shape", label)} />
+                  ) : null}
+                  {screen === "more" ? (
+                    <MoreActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("more", label)} />
+                  ) : null}
+                  {screen === "add" ? (
+                    <AddActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("add", label)} />
+                  ) : null}
+                  {screen === "name" ? (
+                    <NameActivity lesson={colorLesson} settingsRef={settingsRef} onDone={(label) => finishColor("name", label)} />
+                  ) : null}
+                  {screen === "mix" ? <MixActivity settingsRef={settingsRef} onDone={(label) => finishColor("mix", label)} /> : null}
+                  {screen === "paint" ? (
+                    <PaintActivity
+                      animal={active.animal}
+                      outfit={active.outfit}
+                      made={active.stickers
+                        .filter((sticker) => sticker.subject === COLORS && sticker.kind === "color" && colorFill(sticker.label))
+                        .map((sticker) => sticker.label)}
+                      onDone={(label) => finishColor("paint", label)}
+                    />
+                  ) : null}
+                </ExploreFrame>
               ) : null}
             </div>
           </>

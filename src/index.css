@@ -1454,6 +1454,16 @@ button:focus-visible {
   max-width: 28rem;
 }
 
+.explore-error {
+  margin: 24px auto;
+  max-width: 28rem;
+  padding: 18px;
+  border-radius: 20px;
+  background: #fffaf4;
+  color: var(--text);
+  text-align: center;
+}
+
 .root-error button {
   min-height: 64px;
   margin-top: 8px;

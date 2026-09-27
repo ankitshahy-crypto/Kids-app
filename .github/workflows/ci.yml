@@ -33,7 +33,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Explore import guard
-        run: node scripts/check-explore-imports.mjs
+        run: node --experimental-strip-types scripts/check-explore-imports.mjs
 
       - name: Unit tests
         run: npm test
