@@ -87,7 +87,7 @@ test("a class place and a child override stay on this device", async ({ page }, 
   await expect(childPlace).toHaveAttribute("data-source", "child");
   await expect(childPlace.locator("[data-today]")).toHaveAttribute("data-today", /^f/);
   if (testInfo.project.name === "iphone") {
-    await page.locator("[data-card=placement]").screenshot({ path: "/opt/cursor/artifacts/lesson-place-iphone.png" });
+    await page.locator("[data-card=placement]").screenshot({ path: "test-results/screenshots/lesson-place-iphone.png" });
   }
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -173,7 +173,7 @@ test("printable letter and blending sheets render", async ({ page }, testInfo) =
   await expect.poll(async () => page.evaluate(() => (window as Window & { __printed?: boolean }).__printed)).toBe(true);
 
   if (testInfo.project.name === "iphone") {
-    await root.locator("[data-sheet=letter]").first().screenshot({ path: "/opt/cursor/artifacts/printable-letter-iphone.png" });
+    await root.locator("[data-sheet=letter]").first().screenshot({ path: "test-results/screenshots/printable-letter-iphone.png" });
   }
 
   await page.emulateMedia({ media: "print" });

@@ -7,11 +7,11 @@ const PRESSABLE =
 
 /**
  * Controls whose second tap would repeat the same step (open a child, open a
- * lesson, save, pick a grown-up answer). Back and the word arrows stay
- * tappable: each tap is a new instant step.
+ * lesson, save, pick a grown-up answer). Back, the word arrows, and Remove stay
+ * tappable: Remove's second tap is the confirm, not a repeat.
  */
 const COMMIT =
-  ".who-pick, .trail-stop, .gate-choice, .gate-button, .done-button, .add-child, .save-child, .remove-child, .dock-button, .parent-row, .teacher-card-link";
+  ".who-pick, .trail-stop, .gate-choice, .gate-button, .done-button, .add-child, .save-child, .dock-button, .parent-row, .teacher-card-link";
 
 const BUSY_MS = 420;
 const pressed = new Set<HTMLElement>();

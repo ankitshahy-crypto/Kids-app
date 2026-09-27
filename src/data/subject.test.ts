@@ -86,6 +86,19 @@ describe("subject key", () => {
     expect(awardStar(next, "draw", now, zone)).toBe(next);
   });
 
+  it("caps Spin & Say to fixed step names and refuses generated ids", () => {
+    const child = createChild({ name: "Mia", ageRange: "4", animal: "fox" });
+    for (const step of ["spin-1", "spin-2", "spin-99"]) {
+      expect(awardStar(child, step, now, zone)).toBe(child);
+    }
+    const sound = awardStar(child, "spin-sound", now, zone);
+    expect(sound.stars).toBe(1);
+    expect(awardStar(sound, "spin-sound", now, zone)).toBe(sound);
+    const word = awardStar(sound, "spin-word", now, zone);
+    expect(word.stars).toBe(2);
+    expect(awardStar(word, "spin-99", now, zone)).toBe(word);
+  });
+
   it("does not award stars or time for a subject that is not registered", () => {
     const child = createChild({ name: "Mia", ageRange: "4", animal: "fox" });
     const starred = awardStar(child, "count", now, zone, "science");

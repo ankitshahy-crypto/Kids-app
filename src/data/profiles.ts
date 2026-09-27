@@ -1,4 +1,4 @@
-import { PROFILES_KEY, readStored, writeStored } from "../storage";
+import { PROFILES_KEY, readStored, stashCorrupt, writeStored, type KeyValueStore } from "../storage";
 import { animalById, isAnimalId, type AnimalId } from "./animals";
 import { READING, isSubjectKey, readingSteps, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone, localDateKey, utcTimestamp, weekDateKeys } from "./time";
@@ -117,6 +117,28 @@ export function dayProgress(
   };
 }
 
+/**
+ * Activity steps that are not part of a subject's daily lesson.
+ * Spin & Say uses this closed set. `spin-1`, `spin-2`, and any other generated
+ * id are refused, so replaying the wheel cannot mint a new star each time.
+ */
+export const activitySteps = [
+  "spin-sound",
+  "spin-word",
+  "spin-count",
+  "spin-color",
+  "spin-trace",
+  "spin-bonus",
+] as const;
+
+const activityStepSet = new Set<string>(activitySteps);
+
+export function stepAllowed(subject: SubjectId, step: string): boolean {
+  const definition = subjectDefinition(subject);
+  if (!definition || !isSubjectKey(step)) return false;
+  return definition.steps.includes(step) || activityStepSet.has(step);
+}
+
 /** One star for a finished step of a known subject. The same step on that day is not awarded twice. */
 export function awardStar(
   profile: ChildProfile,
@@ -125,7 +147,7 @@ export function awardStar(
   timeZone = deviceTimeZone(),
   subject: SubjectId = READING,
 ): ChildProfile {
-  if (!subjectDefinition(subject) || !isSubjectKey(step)) return profile;
+  if (!stepAllowed(subject, step)) return profile;
   const key = todayKey(now, timeZone);
   const day = profile.days[key] ?? {};
   const steps = day[subject] ?? {};
@@ -343,25 +365,55 @@ function isProfile(value: unknown): value is ChildProfile {
   return Object.values(profile.days).every(isStoredDay);
 }
 
-export function loadStore(): ProfileStore {
-  try {
-    const raw = readStored(localStorage, STORAGE_KEY);
-    if (!raw) return { activeId: null, profiles: [] };
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return { activeId: null, profiles: [] };
-    const store = parsed as Partial<ProfileStore>;
-    const profiles = Array.isArray(store.profiles) ? store.profiles.filter(isProfile).map(withRewards) : [];
-    const activeId = profiles.some((profile) => profile.id === store.activeId) ? store.activeId ?? null : null;
-    return { activeId, profiles };
-  } catch {
-    return { activeId: null, profiles: [] };
-  }
-}
+const emptyStore = (): ProfileStore => ({ activeId: null, profiles: [] });
 
-export function saveStore(store: ProfileStore): void {
+/** What `saveStore` writes. Used to skip a save when nothing the child did has changed. */
+export function storeSnapshot(store: ProfileStore): string {
   const safe: ProfileStore = {
     activeId: store.profiles.some((profile) => profile.id === store.activeId) ? store.activeId : null,
     profiles: store.profiles,
   };
-  writeStored(localStorage, STORAGE_KEY, JSON.stringify(safe));
+  return JSON.stringify(safe);
+}
+
+/**
+ * Read profiles. A document that cannot be parsed, or that contains a record
+ * this version does not understand, is copied to `littlenest-profiles-v1-corrupt`
+ * and the original key is left as it was. This function never writes an empty
+ * store over that key.
+ */
+export function loadStore(storage: KeyValueStore = localStorage): ProfileStore {
+  let raw: string | null;
+  try {
+    raw = readStored(storage, STORAGE_KEY);
+  } catch {
+    return emptyStore();
+  }
+  if (!raw) return emptyStore();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    stashCorrupt(storage, STORAGE_KEY, raw);
+    return emptyStore();
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    stashCorrupt(storage, STORAGE_KEY, raw);
+    return emptyStore();
+  }
+  const store = parsed as Partial<ProfileStore>;
+  if (!Array.isArray(store.profiles)) {
+    stashCorrupt(storage, STORAGE_KEY, raw);
+    return emptyStore();
+  }
+  if (store.profiles.some((profile) => !isProfile(profile))) {
+    stashCorrupt(storage, STORAGE_KEY, raw);
+  }
+  const profiles = store.profiles.filter(isProfile).map(withRewards);
+  const activeId = profiles.some((profile) => profile.id === store.activeId) ? (store.activeId ?? null) : null;
+  return { activeId, profiles };
+}
+
+export function saveStore(store: ProfileStore, storage: KeyValueStore = localStorage): void {
+  writeStored(storage, STORAGE_KEY, storeSnapshot(store));
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { previewVoice } from "../audio/player";
 import { deviceSpeechFollowsSlider } from "../audio/platform";
 import { subscribeVoices, type VoiceOption } from "../audio/voices";
+import { savePin } from "../data/grownupPin";
 import type { Settings, SpeechSpeed } from "../settings";
 
 export function SettingsFields({
@@ -106,7 +107,41 @@ export function SettingsFields({
         <legend>Speech speed</legend>
         <SpeedButtons speed={settings.speed} onChange={(speed) => onChange({ speed })} />
       </fieldset>
+      <PinSetter />
     </>
+  );
+}
+
+function PinSetter() {
+  const [pin, setPin] = useState("");
+  const [saved, setSaved] = useState(false);
+  return (
+    <fieldset className="setting-group" data-setting="pin">
+      <legend>Grown-up PIN</legend>
+      <p className="adult-copy">Four digits. The next grown-up check asks for this PIN. Five wrong tries wait before trying again.</p>
+      <input
+        className="name-input"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={4}
+        value={pin}
+        aria-label="New PIN"
+        onChange={(event) => {
+          setPin(event.target.value.replace(/\D/g, "").slice(0, 4));
+          setSaved(false);
+        }}
+      />
+      <button
+        type="button"
+        className="save-child"
+        onClick={() => {
+          if (savePin(pin)) setSaved(true);
+        }}
+      >
+        Save PIN
+      </button>
+      {saved ? <p className="adult-copy">Saved on this device. The digits are not stored.</p> : null}
+    </fieldset>
   );
 }
 

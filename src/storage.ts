@@ -1,4 +1,4 @@
-type KeyValueStore = {
+export type KeyValueStore = {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
 };
@@ -37,8 +37,32 @@ export function readStored(storage: KeyValueStore, key: string): string | null {
   return old;
 }
 
+/** A copy of a document that could not be trusted. The original key is not replaced. */
+export function corruptKey(key: string): string {
+  return `${key}-corrupt`;
+}
+
+/**
+ * Keep the first unreadable copy. A later failure must not overwrite it, and a
+ * quota error must not throw into React.
+ */
+export function stashCorrupt(storage: KeyValueStore, key: string, raw: string): void {
+  if (!raw) return;
+  const dest = corruptKey(key);
+  try {
+    if (storage.getItem(dest) !== null) return;
+    storage.setItem(dest, raw);
+  } catch {
+    // The original key is left unchanged.
+  }
+}
+
 export function writeStored(storage: KeyValueStore, key: string, value: string): void {
-  storage.setItem(key, value);
+  try {
+    storage.setItem(key, value);
+  } catch {
+    return;
+  }
   const legacy = LEGACY_KEYS[key];
   if (!legacy) return;
   try {

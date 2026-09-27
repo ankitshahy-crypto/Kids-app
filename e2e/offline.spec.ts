@@ -84,7 +84,7 @@ test("a lesson still plays after the connection drops", async ({ page }, testInf
   await expect(page.locator(".blend-track")).toBeVisible();
   await expect.poll(() => playCount(page)).toBeGreaterThan(0);
   if (testInfo.project.name === "iphone") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/offline-lesson-iphone.png", animations: "disabled" });
+    await page.screenshot({ path: "test-results/screenshots/offline-lesson-iphone.png", animations: "disabled" });
   }
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -116,6 +116,6 @@ test("a lesson still plays after the connection drops", async ({ page }, testInf
   await expect(offline.getByText("Android")).toBeVisible();
   await expect(offline.getByText("iPhone voices usually work offline")).toBeVisible();
   if (testInfo.project.name === "iphone") {
-    await offline.screenshot({ path: "/opt/cursor/artifacts/offline-ready-iphone.png", animations: "disabled" });
+    await offline.screenshot({ path: "test-results/screenshots/offline-ready-iphone.png", animations: "disabled" });
   }
 });

@@ -23,4 +23,14 @@ describe("stored progress", () => {
     expect(storage.data.get("kids-app-profiles-v1")).toBe("{\"activeId\":\"mia\"}");
     expect(readStored(storage, PROFILES_KEY)).toBe("{\"activeId\":\"mia\"}");
   });
+
+  it("does not throw when the browser refuses the write", () => {
+    const storage = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("quota");
+      },
+    };
+    expect(() => writeStored(storage, PROFILES_KEY, "{\"activeId\":null}")).not.toThrow();
+  });
 });

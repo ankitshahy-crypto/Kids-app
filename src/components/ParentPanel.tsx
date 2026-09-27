@@ -453,11 +453,11 @@ function ChildRow({
           Edit
         </button>
         {confirming ? (
-          <button type="button" className="remove-child" onClick={onRemove}>
+          <button type="button" className="remove-child" data-confirm="ready" onClick={onRemove}>
             Remove
           </button>
         ) : (
-          <button type="button" className="remove-child remove-quiet" onClick={() => setConfirming(true)}>
+          <button type="button" className="remove-child remove-quiet" data-confirm="ask" onClick={() => setConfirming(true)}>
             Remove
           </button>
         )}

@@ -77,7 +77,7 @@ async function spoken(page: Page): Promise<string[]> {
 test("counting speaks each number as apples are tapped or dragged", async ({ page }, testInfo) => {
   await install(page);
   if (testInfo.project.name === "iphone") {
-    await page.locator("[data-screen=today]").screenshot({ path: "/opt/cursor/artifacts/numbers-today-iphone.png" });
+    await page.locator("[data-screen=today]").screenshot({ path: "test-results/screenshots/numbers-today-iphone.png" });
   }
   await page.getByRole("button", { name: "Count objects" }).click();
   const play = page.locator("[data-screen=count]");
@@ -117,7 +117,7 @@ test("number tracing follows the dots in order", async ({ page }, testInfo) => {
   const digit = await play.getAttribute("data-digit");
   expect(Number(digit)).toBeGreaterThanOrEqual(0);
   if (testInfo.project.name === "iphone") {
-    await play.screenshot({ path: "/opt/cursor/artifacts/number-trace-iphone.png" });
+    await play.screenshot({ path: "test-results/screenshots/number-trace-iphone.png" });
   }
   for (let guard = 0; guard < 12; guard += 1) {
     const next = play.locator("[data-trace-dot][data-next=true]");
@@ -163,7 +163,7 @@ test("picture addition accepts the sum up to 5", async ({ page }, testInfo) => {
   expect(left + right).toBe(sum);
   expect(sum).toBeLessThanOrEqual(5);
   if (testInfo.project.name === "iphone") {
-    await play.screenshot({ path: "/opt/cursor/artifacts/number-add-iphone.png" });
+    await play.screenshot({ path: "test-results/screenshots/number-add-iphone.png" });
   }
   await play.locator(`[data-sum='${sum}']`).click();
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");

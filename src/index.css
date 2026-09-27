@@ -1415,6 +1415,57 @@ button:focus-visible {
   font-size: 16px;
 }
 
+.pin-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.pin-form .name-input {
+  text-align: center;
+  font-size: 28px;
+  letter-spacing: 0.2em;
+}
+
+.pin-form button:disabled,
+.gate-card .text-button:disabled {
+  opacity: 0.45;
+}
+
+.root-error {
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: #fffaf4;
+  color: var(--text);
+}
+
+.root-error h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.root-error p {
+  margin: 0;
+  max-width: 28rem;
+}
+
+.root-error button {
+  min-height: 64px;
+  margin-top: 8px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--sand);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+}
+
 .gate-choices {
   display: grid;
   grid-template-columns: 1fr 1fr;

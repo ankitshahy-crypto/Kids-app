@@ -104,7 +104,7 @@ test("finishing a step earns a star and unlocks a closet item", async ({ page },
   await expect(hat).toHaveAttribute("data-worn", "true");
   await expect(page.locator(".closet-hero .hero")).toHaveAttribute("data-hat", "hat-leaf");
   if (testInfo.project.name === "iphone") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/closet-iphone.png" });
+    await page.screenshot({ path: "test-results/screenshots/closet-iphone.png" });
   }
 
   await page.getByRole("button", { name: "Back" }).click();
@@ -137,7 +137,7 @@ test("blending a word adds a sticker", async ({ page }, testInfo) => {
   }
   await expect(page.locator("[data-kind=word]").first()).toBeVisible();
   if (testInfo.project.name === "iphone") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/sticker-book-iphone.png" });
+    await page.screenshot({ path: "test-results/screenshots/sticker-book-iphone.png" });
   }
 });
 

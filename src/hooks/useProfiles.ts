@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AnimalId } from "../data/animals";
 import {
   createChild,
   editChild,
   loadStore,
   saveStore,
+  storeSnapshot,
   type AgeRange,
   type ChildProfile,
   type StickerInput,
@@ -15,9 +16,13 @@ import { READING, type SubjectId } from "../data/subject";
 
 export function useProfiles() {
   const [store, setStore] = useState(() => loadStore());
+  const saved = useRef(storeSnapshot(store));
 
   useEffect(() => {
+    const next = storeSnapshot(store);
+    if (next === saved.current) return;
     saveStore(store);
+    saved.current = next;
   }, [store]);
 
   const active = store.profiles.find((profile) => profile.id === store.activeId) ?? null;

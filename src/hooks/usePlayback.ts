@@ -76,6 +76,7 @@ export function usePlayback(
         }
         if (!live()) return;
         setActive(null);
+        if (!live()) return;
         onFinishedRef.current?.();
       } catch (error) {
         if (!isAbortError(error) && token === tokenRef.current) setActive(null);
@@ -92,10 +93,19 @@ export function usePlayback(
 
   useEffect(() => {
     if (!paused) return;
+    tokenRef.current += 1;
     abortRef.current?.abort();
     cancelSpeech();
     setActive(null);
   }, [paused]);
+
+  useEffect(() => {
+    return () => {
+      tokenRef.current += 1;
+      abortRef.current?.abort();
+      cancelSpeech();
+    };
+  }, []);
 
   const replay = useCallback(() => {
     const run = begin();

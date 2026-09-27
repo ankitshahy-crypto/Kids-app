@@ -8,7 +8,7 @@ The first activity inside Today's lesson is **Sound it out**.
 
 The word starts as dim letter tiles with a track underneath. The child drags their animal along the track. Each letter lights up and plays once as the drag passes it, then the whole word plays at the end and stays lit. A lit letter can still be tapped to hear it again. **Play sound** replays the word, and the arrows (or a swipe) change words. Until a person records a clip, the phone says an example phrase such as "b, as in ball" rather than a bare syllable.
 
-There are no ads, scores, timers, accounts, or network calls. Speech, pictures, and profiles stay on the device. Schools will license the app later; there is no payment code yet.
+There are no ads and no school accounts in this version. A child's name, speech, pictures, and progress stay on this device. A grown-up can download the lesson files for offline use; that download does not send a name. School sign-in is not in this build. There is no payment code yet.
 
 ## Open the demo on an iPhone
 
@@ -101,4 +101,4 @@ Until a clip is indexed, device speech says the manifest phrase. Letter sounds u
 
 ## Privacy
 
-No analytics, no accounts, no tracking, and no requests to other servers. The font is stored in the repo. See `ASSETS.md` for every image, font, and the audio approach, with source and license.
+No analytics, no tracking, and no school accounts. Progress stays on this device. The font is stored in the repo. A grown-up can save lesson files from this app for offline use. See `ASSETS.md` for every image, font, and the audio approach, with source and license.

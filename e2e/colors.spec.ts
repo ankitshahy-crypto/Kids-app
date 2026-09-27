@@ -87,7 +87,7 @@ async function stir(page: Page, bucket: Locator) {
 test("color names speak the color and accept the matching object", async ({ page }, testInfo) => {
   await install(page);
   if (testInfo.project.name === "iphone") {
-    await page.locator("[data-screen=today]").screenshot({ path: "/opt/cursor/artifacts/colors-today-iphone.png" });
+    await page.locator("[data-screen=today]").screenshot({ path: "test-results/screenshots/colors-today-iphone.png" });
   }
   await page.getByRole("button", { name: "Hear a color" }).click();
   const play = page.locator("[data-screen=name]");
@@ -127,7 +127,7 @@ for (const mix of [
     await expect(play.locator("[data-mix-result] .color-word")).toHaveText(mix.title);
     await expect(play.locator("[data-mix-result] .color-pattern")).not.toHaveText("");
     if (testInfo.project.name === "iphone" && mix.result === "orange") {
-      await play.screenshot({ path: "/opt/cursor/artifacts/colors-mix-iphone.png" });
+      await play.screenshot({ path: "test-results/screenshots/colors-mix-iphone.png" });
     }
     const lines = await spoken(page);
     expect(lines.some((line) => line.includes(mix.result))).toBe(true);
@@ -139,7 +139,7 @@ for (const mix of [
       await paint.locator("button[data-color='orange']").click();
       await expect(paint).toHaveAttribute("data-tint", "orange");
       await expect(paint.locator(".paint-caption")).toContainText("Orange");
-      await paint.screenshot({ path: "/opt/cursor/artifacts/colors-paint-iphone.png" });
+      await paint.screenshot({ path: "test-results/screenshots/colors-paint-iphone.png" });
       await paint.getByRole("button", { name: "Save to sticker book" }).click();
       await page.getByRole("button", { name: "Stickers" }).click();
       await expect(page.locator("[data-kind=color][data-sticker='orange fox']")).toBeVisible();
