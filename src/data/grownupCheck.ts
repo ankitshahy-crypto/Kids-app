@@ -1,7 +1,7 @@
 const NUMBER_WORDS = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"] as const;
 
 export type GrownupCheck = {
-  kind: "word" | "sum";
+  kind: "word" | "sum" | "recover";
   prompt: string;
   choices: number[];
   answer: number;
@@ -57,5 +57,17 @@ export function createGrownupCheck(random: () => number = Math.random): GrownupC
     prompt: `${left} + ${right}`,
     choices: shuffle([answer, ...distractors(answer, random, 1, 16)], random),
     answer,
+  };
+}
+
+/** Forgot PIN. Two-digit multiplication, typed in. Then the grown-up picks a new PIN. */
+export function createPinRecovery(random: () => number = Math.random): GrownupCheck {
+  const left = 12 + index(random, 18);
+  const right = 12 + index(random, 18);
+  return {
+    kind: "recover",
+    prompt: `${left} × ${right}`,
+    choices: [],
+    answer: left * right,
   };
 }

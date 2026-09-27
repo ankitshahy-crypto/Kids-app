@@ -1,15 +1,16 @@
 import { version } from "../../package.json";
+import { MODULE_COLORS, MODULE_NUMBERS, MODULE_WORDS, PRODUCT_NAME, STORE_NAME, STORE_SUBTITLE, TAGLINE } from "../brand";
 
 /** Marketing copy for About and for docs/store-listing.md. Edit it here. */
 export const aboutContent = {
-  screenTitle: "About WordNest",
-  name: "WordNest: Learn to Read",
-  subtitle: "Reading practice for ages 3–5",
+  screenTitle: `About ${PRODUCT_NAME}`,
+  name: STORE_NAME,
+  subtitle: STORE_SUBTITLE,
   promo:
     "Five happy minutes a day. Your child's own animal is the hero of every story, with no ads, no tricks, and no surprise charges.",
   description:
-    "WordNest helps young children take their first steps into reading, one small word at a time. Made for ages 3 to 5 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes: kids learn letters and their sounds, then drag their finger across a word to hear it come together: “c… a… t… cat!”",
-  differentHeading: "What makes WordNest different",
+    `${PRODUCT_NAME} helps young children take their first steps into letters, numbers, and colors, one small step at a time. Made for ages 3 to 5 (phonics for ages 5 to 7 coming soon). Your child picks an animal friend who becomes the hero of every story. Each day brings a short, gentle lesson of 5 to 10 minutes. ${MODULE_WORDS}: kids learn letters and their sounds, then drag their finger across a word to hear it come together: “c… a… t… cat!” ${MODULE_NUMBERS}: count objects, hear and trace numbers, match shapes, and add small groups. ${MODULE_COLORS}: hear a color and tap it, mix two paints, and color their animal.`,
+  differentHeading: `What makes ${PRODUCT_NAME} different`,
   features: [
     {
       id: "hero",
@@ -37,6 +38,21 @@ export const aboutContent = {
       body: "Effort, not perfection. No pressure, no scores.",
     },
     {
+      id: "rewards",
+      title: "Rewards that feel great",
+      body: "Stars for effort unlock outfits for your child's animal, a sticker book of letters, numbers, and colors, and a growing nest. Every reward is earned by practicing, never bought.",
+    },
+    {
+      id: "math",
+      title: MODULE_NUMBERS,
+      body: "Count to 10, hear and trace numbers, match shapes, compare groups, and add with pictures up to 5.",
+    },
+    {
+      id: "colors",
+      title: MODULE_COLORS,
+      body: "Hear a color and tap it, mix paints, and color their animal with colors they made. Every swatch shows the color word.",
+    },
+    {
       id: "classroom",
       title: "Made for classrooms too",
       body: "Teachers can follow a class and share goals with parents.",
@@ -47,14 +63,17 @@ export const aboutContent = {
       body: "They sit behind a simple check.",
     },
   ],
+  teachesHeading: `How ${PRODUCT_NAME} teaches`,
+  teaches:
+    `${PRODUCT_NAME} has three modules. ${MODULE_WORDS} starts with letter sounds, then blending, then short words, then tiny stories. Phonics for ages 5 to 7 comes after that. ${MODULE_NUMBERS} starts with counting, then numerals, then shapes, then adding small groups. ${MODULE_COLORS} starts with color names, then mixing paints.`,
   safetyHeading: "Safe and private by design",
   safety:
     "No ads, no tracking, no in-app purchase tricks. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.",
   affordableHeading: "Affordable for every family",
   affordable:
-    "Learning to read shouldn't be expensive. WordNest is priced so every family can use it, and through partner schools it's included for families at little or no extra cost. No creeping subscriptions or endless add-ons.",
-  disclaimer: "WordNest is reading practice for young children. It is not a therapy or diagnostic tool.",
-  maker: "WordNest is made by TriageDesk.",
+    `Learning to read shouldn't be expensive. ${PRODUCT_NAME} is priced so every family can use it, and through partner schools it's included for families at little or no extra cost. No creeping subscriptions or endless add-ons.`,
+  disclaimer: `${PRODUCT_NAME} is letters, numbers, and color practice for young children. It is not a therapy or diagnostic tool.`,
+  maker: TAGLINE,
   /** Matches package.json. The About screen shows this number. */
   version,
 } as const;

@@ -3,10 +3,11 @@ import { unlockAudio } from "../audio/manager";
 import { resumeSpeech } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import { starterDeck, type DeckWord } from "../data/deck";
+import { emptyOutfit, type Outfit } from "../data/wardrobe";
 import { usePlayback } from "../hooks/usePlayback";
 import type { Settings } from "../settings";
-import { Avatar } from "../avatars";
 import { Illustration } from "../illustrations";
+import { Hero } from "./Hero";
 import { Chevron, SpeakerIcon, StarIcon } from "./icons";
 import { PictureCard } from "./PictureCard";
 import { SoundLabel } from "./SoundLabel";
@@ -16,18 +17,21 @@ export function SoundItOut({
   paused,
   words = starterDeck.words,
   animal = null,
+  outfit = emptyOutfit(),
   onFinished,
 }: {
   settingsRef: { current: Settings };
   paused: boolean;
   words?: DeckWord[];
   animal?: AnimalId | null;
-  onFinished?: () => void;
+  outfit?: Outfit;
+  onFinished?: (word: DeckWord) => void;
 }) {
   const deck = words.length > 0 ? words : starterDeck.words;
   const [index, setIndex] = useState(0);
   const word = deck[index % deck.length];
-  const { revealed, active, replay, soundLetter, soundWord } = usePlayback(word, settingsRef, paused, onFinished);
+  const finish = () => onFinished?.(word);
+  const { revealed, active, replay, soundLetter, soundWord } = usePlayback(word, settingsRef, paused, finish);
   const [lit, setLit] = useState<boolean[]>(() => word.letters.map(() => false));
   const [litOrder, setLitOrder] = useState<number[]>([]);
   const [blended, setBlended] = useState(false);
@@ -122,7 +126,7 @@ export function SoundItOut({
       soundWord();
       if (!rewarded.current) {
         rewarded.current = true;
-        onFinished?.();
+        onFinished?.(word);
       }
     }
   };
@@ -269,7 +273,7 @@ export function SoundItOut({
             <path d="M86 5 L97 12 L86 19" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>
           <div className="blend-token" style={{ left: `${progress * 100}%` }} data-blend-token>
-            {animal ? <Avatar animal={animal} /> : <StarIcon />}
+            {animal ? <Hero animal={animal} outfit={outfit} /> : <StarIcon />}
           </div>
         </div>
       </div>

@@ -1,14 +1,23 @@
+import { MODULE_COLORS, MODULE_NUMBERS, MODULE_WORDS } from "../brand";
 import { aboutContent, type AboutFeatureId } from "../content/about";
+import { tint } from "../palette";
+import { ModuleMark } from "./ModuleMark";
+import { colorStages } from "../data/colors";
+import { mathStages } from "../data/math";
+import { laterPath, pathStages } from "../data/path";
 import { GrownupIcon, SpeakerIcon, StarIcon } from "./icons";
 
 const tints: Record<AboutFeatureId, string> = {
-  hero: "#F8E6D4",
-  voice: "#E4EEF8",
-  blend: "#E7F2EA",
-  lesson: "#FDE7D4",
-  stars: "#F8E6D4",
-  classroom: "#E4EEF8",
-  grownups: "#E5F4EA",
+  hero: tint.peach,
+  voice: tint.sky,
+  blend: tint.mint,
+  lesson: tint.blush,
+  stars: tint.peach,
+  rewards: tint.blush,
+  math: tint.mint,
+  colors: tint.blush,
+  classroom: tint.sky,
+  grownups: tint.mintCard,
 };
 
 export function AboutWordNest() {
@@ -17,6 +26,11 @@ export function AboutWordNest() {
     <section className="about-page" data-section="about">
       <h2>{about.screenTitle}</h2>
       <p className="about-name">{about.name}</p>
+      <div className="about-modules">
+        <ModuleMark name="words" />
+        <ModuleMark name="numbers" />
+        <ModuleMark name="colors" />
+      </div>
       <p className="about-subtitle">{about.subtitle}</p>
       <p className="about-promo">{about.promo}</p>
       <p className="about-lead">{about.description}</p>
@@ -25,7 +39,11 @@ export function AboutWordNest() {
       <ul className="about-features">
         {about.features.map((feature) => (
           <li key={feature.id} className="about-feature" data-feature={feature.id}>
-            <span className="about-feature-icon" style={{ background: tints[feature.id] }} aria-hidden="true">
+            <span
+              className={`about-feature-icon${feature.id === "math" || feature.id === "colors" ? " is-mark" : ""}`}
+              style={{ background: tints[feature.id] }}
+              aria-hidden="true"
+            >
               <FeatureIcon id={feature.id} />
             </span>
             <h3>{feature.title}</h3>
@@ -33,6 +51,49 @@ export function AboutWordNest() {
           </li>
         ))}
       </ul>
+
+      <h3>{about.teachesHeading}</h3>
+      <p className="about-lead">{about.teaches}</p>
+      <h3 className="module-heading">
+        <ModuleMark name="words" />
+        <span>{MODULE_WORDS}</span>
+      </h3>
+      <ol className="about-path">
+        {pathStages.map((stage) => (
+          <li key={stage.id} data-teach={stage.id}>
+            <strong>{stage.title}</strong>
+            <span>{stage.detail}</span>
+          </li>
+        ))}
+        <li data-teach={laterPath.id} data-later="true">
+          <strong>{laterPath.title}</strong>
+          <span>{laterPath.detail}</span>
+        </li>
+      </ol>
+      <h3 className="module-heading">
+        <ModuleMark name="numbers" />
+        <span>{MODULE_NUMBERS}</span>
+      </h3>
+      <ol className="about-path" data-teach-subject="math">
+        {mathStages.map((stage) => (
+          <li key={stage.id} data-teach={stage.id}>
+            <strong>{stage.title}</strong>
+            <span>{stage.detail}</span>
+          </li>
+        ))}
+      </ol>
+      <h3 className="module-heading">
+        <ModuleMark name="colors" />
+        <span>{MODULE_COLORS}</span>
+      </h3>
+      <ol className="about-path" data-teach-subject="colors">
+        {colorStages.map((stage) => (
+          <li key={stage.id} data-teach={stage.id}>
+            <strong>{stage.title}</strong>
+            <span>{stage.detail}</span>
+          </li>
+        ))}
+      </ol>
 
       <h3>{about.safetyHeading}</h3>
       <p className="about-lead">{about.safety}</p>
@@ -54,6 +115,9 @@ function FeatureIcon({ id }: { id: AboutFeatureId }) {
   if (id === "hero") return <HeroIcon />;
   if (id === "blend") return <BlendIcon />;
   if (id === "lesson") return <LessonIcon />;
+  if (id === "rewards") return <RewardIcon />;
+  if (id === "math") return <ModuleMark name="numbers" className="about-module-mark" />;
+  if (id === "colors") return <ModuleMark name="colors" className="about-module-mark" />;
   return <ClassIcon />;
 }
 
@@ -93,6 +157,18 @@ function LessonIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
       <circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
       <path d="M12 8.2V12l2.8 1.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function RewardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
+      <path fill="currentColor" d="M12 2.4 13.6 7h4.8l-3.9 2.8 1.5 4.6L12 11.6 7.9 14.4 9.4 9.8 5.6 7h4.8L12 2.4Z" />
+      <path
+        fill="currentColor"
+        d="M7 15.2h10v2.2c0 .8-.7 1.6-1.6 1.6H8.6c-.9 0-1.6-.8-1.6-1.6v-2.2Z"
+      />
     </svg>
   );
 }

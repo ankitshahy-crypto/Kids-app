@@ -58,7 +58,7 @@ describe("daylight saving", () => {
     const twice = awardStar(once, "letter", secondOneThirty, NEW_YORK);
     expect(twice).toBe(once);
     expect(twice.stars).toBe(1);
-    expect(twice.days["2026-11-01"]?.letter).toBe(true);
+    expect(twice.days["2026-11-01"]?.reading?.letter).toBe(true);
 
     const nextMorning = new Date("2026-11-02T05:30:00.000Z");
     const nextDay = awardStar(twice, "letter", nextMorning, NEW_YORK);
@@ -102,7 +102,7 @@ describe("Monday week and travel", () => {
     const profile = awardStar(child(created), "letter", fridayNight, NEW_YORK);
     expect(starsThisWeek(profile, fridayNight, NEW_YORK)).toBe(1);
     expect(starsThisWeek(profile, monday, NEW_YORK)).toBe(0);
-    expect(profile.days["2026-09-25"]?.letter).toBe(true);
+    expect(profile.days["2026-09-25"]?.reading?.letter).toBe(true);
   });
 
   it("keeps an earlier local day when travel moves the clock, and does not award that day again", () => {
@@ -112,8 +112,8 @@ describe("Monday week and travel", () => {
 
     const traveled = awardStar(friday, "letter", nyFriday, TOKYO);
     expect(traveled.stars).toBe(2);
-    expect(traveled.days["2026-09-25"]?.letter).toBe(true);
-    expect(traveled.days["2026-09-26"]?.letter).toBe(true);
+    expect(traveled.days["2026-09-25"]?.reading?.letter).toBe(true);
+    expect(traveled.days["2026-09-26"]?.reading?.letter).toBe(true);
 
     const backHome = awardStar(traveled, "letter", nyFriday, NEW_YORK);
     expect(backHome).toBe(traveled);

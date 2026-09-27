@@ -1,23 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { AnimalId } from "../data/animals";
 import {
-  awardStar,
   createChild,
-  dayProgress,
   editChild,
-  lessonSteps,
   loadStore,
   saveStore,
+  storeSnapshot,
   type AgeRange,
   type ChildProfile,
-  type LessonStep,
+  type StickerInput,
 } from "../data/profiles";
-import type { AnimalId } from "../data/animals";
+import { applyReadingCredit, type ReadingCredit } from "../data/reading";
+import { applyEffort, wearItem, type EffortResult } from "../data/rewards";
+import { READING, type SubjectId } from "../data/subject";
 
 export function useProfiles() {
   const [store, setStore] = useState(() => loadStore());
+  const saved = useRef(storeSnapshot(store));
 
   useEffect(() => {
+    const next = storeSnapshot(store);
+    if (next === saved.current) return;
     saveStore(store);
+    saved.current = next;
   }, [store]);
 
   const active = store.profiles.find((profile) => profile.id === store.activeId) ?? null;
@@ -50,21 +55,62 @@ export function useProfiles() {
     });
   };
 
-  const giveStar = (id: string, step: LessonStep) => {
-    let awarded = false;
-    let lessonComplete = false;
+  const giveStar = (id: string, step: string, learned: StickerInput[] = [], subject: SubjectId = READING): EffortResult => {
+    const profile = store.profiles.find((item) => item.id === id);
+    if (!profile) {
+      return {
+        profile: createChild({ name: "A", ageRange: "4", animal: "fox" }),
+        awarded: false,
+        lessonComplete: false,
+        milestones: [],
+        stickersAdded: 0,
+      };
+    }
+    // Read the award from this render. The updater repeats the same step, so a
+    // second pass in development cannot add another star or hide the cheer.
+    const result = applyEffort(profile, step, learned, new Date(), undefined, subject);
+    if (result.awarded) {
+      setStore((current) => ({
+        ...current,
+        profiles: current.profiles.map((item) =>
+          item.id === id ? applyEffort(item, step, learned, new Date(), undefined, subject).profile : item,
+        ),
+      }));
+    }
+    return result;
+  };
+
+  const recordReading = (
+    id: string,
+    totals: Record<string, number>,
+    goalMinutes: number,
+    subject: SubjectId = READING,
+  ): ReadingCredit => {
+    const profile = store.profiles.find((item) => item.id === id);
+    if (!profile) {
+      return {
+        profile: createChild({ name: "A", ageRange: "4", animal: "fox" }),
+        awardedNow: false,
+        milestones: [],
+      };
+    }
+    const result = applyReadingCredit(profile, totals, goalMinutes, new Date(), undefined, subject);
+    if (result.profile !== profile) {
+      setStore((current) => ({
+        ...current,
+        profiles: current.profiles.map((item) =>
+          item.id === id ? applyReadingCredit(item, totals, goalMinutes, new Date(), undefined, subject).profile : item,
+        ),
+      }));
+    }
+    return result;
+  };
+
+  const wear = (id: string, itemId: string) => {
     setStore((current) => ({
       ...current,
-      profiles: current.profiles.map((profile) => {
-        if (profile.id !== id) return profile;
-        const next = awardStar(profile, step);
-        awarded = next.stars !== profile.stars;
-        const day = dayProgress(next);
-        lessonComplete = lessonSteps.every((item) => day[item]);
-        return next;
-      }),
+      profiles: current.profiles.map((profile) => (profile.id === id ? wearItem(profile, itemId) : profile)),
     }));
-    return { awarded, lessonComplete };
   };
 
   return {
@@ -75,6 +121,8 @@ export function useProfiles() {
     updateChild,
     removeChild,
     giveStar,
+    recordReading,
+    wear,
   };
 }
 

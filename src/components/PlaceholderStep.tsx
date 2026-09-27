@@ -1,5 +1,5 @@
-import { Avatar } from "../avatars";
 import { lessonName, type ChildProfile, type LessonStep } from "../data/profiles";
+import { Hero } from "./Hero";
 
 const copy: Record<Exclude<LessonStep, "letter">, { title: string; label: string }> = {
   draw: { title: "Draw", label: "Tracing is coming next" },
@@ -21,7 +21,7 @@ export function PlaceholderStep({
     <div className="placeholder" data-screen={step} data-step={step}>
       <span className="soon soon-large">Soon</span>
       <div className="placeholder-art" aria-hidden="true">
-        {step === "story" ? <Avatar animal={profile.animal} /> : null}
+        {step === "story" ? <Hero animal={profile.animal} outfit={profile.outfit} /> : null}
         {step === "draw" ? <DrawMark /> : null}
         {step === "moment" ? <ShapeMark /> : null}
       </div>

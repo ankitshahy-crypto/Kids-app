@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createGrownupCheck } from "./grownupCheck";
+import { createGrownupCheck, createPinRecovery } from "./grownupCheck";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -43,5 +43,13 @@ describe("createGrownupCheck", () => {
       }
     }
     expect(kinds).toEqual(new Set(["word", "sum"]));
+  });
+
+  it("asks for a typed product when the PIN is forgotten", () => {
+    const check = createPinRecovery(() => 0);
+    expect(check.kind).toBe("recover");
+    expect(check.choices).toEqual([]);
+    expect(check.prompt).toBe("12 × 12");
+    expect(check.answer).toBe(144);
   });
 });

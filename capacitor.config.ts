@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.triagedesk.wordnest",
-  appName: "WordNest",
+  appId: "com.triagedesk.littlenest",
+  appName: "LittleNest",
   webDir: "dist",
   backgroundColor: "#fbf6ee",
   ios: {

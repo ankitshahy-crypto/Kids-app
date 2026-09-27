@@ -82,7 +82,7 @@ if (!allowed.test(voiceName)) {
 }
 
 const jobs = [];
-for (const kind of ["words", "sentences"]) {
+for (const kind of ["words", "sentences", "numbers", "prompts", "colors"]) {
   for (const [id, entry] of Object.entries(manifest[kind])) {
     if (entry.source === "human" || letterFiles.includes(entry.file)) {
       console.log(`Skipping ${kind} ${id}; that clip is recorded by a person.`);

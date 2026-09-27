@@ -272,6 +272,41 @@ export function playWord(word: DeckWord, settings: Settings, signal: AbortSignal
   );
 }
 
+export function playNumber(value: number, settings: Settings, signal: AbortSignal): Promise<void> {
+  const id = String(value);
+  return playCue(
+    {
+      src: recordedSrc("numbers", id),
+      text: spokenLine("numbers", id, id),
+    },
+    settings,
+    signal,
+  );
+}
+
+export function playColor(name: string, settings: Settings, signal: AbortSignal): Promise<void> {
+  const id = name.trim().toLowerCase().replace(/\s+/g, "-");
+  return playCue(
+    {
+      src: recordedSrc("colors", id),
+      text: spokenLine("colors", id, name),
+    },
+    settings,
+    signal,
+  );
+}
+
+export function playPrompt(id: string, settings: Settings, signal: AbortSignal, fallback = ""): Promise<void> {
+  return playCue(
+    {
+      src: recordedSrc("prompts", id),
+      text: spokenLine("prompts", id, fallback),
+    },
+    settings,
+    signal,
+  );
+}
+
 export function playSentence(id: string, settings: Settings, signal: AbortSignal): Promise<void> {
   return playCue(
     {

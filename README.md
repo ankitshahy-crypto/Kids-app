@@ -1,12 +1,14 @@
-# WordNest
+# LittleNest Learning
 
-WordNest is a TriageDesk product: a calm, offline reading-practice app for ages 3–5 first (and phonics as children grow toward 6–7). The child is the hero. It is reading practice, not therapy. The product direction lives in `docs/PRODUCT.md`.
+LittleNest Learning is a TriageDesk product (by TriageDesk): a calm, offline app for ages 3–5 first (and phonics as children grow toward 6–7). The modules are LittleNest Words, LittleNest Numbers, and LittleNest Colors. The child is the hero. It is practice, not therapy. The product direction lives in `docs/PRODUCT.md`.
+
+The planned site is littlenestlearning.app. That domain is not purchased yet. Sharing and the demo stay at the GitHub Pages address below. The repository name and the `/Kids-app/` path stay as they are.
 
 The first activity inside Today's lesson is **Sound it out**.
 
 The word starts as dim letter tiles with a track underneath. The child drags their animal along the track. Each letter lights up and plays once as the drag passes it, then the whole word plays at the end and stays lit. A lit letter can still be tapped to hear it again. **Play sound** replays the word, and the arrows (or a swipe) change words. Until a person records a clip, the phone says an example phrase such as "b, as in ball" rather than a bare syllable.
 
-There are no ads, scores, timers, accounts, or network calls. Speech, pictures, and profiles stay on the device. Schools will license the app later; there is no payment code yet.
+There are no ads and no school accounts in this version. A child's name, speech, pictures, and progress stay on this device. A grown-up can download the lesson files for offline use; that download does not send a name. School sign-in is not in this build. There is no payment code yet.
 
 ## Open the demo on an iPhone
 
@@ -27,7 +29,7 @@ npm run dev
 
 Open the address Vite prints. On a phone the layout is a portrait column. On a tablet it stays centered, with a wider column, larger tap targets, and bigger art.
 
-The first screen shows the nest, the WordNest name, and a card of child avatars. Tap a child to open Today. **Parent** and **Teacher** open a small grown-up check (a number written as a word, or a small sum). A child who cannot read or add does not get through. Cancel closes it.
+The first screen shows the nest, the LittleNest Learning name, and a card of child avatars. Tap a child to open Today. **Parent** and **Teacher** open a small grown-up check (a number written as a word, or a small sum). A child who cannot read or add does not get through. Cancel closes it.
 
 Phones (and some browsers) will not speak until there has been a tap. Choosing a child, or opening the letter game, is that tap.
 
@@ -47,7 +49,7 @@ Teacher opens a classroom shell with sample data marked Demo: a class switcher, 
 
 ## Run on an iPhone
 
-The native project is the `ios/` folder (app id `com.triagedesk.wordnest`, display name WordNest). It is a universal app: iPhone stays portrait, and iPad supports portrait and landscape. From a Mac with Xcode:
+The native project is the `ios/` folder (app id `com.triagedesk.littlenest`, display name LittleNest). It is a universal app: iPhone stays portrait, and iPad supports portrait and landscape. From a Mac with Xcode:
 
 ```bash
 git clone <this-repo>
@@ -99,4 +101,4 @@ Until a clip is indexed, device speech says the manifest phrase. Letter sounds u
 
 ## Privacy
 
-No analytics, no accounts, no tracking, and no requests to other servers. The font is stored in the repo. See `ASSETS.md` for every image, font, and the audio approach, with source and license.
+No analytics, no tracking, and no school accounts. Progress stays on this device. The font is stored in the repo. A grown-up can save lesson files from this app for offline use. See `ASSETS.md` for every image, font, and the audio approach, with source and license.

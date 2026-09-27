@@ -1,21 +1,14 @@
 import { useState } from "react";
-import nestLogo from "../assets/nest-logo.svg";
+import { TAGLINE } from "../brand";
+import { ModuleMark } from "./ModuleMark";
+import { face } from "../palette";
 import type { AnimalId } from "../data/animals";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { Avatar } from "../avatars";
 import { ParentGate } from "./ParentGate";
 import { LockIcon } from "./sceneArt";
 
-const backdrops: Record<AnimalId, string> = {
-  cat: "#F8D7C4",
-  dog: "#F6E3B8",
-  fox: "#F8D0C0",
-  bear: "#E7D3C0",
-  bunny: "#D9E8F6",
-  owl: "#E7DCF4",
-  frog: "#D7EEDC",
-  duck: "#FBE7B0",
-};
+const backdrops: Record<AnimalId, string> = face;
 
 export function StartScreen({
   profiles,
@@ -40,12 +33,13 @@ export function StartScreen({
   return (
     <div className="mode-switch" data-screen="start">
       <div className="mode-art">
-        <img className="nest-logo" src={nestLogo} alt="" />
+        <ModuleMark name="app" className="nest-logo" />
       </div>
       <h1 className="wordmark">
-        <span className="wordmark-word">Word</span>
-        <span className="wordmark-nest">Nest</span>
+        <span className="wordmark-nest">LittleNest</span>
+        <span className="wordmark-word">Learning</span>
       </h1>
+      <p className="byline">{TAGLINE}</p>
       <div className="who-card">
         {profiles.length === 0 ? (
           <p className="who-empty">Ask a grown-up to tap Grown-ups.</p>

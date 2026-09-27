@@ -1,6 +1,16 @@
 import { useState } from "react";
 import type { AnimalId } from "../data/animals";
+import { COLORS, colorIntroduced } from "../data/colors";
+import { MATH, mathIntroduced } from "../data/math";
+import { practiceTotal } from "../data/reading";
+import { lettersIntroduced } from "../data/schedule";
+import { resolvePlacement, type LessonPlace, type PlacementDocument } from "../data/placement";
+import { lessonName, type ChildProfile } from "../data/profiles";
 import { Avatar } from "../avatars";
+import { LearningPath } from "./LearningPath";
+import { PlacementControls } from "./PlacementControls";
+import { Printables } from "./Printables";
+import { ReadingChart } from "./ReadingChart";
 import { CheckBadge, StarJar, TabGlyph } from "./sceneArt";
 
 type Tab = "classes" | "roster" | "goals" | "jar" | "certificates" | "notes";
@@ -50,6 +60,80 @@ const demoClasses: DemoClass[] = [
   },
 ];
 
+function DeviceRewards({
+  profiles,
+  goalMinutes,
+  placement,
+}: {
+  profiles: ChildProfile[];
+  goalMinutes: number;
+  placement: PlacementDocument;
+}) {
+  return (
+    <section className="teacher-card" data-card="device">
+      <h2>On this device</h2>
+      <p className="adult-copy">
+        Stars, stickers, and milestones for children who practice here. They stay on this device.
+      </p>
+      {profiles.length === 0 ? <p className="adult-copy">No child profile yet.</p> : null}
+      <ul className="device-roster">
+        {profiles.map((profile) => {
+          const recent = profile.celebrated.slice(-3);
+          return (
+            <li key={profile.id} data-child={profile.id}>
+              <strong>{lessonName(profile)}</strong>
+              <span data-stars={profile.stars}>{profile.stars} stars</span>
+              <span data-stickers={profile.stickers.length}>{profile.stickers.length} stickers</span>
+              <span data-milestones={recent.join(" ") || "none"}>
+                {recent.length > 0 ? `Recent milestones: ${recent.join(", ")} stars` : "No milestones yet"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {profiles.map((profile) => {
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt);
+        const placedIntroduced =
+          resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length;
+        const mathResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH);
+        const colorResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS);
+        return (
+          <div key={profile.id}>
+            <LearningPath profile={profile} name={lessonName(profile)} placedIntroduced={placedIntroduced} />
+            <LearningPath
+              profile={profile}
+              name={lessonName(profile)}
+              subject={MATH}
+              section="path-math"
+              placedIntroduced={mathResolved.source === "calendar" ? undefined : mathIntroduced(mathResolved.weekIndex)}
+            />
+            <LearningPath
+              profile={profile}
+              name={lessonName(profile)}
+              subject={COLORS}
+              section="path-colors"
+              placedIntroduced={colorResolved.source === "calendar" ? undefined : colorIntroduced(colorResolved.weekIndex)}
+            />
+          </div>
+        );
+      })}
+      {profiles.map((profile) => (
+        <ReadingChart key={profile.id} name={lessonName(profile)} days={profile.readingMs} goalMinutes={goalMinutes} />
+      ))}
+      {profiles.map((profile) => (
+        <ReadingChart
+          key={`${profile.id}-practice`}
+          name={lessonName(profile)}
+          days={practiceTotal(profile)}
+          goalMinutes={goalMinutes}
+          title="Time practicing"
+          section="practice"
+        />
+      ))}
+    </section>
+  );
+}
+
 const tabs: { id: Tab; label: string }[] = [
   { id: "classes", label: "Classes" },
   { id: "roster", label: "Roster" },
@@ -59,7 +143,23 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "notes", label: "Notes" },
 ];
 
-export function TeacherView({ onClose }: { onClose: () => void }) {
+export function TeacherView({
+  profiles,
+  goalMinutes,
+  placement,
+  activeId,
+  onClassPlace,
+  onChildPlace,
+  onClose,
+}: {
+  profiles: ChildProfile[];
+  goalMinutes: number;
+  placement: PlacementDocument;
+  activeId: string | null;
+  onClassPlace: (place: LessonPlace | null) => void;
+  onChildPlace: (childId: string, place: LessonPlace | null) => void;
+  onClose: () => void;
+}) {
   const [tab, setTab] = useState<Tab>("roster");
   const [classId, setClassId] = useState(demoClasses[0].id);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -73,6 +173,17 @@ export function TeacherView({ onClose }: { onClose: () => void }) {
         <button type="button" className="quiet-back" onClick={onClose}>
           Back
         </button>
+        <PlacementControls
+          placement={placement}
+          profiles={profiles}
+          onClassPlace={onClassPlace}
+          onChildPlace={onChildPlace}
+        />
+        <section className="teacher-card" data-card="printables">
+          <h2>Printables</h2>
+          <Printables profiles={profiles} activeId={activeId} placement={placement} />
+        </section>
+        <DeviceRewards profiles={profiles} goalMinutes={goalMinutes} placement={placement} />
         <p className="demo-flag">Demo data. Not a real class. Filled in during step 6.</p>
         <header className="teacher-top">
           <div className="class-switch-wrap">

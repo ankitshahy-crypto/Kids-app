@@ -1,3 +1,5 @@
+import { SETTINGS_KEY, readStored, writeStored } from "./storage";
+
 export type SpeechSpeed = "slow" | "slower";
 
 export type Settings = {
@@ -15,6 +17,10 @@ export type Settings = {
   speed: SpeechSpeed;
   /** Device voice chosen in Settings. Null uses the best installed en-US voice. */
   voiceURI: string | null;
+  /** Daily active-reading goal. One bonus star, then no more for extra time. */
+  readingGoal: 5 | 10 | 15;
+  /** Short grown-up prompts at the start or end of a lesson. */
+  showTips: boolean;
 };
 
 /**
@@ -37,6 +43,8 @@ export const DEFAULT_SETTINGS: Settings = {
   tapFeedback: true,
   speed: "slow",
   voiceURI: null,
+  readingGoal: 10,
+  showTips: true,
 };
 
 function clampVolume(value: unknown, fallback: number): number {
@@ -45,11 +53,11 @@ function clampVolume(value: unknown, fallback: number): number {
   return Math.min(1, Math.max(0, number));
 }
 
-const STORAGE_KEY = "kids-app-settings-v1";
+const STORAGE_KEY = SETTINGS_KEY;
 
 export function loadSettings(): Settings {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readStored(localStorage, STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return DEFAULT_SETTINGS;
@@ -66,6 +74,8 @@ export function loadSettings(): Settings {
       tapFeedback: record.tapFeedback !== false,
       speed: record.speed === "slower" ? "slower" : "slow",
       voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
+      readingGoal: record.readingGoal === 5 || record.readingGoal === 15 ? record.readingGoal : 10,
+      showTips: record.showTips !== false,
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -73,5 +83,5 @@ export function loadSettings(): Settings {
 }
 
 export function saveSettings(settings: Settings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  writeStored(localStorage, STORAGE_KEY, JSON.stringify(settings));
 }

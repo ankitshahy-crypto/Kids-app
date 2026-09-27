@@ -105,13 +105,13 @@ test("sliders drive the channel gains, and speech volume follows the browser", a
   await page.locator("[data-mix='effects']").getByRole("button", { name: "On", exact: true }).click();
   await expect.poll(async () => (await savedVolumes(page)).effectsOn).toBe(true);
   await expect
-    .poll(async () => page.evaluate(() => (window as Window & { __wordnestAudio?: { state: string; voice: number; effects: number; music: number } }).__wordnestAudio))
+    .poll(async () => page.evaluate(() => (window as Window & { __littlenestAudio?: { state: string; voice: number; effects: number; music: number } }).__littlenestAudio))
     .toBeTruthy();
 
-  const live = await page.evaluate(() => (window as Window & { __wordnestAudio?: { state: string; voice: number; effects: number; music: number } }).__wordnestAudio);
+  const live = await page.evaluate(() => (window as Window & { __littlenestAudio?: { state: string; voice: number; effects: number; music: number } }).__littlenestAudio);
   if (live && live.state === "running") {
-    await expect.poll(async () => page.evaluate(() => (window as Window & { __wordnestAudio?: { effects: number } }).__wordnestAudio?.effects ?? -1)).toBeGreaterThan(0.62);
-    const settled = await page.evaluate(() => (window as Window & { __wordnestAudio?: { voice: number; effects: number; music: number } }).__wordnestAudio);
+    await expect.poll(async () => page.evaluate(() => (window as Window & { __littlenestAudio?: { effects: number } }).__littlenestAudio?.effects ?? -1)).toBeGreaterThan(0.62);
+    const settled = await page.evaluate(() => (window as Window & { __littlenestAudio?: { voice: number; effects: number; music: number } }).__littlenestAudio);
     expect(settled?.voice).toBeGreaterThan(0.2);
     expect(settled?.voice).toBeLessThan(0.3);
     expect(settled?.effects).toBeLessThan(0.78);
@@ -131,8 +131,8 @@ test("sliders drive the channel gains, and speech volume follows the browser", a
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator("[data-screen='today']")).toBeVisible();
-  await expect.poll(async () => page.evaluate(() => (window as Window & { __wordnestAudio?: { state: string; music: number } }).__wordnestAudio)).toMatchObject({ state: expect.any(String) });
-  const today = await page.evaluate(() => (window as Window & { __wordnestAudio?: { state: string; music: number } }).__wordnestAudio);
+  await expect.poll(async () => page.evaluate(() => (window as Window & { __littlenestAudio?: { state: string; music: number } }).__littlenestAudio)).toMatchObject({ state: expect.any(String) });
+  const today = await page.evaluate(() => (window as Window & { __littlenestAudio?: { state: string; music: number } }).__littlenestAudio);
   if (today?.state === "running") {
     const full = Math.abs(today.music - 0.8) < 0.08;
     const ducked = Math.abs(today.music - 0.8 * 0.22) < 0.05;

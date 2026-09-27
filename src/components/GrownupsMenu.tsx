@@ -1,23 +1,44 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
-import { showHelpContact } from "../config";
+import { shareMessage, shareUrl, showHelpContact } from "../config";
+import { PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
+import { tint } from "../palette";
+import { shareWordNest, type ShareResult } from "../share";
 import type { AnimalId } from "../data/animals";
+import type { PlacementDocument } from "../data/placement";
 import { lessonName, type AgeRange, type ChildProfile } from "../data/profiles";
+import { corruptProfileNotice } from "../data/profiles";
 import type { Settings } from "../settings";
+import { storageQuotaNotice } from "../storage";
 import { AboutWordNest } from "./AboutWordNest";
 import { ChildForm } from "./ChildForm";
 import { Chevron } from "./icons";
+import { OfflinePanel } from "./OfflinePanel";
+import { Printables } from "./Printables";
 import { SettingsFields } from "./SettingsFields";
 
-type GrownupsPage = "menu" | "settings" | "profiles" | "account" | "help" | "privacy" | "about";
+type GrownupsPage =
+  | "menu"
+  | "settings"
+  | "profiles"
+  | "account"
+  | "help"
+  | "privacy"
+  | "about"
+  | "share"
+  | "printables"
+  | "offline";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
-  { id: "settings", title: "Settings", note: "Volume, tap sounds, and the reading voice", tint: "#E7F2EA" },
-  { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: "#F8E6D4" },
-  { id: "account", title: "Account", note: "School sign-in is coming", tint: "#E4EEF8" },
-  { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: "#FDE7D4" },
-  { id: "privacy", title: "Privacy", note: "What stays on this device", tint: "#E5F4EA" },
-  { id: "about", title: "About WordNest", note: "Version and who makes the app", tint: "#E4EEF8" },
+  { id: "settings", title: "Settings", note: "Volume, tap sounds, voice, tips, and the daily goal", tint: tint.mint },
+  { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky },
+  { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach },
+  { id: "account", title: "Account", note: "School sign-in is coming", tint: tint.sky },
+  { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: tint.blush },
+  { id: "privacy", title: "Privacy", note: "What stays on this device", tint: tint.mintCard },
+  { id: "about", title: `About ${PRODUCT_NAME}`, note: "Version and who makes the app", tint: tint.sky },
+  { id: "share", title: "Tell a friend or your school", note: `Share the ${PRODUCT_SHORT} link`, tint: tint.peach },
+  { id: "printables", title: "Printables", note: "Letter tracing and blending sheets", tint: tint.sky },
 ];
 
 function ProfileRow({
@@ -51,11 +72,11 @@ function ProfileRow({
           Edit
         </button>
         {confirming ? (
-          <button type="button" className="remove-child" onClick={onRemove}>
+          <button type="button" className="remove-child" data-confirm="ready" onClick={onRemove}>
             Remove
           </button>
         ) : (
-          <button type="button" className="remove-child remove-quiet" onClick={() => setConfirming(true)}>
+          <button type="button" className="remove-child remove-quiet" data-confirm="ask" onClick={() => setConfirming(true)}>
             Remove
           </button>
         )}
@@ -69,6 +90,7 @@ export function GrownupsMenu({
   onChange,
   profiles,
   active,
+  placement,
   onSelect,
   onAdd,
   onUpdate,
@@ -79,6 +101,7 @@ export function GrownupsMenu({
   onChange: (patch: Partial<Settings>) => void;
   profiles: ChildProfile[];
   active: ChildProfile | null;
+  placement: PlacementDocument;
   onSelect: (id: string) => void;
   onAdd: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
   onUpdate: (id: string, input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
@@ -86,9 +109,12 @@ export function GrownupsMenu({
   onClose: () => void;
 }) {
   const [page, setPage] = useState<GrownupsPage>("menu");
+  const [shareStatus, setShareStatus] = useState<ShareResult | "idle">("idle");
   const [adding, setAdding] = useState(profiles.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = profiles.find((profile) => profile.id === editingId) ?? null;
+  const quotaNotice = storageQuotaNotice();
+  const profileNotice = corruptProfileNotice();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -121,6 +147,8 @@ export function GrownupsMenu({
           <header className="adult-head">
             <h1>Grown-ups</h1>
             <p className="adult-note">Help, settings, and profiles. A child stays on the lesson path.</p>
+            {quotaNotice ? <p className="adult-copy" data-notice="quota">{quotaNotice}</p> : null}
+            {profileNotice ? <p className="adult-copy" data-notice="profiles">{profileNotice}</p> : null}
           </header>
           <ul className="grownups-rows">
             {rows.map((row) => (
@@ -138,6 +166,8 @@ export function GrownupsMenu({
           </ul>
         </>
       ) : null}
+
+      {page === "offline" ? <OfflinePanel /> : null}
 
       {page === "settings" ? (
         <section className="adult-section" data-section="settings">
@@ -204,7 +234,7 @@ export function GrownupsMenu({
           <p className="account-status">Not signed in</p>
           <p className="adult-copy">
             School sign-in is coming. A grown-up will be able to connect this device to a class later. There is no
-            account to create in this version, and WordNest does not ask for a card or a payment.
+            account to create in this version, and {PRODUCT_NAME} does not ask for a card or a payment.
           </p>
         </section>
       ) : null}
@@ -214,8 +244,11 @@ export function GrownupsMenu({
           <h2>Help</h2>
           <h3>How the daily lesson works</h3>
           <p className="adult-copy">
-            Each day the path has four stops: Letters, Draw, Story, and Colors. A star is for trying. On Friday the
-            letters from that week come back for a short review.
+            Each day the child can choose LittleNest Words, LittleNest Numbers, or LittleNest Colors. LittleNest Words
+            has four stops: Letters, Draw, Story, and Colors. LittleNest Numbers has counting, numerals, tracing, shapes,
+            comparing, and adding. LittleNest Colors has color names, then mixing paints, and coloring their animal. A
+            star is for trying. The daily goal counts time on all of them. On Friday the letters from that week come
+            back for a short review.
           </p>
           <h3>Drag to blend</h3>
           <p className="adult-copy">
@@ -233,7 +266,7 @@ export function GrownupsMenu({
             <dt>Can a child open this menu?</dt>
             <dd>Only after the grown-up check. Cancel leaves them on the lesson.</dd>
             <dt>Where are profiles saved?</dt>
-            <dd>On this device. WordNest does not upload them.</dd>
+            <dd>On this device. {PRODUCT_NAME} does not upload them.</dd>
             <dt>How do I quiet the taps?</dt>
             <dd>Open Settings, then turn Tap sounds & buzz off. Dragging across a word stays quiet either way.</dd>
           </dl>
@@ -250,7 +283,7 @@ export function GrownupsMenu({
         <section className="adult-section" data-section="privacy">
           <h2>Privacy</h2>
           <ul className="plain-list">
-            <li>WordNest keeps information on this device.</li>
+            <li>{PRODUCT_NAME} keeps information on this device.</li>
             <li>A profile stores a first name or one initial, an age range, and an animal that is already in the app.</li>
             <li>Photos are not uploaded. The app does not take pictures.</li>
             <li>There is no health data and no diagnosis.</li>
@@ -261,6 +294,36 @@ export function GrownupsMenu({
       ) : null}
 
       {page === "about" ? <AboutWordNest /> : null}
+
+      {page === "printables" ? (
+        <section className="adult-section" data-section="printables">
+          <h2>Printables</h2>
+          <Printables profiles={profiles} activeId={active?.id ?? null} placement={placement} />
+        </section>
+      ) : null}
+
+      {page === "share" ? (
+        <section className="adult-section" data-section="share">
+          <h2>Tell a friend or your school</h2>
+          <p className="adult-copy">{shareMessage}</p>
+          <p className="share-url" data-share-url={shareUrl}>
+            {shareUrl}
+          </p>
+          <p className="adult-copy">No codes and no tracking. This only shares the {PRODUCT_SHORT} link.</p>
+          <button
+            type="button"
+            className="share-button"
+            onClick={() => {
+              void shareWordNest().then((result) => setShareStatus(result === "cancelled" ? "idle" : result));
+            }}
+          >
+            Share
+          </button>
+          {shareStatus === "shared" ? <p role="status">Shared</p> : null}
+          {shareStatus === "copied" ? <p role="status">Link copied</p> : null}
+          {shareStatus === "queued" ? <p role="status">Saved to send later</p> : null}
+        </section>
+      ) : null}
     </div>
   );
 }
