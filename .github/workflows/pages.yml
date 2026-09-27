@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - cursor/profile-daily-lesson-df76
   workflow_dispatch:
 
 permissions:
@@ -12,8 +11,10 @@ permissions:
   pages: write
   id-token: write
 
+# Production only. The preview branch must not deploy this environment:
+# a second deploy-pages job would replace the live site.
 concurrency:
-  group: pages
+  group: pages-production
   cancel-in-progress: false
 
 jobs:
