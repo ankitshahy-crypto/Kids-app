@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { previewVoice } from "../audio/player";
+import { savePin } from "../data/grownupPin";
 import { deviceSpeechFollowsSlider } from "../audio/platform";
 import { subscribeVoices, type VoiceOption } from "../audio/voices";
 import type { Settings, SpeechSpeed } from "../settings";
@@ -41,6 +42,29 @@ export function SettingsFields({
         onVolume={(musicVolume) => onChange({ musicVolume })}
       />
       <p className="adult-copy">Music loops are not in the app yet. The switch is ready for them.</p>
+      <fieldset className="setting-group" data-setting="classroom">
+        <legend>Classroom device</legend>
+        <div className="segment">
+          <button
+            type="button"
+            className={settings.classroomDevice ? "is-selected" : ""}
+            aria-pressed={settings.classroomDevice}
+            onClick={() => onChange({ classroomDevice: true })}
+          >
+            On
+          </button>
+          <button
+            type="button"
+            className={!settings.classroomDevice ? "is-selected" : ""}
+            aria-pressed={!settings.classroomDevice}
+            onClick={() => onChange({ classroomDevice: false })}
+          >
+            Off
+          </button>
+        </div>
+        <p className="adult-copy">On a classroom device, a child is an animal and a nickname. A real first name is not stored.</p>
+      </fieldset>
+      <PinSetter />
       <fieldset className="setting-group" data-mix="taps">
         <legend>Tap sounds & buzz</legend>
         <div className="segment">
@@ -208,6 +232,38 @@ function VoiceField({
         </button>
       </div>
       <p className="adult-copy">Preview uses this phone's voice. Lessons play a recording when one is saved.</p>
+    </fieldset>
+  );
+}
+
+function PinSetter() {
+  const [pin, setPin] = useState("");
+  const [saved, setSaved] = useState(false);
+  return (
+    <fieldset className="setting-group" data-setting="pin">
+      <legend>Grown-up PIN</legend>
+      <input
+        className="name-input"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={4}
+        value={pin}
+        aria-label="New PIN"
+        onChange={(event) => {
+          setPin(event.target.value.replace(/\D/g, "").slice(0, 4));
+          setSaved(false);
+        }}
+      />
+      <button
+        type="button"
+        className="save-child"
+        onClick={() => {
+          if (savePin(pin)) setSaved(true);
+        }}
+      >
+        Save PIN
+      </button>
+      {saved ? <p className="adult-copy">Saved on this device. Progress stays put.</p> : null}
     </fieldset>
   );
 }

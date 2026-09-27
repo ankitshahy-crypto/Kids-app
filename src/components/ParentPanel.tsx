@@ -147,6 +147,7 @@ export function ParentView({
             <ChildForm
               key={editing.id}
               initial={editing}
+              classroomDevice={settings.classroomDevice}
               submitLabel="Save changes"
               onSave={(input) => {
                 onUpdate(editing.id, input);
@@ -157,6 +158,7 @@ export function ParentView({
           ) : null}
           {adding ? (
             <ChildForm
+              classroomDevice={settings.classroomDevice}
               submitLabel="Save child"
               onSave={(input) => {
                 onAdd(input);

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { solvePrompt } from "./solveGate";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -30,12 +31,7 @@ const profile = {
 const sections = ["Settings", "Child profiles", "Account", "Help", "Privacy", "About LittleNest Learning"] as const;
 
 function solve(prompt: string): number {
-  const sum = prompt.match(/(\d+)\s*\+\s*(\d+)/);
-  if (sum) return Number(sum[1]) + Number(sum[2]);
-  const word = prompt.match(/number ([a-z]+)/i)?.[1]?.toLowerCase() ?? "";
-  const value = WORDS[word];
-  if (!value) throw new Error(`Could not read the grown-up check: ${prompt}`);
-  return value;
+  return solvePrompt(prompt);
 }
 
 async function dismissHint(page: Page) {

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { solvePrompt } from "./solveGate";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -61,10 +62,7 @@ async function passParent(page: Page) {
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   const dialog = page.getByRole("dialog");
   const prompt = await dialog.getByRole("heading").innerText();
-  const sum = prompt.match(/(\d+)\s*\+\s*(\d+)/);
-  const answer = sum
-    ? Number(sum[1]) + Number(sum[2])
-    : WORDS[prompt.match(/number ([a-z]+)/i)?.[1]?.toLowerCase() ?? ""];
+  const answer = solvePrompt(prompt);
   await dialog.locator(".gate-choice", { hasText: new RegExp(`^${answer}$`) }).click();
   await expect(page.locator("[data-screen='parent']")).toBeVisible();
 }

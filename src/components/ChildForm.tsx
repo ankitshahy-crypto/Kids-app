@@ -6,11 +6,13 @@ import { ageRanges, normalizeChildName, type AgeRange, type ChildProfile } from 
 export function ChildForm({
   initial,
   submitLabel,
+  classroomDevice = false,
   onSave,
   onCancel,
 }: {
   initial?: Pick<ChildProfile, "name" | "ageRange" | "animal">;
   submitLabel: string;
+  classroomDevice?: boolean;
   onSave: (input: { name: string; ageRange: AgeRange; animal: AnimalId }) => void;
   onCancel?: () => void;
 }) {
@@ -41,8 +43,9 @@ export function ChildForm({
       }}
     >
       <label className="field-label" htmlFor="child-name">
-        First name or initial
+        {classroomDevice ? "Nickname" : "First name or initial"}
       </label>
+      {classroomDevice ? <p className="field-hint">A classroom device stores a nickname, not a real first name.</p> : null}
       <input
         id="child-name"
         className="name-input"

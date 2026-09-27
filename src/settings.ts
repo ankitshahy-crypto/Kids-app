@@ -23,6 +23,8 @@ export type Settings = {
   showTips: boolean;
   /** Python for the same Build It program. Off until a grown-up turns it on. */
   showCode: boolean;
+  /** A classroom iPad stores a nickname, not a real first name. */
+  classroomDevice: boolean;
 };
 
 /**
@@ -48,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   readingGoal: 10,
   showTips: true,
   showCode: false,
+  classroomDevice: false,
 };
 
 function clampVolume(value: unknown, fallback: number): number {
@@ -77,6 +80,7 @@ export function normalizeSettings(value: unknown): Settings {
     readingGoal: record.readingGoal === 5 || record.readingGoal === 15 ? record.readingGoal : 10,
     showTips: record.showTips !== false,
     showCode: record.showCode === true,
+    classroomDevice: record.classroomDevice === true,
   };
 }
 

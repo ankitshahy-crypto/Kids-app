@@ -203,6 +203,7 @@ export function GrownupsMenu({
             <ChildForm
               key={editing.id}
               initial={editing}
+              classroomDevice={settings.classroomDevice}
               submitLabel="Save changes"
               onSave={(input) => {
                 onUpdate(editing.id, input);
@@ -213,6 +214,7 @@ export function GrownupsMenu({
           ) : null}
           {adding ? (
             <ChildForm
+              classroomDevice={settings.classroomDevice}
               submitLabel="Save child"
               onSave={(input) => {
                 onAdd(input);
@@ -329,7 +331,7 @@ export function GrownupsMenu({
         <section className="adult-section" data-section="share">
           <h2>Tell a friend or your school</h2>
           <p className="adult-copy">{shareMessage}</p>
-          <p className="share-url" data-share-url={shareUrl}>
+          <p className="share-url" data-share-url={shareUrl} data-outbound="share">
             {shareUrl}
           </p>
           <p className="adult-copy">No codes and no tracking. This only shares the {PRODUCT_SHORT} link.</p>

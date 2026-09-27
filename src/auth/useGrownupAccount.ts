@@ -7,6 +7,7 @@ import { authConfigured, readAuthConfig } from "./config";
 import { friendlyAuthError, readPreview } from "./plan";
 import type { PreviewMode } from "./plan";
 import { loadAccountPrefs, saveAccountPrefs, type AccountRole } from "./prefs";
+import { readSchoolCache, writeSchoolCache } from "./schoolCache";
 import {
   acceptInvite as acceptInviteDesk,
   addChild as addChildDesk,
@@ -99,7 +100,7 @@ export function useGrownupAccount({
   const [user, setUser] = useState<GrownupUser | null>(() => userForPreview(preview));
   const [role, setRoleState] = useState<AccountRole>(() => loadAccountPrefs().role);
   const [schoolRole, setSchoolRoleState] = useState<SchoolRole>(() => initialSchoolRole(preview));
-  const [desk, setDesk] = useState<SchoolDesk>(() => deskForPreview(preview));
+  const [desk, setDesk] = useState<SchoolDesk>(() => (preview ? deskForPreview(preview) : readSchoolCache() ?? emptyDesk()));
   const [sync, setSyncState] = useState(() => loadAccountPrefs().sync);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -233,6 +234,7 @@ export function useGrownupAccount({
     }
     setError(null);
     setDesk(result.desk);
+    if (!preview) writeSchoolCache(result.desk);
     if (result.desk.deviceLink) saveDeviceLink(result.desk.deviceLink);
     if (preview || !configured) return;
     void import("./firebaseSchool")

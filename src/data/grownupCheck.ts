@@ -1,7 +1,5 @@
-const NUMBER_WORDS = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"] as const;
-
 export type GrownupCheck = {
-  kind: "word" | "sum";
+  kind: "product" | "recover";
   prompt: string;
   choices: number[];
   answer: number;
@@ -35,27 +33,32 @@ function distractors(answer: number, random: () => number, min: number, max: num
 }
 
 /**
- * A fresh grown-up check. Half the time the number is written as a word, so a
- * child who cannot read cannot match it to a button. Otherwise it is a small sum.
- * The four buttons are in a new order every time.
+ * Used until a grown-up sets a PIN. One-digit multiplication, not a number word
+ * or a small sum.
  */
 export function createGrownupCheck(random: () => number = Math.random): GrownupCheck {
-  if (random() < 0.5) {
-    const answer = 1 + index(random, NUMBER_WORDS.length);
-    return {
-      kind: "word",
-      prompt: `Tap the number ${NUMBER_WORDS[answer - 1]}`,
-      choices: shuffle([answer, ...distractors(answer, random, 1, 9)], random),
-      answer,
-    };
-  }
-  const left = 2 + index(random, 6);
-  const right = 2 + index(random, 6);
-  const answer = left + right;
+  const left = 2 + index(random, 8);
+  const right = 2 + index(random, 8);
+  const answer = left * right;
   return {
-    kind: "sum",
-    prompt: `${left} + ${right}`,
-    choices: shuffle([answer, ...distractors(answer, random, 1, 16)], random),
+    kind: "product",
+    prompt: `${left} × ${right}`,
+    choices: shuffle([answer, ...distractors(answer, random, 4, 81)], random),
+    answer,
+  };
+}
+
+/** Forgot PIN. Two-digit multiplication, then the grown-up picks a new PIN. */
+export function createPinRecovery(random: () => number = Math.random): GrownupCheck {
+  const left = 12 + index(random, 18);
+  const right = 12 + index(random, 18);
+  const answer = left * right;
+  const low = Math.max(100, answer - 40);
+  const high = answer + 40;
+  return {
+    kind: "recover",
+    prompt: `${left} × ${right}`,
+    choices: shuffle([answer, ...distractors(answer, random, low, high)], random),
     answer,
   };
 }

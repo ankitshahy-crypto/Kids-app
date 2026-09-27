@@ -1,47 +1,57 @@
 import { describe, expect, it } from "vitest";
-import { createGrownupCheck } from "./grownupCheck";
+import { createGrownupCheck, createPinRecovery } from "./grownupCheck";
+import { clearPin, pinMatches, savePin } from "./grownupPin";
 
-const WORDS: Record<string, number> = {
-  one: 1,
-  two: 2,
-  three: 3,
-  four: 4,
-  five: 5,
-  six: 6,
-  seven: 7,
-  eight: 8,
-  nine: 9,
-};
+function memory() {
+  const data = new Map<string, string>();
+  return {
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      data.set(key, value);
+    },
+    removeItem: (key: string) => {
+      data.delete(key);
+    },
+    keys: () => [...data.keys()],
+  };
+}
 
 describe("createGrownupCheck", () => {
-  it("offers four different buttons and hides the answer's position", () => {
-    const positions = new Set<number>();
-    for (let i = 0; i < 40; i += 1) {
+  it("asks a one-digit multiplication until a PIN is set", () => {
+    for (let i = 0; i < 20; i += 1) {
       const check = createGrownupCheck();
+      expect(check.kind).toBe("product");
       expect(check.choices).toHaveLength(4);
       expect(new Set(check.choices).size).toBe(4);
-      expect(check.choices).toContain(check.answer);
-      positions.add(check.choices.indexOf(check.answer));
+      const parts = check.prompt.match(/^(\d+) × (\d+)$/);
+      expect(parts).toBeTruthy();
+      expect(Number(parts?.[1])).toBeLessThan(10);
+      expect(Number(parts?.[1]) * Number(parts?.[2])).toBe(check.answer);
+      expect(check.prompt).not.toMatch(/Tap the number/);
     }
-    expect(positions.size).toBeGreaterThan(1);
   });
 
-  it("writes a number as a word, or asks for a small sum", () => {
-    const kinds = new Set<string>();
-    for (let i = 0; i < 40; i += 1) {
-      const check = createGrownupCheck();
-      kinds.add(check.kind);
-      if (check.kind === "word") {
-        const word = check.prompt.match(/^Tap the number ([a-z]+)$/)?.[1];
-        expect(word).toBeTruthy();
-        expect(WORDS[word ?? ""]).toBe(check.answer);
-        expect(check.prompt).not.toMatch(/\d/);
-      } else {
-        const parts = check.prompt.match(/^(\d+) \+ (\d+)$/);
-        expect(parts).toBeTruthy();
-        expect(Number(parts?.[1]) + Number(parts?.[2])).toBe(check.answer);
-      }
-    }
-    expect(kinds).toEqual(new Set(["word", "sum"]));
+  it("uses a two-digit multiplication to recover a PIN", () => {
+    const check = createPinRecovery(() => 0.5);
+    const parts = check.prompt.match(/^(\d+) × (\d+)$/);
+    expect(Number(parts?.[1])).toBeGreaterThanOrEqual(12);
+    expect(Number(parts?.[2])).toBeGreaterThanOrEqual(12);
+    expect(Number(parts?.[1]) * Number(parts?.[2])).toBe(check.answer);
+  });
+});
+
+describe("grown-up PIN", () => {
+  it("replaces the PIN without touching profiles", () => {
+    const storage = memory();
+    storage.setItem("littlenest-profiles-v1", "{\"profiles\":[{\"name\":\"Mia\"}]}");
+    expect(savePin("1234", storage)).toBe(true);
+    expect(pinMatches("1234", storage)).toBe(true);
+    expect(pinMatches("0000", storage)).toBe(false);
+    clearPin(storage);
+    expect(pinMatches("1234", storage)).toBe(false);
+    expect(savePin("9876", storage)).toBe(true);
+    expect(pinMatches("9876", storage)).toBe(true);
+    expect(storage.getItem("littlenest-profiles-v1")).toContain("Mia");
+    expect(storage.keys().some((key) => key.includes("profiles"))).toBe(true);
   });
 });
