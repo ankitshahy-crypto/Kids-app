@@ -18,6 +18,8 @@ import { READING, type SubjectId } from "../data/subject";
 export function useProfiles() {
   const [store, setStore] = useState(() => loadStore());
   const saved = useRef(storeSnapshot(store));
+  const profilesRef = useRef(store.profiles);
+  profilesRef.current = store.profiles;
 
   useEffect(() => {
     const next = storeSnapshot(store);
@@ -107,13 +109,16 @@ export function useProfiles() {
     return result;
   };
 
+  // Fast repeats read the ref, and each updater writes that attempt's map onto the latest profile.
   const recordWriting = (id: string, itemId: string, success: boolean): WritingOutcome => {
-    const profile = store.profiles.find((item) => item.id === id);
+    const profile = profilesRef.current.find((item) => item.id === id);
     const outcome = recordWritingAttempt(profile?.writing, itemId, success);
     if (!profile) return outcome;
+    const writing = outcome.writing;
+    profilesRef.current = profilesRef.current.map((item) => (item.id === id ? { ...item, writing } : item));
     setStore((current) => ({
       ...current,
-      profiles: current.profiles.map((item) => (item.id === id ? { ...item, writing: outcome.writing } : item)),
+      profiles: current.profiles.map((item) => (item.id === id ? { ...item, writing } : item)),
     }));
     return outcome;
   };
