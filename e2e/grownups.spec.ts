@@ -124,6 +124,8 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
   await expect(page.getByRole("heading", { name: "Drag to blend" })).toBeVisible();
   await expect(page.locator("[data-section='help']").getByText("switch on the side")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Contact us" })).toHaveCount(0);
+  // Feedback opens the grown-up's own mail app, addressed to the real help mailbox.
+  await expect(page.locator("[data-action=feedback]")).toHaveAttribute("href", /^mailto:hello@littlenestlearning\.app\?subject=/);
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await page.getByRole("button", { name: /Privacy/ }).click();
