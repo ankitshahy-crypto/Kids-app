@@ -2,7 +2,7 @@
  * The help address: a real Zoho mailbox on littlenestlearning.app, read by the
  * team. Empty would keep "Send feedback" out of Help. Do not invent an email here.
  */
-export const feedbackEmail = "hello@littlenestlearning.app";
+export const feedbackEmail: string = "hello@littlenestlearning.app";
 
 export const showHelpContact = feedbackEmail !== "";
 
