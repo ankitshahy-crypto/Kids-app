@@ -794,3 +794,93 @@ p {
   display: grid;
   place-items: center;
 }
+
+.callout-spaced {
+  margin-top: 24px;
+}
+
+.callout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Setup guide */
+.guide-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 760px) {
+  .guide-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.guide-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 22px 24px;
+}
+
+.guide-card h2 {
+  margin-top: 0;
+}
+
+.guide-card .steps li {
+  font-size: 17px;
+}
+
+.doc .code-sample {
+  white-space: nowrap;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--butter);
+  border-radius: 8px;
+  padding: 1px 6px;
+}
+
+.print-note {
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+@media print {
+  .site-head,
+  .site-foot,
+  .skip,
+  .print-note {
+    display: none;
+  }
+  body {
+    background: #fff;
+    font-size: 13px;
+  }
+  .doc {
+    padding: 0;
+  }
+  .doc .wrap {
+    width: 100%;
+  }
+  .guide-split {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .guide-card {
+    padding: 12px 14px;
+    break-inside: avoid;
+  }
+  .guide-card .steps li {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .doc h1 {
+    font-size: 24px;
+  }
+  .doc h2 {
+    font-size: 17px;
+    margin-top: 0;
+  }
+}

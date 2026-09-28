@@ -7,6 +7,14 @@ import { emptyGames, normalizeGames, type GameProgress } from "./games";
 import { emptyLadder, normalizeLadder, type LadderProgress } from "./ladder";
 import { normalizeWriting, type WritingMap } from "./scaffold";
 import { emptyOutfit, isWardrobeId, itemForSlot, type Outfit } from "./wardrobe";
+import {
+  normalizeHomeReport,
+  normalizeSoundChecks,
+  normalizeTeacherLink,
+  type HomeReport,
+  type SoundChecks,
+  type TeacherLink,
+} from "./profileExtras";
 
 export const ageRanges = ["3", "4", "5", "6-7"] as const;
 export type AgeRange = (typeof ageRanges)[number];
@@ -80,6 +88,14 @@ export type ChildProfile = {
   gifts: string[];
   /** One to three interest themes, in the order picked. Empty means the regular content. */
   themes: ThemeId[];
+  /** Quiet check-ins: each sound's latest first try. Shown to grown-ups only. */
+  soundChecks?: SoundChecks;
+  /** Family device: the last family code from the teacher. */
+  fromTeacher?: TeacherLink;
+  /** Class iPad: the preset note the teacher picked for this child's family. */
+  noteForHome?: number;
+  /** Class iPad: the last progress code typed in from home. */
+  fromHome?: HomeReport;
 };
 
 export type ChildInput = { name: string; ageRange: AgeRange; animal: AnimalId; themes?: ThemeId[] };
@@ -185,6 +201,7 @@ export const activitySteps = [
   "predict",
   "chain",
   "water",
+  "check-in",
 ] as const;
 
 const activityStepSet = new Set<string>(activitySteps);
@@ -335,7 +352,19 @@ function withRewards(profile: ChildProfile): ChildProfile {
     ladder: normalizeLadder((profile as { ladder?: unknown }).ladder),
     gifts: normalizeGifts((profile as { gifts?: unknown }).gifts),
     themes: normalizeThemes((profile as { themes?: unknown }).themes),
+    soundChecks: nonEmpty(normalizeSoundChecks((profile as { soundChecks?: unknown }).soundChecks)),
+    fromTeacher: normalizeTeacherLink((profile as { fromTeacher?: unknown }).fromTeacher),
+    noteForHome: normalizeNote((profile as { noteForHome?: unknown }).noteForHome),
+    fromHome: normalizeHomeReport((profile as { fromHome?: unknown }).fromHome),
   };
+}
+
+function nonEmpty<T extends object>(value: T): T | undefined {
+  return Object.keys(value).length > 0 ? value : undefined;
+}
+
+function normalizeNote(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 && value < 32 ? value : undefined;
 }
 
 function normalizeGifts(value: unknown): string[] {

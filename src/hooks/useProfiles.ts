@@ -16,6 +16,8 @@ import { assignHatchLevel, recordHatch, recordSpin, type HatchLevel } from "../d
 import { assignLadderStep, recordLadderSuccess, type LadderStep } from "../data/ladder";
 import { assignWritingLevel, recordWritingAttempt, type ScaffoldLevel, type WritingOutcome } from "../data/scaffold";
 import { READING, type SubjectId } from "../data/subject";
+import { recordSoundCheck } from "../data/progress";
+import type { HomeReport, TeacherLink } from "../data/profileExtras";
 
 export function useProfiles() {
   const [store, setStore] = useState(() => loadStore());
@@ -179,6 +181,29 @@ export function useProfiles() {
     }));
   };
 
+  const patchChild = (id: string, change: (profile: ChildProfile) => ChildProfile) => {
+    setStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((item) => (item.id === id ? change(item) : item)),
+    }));
+  };
+
+  /** A quiet check-in: was this sound picked on the first try? Grown-ups see it; the child does not. */
+  const noteSoundCheck = (id: string, sound: string, firstTry: boolean) =>
+    patchChild(id, (item) => recordSoundCheck(item, sound, firstTry));
+
+  /** Class iPad: the preset note for this child's family. 0 clears it. */
+  const setNoteForHome = (id: string, note: number) =>
+    patchChild(id, (item) => ({ ...item, noteForHome: note > 0 ? note : undefined }));
+
+  /** Family device: what the teacher's family code said. */
+  const setFromTeacher = (id: string, link: TeacherLink | undefined) =>
+    patchChild(id, (item) => ({ ...item, fromTeacher: link }));
+
+  /** Class iPad: what the family's progress code said. */
+  const setFromHome = (id: string, report: HomeReport | undefined) =>
+    patchChild(id, (item) => ({ ...item, fromHome: report }));
+
   const setWritingLevel = (id: string, itemId: string, level: ScaffoldLevel) => {
     setStore((current) => ({
       ...current,
@@ -213,6 +238,10 @@ export function useProfiles() {
     noteSpin,
     giveGift,
     wear,
+    noteSoundCheck,
+    setNoteForHome,
+    setFromTeacher,
+    setFromHome,
   };
 }
 

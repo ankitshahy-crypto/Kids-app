@@ -24,6 +24,8 @@ import { ParentView } from "./components/ParentPanel";
 import { LetterTrace } from "./components/LetterTrace";
 import { NameTrace, WordTrace } from "./components/PathTrace";
 import { StartCheck } from "./components/StartCheck";
+import { SoundCheckIn, checkInRounds } from "./components/SoundCheckIn";
+import { checkInSounds } from "./data/progress";
 import { StoryReader } from "./components/StoryReader";
 import { SoundItOut } from "./components/SoundItOut";
 import { SilentHint } from "./components/SilentHint";
@@ -87,7 +89,7 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors" | "time" | "build" | "science";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | "break" | "surprise" | "check" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | "break" | "surprise" | "check" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name" | "sound-check";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 
@@ -103,6 +105,7 @@ function isChunkScreen(screen: Screen): boolean {
     screen === "word" ||
     screen === "my-name" ||
     screen === "games" ||
+    screen === "sound-check" ||
     buildScreens.includes(screen as BuildActivity) ||
     scienceScreens.includes(screen as ScienceId)
   );
@@ -121,7 +124,7 @@ const moneyScreens: MoneyGame[] = ["jars", "lemonade", "choose", "needs", "cards
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
-  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteLadder, setLadderStep, noteSpin, giveGift } = useProfiles();
+  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteLadder, setLadderStep, noteSpin, giveGift, noteSoundCheck, setNoteForHome, setFromTeacher, setFromHome } = useProfiles();
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
@@ -272,6 +275,10 @@ export default function App() {
 
   const introducedLetters = useMemo(() => lettersIntroduced(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
   const introducedAlphabet = useMemo(() => lettersOnly(introducedLetters), [introducedLetters]);
+  const checkIn = useMemo(
+    () => checkInRounds(checkInSounds(lessonLetters, introducedLetters), introducedLetters, `${active?.id ?? ""}:${todayKey()}`),
+    [lessonLetters, introducedLetters, active?.id],
+  );
   const ladderStep = active?.ladder.step ?? 1;
   // The step the open lesson was built on. Moving up mid-lesson would swap the
   // card under the child, so the new step waits for the next visit.
@@ -594,6 +601,20 @@ export default function App() {
     else setTip(null);
   };
 
+  /** The Friday sound game: a star for playing, whatever the taps were. */
+  const finishCheckIn = () => {
+    if (!active) return;
+    const result = giveStar(active.id, "check-in");
+    if (result.awarded) {
+      if (!calm) setFlying(true);
+      if (result.milestones.length > 0) {
+        setCheer(result.milestones[result.milestones.length - 1] ?? null);
+        playEffect(calm ? "chime" : "cheer", settings);
+      } else playEffect("chime", settings);
+    }
+    setScreen("today");
+  };
+
   const practiceReward = (step: "word" | "name", learned: StickerInput[]) => {
     if (!active) return;
     if (step === "word") {
@@ -750,6 +771,15 @@ export default function App() {
                     setScreen("games");
                     setTip(null);
                   }}
+                  onSoundGame={
+                    checkIn.length >= 2
+                      ? () => {
+                          primeSpeech();
+                          setScreen("sound-check");
+                          setTip(null);
+                        }
+                      : undefined
+                  }
                   showExplore={settings.showExplore}
                   lockedActivity={lockedActivity}
                   held={lessonHeld}
@@ -778,6 +808,7 @@ export default function App() {
                   key={active.id}
                   profile={active}
                   settingsRef={settingsRef}
+                  onRecord={(sound, firstTry) => noteSoundCheck(active.id, sound, firstTry)}
                   onAccept={(result) => {
                     setChildPlace(active.id, result.place);
                     setLadderStep(active.id, result.ladderStep);
@@ -788,6 +819,16 @@ export default function App() {
                     setScreen("today");
                     setMode("grownups");
                   }}
+                />
+              ) : null}
+              {screen === "sound-check" ? (
+                <SoundCheckIn
+                  key={`${active.id}:${todayKey()}`}
+                  profile={active}
+                  rounds={checkIn}
+                  settingsRef={settingsRef}
+                  onRecord={(sound, firstTry) => noteSoundCheck(active.id, sound, firstTry)}
+                  onDone={finishCheckIn}
                 />
               ) : null}
               {screen === "break" ? (
@@ -1023,6 +1064,9 @@ export default function App() {
               onAdd={addFromParent}
               onUpdate={updateChild}
               onRemove={removeChild}
+              onChildPlace={setChildPlace}
+              onLadderStep={setLadderStep}
+              onTeacherLink={setFromTeacher}
               onClose={() => setMode("start")}
             />
           </div>
@@ -1039,6 +1083,8 @@ export default function App() {
             onWritingLevel={setWritingLevel}
             onHatchLevel={setHatchLevel}
             onLadderStep={setLadderStep}
+            onNote={setNoteForHome}
+            onHomeReport={setFromHome}
             onClose={() => setMode("start")}
           />
         ) : null}
@@ -1076,6 +1122,9 @@ export default function App() {
               }}
               onUpdate={updateChild}
               onRemove={removeChild}
+              onChildPlace={setChildPlace}
+              onLadderStep={setLadderStep}
+              onTeacherLink={setFromTeacher}
               onClose={() => setMode(grownupsReturn)}
             />
           </div>
