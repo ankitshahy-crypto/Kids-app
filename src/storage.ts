@@ -39,6 +39,10 @@ export const PROFILES_KEY = "littlenest-profiles-v1";
 export const SETTINGS_KEY = "littlenest-settings-v1";
 export const PLACEMENT_KEY = "littlenest-placement-v1";
 export const SILENT_HINT_KEY = "littlenest-silent-hint-v1";
+/** The last answer from the App Store about the one-time unlock, for a launch with no network. */
+export const UNLOCK_KEY = "littlenest-unlock-v1";
+/** Web only: "1" shows the free-and-locked app, with a pretend unlock, for previews and tests. */
+export const PAYWALL_PREVIEW_KEY = "littlenest-paywall-preview-v1";
 /** "One more?" chunks taken today, per child. Nothing else is kept here. */
 export const EXTRAS_KEY = "littlenest-extras-v1";
 export const OUTBOX_KEY = "littlenest-outbox-v1";

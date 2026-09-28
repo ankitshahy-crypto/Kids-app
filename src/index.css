@@ -7447,3 +7447,116 @@ input.is-pressed,
   margin-top: auto;
   min-height: 64px;
 }
+
+/* One-time unlock: padlocks on tiles, the child's "ask a grown-up" sheet, and the grown-up page. */
+.lock-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--paper, #fffaf2);
+  color: var(--text-sage, #5f7a68);
+  box-shadow: 0 2px 6px rgba(90, 70, 50, 0.12);
+}
+
+.lock-badge svg {
+  width: 15px;
+  height: 15px;
+}
+
+.math-activity,
+.color-activity,
+.game-tile {
+  position: relative;
+}
+
+.math-activity.is-locked,
+.color-activity.is-locked,
+.game-tile.is-locked {
+  opacity: 0.72;
+}
+
+.held-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: center;
+  margin: 4px auto 0;
+  padding: 8px 16px 8px 8px;
+  min-height: 44px;
+  border-radius: 999px;
+  background: var(--paper, #fffaf2);
+  color: var(--text, #3d3a36);
+  font-weight: 600;
+  box-shadow: var(--shadow, 0 6px 16px rgba(90, 70, 50, 0.08));
+}
+
+.held-note .lock-badge {
+  position: static;
+  box-shadow: none;
+  background: var(--mint-wash, #e7f4ea);
+}
+
+.lock-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(70, 58, 48, 0.32);
+}
+
+.lock-card {
+  width: min(360px, 100%);
+  padding: 28px 24px 20px;
+  border-radius: 28px;
+  background: var(--paper, #fffaf2);
+  color: var(--text, #3d3a36);
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(70, 58, 48, 0.2);
+}
+
+.lock-card h2 {
+  margin: 8px 0 4px;
+}
+
+.lock-card p {
+  margin: 0 0 18px;
+}
+
+.lock-card-mark {
+  display: inline-grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mint-wash, #e7f4ea);
+  color: var(--sage, #6c9a76);
+}
+
+.lock-card-mark svg {
+  width: 36px;
+  height: 36px;
+}
+
+.lock-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.unlock-buy {
+  width: 100%;
+  margin: 8px 0 4px;
+}
+
+.unlock-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  justify-content: center;
+}

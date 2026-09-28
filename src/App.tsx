@@ -15,7 +15,7 @@ import { GrownupTip } from "./components/GrownupTip";
 import { GoalCheer } from "./components/GoalCheer";
 import { GoalRing } from "./components/GoalRing";
 import { GrownupsButton } from "./components/GrownupsButton";
-import { GrownupsMenu } from "./components/GrownupsMenu";
+import { GrownupsMenu, type GrownupsPage } from "./components/GrownupsMenu";
 import { Chevron, StarIcon } from "./components/icons";
 import { KidCorner } from "./components/KidCorner";
 import { MilestoneCheer } from "./components/MilestoneCheer";
@@ -70,7 +70,10 @@ import { BUILD, type BuildActivity } from "./data/engineer";
 import { SCIENCE, type ScienceActivity as ScienceId } from "./data/science";
 import { lessonName, todayKey, type ChildInput, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
-import { resolvePlacement } from "./data/placement";
+import { atReadingWeek, resolvePlacement } from "./data/placement";
+import { activityOpen, playableWeek, type ExploreArea } from "./purchase/access";
+import { useUnlock } from "./purchase/useUnlock";
+import { LockSheet } from "./components/LockSheet";
 import { READING } from "./data/subject";
 import { lettersOnly, traceLetters } from "./data/units";
 import { blendList, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
@@ -216,10 +219,25 @@ export default function App() {
     else setMusicArea("today");
   }, [mode, screen]);
 
-  const lessonPlace = useMemo(() => {
+  const unlock = useUnlock();
+  const unlocked = !unlock.paywall || unlock.unlocked;
+  const placedLesson = useMemo(() => {
     if (!active) return null;
     return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, READING, active.ageRange);
   }, [active, placement]);
+  // Before the one-time unlock, a child past the free weeks replays the last free week.
+  const lessonPlace = useMemo(
+    () => (placedLesson ? atReadingWeek(placedLesson, playableWeek(placedLesson.weekIndex, unlocked)) : null),
+    [placedLesson, unlocked],
+  );
+  const lessonHeld = Boolean(placedLesson && lessonPlace && lessonPlace.weekIndex !== placedLesson.weekIndex);
+  const [askingGrownup, setAskingGrownup] = useState(false);
+  const [grownupsPage, setGrownupsPage] = useState<GrownupsPage>("menu");
+  const askGrownup = () => {
+    setTip(null);
+    setAskingGrownup(true);
+  };
+  const lockedActivity = (area: ExploreArea, id: string) => !activityOpen(area, id, unlocked);
 
   const lessonLetters = lessonPlace?.letters ?? [];
   // A sound-unit week (sh, a-e) is traced letter by letter, and its letter games use single letters.
@@ -385,6 +403,10 @@ export default function App() {
   };
 
   const openMath = (step: MathStep) => {
+    if (lockedActivity("math", step)) {
+      askGrownup();
+      return;
+    }
     primeSpeech();
     setScreen(step);
     if (settingsRef.current.showTips) setTip(mathTip(step, "start"));
@@ -409,6 +431,10 @@ export default function App() {
   };
 
   const openColor = (step: ColorStep) => {
+    if (lockedActivity("colors", step)) {
+      askGrownup();
+      return;
+    }
     primeSpeech();
     setScreen(step);
     if (settingsRef.current.showTips) setTip(colorTip(step, "start"));
@@ -434,6 +460,10 @@ export default function App() {
   };
 
   const openTime = (step: TimeStep) => {
+    if (lockedActivity("time", step)) {
+      askGrownup();
+      return;
+    }
     primeSpeech();
     setScreen(step);
     if (settingsRef.current.showTips) setTip(timeTip(step, "start"));
@@ -464,6 +494,10 @@ export default function App() {
   };
 
   const openMoney = (step: MoneyGame) => {
+    if (lockedActivity("money", step)) {
+      askGrownup();
+      return;
+    }
     primeSpeech();
     setScreen(step);
     if (settingsRef.current.showTips) setTip(timeTip(step, "start"));
@@ -487,6 +521,10 @@ export default function App() {
   };
 
   const openBuild = (activity: BuildActivity) => {
+    if (lockedActivity("build", activity)) {
+      askGrownup();
+      return;
+    }
     primeSpeech();
     setScreen(activity);
     if (settingsRef.current.showTips) setTip(engineerTip(activity, "start"));
@@ -510,6 +548,10 @@ export default function App() {
   };
 
   const openScience = (activity: ScienceId) => {
+    if (lockedActivity("science", activity)) {
+      askGrownup();
+      return;
+    }
     primeSpeech();
     setScreen(activity);
     if (settingsRef.current.showTips) setTip(scienceTip(activity, "start"));
@@ -569,7 +611,8 @@ export default function App() {
     setScreen("today");
   };
   const pastel = mode === "start" || mode === "kid";
-  const openGrownups = () => {
+  const openGrownups = (page: GrownupsPage = "menu") => {
+    setGrownupsPage(page);
     setGrownupsReturn(mode === "kid" ? "kid" : "start");
     setMode("grownups");
   };
@@ -606,7 +649,7 @@ export default function App() {
       {pastel ? <Background /> : null}
       <SilentHint />
       <main className="stage">
-        {mode === "start" || mode === "kid" ? <GrownupsButton onOpen={openGrownups} /> : null}
+        {mode === "start" || mode === "kid" ? <GrownupsButton onOpen={() => openGrownups()} /> : null}
         {mode === "start" ? (
           <StartScreen
             profiles={profiles}
@@ -708,6 +751,9 @@ export default function App() {
                     setTip(null);
                   }}
                   showExplore={settings.showExplore}
+                  lockedActivity={lockedActivity}
+                  held={lessonHeld}
+                  onHeld={askGrownup}
                 />
               ) : null}
               {screen === "today" && offer && wrappingUp ? (
@@ -938,7 +984,7 @@ export default function App() {
                     <div className="math-play" data-screen="money-play">
                       <h1>Money play</h1>
                       <p className="math-prompt">Pretend coins only.</p>
-                      <MoneyBoard done={active.days[todayKey()]?.[TIME] ?? {}} onOpen={openMoney} />
+                      <MoneyBoard done={active.days[todayKey()]?.[TIME] ?? {}} onOpen={openMoney} locked={(id) => lockedActivity("money", id)} />
                     </div>
                   ) : null}
                   {screen === "games" ? (
@@ -955,6 +1001,8 @@ export default function App() {
                         else setTip(null);
                       }}
                       onDone={finishGame}
+                      locked={(game) => lockedActivity("games", game)}
+                      onLocked={askGrownup}
                     />
                   ) : null}
                 </ExploreFrame>
@@ -994,6 +1042,15 @@ export default function App() {
             onClose={() => setMode("start")}
           />
         ) : null}
+        {mode === "kid" && askingGrownup ? (
+          <LockSheet
+            onGrownup={() => {
+              setAskingGrownup(false);
+              openGrownups("unlock");
+            }}
+            onClose={() => setAskingGrownup(false)}
+          />
+        ) : null}
         {mode === "kid" && flying ? <StarFlight onDone={() => setFlying(false)} /> : null}
         {mode === "kid" && cheer !== null ? <MilestoneCheer stars={cheer} onDone={() => setCheer(null)} /> : null}
         {mode === "kid" && goalMet ? <GoalCheer onDone={() => setGoalMet(false)} /> : null}
@@ -1001,6 +1058,8 @@ export default function App() {
         {mode === "grownups" ? (
           <div className="screen-body">
             <GrownupsMenu
+              key={grownupsPage}
+              initialPage={grownupsPage}
               settings={settings}
               onChange={update}
               profiles={profiles}

@@ -16,6 +16,7 @@ import {
 import type { Outfit } from "../data/wardrobe";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
+import { LockBadge } from "./LockBadge";
 
 function useSpeaker(settingsRef: { current: Settings }) {
   const playRef = useRef<AbortController | null>(null);
@@ -59,10 +60,13 @@ const board: { id: ColorStep; label: string; name: string }[] = [
 export function ColorBoard({
   lesson,
   done,
+  locked,
   onOpen,
 }: {
   lesson: ColorLesson;
   done: Record<string, boolean>;
+  /** Tiles that open with the full app. */
+  locked?: (id: string) => boolean;
   onOpen: (step: ColorStep) => void;
 }) {
   return (
@@ -71,11 +75,13 @@ export function ColorBoard({
         <button
           key={stop.id}
           type="button"
-          className={`color-activity${done[stop.id] ? " is-done" : ""}`}
+          className={`color-activity${done[stop.id] ? " is-done" : ""}${locked?.(stop.id) ? " is-locked" : ""}`}
           data-activity={stop.id}
+          data-locked={locked?.(stop.id) ? "true" : undefined}
           aria-label={stop.name}
           onClick={() => onOpen(stop.id)}
         >
+          {locked?.(stop.id) ? <LockBadge /> : null}
           <span className="color-activity-art" aria-hidden="true">
             {stop.id === "name" ? <ColorSwatch name={lesson.hear} /> : null}
             {stop.id === "mix" ? <ColorSwatch name="orange" /> : null}

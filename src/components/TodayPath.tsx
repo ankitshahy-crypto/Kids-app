@@ -10,6 +10,7 @@ import { SCIENCE, type ScienceActivity } from "../data/science";
 import { READING } from "../data/subject";
 import type { PlacementSource } from "../data/placement";
 import { isReviewDay } from "../data/schedule";
+import type { ExploreArea } from "../purchase/access";
 import { isUnit, unitLabel } from "../data/units";
 import { dayProgress, todayKey, type ChildProfile, type LessonStep } from "../data/profiles";
 import { practiceTotal } from "../data/reading";
@@ -19,6 +20,7 @@ import { Hero } from "./Hero";
 import { StarIcon } from "./icons";
 import { EngineerBoard } from "./NestBuild";
 import { ScienceBoard } from "./SciencePlay";
+import { LockBadge } from "./LockBadge";
 import { ModuleMark } from "./ModuleMark";
 import { BookMark, EggNest, Hills, PencilMark, ShapesMark, ToyBox } from "./sceneArt";
 
@@ -60,6 +62,9 @@ export function TodayPath({
   onTraceWord,
   onTraceName,
   showExplore,
+  lockedActivity,
+  held = false,
+  onHeld,
 }: {
   profile: ChildProfile;
   letters: string[];
@@ -91,6 +96,11 @@ export function TodayPath({
   onTraceWord: () => void;
   onTraceName: () => void;
   showExplore: boolean;
+  /** Explore activities that open with the full app. */
+  lockedActivity?: (area: ExploreArea, id: string) => boolean;
+  /** The child is past the free weeks, so the lesson replays the last free week. */
+  held?: boolean;
+  onHeld?: () => void;
 }) {
   const showMath = sectionVisible("math", undefined, showExplore);
   const showColors = sectionVisible("colors", undefined, showExplore);
@@ -170,6 +180,12 @@ export function TodayPath({
               </p>
             ) : null}
           </div>
+          {shown === "reading" && held ? (
+            <button type="button" className="held-note" data-held="true" onClick={onHeld}>
+              <LockBadge />
+              <span>More weeks are ready. Ask a grown-up!</span>
+            </button>
+          ) : null}
 
           {shown === "reading" ? (
             <div className="trail">
@@ -229,14 +245,14 @@ export function TodayPath({
             </div>
           ) : null}
 
-          {shown === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} /> : null}
-          {shown === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} /> : null}
-          {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} /> : null}
+          {shown === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} locked={(id) => lockedActivity?.("math", id) ?? false} /> : null}
+          {shown === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} locked={(id) => lockedActivity?.("colors", id) ?? false} /> : null}
+          {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} locked={(id) => lockedActivity?.("time", id) ?? false} /> : null}
           {shown === "build" ? (
-            <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} />
+            <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} locked={(id) => lockedActivity?.("build", id) ?? false} />
           ) : null}
           {shown === "science" ? (
-            <ScienceBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[SCIENCE] ?? {}} onOpen={onScience} />
+            <ScienceBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[SCIENCE] ?? {}} onOpen={onScience} locked={(id) => lockedActivity?.("science", id) ?? false} />
           ) : null}
         </section>
 

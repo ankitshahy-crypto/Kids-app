@@ -17,11 +17,13 @@ import { AboutWordNest } from "./AboutWordNest";
 import { ChildForm } from "./ChildForm";
 import { Chevron } from "./icons";
 import { OfflinePanel } from "./OfflinePanel";
+import { UnlockPanel } from "./UnlockPanel";
 import { Printables } from "./Printables";
 import { SettingsFields } from "./SettingsFields";
 
-type GrownupsPage =
+export type GrownupsPage =
   | "menu"
+  | "unlock"
   | "settings"
   | "profiles"
   | "account"
@@ -33,6 +35,7 @@ type GrownupsPage =
   | "offline";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
+  { id: "unlock", title: `Full ${PRODUCT_SHORT}`, note: "Every week and activity, one payment, and Restore", tint: tint.peach },
   { id: "settings", title: "Settings", note: "Volume, voice, lesson length, calm mode, easier reading, tips, and Explore", tint: tint.mint },
   { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach },
@@ -106,6 +109,7 @@ export function GrownupsMenu({
   onUpdate,
   onRemove,
   onClose,
+  initialPage = "menu",
 }: {
   settings: Settings;
   onChange: (patch: Partial<Settings>) => void;
@@ -119,8 +123,10 @@ export function GrownupsMenu({
   onUpdate: (id: string, input: ChildInput) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
+  /** Open on a page, as when a child's "ask a grown-up" leads here. */
+  initialPage?: GrownupsPage;
 }) {
-  const [page, setPage] = useState<GrownupsPage>("menu");
+  const [page, setPage] = useState<GrownupsPage>(initialPage);
   const [shareStatus, setShareStatus] = useState<ShareResult | "idle">("idle");
   const [adding, setAdding] = useState(profiles.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -131,19 +137,20 @@ export function GrownupsMenu({
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (page === "menu") onClose();
+      if (page === "menu" || page === initialPage) onClose();
       else setPage("menu");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, page]);
+  }, [onClose, page, initialPage]);
 
   useEffect(() => {
     if (editingId && !profiles.some((profile) => profile.id === editingId)) setEditingId(null);
   }, [editingId, profiles]);
 
+  // Opened on a page (a child's "ask a grown-up"), Back goes straight back to the child.
   const back = () => {
-    if (page === "menu") onClose();
+    if (page === "menu" || page === initialPage) onClose();
     else setPage("menu");
   };
 
@@ -180,6 +187,8 @@ export function GrownupsMenu({
       ) : null}
 
       {page === "offline" ? <OfflinePanel /> : null}
+
+      {page === "unlock" ? <UnlockPanel /> : null}
 
       {page === "settings" ? (
         <section className="adult-section" data-section="settings">
@@ -248,8 +257,9 @@ export function GrownupsMenu({
           <h2>Account</h2>
           <p className="account-status">No account needed</p>
           <p className="adult-copy">
-            {PRODUCT_NAME} works without an account. Progress stays on this device, and nothing asks for an email, a
-            card, or a payment. A school can connect a class later, with a parent's say-so, but that is optional.
+            {PRODUCT_NAME} works without an account. Progress stays on this device, and nothing asks for an email or a
+            card. The one-time unlock goes through the App Store with your Apple ID, so Restore finds it on a new device.
+            A school can connect a class later, with a parent's say-so, but that is optional.
           </p>
         </section>
       ) : null}
@@ -319,6 +329,7 @@ export function GrownupsMenu({
             <li>Photos are not uploaded. The app does not take pictures.</li>
             <li>There is no health data and no diagnosis.</li>
             <li>There are no ads and no tracking.</li>
+            <li>The one-time unlock is paid through the App Store. {PRODUCT_NAME} never sees card or Apple ID details.</li>
             <li>Nothing is sent to a school. Class linking is not available yet.</li>
           </ul>
         </section>

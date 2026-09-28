@@ -43,6 +43,7 @@ import {
 import type { Outfit } from "../data/wardrobe";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
+import { LockBadge } from "./LockBadge";
 
 const NAMES: Record<ScienceActivity, string> = {
   life: "Life",
@@ -234,10 +235,13 @@ function ScienceGlyph({ id }: { id: ScienceActivity }) {
 export function ScienceBoard({
   ageRange,
   done,
+  locked,
   onOpen,
 }: {
   ageRange: AgeRange;
   done: Record<string, boolean>;
+  /** Tiles that open with the full app. */
+  locked?: (id: string) => boolean;
   onOpen: (activity: ScienceActivity) => void;
 }) {
   const level = scienceLevel(ageRange);
@@ -247,11 +251,13 @@ export function ScienceBoard({
         <button
           key={id}
           type="button"
-          className={`math-activity${done[id] ? " is-done" : ""}`}
+          className={`math-activity${done[id] ? " is-done" : ""}${locked?.(id) ? " is-locked" : ""}`}
           data-activity={id}
+          data-locked={locked?.(id) ? "true" : undefined}
           aria-label={NAMES[id]}
           onClick={() => onOpen(id)}
         >
+          {locked?.(id) ? <LockBadge /> : null}
           <span className="math-activity-art" aria-hidden="true">
             <ScienceGlyph id={id} />
           </span>

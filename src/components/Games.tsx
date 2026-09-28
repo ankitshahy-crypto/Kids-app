@@ -19,6 +19,7 @@ import {
   type RhymeCard,
 } from "../data/games";
 import { wordsForStep, type LadderStep } from "../data/ladder";
+import { LockBadge } from "./LockBadge";
 import type { ChildProfile, StickerInput } from "../data/profiles";
 import { Hero } from "./Hero";
 import { SpinSay } from "./SpinSay";
@@ -53,6 +54,8 @@ export function Games({
   colorOptions,
   onEnter,
   onDone,
+  locked,
+  onLocked,
 }: {
   profile: ChildProfile;
   knownLetters: string[];
@@ -63,12 +66,33 @@ export function Games({
   colorOptions: string[];
   onEnter: (game: GameId) => void;
   onDone: (game: GameId, learned: StickerInput[], extra?: { step?: string; gift?: string; ladder?: boolean }) => void;
+  /** Games that open with the full app, and what a tap on one does instead. */
+  locked?: (game: GameId) => boolean;
+  onLocked?: (game: GameId) => void;
 }) {
   const [game, setGame] = useState<GameId | "home">("home");
   const open = (next: GameId) => {
+    if (locked?.(next)) {
+      onLocked?.(next);
+      return;
+    }
     onEnter(next);
     setGame(next);
   };
+  const tile = (id: GameId, label: string) => (
+    <button
+      key={id}
+      type="button"
+      className={`game-tile${locked?.(id) ? " is-locked" : ""}`}
+      data-game-tile={id}
+      data-locked={locked?.(id) ? "true" : undefined}
+      onClick={() => open(id)}
+    >
+      <TileArt id={id} />
+      <span>{label}</span>
+      {locked?.(id) ? <LockBadge /> : null}
+    </button>
+  );
 
   return (
     <div className="games" data-screen="games" data-game={game}>
@@ -76,28 +100,15 @@ export function Games({
         <div className="game-lobby">
           <h1>Games</h1>
           <div className="game-tiles">
-            {tiles.map((tile) => (
-              <button key={tile.id} type="button" className="game-tile" data-game-tile={tile.id} onClick={() => open(tile.id)}>
-                <TileArt id={tile.id} />
-                <span>{tile.label}</span>
-              </button>
-            ))}
+            {tiles.map((item) => tile(item.id, item.label))}
           </div>
           <h2 className="game-section">Think & Code</h2>
           <div className="game-tiles">
-            {thinkTiles.map((tile) => (
-              <button key={tile.id} type="button" className="game-tile" data-game-tile={tile.id} onClick={() => open(tile.id)}>
-                <TileArt id={tile.id} />
-                <span>{tile.label}</span>
-              </button>
-            ))}
+            {thinkTiles.map((item) => tile(item.id, item.label))}
           </div>
           <h2 className="game-section">Build It</h2>
           <div className="game-tiles">
-            <button type="button" className="game-tile" data-game-tile="build" onClick={() => open("build")}>
-              <TileArt id="build" />
-              <span>Build It</span>
-            </button>
+            {tile("build", "Build It")}
           </div>
         </div>
       ) : (

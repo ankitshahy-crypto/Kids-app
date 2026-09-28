@@ -17,6 +17,7 @@ import {
   type TimeStep,
 } from "../data/timeMoney";
 import type { Settings } from "../settings";
+import { LockBadge } from "./LockBadge";
 
 function useSpeaker(settingsRef: { current: Settings }) {
   const playRef = useRef<AbortController | null>(null);
@@ -122,11 +123,14 @@ const board: { id: TimeStep; label: string; name: string }[] = [
 export function TimeBoard({
   lesson,
   done,
+  locked,
   onOpen,
   onMoneyPlay,
 }: {
   lesson: TimeLesson;
   done: Record<string, boolean>;
+  /** Tiles that open with the full app. */
+  locked?: (id: string) => boolean;
   onOpen: (step: TimeStep) => void;
   onMoneyPlay?: () => void;
 }) {
@@ -138,11 +142,13 @@ export function TimeBoard({
         <button
           key={stop.id}
           type="button"
-          className={`math-activity${done[stop.id] ? " is-done" : ""}`}
+          className={`math-activity${done[stop.id] ? " is-done" : ""}${locked?.(stop.id) ? " is-locked" : ""}`}
           data-activity={stop.id}
+          data-locked={locked?.(stop.id) ? "true" : undefined}
           aria-label={stop.name}
           onClick={() => onOpen(stop.id)}
         >
+          {locked?.(stop.id) ? <LockBadge /> : null}
           <span className="math-activity-art" aria-hidden="true">
             {stop.id === "day" ? <span className="math-numeral">Day</span> : null}
             {stop.id === "routine" ? <span className="math-numeral">Go</span> : null}
