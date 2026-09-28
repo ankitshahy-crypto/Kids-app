@@ -420,18 +420,28 @@ export function Goat() {
   return (
     <svg className="art" viewBox="0 0 280 210" aria-hidden="true">
       <Shadow />
-      <ellipse cx="128" cy="140" rx="62" ry="38" fill="#F1E9DC" />
-      <rect x="86" y="160" width="16" height="30" rx="7" fill="#D9CDBB" />
-      <rect x="150" y="160" width="16" height="30" rx="7" fill="#D9CDBB" />
-      <path d="M180 120c22-10 34-28 34-50" fill="none" stroke="#F1E9DC" strokeWidth="22" strokeLinecap="round" />
-      <ellipse cx="214" cy="84" rx="26" ry="24" fill="#F1E9DC" />
-      <path d="M204 64c-6-10-8-20-4-28M222 64c0-10 4-20 12-26" fill="none" stroke="#C9A27A" strokeWidth="6" strokeLinecap="round" />
-      <ellipse cx="192" cy="72" rx="12" ry="6" fill="#E7C7A6" transform="rotate(-30 192 72)" />
-      <path d="M190 88c-14 2-22 12-20 22 10 0 16-8 20-22Z" fill="#D9CDBB" />
-      <Eye x={220} y={82} />
-      <ellipse cx="232" cy="98" rx="6" ry="4" fill="#E7C7A6" />
-      <path d="M214 108c6 8 12 8 18 0" fill="none" stroke="#2C3A4F" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M66 132c-14-4-24 4-22 14 10-2 16-6 22-14Z" fill="#D9CDBB" />
+      <path d="M74 120c-12-10-10-24 2-30" fill="none" stroke="#E4DACB" strokeWidth="12" strokeLinecap="round" />
+      <rect x="98" y="150" width="14" height="40" rx="6" fill="#CFC3B0" />
+      <rect x="158" y="150" width="14" height="40" rx="6" fill="#CFC3B0" />
+      <ellipse cx="128" cy="134" rx="64" ry="36" fill="#F1E9DC" />
+      <rect x="84" y="152" width="14" height="40" rx="6" fill="#DDD2C0" />
+      <rect x="144" y="152" width="14" height="40" rx="6" fill="#DDD2C0" />
+      <rect x="82" y="184" width="18" height="10" rx="4" fill="#8E7A63" />
+      <rect x="142" y="184" width="18" height="10" rx="4" fill="#8E7A63" />
+      <rect x="96" y="184" width="18" height="10" rx="4" fill="#7B6953" />
+      <rect x="156" y="184" width="18" height="10" rx="4" fill="#7B6953" />
+      <path d="M174 122c14-14 22-34 26-56" fill="none" stroke="#F1E9DC" strokeWidth="26" strokeLinecap="round" />
+      <ellipse cx="212" cy="62" rx="27" ry="24" fill="#F1E9DC" />
+      <ellipse cx="240" cy="80" rx="24" ry="15" fill="#F1E9DC" transform="rotate(18 240 80)" />
+      <path d="M206 36c-4-14 0-26 10-32" fill="none" stroke="#C9A27A" strokeWidth="7" strokeLinecap="round" />
+      <path d="M222 34c0-14 6-24 16-28" fill="none" stroke="#C9A27A" strokeWidth="7" strokeLinecap="round" />
+      <path d="M188 62c-16-2-30 4-36 14 12 6 26 4 36-4Z" fill="#E7C7A6" />
+      <Eye x={230} y={58} />
+      <ellipse cx="258" cy="84" rx="5" ry="3.5" fill="#D9A78A" />
+      <path d="M236 92c6 6 12 7 18 3" fill="none" stroke="#2C3A4F" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M224 96c-2 10 2 20 8 26 6-6 10-16 8-26Z" fill="#E4DACB" />
+      <circle cx="204" cy="112" r="7" fill="#F2C94C" />
+      <circle cx="204" cy="115" r="1.6" fill="#8E6B2B" />
     </svg>
   );
 }

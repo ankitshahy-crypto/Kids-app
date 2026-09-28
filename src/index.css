@@ -1149,6 +1149,18 @@ button:focus-visible {
   font-weight: 700;
 }
 
+/* A mail link styled as the other grown-up buttons. */
+.feedback-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 12px;
+  background: var(--sand);
+  color: var(--ink);
+  text-decoration: none;
+}
+
 .add-child,
 .age-grid button {
   width: 100%;

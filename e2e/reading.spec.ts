@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -37,7 +38,7 @@ async function passGate(page: Page) {
 }
 
 async function install(page: Page) {
-  await page.addInitScript(() => {
+  await page.addInitScript((created) => {
     const now = new Date();
     const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const saved = {
@@ -48,7 +49,7 @@ async function install(page: Page) {
           name: "Mia",
           ageRange: "4",
           animal: "fox",
-          createdAt: "2026-09-01T15:00:00.000Z",
+          createdAt: created,
           stars: 1,
           days: {},
           readingMs: { [key]: 4 * 60_000 },
@@ -58,7 +59,7 @@ async function install(page: Page) {
     };
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
     localStorage.removeItem("kids-app-silent-hint-v1");
-  });
+  }, createdThisWeek());
   await page.goto("./");
 }
 

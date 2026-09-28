@@ -1,8 +1,11 @@
 /**
- * Contact us stays out of Help until a help address is chosen.
- * Flip this when that address exists. Do not invent an email here.
+ * The help address. Empty keeps "Send feedback" out of Help, so pilot families
+ * never write to an address that nobody reads. Set it to the real one when it
+ * exists; do not invent an email here.
  */
-export const showHelpContact = false;
+export const feedbackEmail = "";
+
+export const showHelpContact = feedbackEmail !== "";
 
 import { PRODUCT_NAME } from "./brand";
 

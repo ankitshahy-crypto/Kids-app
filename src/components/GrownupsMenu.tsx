@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
+import { aboutContent } from "../content/about";
+import { resolvePlacement } from "../data/placement";
+import { deviceLine, feedbackMailto } from "../feedback";
 import { PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
 import { tint } from "../palette";
 import { shareWordNest, type ShareResult } from "../share";
@@ -285,8 +288,22 @@ export function GrownupsMenu({
           </dl>
           {showHelpContact ? (
             <div data-section="contact">
-              <h3>Contact us</h3>
-              <p className="adult-copy">A help address will be listed here when one is chosen.</p>
+              <h3>Send feedback</h3>
+              <p className="adult-copy">
+                Something odd, or an idea? This opens your mail app with the app version, device, and lesson week
+                already typed. Nothing is sent on its own, and no child's name is included.
+              </p>
+              <a
+                className="text-button feedback-link"
+                href={feedbackMailto({
+                  version: aboutContent.version,
+                  week: active ? resolvePlacement(placement, active.id, active.createdAt).weekIndex + 1 : undefined,
+                  ...deviceLine(),
+                })}
+                data-action="feedback"
+              >
+                Send feedback
+              </a>
             </div>
           ) : null}
         </section>

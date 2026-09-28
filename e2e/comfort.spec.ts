@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { installAudioSpy, spokenLines } from "./audioSpy";
+import { createdThisWeek } from "./clock";
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -9,7 +10,7 @@ function child(extra: Record<string, unknown> = {}) {
     name: "Mia",
     ageRange: "4",
     animal: "fox",
-    createdAt: "2026-09-01T15:00:00.000Z",
+    createdAt: createdThisWeek(),
     stars: 0,
     days: {},
     ladder: { step: 3, successes: 0 },
