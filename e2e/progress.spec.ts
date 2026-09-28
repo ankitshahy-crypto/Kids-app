@@ -106,6 +106,7 @@ test("the Friday sound game notes first tries quietly and shows grown-ups what t
       await expect(wrong).toBeDisabled();
       missed = answer;
     }
+    await expect(game).toHaveAttribute("data-answer", answer);
     await game.locator(`[data-choice="${answer}"]`).click();
   }
   await expect(game).toHaveAttribute("data-check", "done");

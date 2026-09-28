@@ -47,7 +47,7 @@ function tile(sound: string) {
  */
 export function SoundCheckIn({
   profile,
-  rounds,
+  rounds: given,
   settingsRef,
   onRecord,
   onDone,
@@ -58,6 +58,8 @@ export function SoundCheckIn({
   onRecord: (sound: string, firstTry: boolean) => void;
   onDone: () => void;
 }) {
+  // The game keeps the rounds it started with, even if the lesson around it re-renders.
+  const [rounds] = useState(given);
   const [index, setIndex] = useState(0);
   const [missed, setMissed] = useState<string[]>([]);
   const [solved, setSolved] = useState(false);
