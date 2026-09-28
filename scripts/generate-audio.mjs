@@ -28,19 +28,20 @@
  *                                       style prompt (--prompt) and cost a little; Chirp 3 HD has a
  *                                       free monthly allowance that covers this whole set.
  *   --prompt                            Style prompt for the Gemini models.
- *   --letter-voice                      Voice for letter phrases and sound clips, which use SSML
- *                                       phonemes so "m, as in moon" says the sound /m/, not "em".
- *                                       Defaults to the main voice as a Chirp 3 HD voice (Gemini
- *                                       models cannot take SSML). Neural2 and Studio voices work too.
+ *   --letter-voice                      Voice for letter phrases and sound clips (see SOUND_PLAN
+ *                                       below for how a bare sound is made). Defaults to the main
+ *                                       voice as a Chirp 3 HD voice; the Gemini models cannot do it.
  *   --letter-style sound|name           "name" says letter names ("bee, as in ball") in the main voice.
  *   --speed                             speaking rate, default 0.95 (Chirp 3 HD, Neural2, Studio).
  *   --no-trim                           keep Google's leading and trailing silence. By default, when
  *                                       ffmpeg is installed, each clip is fetched as WAV, trimmed so it
- *                                       starts at once, and encoded to MP3 here.
+ *                                       starts at once, and encoded to MP3 here. Letter sounds need
+ *                                       ffmpeg and python3 with numpy either way.
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -112,23 +113,46 @@ function resolveVoice(spec, modelName, prompt) {
 }
 
 /**
- * IPA for a letter's sound, for the SSML phoneme tag. A short schwa after a
- * stop ("bə") is how the sound is said to a child; continuants are held.
+ * How each letter's sound is made. Google's voices cannot say a consonant on
+ * its own: a pronunciation with no vowel is rejected, and text such as "sss"
+ * is read as letter names ("ess, ess, ess"). So each sound is one of:
+ *  - pron:  a short syllable given in IPA through a custom pronunciation
+ *           ("buh" said as /bʌ/), or a vowel on its own.
+ *  - text:  plain text the voice already says as a sound ("mmm" is a hum).
+ *  - carve: a carrier syllable ("ahs", "een") from which scripts/carve-sound.py
+ *           cuts the consonant and holds it steady.
+ * l, r and z end in a short "uh" here; a person's recording of those three
+ * (saved as public/audio/sounds/l.mp3 and so on) is the upgrade.
  */
-const LETTER_IPA = {
-  a: "æ", b: "bə", c: "kə", d: "də", e: "ɛː", f: "f", g: "ɡə", h: "hə", i: "ɪː", j: "dʒə", k: "kə", l: "lː",
-  m: "mː", n: "nː", o: "ɑ", p: "pə", q: "kwə", r: "ɹ", s: "s", t: "tə", u: "ʌ", v: "vː", w: "wə", x: "ks",
-  y: "jə", z: "zː", ae: "æ", eh: "ɛː", ih: "ɪː", aw: "ɑ", uh: "ʌ", ks: "ks",
+const SOUND_PLAN = {
+  a: { pron: ["aa", "æ"] },
+  e: { pron: ["eh", "ɛ"] },
+  i: { pron: ["ih", "ɪ"] },
+  o: { pron: ["aw", "ɑ"] },
+  u: { pron: ["uh", "ʌ"] },
+  b: { pron: ["buh", "bʌ"] },
+  c: { pron: ["kuh", "kʌ"] },
+  d: { pron: ["duh", "dʌ"] },
+  g: { pron: ["guh", "ɡʌ"] },
+  h: { pron: ["huh", "hʌ"] },
+  j: { pron: ["juh", "dʒʌ"] },
+  k: { pron: ["kuh", "kʌ"] },
+  p: { pron: ["puh", "pʌ"] },
+  q: { pron: ["kwuh", "kwʌ"] },
+  t: { pron: ["tuh", "tʌ"] },
+  w: { pron: ["wuh", "wʌ"] },
+  y: { pron: ["yuh", "jʌ"] },
+  l: { pron: ["luh", "lʌ"] },
+  r: { pron: ["ruh", "ɹʌ"] },
+  z: { pron: ["zuh", "zʌ"] },
+  m: { text: "mmm" },
+  s: { carve: ["ahh", "ɑs", "coda-noise"] },
+  f: { carve: ["ahh", "ɑf", "coda-noise"] },
+  x: { carve: ["ahh", "ɑks", "coda-burst"] },
+  n: { carve: ["eee", "in", "coda-voiced"] },
+  v: { carve: ["ahha", "ɑvɑ", "mid"] },
 };
-// Held /s/, /f/ and /r/ (sː) came out as three short pulses; a single phone is one clean sound.
-// /ɛ/ and /ɪ/ alone were too short to hear, so they are held a little.
-
-/** What a child might read on a phonics card: the sound written out, for a voice with no SSML. */
-const LETTER_SOUNDS = {
-  a: "a", b: "buh", c: "kuh", d: "duh", e: "eh", f: "fff", g: "guh", h: "huh", i: "ih", j: "juh", k: "kuh",
-  l: "lll", m: "mmm", n: "nnn", o: "aw", p: "puh", q: "kwuh", r: "rrr", s: "sss", t: "tuh", u: "uh", v: "vvv",
-  w: "wuh", x: "ks", y: "yuh", z: "zzz", ae: "a", eh: "eh", ih: "ih", aw: "aw", uh: "uh", ks: "ks",
-};
+const SOUND_ALIAS = { ae: "a", eh: "e", ih: "i", aw: "o", uh: "u", ks: "x" };
 
 const LETTER_NAMES = {
   a: "ay", b: "bee", c: "see", d: "dee", e: "ee", f: "eff", g: "jee", h: "aitch", i: "eye", j: "jay", k: "kay",
@@ -140,16 +164,12 @@ function escapeXml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function phonemeTag(char) {
-  const ipa = LETTER_IPA[char] ?? char;
-  return `<phoneme alphabet="ipa" ph="${ipa}">${escapeXml(LETTER_SOUNDS[char] ?? char)}</phoneme>`;
-}
-
 /** The letter in "m, as in moon", or in a sound id such as "ae". */
 function letterOf(kind, id, say) {
   const match = say.match(/^([a-z]), as in (.+)$/i);
   if (kind === "sounds") {
-    const char = (id in LETTER_IPA ? id : (match?.[1] ?? id)).toLowerCase();
+    const raw = id.toLowerCase();
+    const char = SOUND_ALIAS[raw] ?? (raw in SOUND_PLAN ? raw : (match?.[1] ?? raw).toLowerCase());
     return { char, example: match?.[2]?.replace(/\.$/, "") };
   }
   if (kind === "letters" && match) return { char: match[1].toLowerCase(), example: match[2].replace(/\.$/, "") };
@@ -157,37 +177,56 @@ function letterOf(kind, id, say) {
 }
 
 /**
- * What to send for one clip: plain text for the main voice, or SSML with a
- * phoneme for a letter phrase ("m, as in moon" said as /m/) or a bare letter
- * sound (the /m/ alone, for sounding out a word).
+ * A syllable for the letter voice: a custom pronunciation on a Chirp 3 HD
+ * voice, or an SSML phoneme on a Neural2 or Studio voice (which honour
+ * phonemes for whole syllables, though not for a bare consonant).
  */
-function inputFor(kind, id, say, main, letters, style) {
+function syllable(voice, token, ipa, rest = "") {
+  if (/Chirp3-HD/.test(voice.name)) return { text: `${token}${rest}`, pron: { [token]: ipa }, voice };
+  return { ssml: `<speak><phoneme alphabet="ipa" ph="${ipa}">${escapeXml(token)}</phoneme>${escapeXml(rest)}</speak>`, voice };
+}
+
+/**
+ * Steps for one clip. Most clips are a single request in the main voice;
+ * a letter sound or phrase may be a carrier to carve, or two parts to join.
+ */
+function planFor(kind, id, say, main, letters, style) {
   const letter = letterOf(kind, id, say);
   if (letter) {
     const { char, example } = letter;
-    if (kind === "letters" && style === "name") return { text: `${LETTER_NAMES[char] ?? char}, as in ${example}.`, voice: main };
-    if (letters.ssml) {
-      const ssml =
-        kind === "sounds"
-          ? `<speak>${phonemeTag(char)}</speak>`
-          : `<speak>${phonemeTag(char)}<break time="250ms"/> as in ${escapeXml(example ?? "")}.</speak>`;
-      const plain = kind === "sounds" ? `<speak>${phonemeTag(char)}.</speak>` : `<speak>${phonemeTag(char)}, as in ${escapeXml(example ?? "")}.</speak>`;
-      return { ssml, plain, voice: letters };
-    }
-    const sound = LETTER_SOUNDS[char] ?? char;
-    return { text: kind === "sounds" ? `${sound}.` : `${sound}, as in ${example}.`, voice: letters };
+    const plan = SOUND_PLAN[char];
+    if (kind === "letters" && style === "name") return { say: [{ text: `${LETTER_NAMES[char] ?? char}, as in ${example}.`, voice: main }] };
+    if (!plan) throw new Error(`No sound plan for letter "${char}"`);
+    const tail = kind === "letters" ? `, as in ${example}.` : ".";
+    if (plan.text) return { say: [{ text: `${plan.text}${tail}`, voice: letters }] };
+    if (plan.pron) return { say: [syllable(letters, plan.pron[0], plan.pron[1], tail)] };
+    const [token, ipa, mode] = plan.carve;
+    const carrier = { ...syllable(letters, token, ipa, "."), carve: mode };
+    if (kind === "sounds") return { say: [carrier] };
+    return { say: [carrier, { gap: 0.25 }, { text: `as in ${example}.`, voice: letters }] };
   }
   let text = say.trim();
   if (kind === "words" && text === "I") text = "I.";
   else if (text && !/[.!?]$/.test(text)) text = `${text}.`;
-  return { text, voice: main };
+  return { say: [{ text, voice: main }] };
+}
+
+function describe(plan) {
+  return plan.say
+    .map((step) => {
+      if (step.gap) return `(${step.gap}s)`;
+      const what = step.ssml ?? step.text;
+      const pron = step.pron ? ` {${Object.entries(step.pron).map(([k, v]) => `${k}=${v}`).join(",")}}` : "";
+      return `${JSON.stringify(what)}${pron}${step.carve ? ` carve:${step.carve}` : ""} [${step.voice.label}]`;
+    })
+    .join(" + ");
 }
 
 const modelName = option("--model", process.env.GOOGLE_TTS_MODEL || "chirp3");
 const prompt = option("--prompt", process.env.GOOGLE_TTS_PROMPT || DEFAULT_PROMPT);
 const mainVoice = resolveVoice(option("--voice", process.env.GOOGLE_TTS_VOICE || "Aoede"), modelName, prompt);
 const letterSpec = option("--letter-voice", process.env.GOOGLE_TTS_LETTER_VOICE || "");
-const letterVoice = letterSpec ? resolveVoice(letterSpec, "chirp3") : mainVoice.ssml ? mainVoice : resolveVoice(mainVoice.name, "chirp3");
+const letterVoice = letterSpec ? resolveVoice(letterSpec, "chirp3") : mainVoice.modelName ? resolveVoice(mainVoice.name, "chirp3") : mainVoice;
 const letterStyle = option("--letter-style", "sound");
 const speed = Number(option("--speed", "0.95")) || 0.95;
 const only = option("--only", "")
@@ -223,6 +262,18 @@ function requireCredentials() {
 let synthesizeRaw;
 async function connect() {
   if (synthesizeRaw) return;
+  const fakeDir = process.env.GOOGLE_TTS_FAKE_DIR;
+  if (fakeDir) {
+    // Offline test of the pipeline: serve WAVs from a folder, named after the request.
+    synthesizeRaw = async (body) => {
+      const pron = (body.input.customPronunciations?.pronunciations ?? []).map((item) => `${item.phrase}=${item.pronunciation}`).join(",");
+      const name = `${body.input.text ?? body.input.ssml ?? ""}${pron ? ` {${pron}}` : ""}`.replace(/[^A-Za-z0-9æɛɪɑʌɡʒɹ=,{} .-]+/g, "_");
+      const file = join(fakeDir, `${name}.wav`);
+      if (!existsSync(file)) throw new Error(`fake voice has no file for ${JSON.stringify(name)}`);
+      return readFileSync(file);
+    };
+    return;
+  }
   requireCredentials();
   if (apiKey) {
     synthesizeRaw = async (request) => {
@@ -250,29 +301,57 @@ async function connect() {
 const hasFfmpeg = spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status === 0;
 const trim = hasFfmpeg && !flags.has("--no-trim");
 if (!trim && !flags.has("--index-only")) console.log(hasFfmpeg ? "Keeping Google's silence (--no-trim)." : "ffmpeg not found: clips keep Google's leading silence.");
+const workDir = mkdtempSync(join(tmpdir(), "littlenest-voice-"));
 
-/**
- * Google leaves about 0.4 s of silence before a clip. Trim it (keeping a
- * short lead-in) and encode to MP3 here, so a sound starts the moment a
- * child taps. Falls back to the untrimmed audio if trimming leaves nothing.
- */
-function trimAndEncode(wav, label) {
-  const filter =
-    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06," +
-    "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,areverse";
-  const encode = (args) =>
-    spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "wav", "-i", "pipe:0", ...args, "-ac", "1", "-ar", "24000", "-c:a", "libmp3lame", "-b:a", "64k", "-f", "mp3", "pipe:1"], {
-      input: wav,
-      maxBuffer: 64 * 1024 * 1024,
-    });
-  const trimmed = encode(["-af", filter]);
-  if (trimmed.status === 0 && trimmed.stdout.length > 800) return trimmed.stdout;
-  const whole = encode([]);
-  if (whole.status !== 0) throw new Error(`ffmpeg could not encode ${label}: ${whole.stderr}`);
-  return whole.stdout;
+function ffmpeg(args, input) {
+  const run = spawnSync("ffmpeg", ["-y", "-loglevel", "error", ...args], { input, maxBuffer: 64 * 1024 * 1024 });
+  if (run.status !== 0) throw new Error(`ffmpeg failed: ${run.stderr}`);
+  return run.stdout;
 }
 
-async function synthesize({ text, ssml, plain, voice, pron, encoding }, label = "") {
+const TRIM_FILTER =
+  "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06," +
+  "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,areverse";
+
+/** Google leaves about 0.4 s of silence before a clip; keep a short lead-in instead. */
+function trimWav(wav) {
+  const out = ffmpeg(["-f", "wav", "-i", "pipe:0", "-af", TRIM_FILTER, "-f", "wav", "pipe:1"], wav);
+  return out.length > 2000 ? out : wav;
+}
+
+function encodeMp3(wav) {
+  return ffmpeg(["-f", "wav", "-i", "pipe:0", "-ac", "1", "-ar", "24000", "-c:a", "libmp3lame", "-b:a", "64k", "-f", "mp3", "pipe:1"], wav);
+}
+
+/** Cut the consonant out of a carrier syllable and hold it (scripts/carve-sound.py). */
+function carveWav(wav, mode, label) {
+  const src = join(workDir, "carrier.wav");
+  const dest = join(workDir, "carved.wav");
+  writeFileSync(src, wav);
+  const run = spawnSync("python3", [join(root, "scripts/carve-sound.py"), src, dest, "--mode", mode], { encoding: "utf8" });
+  if (run.status !== 0) throw new Error(`Could not carve the ${mode} sound for ${label}: ${run.stderr.trim() || run.stdout.trim()}`);
+  return readFileSync(dest);
+}
+
+/** Join WAV parts with silence between them. */
+function joinWav(parts) {
+  const files = parts.map((wav, index) => {
+    const file = join(workDir, `part-${index}.wav`);
+    writeFileSync(file, wav);
+    return file;
+  });
+  const inputs = files.flatMap((file) => ["-i", file]);
+  const chain = parts.map((_, index) => `[${index}:a]aresample=24000,aformat=channel_layouts=mono[a${index}]`).join(";");
+  const concat = `${parts.map((_, index) => `[a${index}]`).join("")}concat=n=${parts.length}:v=0:a=1[out]`;
+  return ffmpeg([...inputs, "-filter_complex", `${chain};${concat}`, "-map", "[out]", "-f", "wav", "pipe:1"]);
+}
+
+function silenceWav(seconds) {
+  return ffmpeg(["-f", "lavfi", "-i", `anullsrc=r=24000:cl=mono`, "-t", String(seconds), "-f", "wav", "pipe:1"]);
+}
+
+/** One request to Google. Returns WAV (LINEAR16, 24 kHz) when ffmpeg is here, else MP3. */
+async function request({ text, ssml, voice, pron, encoding }) {
   await connect();
   const input = ssml ? { ssml } : voice.modelName ? { prompt: voice.prompt, text } : { text };
   // Custom pronunciations: { phrase: ipa } pairs applied to the text (Chirp 3 HD, en-US).
@@ -281,28 +360,46 @@ async function synthesize({ text, ssml, plain, voice, pron, encoding }, label = 
       pronunciations: Object.entries(pron).map(([phrase, pronunciation]) => ({ phrase, phoneticEncoding: encoding || "PHONETIC_ENCODING_IPA", pronunciation })),
     };
   }
-  const audioConfig = { audioEncoding: trim ? "LINEAR16" : "MP3", sampleRateHertz: 24000, ...(voice.rate ? { speakingRate: speed } : {}) };
-  const request = {
+  const audioConfig = { audioEncoding: hasFfmpeg ? "LINEAR16" : "MP3", sampleRateHertz: 24000, ...(voice.rate ? { speakingRate: speed } : {}) };
+  const body = {
     input,
     voice: { languageCode: voice.languageCode, name: voice.name, ...(voice.modelName ? { modelName: voice.modelName } : {}) },
     audioConfig,
   };
   let audio;
   try {
-    audio = await synthesizeRaw(request);
+    audio = await synthesizeRaw(body);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    // A voice that takes SSML but not <break>: say it with a comma instead.
-    if (ssml && plain && /break|ssml|tag|unsupported|invalid/i.test(message)) {
-      audio = await synthesizeRaw({ ...request, input: { ssml: plain } });
-    } else if (/speaking_?rate|sample_?rate|pitch/i.test(message)) {
-      audio = await synthesizeRaw({ ...request, audioConfig: { audioEncoding: audioConfig.audioEncoding } });
-    } else {
-      throw error;
-    }
+    if (!/speaking_?rate|sample_?rate|pitch/i.test(message)) throw error;
+    audio = await synthesizeRaw({ ...body, audioConfig: { audioEncoding: audioConfig.audioEncoding } });
   }
-  if (!audio || audio.length === 0) return audio;
-  return trim ? trimAndEncode(Buffer.isBuffer(audio) ? audio : Buffer.from(audio), label) : audio;
+  if (!audio || audio.length === 0) throw new Error(`Google returned empty audio for ${JSON.stringify(text ?? ssml)}`);
+  return Buffer.isBuffer(audio) ? audio : Buffer.from(audio);
+}
+
+/** Make one clip from its plan: request each part, carve or trim it, join, encode. */
+async function makeClip(plan, label) {
+  if (!hasFfmpeg) {
+    if (plan.say.length > 1 || plan.say[0].carve) throw new Error(`${label} needs ffmpeg (and python3 with numpy) to make a letter sound.`);
+    return request(plan.say[0]);
+  }
+  const parts = [];
+  for (const step of plan.say) {
+    if (step.gap) {
+      parts.push(silenceWav(step.gap));
+      continue;
+    }
+    const wav = await request(step);
+    parts.push(step.carve ? carveWav(wav, step.carve, label) : trim ? trimWav(wav) : wav);
+  }
+  return encodeMp3(parts.length === 1 ? parts[0] : joinWav(parts));
+}
+
+/** A single experiment or sample line: text, SSML, or JSON with pron / carve. */
+async function synthesize(spec, label = "") {
+  const step = { voice: mainVoice, ...spec };
+  return makeClip({ say: [step] }, label);
 }
 
 function writeClip(dest, audio, label) {
@@ -321,9 +418,11 @@ async function makeSamples() {
   const parts = [
     ["letter", "letters", "m", "m, as in moon"],
     ["letter", "letters", "s", "s, as in sun"],
+    ["letter", "letters", "b", "b, as in ball"],
     ["sound", "sounds", "m", "m, as in moon"],
     ["sound", "sounds", "a", "a, as in apple"],
     ["sound", "sounds", "t", "t, as in top"],
+    ["sound", "sounds", "s", "s, as in sun"],
     ["word", "words", "mat", "mat"],
     ["word", "words", "sun", "sun"],
     ["prompt", "prompts", "tap-sound", "Tap the letter that makes this sound."],
@@ -337,18 +436,18 @@ async function makeSamples() {
     const label = `${modelPart}-${voicePart}`.replace(/[^A-Za-z0-9.-]+/g, "-");
     try {
       const main = resolveVoice(voicePart, modelPart, prompt);
-      const letters = main.ssml ? main : resolveVoice(voicePart, "chirp3");
+      const letters = main.modelName ? resolveVoice(voicePart, "chirp3") : main;
       let count = 0;
       for (const [part, kind, id, say] of parts) {
         count += 1;
         const dest = join(sampleDir, label, `${String(count).padStart(2, "0")}-${part}-${id}.mp3`);
         if (existsSync(dest) && !force) continue;
-        const input = inputFor(kind, id, say, main, letters, letterStyle);
+        const plan = planFor(kind, id, say, main, letters, letterStyle);
         if (dryRun) {
-          console.log(`${relative(root, dest)}  ${input.voice.label}  ${JSON.stringify(input.ssml ?? input.text)}`);
+          console.log(`${relative(root, dest)}  ${describe(plan)}`);
           continue;
         }
-        const audio = await synthesize(input);
+        const audio = await makeClip(plan, `${label} ${part} ${id}`);
         writeClip(dest, audio, `${label} ${part} ${id}`);
       }
       console.log(`${label}: ${count} sample clips in ${relative(root, join(sampleDir, label))}`);
@@ -382,9 +481,10 @@ async function makeTries() {
     const label = line.slice(0, at).trim().replace(/[^A-Za-z0-9.-]+/g, "-");
     const what = line.slice(at + 1).trim();
     const dest = join(dir, `${label}.mp3`);
-    // A JSON value can carry custom pronunciations: {"text":"mmm.","pron":{"mmm":"mː"}}
+    // A JSON value can carry custom pronunciations and a carve mode:
+    // {"text":"ahh.","pron":{"ahh":"ɑs"},"carve":"coda-noise"}
     const spec = what.startsWith("{") ? JSON.parse(what) : what.startsWith("<speak>") ? { ssml: what } : { text: what };
-    const input = { ...spec, voice: spec.ssml && !mainVoice.ssml ? letterVoice : mainVoice };
+    const input = { ...spec, voice: mainVoice };
     if (dryRun) {
       console.log(`${relative(root, dest)}  ${input.voice.label}  ${JSON.stringify(what)}`);
       continue;
@@ -439,12 +539,12 @@ let made = 0;
 for (const [file, job] of todo) {
   const dest = resolve(audioRoot, file);
   if (!dest.startsWith(`${audioRoot}${sep}`)) throw new Error(`Refusing unsafe audio path "${file}"`);
-  const input = inputFor(job.kind, job.id, job.say, mainVoice, letterVoice, letterStyle);
+  const plan = planFor(job.kind, job.id, job.say, mainVoice, letterVoice, letterStyle);
   if (dryRun) {
-    console.log(`${file}  ${input.voice.label}  ${JSON.stringify(input.ssml ?? input.text)}`);
+    console.log(`${file}  ${describe(plan)}`);
     continue;
   }
-  const audio = await synthesize(input, `${job.kind} ${job.id}`);
+  const audio = await makeClip(plan, `${job.kind} ${job.id}`);
   writeClip(dest, audio, `${job.kind} ${job.id}`);
   made += 1;
   if (made % 50 === 0 || made === todo.length) console.log(`${made}/${todo.length}  public/audio/${file}`);
