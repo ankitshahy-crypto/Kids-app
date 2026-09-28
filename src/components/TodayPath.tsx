@@ -22,7 +22,7 @@ import { EngineerBoard } from "./NestBuild";
 import { ScienceBoard } from "./SciencePlay";
 import { LockBadge } from "./LockBadge";
 import { ModuleMark } from "./ModuleMark";
-import { BookMark, EggNest, Hills, PencilMark, ShapesMark, ToyBox } from "./sceneArt";
+import { BookMark, EggNest, Hills, PaintMark, PencilMark, ToyBox } from "./sceneArt";
 
 const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
   { id: "letter", label: "Letters", left: "50%", top: "18%" },
@@ -223,7 +223,7 @@ export function TodayPath({
               ) : null}
               {stop.id === "draw" ? <PencilMark /> : null}
               {stop.id === "story" ? <BookMark /> : null}
-              {stop.id === "moment" ? <ShapesMark /> : null}
+              {stop.id === "moment" ? <PaintMark /> : null}
             </button>
           );
         })}
@@ -239,12 +239,16 @@ export function TodayPath({
 
           {shown === "reading" ? (
             <div className="trace-practice">
-              <button type="button" data-practice="word" disabled={!canTraceWord} onClick={onTraceWord}>
-                Trace a word
-              </button>
-              <button type="button" data-practice="name" disabled={!canTraceName} onClick={onTraceName}>
-                Trace my name
-              </button>
+              {canTraceWord ? (
+                <button type="button" data-practice="word" onClick={onTraceWord}>
+                  Trace a word
+                </button>
+              ) : null}
+              {canTraceName ? (
+                <button type="button" data-practice="name" onClick={onTraceName}>
+                  Trace my name
+                </button>
+              ) : null}
               {review && onSoundGame ? (
                 <button type="button" data-practice="sounds" onClick={onSoundGame}>
                   Sound game

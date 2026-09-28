@@ -42,6 +42,17 @@ export function ShapesMark() {
   );
 }
 
+/** The color moment: three paint drops. */
+export function PaintMark() {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" className="mark">
+      <path d="M18 14c-6 8-9 13-9 18a9 9 0 0 0 18 0c0-5-3-10-9-18z" fill="#F4A4B4" />
+      <path d="M40 22c-5 7-8 11-8 15a8 8 0 0 0 16 0c0-4-3-8-8-15z" fill="#8FCB7A" />
+      <path d="M50 40c-4 5-6 8-6 11a6 6 0 0 0 12 0c0-3-2-6-6-11z" fill="#7EA3C9" />
+    </svg>
+  );
+}
+
 export function ToyBox() {
   return (
     <svg viewBox="0 0 80 80" aria-hidden="true" className="mark">
