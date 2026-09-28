@@ -1,5 +1,6 @@
 import available from "../data/audioAvailable.json";
 import manifest from "../data/audioManifest.json";
+import { loadStore } from "../data/profiles";
 import font400 from "../assets/fonts/fredoka-latin-400-normal.woff2?url";
 import font600 from "../assets/fonts/fredoka-latin-600-normal.woff2?url";
 import font700 from "../assets/fonts/fredoka-latin-700-normal.woff2?url";
@@ -31,6 +32,27 @@ export function fontUrls(): string[] {
   return [font400, font600, font700];
 }
 
+/**
+ * The animals of the children on this device, for the story lines to keep.
+ * A story line that names the hero has one clip per animal (p1-fox.mp3);
+ * only the animals here are downloaded, and the rest play from the network
+ * or the device voice. A device with no child yet keeps the unnamed lines.
+ */
+export function animalsOnDevice(storage?: { getItem(key: string): string | null; setItem(key: string, value: string): void }): Set<string> {
+  try {
+    return new Set(loadStore(storage ?? localStorage).profiles.map((profile) => profile.animal));
+  } catch {
+    return new Set();
+  }
+}
+
+/** Keep a story clip when it names no animal, or one of this device's animals. Other clips are always kept. */
+export function clipForDevice(file: string, animals: ReadonlySet<string>): boolean {
+  const match = file.match(/^stories\/[a-z0-9-]+\/(?:title|p\d+)(?:-([a-z]+))?\.mp3$/);
+  if (!match) return true;
+  return !match[1] || animals.has(match[1]);
+}
+
 function unshippedAudio(name: string, shipped: ReadonlySet<string>): boolean {
   try {
     const url = new URL(name, window.location.href);
@@ -47,10 +69,15 @@ function unshippedAudio(name: string, shipped: ReadonlySet<string>): boolean {
   }
 }
 
-/** Same-origin files a flight needs: shell, icons, fonts, and shipped lesson clips. */
+/**
+ * Same-origin files a flight needs: shell, icons, fonts, and shipped lesson
+ * clips. Story lines are kept for this device's animals only, which is most
+ * of the difference between a few hundred clips and a few thousand.
+ */
 export function offlineUrls(): string[] {
   const base = import.meta.env.BASE_URL;
-  const shipped = new Set(shippedAudioFiles());
+  const animals = animalsOnDevice();
+  const shipped = new Set(shippedAudioFiles().filter((file) => clipForDevice(file, animals)));
   const urls = new Set<string>();
   const add = (value: string) => {
     try {

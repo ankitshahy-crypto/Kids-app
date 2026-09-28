@@ -31,7 +31,8 @@ export async function downloadForOffline(onProgress?: (progress: DownloadProgres
   const pending = [...urls];
   const report = () => onProgress?.({ done, total: urls.length });
   report();
-  const workers = Array.from({ length: 6 }, async () => {
+  // Four at a time: enough to finish in a few minutes, without crowding out the lesson's own clips.
+  const workers = Array.from({ length: 4 }, async () => {
     for (;;) {
       const url = pending.shift();
       if (!url) return;
