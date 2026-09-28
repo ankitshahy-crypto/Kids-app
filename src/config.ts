@@ -1,9 +1,8 @@
 /**
- * The help address. Empty keeps "Send feedback" out of Help, so pilot families
- * never write to an address that nobody reads. Set it to the real one when it
- * exists; do not invent an email here.
+ * The help address: a real Zoho mailbox on littlenestlearning.app, read by the
+ * team. Empty would keep "Send feedback" out of Help. Do not invent an email here.
  */
-export const feedbackEmail = "";
+export const feedbackEmail: string = "hello@littlenestlearning.app";
 
 export const showHelpContact = feedbackEmail !== "";
 
