@@ -2,15 +2,18 @@ import { describe, expect, it } from "vitest";
 import manifest from "./audioManifest.json";
 import { animals } from "./animals";
 import { lettersIntroduced } from "./schedule";
-import { STORIES, STORY_GLUE, decodable, storyForDay, storyForWeek, storyLineId, storyText, storyTokens, storyWordList } from "./stories";
+import { STORIES, STORY_GLUE, decodable, readerWeeks, storiesForWeek, storyChoices, storyForDay, storyForWeek, storyLineId, storyText, storyTokens, storyWordList, weekdayOf } from "./stories";
 import { THEME_IDS } from "./themes";
 
 const hero = { name: "Fox", kind: "fox" };
 
 describe("decodable readers", () => {
-  it("has a reader for each of the fourteen letter weeks and one per theme", () => {
-    const weekly = STORIES.filter((story) => !story.theme).map((story) => story.week).sort((a, b) => a - b);
-    expect(weekly).toEqual(Array.from({ length: 14 }, (_, index) => index + 1));
+  it("has three readers for each of the fourteen letter weeks and one per theme", () => {
+    const weekly = STORIES.filter((story) => !story.theme).map((story) => story.week);
+    for (let week = 1; week <= 14; week += 1) {
+      expect(weekly.filter((value) => value === week).length, `week ${week}`).toBe(3);
+    }
+    expect(readerWeeks()).toBe(14);
     for (const theme of THEME_IDS) {
       expect(STORIES.some((story) => story.theme === theme), theme).toBe(true);
     }
@@ -51,14 +54,21 @@ describe("decodable readers", () => {
     expect(storyText("{hero} is a {hero-kind}.", hero)).toBe("Fox is a fox.");
   });
 
-  it("picks the week's reader, brings in themed readers once their letters are taught, and repeats by day", () => {
+  it("picks among the week's readers, brings in themed readers once their letters are taught, and repeats by day", () => {
     expect(storyForWeek(0).id).toBe("w01-i-am");
     expect(storyForWeek(13).id).toBe("w14-fox-box");
     expect(storyForWeek(14).id).toBe("w01-i-am");
-    expect(storyForDay(0, ["space"], "2026-09-27").id).toBe("w01-i-am");
-    const picks = new Set(["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06"].map((day) => storyForDay(9, ["space"], day).id));
-    expect(picks).toContain("w10-milk");
-    expect(picks).toContain("t-space-rocket");
+    expect(storiesForWeek(0).map((story) => story.id)).toEqual(["w01-i-am", "w01-am-i-big", "w01-look-at-me"]);
+    // 2026-10-05 is a Monday.
+    expect(weekdayOf("2026-10-05")).toBe(0);
+    expect(weekdayOf("2026-10-11")).toBe(6);
+    expect(storyForDay(0, [], "2026-10-05").id).toBe("w01-i-am");
+    expect(storyForDay(0, [], "2026-10-06").id).toBe("w01-am-i-big");
+    expect(storyForDay(0, [], "2026-10-07").id).toBe("w01-look-at-me");
+    expect(storyForDay(0, [], "2026-10-08").id).toBe("w01-i-am");
+    expect(storyChoices(9, ["space"]).map((story) => story.id)).toEqual(["w10-milk", "w10-the-mask", "w10-the-sink", "t-space-rocket"]);
+    expect(storyForDay(9, ["space"], "2026-10-08").id).toBe("t-space-rocket");
+    expect(storyChoices(0, ["space"]).some((story) => story.theme)).toBe(false);
     expect(storyForDay(9, ["space"], "2026-10-01")).toBe(storyForDay(9, ["space"], "2026-10-01"));
   });
 

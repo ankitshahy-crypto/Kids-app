@@ -20,6 +20,8 @@ const BEFORE_WORD_MS = 300;
  */
 export function StoryReader({
   story,
+  others = [],
+  onPick,
   hero,
   animal,
   outfit,
@@ -29,6 +31,9 @@ export function StoryReader({
   onDone,
 }: {
   story: Story;
+  /** The week's other readers, offered on the cover. */
+  others?: readonly Story[];
+  onPick?: (id: string) => void;
   hero: StoryHero;
   animal: AnimalId;
   outfit: Outfit;
@@ -120,6 +125,21 @@ export function StoryReader({
           <button type="button" className="done-button story-start" onClick={() => go(1)}>
             Read
           </button>
+          {others.length > 0 && onPick ? (
+            <div className="story-shelf" role="group" aria-label="More stories">
+              <p className="chunk-strip-word">More stories</p>
+              <div className="story-shelf-row">
+                {others.slice(0, 5).map((other) => (
+                  <button key={other.id} type="button" className="story-shelf-book" data-story-pick={other.id} onClick={() => onPick(other.id)}>
+                    <span className="story-shelf-cover" aria-hidden="true">
+                      <StoryScene setting={other.pages[0].setting} props={other.pages[0].props} animal={animal} outfit={outfit} cover />
+                    </span>
+                    <span className="story-shelf-title">{storyText(other.title, hero)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
