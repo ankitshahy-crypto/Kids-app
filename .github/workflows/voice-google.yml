@@ -71,6 +71,7 @@ jobs:
           npm ci
           command -v ffmpeg >/dev/null || sudo apt-get install -y -q ffmpeg
           ffmpeg -version | head -n 1
+          pip install -q numpy
 
       - name: Check the key
         run: |
