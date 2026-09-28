@@ -44,6 +44,7 @@ export function TodayPath({
   onCloset,
   onStickers,
   onGames,
+  dayKey,
   onSoundGame,
   onSurprise,
   goalMinutes,
@@ -79,6 +80,8 @@ export function TodayPath({
   onCloset: () => void;
   onStickers: () => void;
   onGames: () => void;
+  /** Today's local date. A new value re-renders the path on a new day. */
+  dayKey?: string;
   /** Fridays: the sound game. Absent when there are too few sounds yet. */
   onSoundGame?: () => void;
   onSurprise: () => void;
@@ -145,6 +148,7 @@ export function TodayPath({
       data-screen="today"
       data-subject={shown === "math" ? MATH : shown === "colors" ? COLORS : shown === "time" ? TIME : shown === "build" ? BUILD : shown === "science" ? SCIENCE : READING}
       data-review={review ? "true" : "false"}
+      data-day={dayKey ?? todayKey(now)}
       data-source={placementSource}
       data-stage={shown === "math" ? mathLesson.stageId : shown === "colors" ? colorLesson.stageId : shown === "time" ? timeLesson.stageId : stageId}
       data-week={weekIndex}
@@ -182,13 +186,12 @@ export function TodayPath({
                 {strip}
               </p>
             ) : null}
+            {shown === "reading" && held ? (
+              <button type="button" className="held-note" data-held="true" aria-label="Ask a grown-up" onClick={onHeld}>
+                <LockBadge />
+              </button>
+            ) : null}
           </div>
-          {shown === "reading" && held ? (
-            <button type="button" className="held-note" data-held="true" onClick={onHeld}>
-              <LockBadge />
-              <span>More weeks are ready. Ask a grown-up!</span>
-            </button>
-          ) : null}
 
           {shown === "reading" ? (
             <div className="trail">

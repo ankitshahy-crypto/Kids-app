@@ -21,6 +21,10 @@ export function StoryScene({
   return (
     <div className={`story-scene${cover ? " is-cover" : ""}`} data-setting={setting} aria-hidden="true">
       <Backdrop setting={setting} />
+      {/* The sun and moon sit outside the stretched backdrop so they stay round at any size. */}
+      {setting === "night" ? <span className="story-sky story-moon" data-sky="moon" /> : null}
+      {setting === "meadow" || setting === "hill" || setting === "farm" ? <span className="story-sky story-sun" data-sky="sun" /> : null}
+      {setting === "beach" ? <span className="story-sky story-sun is-left" data-sky="sun" /> : null}
       {props[0] ? (
         <span className="story-prop story-prop-left">
           <Illustration name={props[0]} />
@@ -46,7 +50,6 @@ function Backdrop({ setting }: { setting: StorySetting }) {
           <rect width="400" height="240" fill={setting === "night" ? "#2C3A5F" : "#DDEFF6"} />
           {setting === "night" ? (
             <>
-              <circle cx="330" cy="50" r="22" fill="#FFF1C4" />
               <circle cx="60" cy="40" r="3" fill="#FFF1C4" />
               <circle cx="120" cy="70" r="2" fill="#FFF1C4" />
               <circle cx="230" cy="30" r="3" fill="#FFF1C4" />
@@ -66,7 +69,6 @@ function Backdrop({ setting }: { setting: StorySetting }) {
       {setting === "meadow" || setting === "hill" || setting === "farm" ? (
         <>
           <rect width="400" height="240" fill="#E4EEF8" />
-          <circle cx="340" cy="46" r="24" fill="#F7D774" />
           <path d="M0 240V150c70-40 140-40 200-14 60 26 130 24 200-6v110Z" fill="#9BD1A8" />
           <path d="M0 240v-40c90-24 200-24 400 0v40Z" fill="#79B98C" />
           {setting === "farm" ? (
@@ -90,7 +92,6 @@ function Backdrop({ setting }: { setting: StorySetting }) {
       {setting === "beach" ? (
         <>
           <rect width="400" height="240" fill="#DDEFF6" />
-          <circle cx="60" cy="50" r="22" fill="#F7D774" />
           <path d="M0 120c60-14 120-14 200 0s140 14 200 0v40H0Z" fill="#8CC7E8" />
           <path d="M0 240v-90c100-20 300-20 400 0v90Z" fill="#F3DFB8" />
         </>

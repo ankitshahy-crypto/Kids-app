@@ -35,8 +35,13 @@ export type UnlockState = {
   status: UnlockStatus;
   /** The web preview's pretend store, so the screen can say no money moves. */
   preview: boolean;
-  /** A TestFlight pilot build: everything is open and nothing is bought or cached. */
+  /** The pilot build: everything is open and nothing is bought or cached. */
   beta: boolean;
+  /**
+   * The first answer is in (pilot flag, cached purchase, or the App Store).
+   * Until then the iPhone app draws no locks, so a pilot build never flashes them.
+   */
+  ready: boolean;
 };
 
 function readFlag(key: string): string | null {
@@ -83,6 +88,7 @@ function initial(): UnlockState {
     status: "idle",
     preview,
     beta: false,
+    ready: !native,
   };
 }
 
@@ -131,9 +137,10 @@ export function startStore(): void {
   if (!isNativeApp()) return;
   void Store.beta()
     .then((result: { beta: boolean }) => {
-      if (result.beta) publish({ beta: true, unlocked: true });
+      if (result.beta) publish({ beta: true, unlocked: true, ready: true });
+      else publish({ ready: true });
     })
-    .catch(() => undefined);
+    .catch(() => publish({ ready: true }));
   void Store.addListener("owned", (data: { productId: string; owned: boolean }) => {
     if (data.productId === unlockProductId) setOwned(data.owned);
   }).catch(() => undefined);

@@ -55,7 +55,9 @@ test("past the free weeks, the lesson replays week 2 until a grown-up unlocks, t
   const sheet = page.locator("[data-screen=locked]");
   await expect(sheet).toContainText("Ask a grown-up");
   await expect(sheet).not.toContainText("$");
-  await sheet.getByRole("button", { name: "I'm a grown-up" }).click();
+  await expect(sheet).not.toContainText(/more|waiting|unlock|open it/i);
+  await expect(held).toHaveText("");
+  await sheet.getByRole("button", { name: "Grown-ups" }).click();
   await passGate(page);
 
   const panel = page.locator("[data-section=unlock]");
