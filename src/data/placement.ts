@@ -361,3 +361,18 @@ export function resolvePlacement(
   const letters = subject === READING ? practiceLetters(planForWeek(index), isReviewDay(now, timeZone)) : [];
   return { subject, source, weekIndex: index, stageId, ageCap: capped ? cap.stageId : null, letters };
 }
+
+/**
+ * The same child's reading place, played at another week: the last free week
+ * before the one-time unlock. The saved placement is untouched, so the child
+ * picks up where the calendar or a grown-up put them once the app is unlocked.
+ */
+export function atReadingWeek(resolved: ResolvedPlacement, week: number, now = new Date(), timeZone = deviceTimeZone()): ResolvedPlacement {
+  if (resolved.subject !== READING || week === resolved.weekIndex) return resolved;
+  return {
+    ...resolved,
+    weekIndex: week,
+    stageId: placeForWeek(week, READING).stageId,
+    letters: practiceLetters(planForWeek(week), isReviewDay(now, timeZone)),
+  };
+}

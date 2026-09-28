@@ -39,6 +39,7 @@ import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
+import { LockBadge } from "./LockBadge";
 
 const NAMES: Record<BuildActivity, string> = {
   bridge: "Bridge",
@@ -115,10 +116,13 @@ function usePieceDrag(onEnd: (piece: string, moved: boolean, x: number, y: numbe
 export function EngineerBoard({
   ageRange,
   done,
+  locked,
   onOpen,
 }: {
   ageRange: AgeRange;
   done: Record<string, boolean>;
+  /** Tiles that open with the full app. */
+  locked?: (id: string) => boolean;
   onOpen: (activity: BuildActivity) => void;
 }) {
   const level = engineerLevel(ageRange);
@@ -128,11 +132,13 @@ export function EngineerBoard({
         <button
           key={id}
           type="button"
-          className={`math-activity${done[id] ? " is-done" : ""}`}
+          className={`math-activity${done[id] ? " is-done" : ""}${locked?.(id) ? " is-locked" : ""}`}
           data-activity={id}
+          data-locked={locked?.(id) ? "true" : undefined}
           aria-label={NAMES[id]}
           onClick={() => onOpen(id)}
         >
+          {locked?.(id) ? <LockBadge /> : null}
           <span className="math-activity-art" aria-hidden="true">
             <ActivityMark id={id} />
           </span>

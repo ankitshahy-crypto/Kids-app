@@ -15,6 +15,7 @@ import {
 import { memoryPrompt, shapeItemId, writingLevel, type WritingMap, type WritingOutcome } from "../data/scaffold";
 import { shapeStrokes } from "../data/shapeStrokes";
 import type { Settings } from "../settings";
+import { LockBadge } from "./LockBadge";
 
 function useSpeaker(settingsRef: { current: Settings }) {
   const playRef = useRef<AbortController | null>(null);
@@ -87,10 +88,13 @@ const board: { id: MathStep; label: string; name: string }[] = [
 export function MathBoard({
   lesson,
   done,
+  locked,
   onOpen,
 }: {
   lesson: MathLesson;
   done: Record<string, boolean>;
+  /** Tiles that open with the full app. */
+  locked?: (id: string) => boolean;
   onOpen: (step: MathStep) => void;
 }) {
   return (
@@ -99,11 +103,13 @@ export function MathBoard({
         <button
           key={stop.id}
           type="button"
-          className={`math-activity${done[stop.id] ? " is-done" : ""}`}
+          className={`math-activity${done[stop.id] ? " is-done" : ""}${locked?.(stop.id) ? " is-locked" : ""}`}
           data-activity={stop.id}
+          data-locked={locked?.(stop.id) ? "true" : undefined}
           aria-label={stop.name}
           onClick={() => onOpen(stop.id)}
         >
+          {locked?.(stop.id) ? <LockBadge /> : null}
           <span className="math-activity-art" aria-hidden="true">
             {stop.id === "count" || stop.id === "more" || stop.id === "add" ? <Apple /> : null}
             {stop.id === "know" || stop.id === "trace" ? <span className="math-numeral">{stop.id === "trace" ? lesson.digit : lesson.hear}</span> : null}

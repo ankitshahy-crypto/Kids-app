@@ -15,6 +15,7 @@ import {
 import { canAfford, saveAfterPay, saveGoalMet } from "../data/timeMoney";
 import type { Settings } from "../settings";
 import { MoneyArt, SnackArt } from "./TimePlay";
+import { LockBadge } from "./LockBadge";
 
 function useSpeaker(settingsRef: { current: Settings }) {
   const playRef = useRef<AbortController | null>(null);
@@ -44,9 +45,12 @@ const tiles: { id: MoneyGame; label: string; name: string }[] = [
 
 export function MoneyBoard({
   done,
+  locked,
   onOpen,
 }: {
   done: Record<string, boolean>;
+  /** Tiles that open with the full app. */
+  locked?: (id: string) => boolean;
   onOpen: (game: MoneyGame) => void;
 }) {
   return (
@@ -55,11 +59,13 @@ export function MoneyBoard({
         <button
           key={tile.id}
           type="button"
-          className={`math-activity${done[tile.id] ? " is-done" : ""}`}
+          className={`math-activity${done[tile.id] ? " is-done" : ""}${locked?.(tile.id) ? " is-locked" : ""}`}
           data-activity={tile.id}
+          data-locked={locked?.(tile.id) ? "true" : undefined}
           aria-label={tile.name}
           onClick={() => onOpen(tile.id)}
         >
+          {locked?.(tile.id) ? <LockBadge /> : null}
           <span>{tile.label}</span>
         </button>
       ))}
