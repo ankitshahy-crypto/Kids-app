@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
 import { lessonName, starsThisWeek, type ChildInput, type ChildProfile } from "../data/profiles";
 import { resolvePlacement, stageTitle, weekLabel, type PlacementDocument } from "../data/placement";
+import { READING } from "../data/subject";
+import { isUnit, traceLetters, unitLabel } from "../data/units";
 import {
   isReviewDay,
   letterPlanSize,
@@ -178,7 +180,7 @@ export function ParentView({
               <ProgressNote
                 key={profile.id}
                 profile={profile}
-                letters={resolvePlacement(placement, profile.id, profile.createdAt).letters}
+                letters={resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange).letters}
               />
             ))}
           </ul>
@@ -249,7 +251,7 @@ export function ParentView({
 }
 
 function PlacementSummary({ child, placement }: { child: ChildProfile; placement: PlacementDocument }) {
-  const resolved = resolvePlacement(placement, child.id, child.createdAt);
+  const resolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange);
   const mathResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, MATH, child.ageRange);
   const colorResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, COLORS, child.ageRange);
   const timeResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, TIME, child.ageRange);
@@ -273,9 +275,9 @@ function PlacementSummary({ child, placement }: { child: ChildProfile; placement
       <p className="adult-copy">
         {stageTitle(resolved.stageId)}. {weekLabel(resolved.weekIndex)}.
       </p>
-      <p className="adult-copy">Today: {resolved.letters.map((letter) => letter.toUpperCase()).join(" ")}</p>
-      <p className="adult-copy" data-tracing={resolved.letters.join("")}>
-        Traces big and little {resolved.letters.map((letter) => `${letter.toUpperCase()} ${letter}`).join(", ")}.
+      <p className="adult-copy">Today: {resolved.letters.map((letter) => unitLabel(letter).toUpperCase()).join(" ")}</p>
+      <p className="adult-copy" data-tracing={traceLetters(resolved.letters).join("")}>
+        Traces big and little {traceLetters(resolved.letters).map((letter) => `${letter.toUpperCase()} ${letter}`).join(", ")}.
       </p>
       <p className="adult-copy">{source}</p>
       <p className="adult-copy" data-math-stage={mathResolved.stageId} data-math-source={mathResolved.source}>
@@ -303,7 +305,7 @@ function ParentHome({
   onOpen: (page: ParentPage) => void;
 }) {
   const now = new Date();
-  const resolved = resolvePlacement(placement, child.id, child.createdAt);
+  const resolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange);
   const mathResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, MATH, child.ageRange);
   const colorResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, COLORS, child.ageRange);
   const timeResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, TIME, child.ageRange);
@@ -311,7 +313,7 @@ function ParentHome({
   const total = letterPlanSize();
   const pct = total === 0 ? 0 : Math.round((introduced.length / total) * 100);
   const review = isReviewDay(now);
-  const weekLetters = resolved.letters;
+  const weekLetters = traceLetters(resolved.letters);
   const lessons = starsThisWeek(child, now);
   const lessonPct = Math.min(100, Math.round((lessons / WEEKLY_LESSONS) * 100));
   const age = child.ageRange === "6-7" ? "6–7" : child.ageRange;
@@ -358,12 +360,14 @@ function ParentHome({
             <h2>Letters learned</h2>
             <div className="letter-chips">
               {introduced.map((letter) => (
-                <span key={letter} className="letter-chip">
-                  {letter.toUpperCase()}
+                <span key={letter} className="letter-chip" data-unit={isUnit(letter) ? "true" : undefined}>
+                  {unitLabel(letter).toUpperCase()}
                 </span>
               ))}
             </div>
-            <p className="adult-copy">{review ? `Friday review. Letters ${weekLetters.join(" ").toUpperCase()}.` : "Great job! Keep going!"}</p>
+            <p className="adult-copy">
+              {review ? `Friday review. ${resolved.letters.map((letter) => unitLabel(letter).toUpperCase()).join(" ")}.` : "Great job! Keep going!"}
+            </p>
             <p className="adult-copy" data-trace-more="shapes words name">
               Shapes, blended words, and their name can be traced on this device.
             </p>
@@ -514,7 +518,7 @@ function ProgressNote({ profile, letters }: { profile: ChildProfile; letters: st
       <p className="child-name">{lessonName(profile)}</p>
       <p className="child-note">
         {review ? "Friday review. " : ""}
-        Letters {letters.map((letter) => letter.toUpperCase()).join(" ")}. Stars {profile.stars}. Stickers{" "}
+        Letters {letters.map((letter) => unitLabel(letter).toUpperCase()).join(" ")}. Stars {profile.stars}. Stickers{" "}
         {profile.stickers.length}. This week {starsThisWeek(profile, now)}.
         {profile.celebrated.length > 0 ? ` Milestones ${profile.celebrated.join(", ")}.` : ""}
       </p>

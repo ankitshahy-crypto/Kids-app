@@ -22,10 +22,12 @@ export function ageBandTitle(band: AgeBand): string {
  *
  * Time & Money follows the store listing: half hours, minutes, coin values,
  * and making change are for ages 5 to 7. Numbers holds adding until age 4.
- * Colors has no age split.
+ * Reading holds the phonics weeks (sh, ee, magic e) until age 5. Colors has
+ * no age split.
  */
 export const CALENDAR_STAGE_CAPS: Readonly<Record<SubjectId, Partial<Record<AgeRange, string>>>> = {
   math: { "3": "shapes" },
+  reading: { "3": "stories", "4": "stories" },
   time: { "3": "shop", "4": "shop" },
 };
 

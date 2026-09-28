@@ -3,6 +3,7 @@ import { Avatar } from "../avatars";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
 import { aboutContent } from "../content/about";
 import { resolvePlacement } from "../data/placement";
+import { READING } from "../data/subject";
 import { deviceLine, feedbackMailto } from "../feedback";
 import { PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
 import { tint } from "../palette";
@@ -297,7 +298,7 @@ export function GrownupsMenu({
                 className="text-button feedback-link"
                 href={feedbackMailto({
                   version: aboutContent.version,
-                  week: active ? resolvePlacement(placement, active.id, active.createdAt).weekIndex + 1 : undefined,
+                  week: active ? resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, READING, active.ageRange).weekIndex + 1 : undefined,
                   ...deviceLine(),
                 })}
                 data-action="feedback"

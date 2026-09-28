@@ -1,11 +1,11 @@
 import type { IllustrationName } from "../illustrations";
 import manifest from "./audioManifest.json";
 import { starterDeck, type DeckWord, type LetterTile } from "./deck";
-import type { PhonemeId } from "./phonemes";
-import { letterPlanSize } from "./schedule";
+import { alphabetSize } from "./schedule";
 import { themedLetterExample, type ThemeId } from "./themes";
 import { themedEntries, themedWordCatalog } from "./themeWords";
-import { PHONEME, made, spell } from "./wordBuild";
+import { isUnit, soundMet, soundUnit } from "./units";
+import { made, phonemeOf, spell } from "./wordBuild";
 
 /** 1 is a one-letter word. 5 is phonics for ages 5 to 7. */
 export const LADDER_STEPS = [1, 2, 3, 4, 5] as const;
@@ -86,9 +86,9 @@ export function recordLadderSuccess(
   };
 }
 
-/** The 3–5 letter plan is finished, so phonics words can open on their own. */
+/** All 26 letters have been introduced, so phonics words can open on their own. */
 export function phonicsOpen(introducedCount: number): boolean {
-  return introducedCount >= letterPlanSize();
+  return introducedCount >= alphabetSize();
 }
 
 export function ladderTitle(step: LadderStep): string {
@@ -193,8 +193,67 @@ const step4: DeckWord[] = [
   made("drum", "drum", "drum"),
 ];
 
-/** Step 5 words. Short sentences are separate and stay on this step. */
-const step5Words: DeckWord[] = [fromDeck("apple"), made("plant", "plant", "plant"), made("grape", "grape", "grape"), made("smile", "smile", "smile")];
+/**
+ * Step 5 words: longer words, and the words of the sound units taught from
+ * week 15 (sh, ee, magic e). A unit word is one tile per sound, so "ship" is
+ * sh-i-p, and the e of "cake" is a silent tile.
+ */
+const step5Words: DeckWord[] = [
+  fromDeck("apple"),
+  made("plant", "plant", "plant"),
+  made("grape", "grape", "grape"),
+  made("smile", "smile", "smile"),
+  made("ship", "ship", "ship"),
+  made("shop", "shop", "shop"),
+  made("chick", "chick", "chick"),
+  made("chest", "chest", "chest"),
+  made("moth", "moth", "moth"),
+  made("bath", "bath", "bath"),
+  made("ring", "ring", "ring"),
+  made("swing", "swing", "swing"),
+  made("duck", "duck", "duck"),
+  made("sock", "sock", "sock"),
+  made("bee", "bee", "bee"),
+  made("feet", "feet", "feet"),
+  made("moon", "moon", "moon"),
+  made("boot", "boot", "boot"),
+  made("rain", "rain", "rain"),
+  made("snail", "snail", "snail"),
+  made("day", "day", "day"),
+  made("hay", "hay", "hay"),
+  made("boat", "boat", "boat"),
+  made("goat", "goat", "goat"),
+  made("light", "light", "light"),
+  made("night", "night", "night"),
+  made("cake", "cake", "cake"),
+  made("gate", "gate", "gate"),
+  made("kite", "kite", "kite"),
+  made("bike", "bike", "bike"),
+  made("bone", "bone", "bone"),
+  made("rope", "rope", "rope"),
+  made("cube", "cube", "cube"),
+  made("tune", "tune", "tune"),
+  made("car", "car", "car"),
+  made("jar", "jar", "jar"),
+  made("fork", "fork", "fork"),
+  made("corn", "corn", "corn"),
+  made("fern", "fern", "fern"),
+  made("bird", "bird", "bird"),
+  made("shirt", "shirt", "shirt"),
+  made("leaf", "leaf", "leaf"),
+  made("seal", "seal", "seal"),
+  made("cloud", "cloud", "cloud"),
+  made("mouse", "mouse", "mouse"),
+  made("coin", "coin", "coin"),
+  made("whale", "whale", "whale"),
+  made("wheel", "wheel", "wheel"),
+];
+
+/** Does a word use this sound unit (or letter)? A unit tile is known by its phoneme, "a_e" for the a of cake. */
+function usesSound(word: DeckWord, id: string): boolean {
+  const lower = id.toLowerCase();
+  return word.letters.some((tile) => !tile.silent && !tile.wordId && (isUnit(lower) ? tile.phoneme === lower : tile.char.toLowerCase() === lower));
+}
 
 const step5Sentences: DeckWord[] = [
   sentence("i-am", "I am.", "me", [
@@ -241,7 +300,9 @@ function checkWords(): void {
       if (step === 2 && length !== 2) throw new Error(`"${word.id}" is not two letters`);
       if (step === 3 && length !== 3) throw new Error(`"${word.id}" is not a short word`);
       if (step === 4 && length !== 4) throw new Error(`"${word.id}" is not four letters`);
-      if (step === 5 && length < 5) throw new Error(`"${word.id}" is not a longer word`);
+      if (step === 5 && length < 5 && !word.letters.some((tile) => tile.silent || isUnit(tile.char))) {
+        throw new Error(`"${word.id}" is not a longer word or a sound-unit word`);
+      }
     }
   }
   for (const line of step5Sentences) {
@@ -323,7 +384,7 @@ export function sentencesForStep(step: LadderStep): DeckWord[] {
 }
 
 function lettersKnown(word: DeckWord, known: Set<string>): boolean {
-  return word.letters.every((letter) => letter.wordId || known.has(letter.char.toLowerCase()));
+  return word.letters.every((letter) => letter.wordId || letter.silent || known.has(letter.char.toLowerCase()));
 }
 
 /** Pictures for letter cards, where the drawing matches the spoken example. */
@@ -342,6 +403,29 @@ const LETTER_PICTURES: Partial<Record<string, IllustrationName>> = {
   s: "sun",
   u: "sun",
   x: "fox",
+  sh: "ship",
+  ch: "chick",
+  th: "thumb",
+  ng: "ring",
+  ck: "duck",
+  ee: "bee",
+  oo: "moon",
+  ai: "rain",
+  ay: "day",
+  oa: "boat",
+  igh: "light",
+  a_e: "cake",
+  i_e: "kite",
+  o_e: "bone",
+  u_e: "cube",
+  ar: "star",
+  or: "fork",
+  er: "fern",
+  ir: "bird",
+  ea: "leaf",
+  ou: "cloud",
+  oi: "coin",
+  wh: "whale",
 };
 
 const letterSays = manifest.letters as Record<string, { say?: string }>;
@@ -385,25 +469,27 @@ const THEMED_PICTURES: Partial<Record<string, IllustrationName>> = {
 };
 
 export function letterCard(letter: string, themes: readonly ThemeId[] = []): DeckWord {
-  const char = letter.toLowerCase().slice(0, 1);
-  const themed = themedLetterExample(char, themes);
+  const char = isUnit(letter) ? letter.toLowerCase() : letter.toLowerCase().slice(0, 1);
+  const unit = soundUnit(char);
+  const themed = unit ? undefined : themedLetterExample(char, themes);
   const key = themed ? `${char}:${themed}` : char;
   // One object per letter (and themed example), like the fixed word lists, so
   // a card keeps its state while the lesson list is recomputed around it.
   const cached = letterCardCache.get(key);
   if (cached) return cached;
-  const example = themed ?? letterExample(char);
+  const example = themed ?? unit?.example ?? letterExample(char);
   const picture = themed ? THEMED_PICTURES[themed] : LETTER_PICTURES[char];
   const card: DeckWord = {
     id: `letter-${char}`,
     word: example,
     letterCard: true,
     illustration: picture ?? "apple",
-    ...(picture ? {} : { glyph: char.toUpperCase() }),
+    // A unit card shows its letters as they are written ("sh", "a-e"), a letter card the capital.
+    ...(picture ? {} : { glyph: unit ? unit.label : char.toUpperCase() }),
     letters: [
       {
-        char,
-        phoneme: (PHONEME[char] ?? char) as PhonemeId,
+        char: unit ? unit.label : char,
+        phoneme: phonemeOf(char),
         // A themed card plays its own phrase, "d, as in dinosaur", not the regular one.
         ...(themed ? { say: `${char}, as in ${themed}`, sayId: `${char}-${themed.replace(/\s+/g, "-")}` } : {}),
       },
@@ -413,34 +499,53 @@ export function letterCard(letter: string, themes: readonly ThemeId[] = []): Dec
   return card;
 }
 
-/** The week's letters as cards, in plan order. */
+/** The week's letters and sound units as cards, in plan order. */
 export function letterCards(letters: readonly string[], themes: readonly ThemeId[] = []): DeckWord[] {
   const seen = new Set<string>();
   const cards: DeckWord[] = [];
   for (const letter of letters) {
-    const char = letter.toLowerCase().slice(0, 1);
-    if (!/^[a-z]$/.test(char) || seen.has(char)) continue;
-    seen.add(char);
-    cards.push(letterCard(char, themes));
+    const id = letter.toLowerCase();
+    if (!(/^[a-z]$/.test(id) || isUnit(id)) || seen.has(id)) continue;
+    seen.add(id);
+    cards.push(letterCard(id, themes));
   }
   return cards;
 }
 
+/** Does the word only use sound units the child has met? A word with no unit tiles always does. */
+function unitsKnown(word: DeckWord, introduced: ReadonlySet<string>): boolean {
+  return word.letters.every((tile) => tile.silent || tile.wordId || !isUnit(tile.phoneme) || soundMet(tile.phoneme, introduced));
+}
+
 /**
  * What drag-to-blend shows. Step 1 leads with the week's letters, so the card
- * on Today is the card in the lesson. Known-letter words come first after that.
- * Step 5 adds the short sentences after the longer words.
+ * on Today is the card in the lesson. A week that teaches a sound unit (sh,
+ * ee) leads with its cards on every step, then the words that use it, since
+ * a new sound has to be heard before its words. Known-letter words come next,
+ * then the rest. Step 5 adds short sentences after the words, and leaves out
+ * words whose sound units have not been introduced (`introduced` lists every
+ * letter and unit taught so far; without it every word is in).
  */
-export function blendList(step: LadderStep, letters: readonly string[], themes: readonly ThemeId[] = []): DeckWord[] {
+export function blendList(
+  step: LadderStep,
+  letters: readonly string[],
+  themes: readonly ThemeId[] = [],
+  introduced?: readonly string[],
+): DeckWord[] {
   if (step === 1) return [...letterCards(letters, themes), ...wordsForStep(1)];
-  const pool = [...themedWordsForStep(step, themes), ...sentencesForStep(step)];
+  const units = letters.filter((letter) => isUnit(letter));
+  const cards = letterCards(units, themes);
+  const met = new Set([...(introduced ?? []), ...letters].map((id) => id.toLowerCase()));
+  const words = themedWordsForStep(step, themes).filter((word) => !introduced || unitsKnown(word, met));
+  const lines = sentencesForStep(step);
   const known = new Set(letters.map((letter) => letter.toLowerCase()));
-  const matched = pool.filter((word) => lettersKnown(word, known));
-  const rest = pool.filter((word) => !matched.includes(word));
-  const ordered = [...matched, ...rest];
-  if (ordered.length <= 8) return ordered;
-  const picked = matched.length >= 3 ? matched : ordered;
-  return picked.slice(0, 6);
+  const theirs = words.filter((word) => units.some((unit) => usesSound(word, unit)));
+  const matched = words.filter((word) => !theirs.includes(word) && lettersKnown(word, known));
+  const rest = words.filter((word) => !theirs.includes(word) && !matched.includes(word));
+  const ordered = [...theirs, ...matched, ...rest];
+  if (ordered.length + lines.length <= 8) return [...cards, ...ordered, ...lines];
+  const picked = theirs.length + matched.length >= 3 ? [...theirs, ...matched] : ordered;
+  return [...cards, ...picked.slice(0, 6), ...lines.slice(0, 2)];
 }
 
 /** Words the child has already blended, at this step or an earlier one, themed words included. */

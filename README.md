@@ -39,7 +39,7 @@ A grown-up taps Parent and answers the check, then adds a child: a first name or
 
 Today is a winding path of four stops: a letter, a pencil, a book, and shapes. The letter stop opens Sound it out, using this week's letters when those words exist. The other three stops are marked **Soon** and can be marked done so the path and stars work. The child's animal stands at the current stop. Each finished step adds one effort star for that day. Stars are not removed. Play library and My Nest are on the path for later.
 
-The letter plan is 1–2 new letters a week, plus review. A week is Monday through Sunday on the phone, and the day resets at local midnight. Friday is review day in that time zone: a Review mark on Today, and a short note in the parent view. A daylight-saving change or a trip does not award the same day twice, and it does not erase a day already finished.
+The letter plan is 1–2 new letters a week, plus review, for 14 weeks. Weeks 15 to 26 teach the sound units that come next: digraphs (sh, ch, th, ng, ck), vowel teams (ee, oo, ai, ay, oa, igh, ea, ou, oi), the magic e (a-e, i-e, o-e, u-e), and r-controlled vowels (ar, or, er, ir), each with its own card, sound clip, ladder words and two decodable readers (`src/data/units.ts`, `src/data/readersPhonics.ts`). The calendar holds ages 3 and 4 at the letter weeks; a grown-up can place a child on Phonics from Parent or Teacher. A week is Monday through Sunday on the phone, and the day resets at local midnight. Friday is review day in that time zone: a Review mark on Today, and a short note in the parent view. A daylight-saving change or a trip does not award the same day twice, and it does not erase a day already finished.
 
 ## Parent and teacher
 

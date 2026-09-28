@@ -151,12 +151,42 @@ const SOUND_PLAN = {
   x: { carve: ["ahh", "ɑks", "coda-burst"], fallback: ["ks", "ɛks"] },
   n: { carve: ["ahh", "ɑn", "coda-voiced"], fallback: ["nuh", "nʌ"] },
   v: { pron: ["vuh", "vʌ"] },
+  // Sound units of weeks 15 to 26 (src/data/units.ts). The manifest id is the
+  // plan key: "sh, as in ship" and the bare sh; "a-e, as in cake" is a_e.
+  sh: { carve: ["ahsh", "ɑʃ", "coda-hush"], fallback: ["shuh", "ʃʌ"] },
+  ch: { pron: ["chuh", "tʃʌ"] },
+  th: { carve: ["ahth", "ɑθ", "coda-noise"], fallback: ["thuh", "θʌ"] },
+  ng: { carve: ["ahng", "ɑŋ", "coda-voiced"], fallback: ["ung", "ʌŋ"] },
+  ck: { pron: ["kuh", "kʌ"] },
+  ee: { pron: ["ee", "iː"] },
+  ea: { pron: ["ee", "iː"] },
+  oo: { pron: ["oo", "uː"] },
+  ai: { pron: ["ay", "eɪ"] },
+  ay: { pron: ["ay", "eɪ"] },
+  a_e: { pron: ["ay", "eɪ"] },
+  oa: { pron: ["oh", "oʊ"] },
+  o_e: { pron: ["oh", "oʊ"] },
+  igh: { pron: ["eye", "aɪ"] },
+  i_e: { pron: ["eye", "aɪ"] },
+  u_e: { pron: ["you", "juː"] },
+  ar: { pron: ["ar", "ɑɹ"] },
+  or: { pron: ["or", "ɔɹ"] },
+  er: { pron: ["er", "ɝ"] },
+  ir: { pron: ["er", "ɝ"] },
+  ou: { pron: ["ow", "aʊ"] },
+  oi: { pron: ["oy", "ɔɪ"] },
+  wh: { pron: ["wuh", "wʌ"] },
 };
 // v was carved from "ahva" at first, but the voice devoices it as often as
 // not, and a whispered v is an f; "vuh" is at least the right sound.
 // A carve that fails three times (the voice renders a carrier a little
 // differently each time) falls back to the syllable, with a warning.
 const SOUND_ALIAS = { ae: "a", eh: "e", ih: "i", aw: "o", uh: "u", ks: "x" };
+/** A vowel sound is held a little shorter than a consonant syllable; a team or diphthong a little longer than one vowel. */
+function soundCap(char) {
+  if (!/^[aeiou]/.test(char)) return 0.65;
+  return char.length === 1 ? 0.5 : 0.6;
+}
 
 const LETTER_NAMES = {
   a: "ay", b: "bee", c: "see", d: "dee", e: "ee", f: "eff", g: "jee", h: "aitch", i: "eye", j: "jay", k: "kay",
@@ -168,15 +198,16 @@ function escapeXml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/** The letter in "m, as in moon", or in a sound id such as "ae". */
+/** The letter or sound unit in "m, as in moon" or "a-e, as in cake", or in a sound id such as "ae". */
 function letterOf(kind, id, say) {
-  const match = say.match(/^([a-z]), as in (.+)$/i);
+  const match = say.match(/^([a-z]{1,3}|[aiou]-e), as in (.+)$/i);
+  const planKey = (label) => label.toLowerCase().replace("-", "_");
   if (kind === "sounds") {
     const raw = id.toLowerCase();
-    const char = SOUND_ALIAS[raw] ?? (raw in SOUND_PLAN ? raw : (match?.[1] ?? raw).toLowerCase());
+    const char = SOUND_ALIAS[raw] ?? (raw in SOUND_PLAN ? raw : planKey(match?.[1] ?? raw));
     return { char, example: match?.[2]?.replace(/\.$/, "") };
   }
-  if (kind === "letters" && match) return { char: match[1].toLowerCase(), example: match[2].replace(/\.$/, "") };
+  if (kind === "letters" && match) return { char: planKey(match[1]), example: match[2].replace(/\.$/, "") };
   return null;
 }
 
@@ -203,7 +234,7 @@ function planFor(kind, id, say, main, letters, style) {
     if (!plan) throw new Error(`No sound plan for letter "${char}"`);
     const tail = kind === "letters" ? `, as in ${example}.` : ".";
     // A bare sound is held to a beat or so, and every letter clip sits at one level.
-    const finish = { level: true, cap: kind === "sounds" ? ("aeiou".includes(char) ? 0.5 : 0.65) : 0 };
+    const finish = { level: true, cap: kind === "sounds" ? soundCap(char) : 0 };
     if (plan.text) return { say: [{ text: `${plan.text}${tail}`, voice: letters }], ...finish };
     if (plan.pron) return { say: [syllable(letters, plan.pron[0], plan.pron[1], tail)], ...finish };
     const [token, ipa, mode] = plan.carve;
@@ -273,7 +304,7 @@ async function connect() {
     // Offline test of the pipeline: serve WAVs from a folder, named after the request.
     synthesizeRaw = async (body) => {
       const pron = (body.input.customPronunciations?.pronunciations ?? []).map((item) => `${item.phrase}=${item.pronunciation}`).join(",");
-      const name = `${body.input.text ?? body.input.ssml ?? ""}${pron ? ` {${pron}}` : ""}`.replace(/[^A-Za-z0-9æɛɪɑʌɡʒɹ=,{} .-]+/g, "_");
+      const name = `${body.input.text ?? body.input.ssml ?? ""}${pron ? ` {${pron}}` : ""}`.replace(/[^A-Za-z0-9æɛɪɑʌɡʒɹʃθŋɔɝː=,{} .-]+/g, "_");
       const file = join(fakeDir, `${name}.wav`);
       if (!existsSync(file)) throw new Error(`fake voice has no file for ${JSON.stringify(name)}`);
       return readFileSync(file);

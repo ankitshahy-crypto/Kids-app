@@ -1,4 +1,5 @@
 import { themeArt } from "./themeArt";
+import { unitScenes } from "./unitScenes";
 import { ladderScenes } from "./wordScenes";
 
 /**
@@ -289,6 +290,7 @@ export const illustrations = {
   apple: Apple,
   ...ladderScenes,
   ...themeArt,
+  ...unitScenes,
 };
 
 export type IllustrationName = keyof typeof illustrations;

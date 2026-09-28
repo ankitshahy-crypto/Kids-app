@@ -17,6 +17,7 @@ import {
   type ResolvedPlacement,
 } from "../data/placement";
 import { READING, type SubjectId } from "../data/subject";
+import { unitLabel } from "../data/units";
 import { lessonName, type ChildProfile } from "../data/profiles";
 
 function PlaceEditor({
@@ -144,7 +145,7 @@ export function PlacementControls({
       {profiles.length === 0 ? <p className="adult-copy">Add a child to set a different lesson for them.</p> : null}
       {profiles.map((profile) => {
         const override = reading.byChildId[profile.id] ?? null;
-        const resolved = resolvePlacement(placement, profile.id, profile.createdAt);
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange);
         return (
           <div
             key={profile.id}
@@ -164,7 +165,7 @@ export function PlacementControls({
               onChange={(place) => onChildPlace(profile.id, place)}
             />
             <p className="adult-copy" data-today={resolved.letters.join("")}>
-              Today: {resolved.letters.map((letter) => letter.toUpperCase()).join(" ")} · {stageTitle(resolved.stageId)}. Traces
+              Today: {resolved.letters.map((letter) => unitLabel(letter).toUpperCase()).join(" ")} · {stageTitle(resolved.stageId)}. Traces
               big and little together.{" "}
               {resolved.source === "child"
                 ? "Set for this child."

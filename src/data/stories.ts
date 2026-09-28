@@ -1,5 +1,7 @@
 import type { IllustrationName } from "../illustrations";
+import { PHONICS_READERS } from "./readersPhonics";
 import type { ThemeId } from "./themes";
+import { soundMet, soundsNeeded } from "./units";
 
 /**
  * Decodable readers. Each week's story uses only the letters taught so far
@@ -619,6 +621,7 @@ export const STORIES: Story[] = [
     before: "Ask: an ox is slow but strong. What is slow? What is fast?",
     after: "Ask: why did the ox win?",
   },
+  ...PHONICS_READERS,
   {
     id: "t-dinosaurs-egg",
     title: "{hero} and the Egg",
@@ -726,15 +729,27 @@ export const STORIES: Story[] = [
   },
 ];
 
-/** Words the app reads for the child: high-frequency glue, plus a few picture words with sounds not taught yet. */
+/**
+ * Words the app reads for the child: high-frequency glue, plus a few picture
+ * words with sounds not taught yet (fish before sh, star before ar). A word
+ * here is still sounded out once its sounds have been taught.
+ */
 export const STORY_GLUE = new Set(
-  `i a the and is to see my we go you like look here said was has of for are with no yes in on it at up he she they do can not one two all off out so oh too this that what where come comes home into down over had get got went will then now be me by his her its put let from there some good day play says love want little big new more hi bye ok mom dad your our who why how moon dino goat sea yikes tada crown`.split(
+  `i a the and is to see my we go you like look here said was has of for are with no yes in on it at up he she they do can not one two all off out so oh too this that what where come comes home into down over had get got went will then now be me by his her its put let from there some good day play says love want little big new more hi bye ok mom dad your our who why how moon dino goat sea yikes tada crown fish king star nine eight sky`.split(
     " ",
   ),
 );
 
-/** Words a child is not asked to blend even when the letters are known (a sound they have not met). */
-const STORY_READ = new Set(["moon", "dino", "goat", "sea", "yikes", "tada", "crown"]);
+/**
+ * Words a child is never asked to blend, because their spelling does not
+ * follow the sounds taught here: sight words (the, was, you) and a few
+ * picture words. The app reads them whole, even once every letter is known.
+ */
+const STORY_READ = new Set(
+  `the to do of was are you we he she me be my by bye go no so oh one two all come comes some said says here there where what who why how love want little new more over into down now look good hi ok your our they have gone dino yikes tada crown`.split(
+    " ",
+  ),
+);
 
 export type StoryToken =
   | { kind: "word"; text: string; word: string; role: "target" | "glue" | "hero" }
@@ -744,12 +759,17 @@ export type StoryHero = { name: string; kind: string };
 
 const TOKEN = /\{hero-kind\}|\{hero\}|[A-Za-z']+|[^A-Za-z'{}]+/g;
 
-/** Is this word one the child can sound out with the letters they have met? */
+/**
+ * Is this word one the child can sound out with the letters and sound units
+ * they have met? A word is split the way a reader sounds it out (sh-i-p,
+ * c-a-k-e with a silent e), so "ship" waits for the sh week even when s, h,
+ * i and p are known, and "the" is read whole until th is taught.
+ */
 export function decodable(word: string, letters: readonly string[]): boolean {
   const plain = word.toLowerCase().replace(/'/g, "");
   if (!plain || STORY_READ.has(plain)) return false;
   const known = new Set(letters.map((letter) => letter.toLowerCase()));
-  return [...plain].every((char) => known.has(char));
+  return soundsNeeded(plain).every((sound) => soundMet(sound, known));
 }
 
 /** Fill in the hero's name and kind. */

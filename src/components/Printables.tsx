@@ -9,6 +9,7 @@ import { isReviewDay, planForWeek, practiceLetters } from "../data/schedule";
 import { COLORS, colorIds, colorPattern, colorPatternLabel, colorTitle } from "../data/colors";
 import { MATH, shapeIds, shapeTitles } from "../data/math";
 import { READING } from "../data/subject";
+import { traceLetters } from "../data/units";
 import { TIME } from "../data/timeMoney";
 import { shapeStrokes } from "../data/shapeStrokes";
 import { blendingWords, pictureForLetter, scheduleLetters, sheetsFor } from "../data/sheets";
@@ -17,8 +18,9 @@ import { Pictogram } from "./Pictogram";
 import { StrokeFigure } from "./StrokeFigure";
 
 function weekLettersFor(placement: PlacementDocument, child: ChildProfile | null): string[] {
-  if (!child) return practiceLetters(planForWeek(0), isReviewDay());
-  return resolvePlacement(placement, child.id, child.createdAt).letters;
+  if (!child) return traceLetters(practiceLetters(planForWeek(0), isReviewDay()));
+  // A sound-unit week (sh, ch) prints the letters inside its units.
+  return traceLetters(resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange).letters);
 }
 
 function TraceGlyph({ char, casing }: { char: string; casing: "upper" | "lower" }) {

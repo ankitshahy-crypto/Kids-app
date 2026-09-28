@@ -366,6 +366,12 @@ button:focus-visible {
   letter-spacing: 0.02em;
 }
 
+/* A sound unit's glyph (sh, a-e) is longer than one letter, so it sits smaller and lowercase. */
+.letter-glyph[data-glyph-long="true"] {
+  font-size: clamp(64px, 17vmin, 112px);
+  letter-spacing: -0.02em;
+}
+
 .picture-card {
   position: relative;
   width: 100%;
@@ -500,6 +506,30 @@ button:focus-visible {
 
 .tile:disabled {
   cursor: default;
+}
+
+/* A sound unit on one tile: sh, igh, a-e. Two or three letters share the square. */
+.tile-wrap.is-unit {
+  max-width: 104px;
+}
+
+.tile-wrap.is-unit .tile {
+  font-size: clamp(20px, 5.6vw, 30px);
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
+}
+
+/* The e of cake: on the tile, but quiet. */
+.tile-wrap.is-silent.is-lit .tile {
+  color: var(--text-sage, #5f7a68);
+  background: #f7f3ec;
+  border-style: dashed;
+  border-color: #e4d9c8;
+}
+
+.tile-wrap.is-silent.is-active .tile {
+  transform: scale(1.02);
+  box-shadow: 0 0 0 4px rgba(228, 217, 200, 0.6);
 }
 
 .tile-wrap.is-hidden,
@@ -1971,6 +2001,11 @@ button:focus-visible {
   color: var(--sage);
 }
 
+.trail-letter.is-unit {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
 .trail-stop.is-current {
   box-shadow:
     0 0 0 8px rgba(126, 174, 134, 0.28),
@@ -2118,6 +2153,13 @@ button:focus-visible {
 
 .letter-chip:nth-child(4n + 2) {
   background: #f8e0d8;
+}
+
+.letter-chip[data-unit="true"] {
+  width: auto;
+  min-width: 36px;
+  padding: 0 8px;
+  font-size: 14px;
 }
 
 .letter-chip:nth-child(4n + 3) {
@@ -2856,6 +2898,10 @@ button:focus-visible {
 
   .trail-letter {
     font-size: 44px;
+  }
+
+  .trail-letter.is-unit {
+    font-size: 28px;
   }
 
   .trail-animal,

@@ -8,7 +8,8 @@ can say "ahs", "un" or "vuh", though. This script finds the consonant in
 such a carrier (WAV in, 24 kHz mono), keeps just that part, loops it to a
 steady length, fades the edges, and writes a WAV.
 
-    python3 scripts/carve-sound.py in.wav out.wav --mode coda-noise   # s, f: hiss after the vowel
+    python3 scripts/carve-sound.py in.wav out.wav --mode coda-noise   # s, f, th: hiss after the vowel
+    python3 scripts/carve-sound.py in.wav out.wav --mode coda-hush    # sh: the darker hush after the vowel
     python3 scripts/carve-sound.py in.wav out.wav --mode coda-burst   # x: the k burst and hiss after the vowel
     python3 scripts/carve-sound.py in.wav out.wav --mode coda-voiced  # n, l, m: the murmur after the vowel
     python3 scripts/carve-sound.py in.wav out.wav --mode onset        # v, z, r, l: the consonant before the vowel
@@ -122,10 +123,11 @@ def find(x: np.ndarray, mode: str):
     loud_vowel = strong & (voi > 0.5)
     if not loud_vowel.any():
         return None
-    if mode == "coda-noise":
+    if mode in ("coda-noise", "coda-hush"):
         # After the vowel (its last loud voiced frame), the hiss: high centroid, any level above the floor.
+        # A "sh" sits lower in the spectrum than an "s", so coda-hush accepts a darker hiss.
         vowel_end = int(np.where(loud_vowel)[0][-1])
-        hiss = (idx > vowel_end) & (cen > 2500) & (rms > max(top * 0.003, 0.0015))
+        hiss = (idx > vowel_end) & (cen > (1800 if mode == "coda-hush" else 2500)) & (rms > max(top * 0.003, 0.0015))
         r = longest(closed(hiss), 8)
         if r is None:
             return None
@@ -227,7 +229,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
     ap.add_argument("dest")
-    ap.add_argument("--mode", default="whole", choices=["coda-noise", "coda-burst", "coda-voiced", "onset", "mid", "whole"])
+    ap.add_argument("--mode", default="whole", choices=["coda-noise", "coda-hush", "coda-burst", "coda-voiced", "onset", "mid", "whole"])
     ap.add_argument("--length", type=float, default=0.35, help="target length in seconds (not applied to coda-burst or whole)")
     ap.add_argument("--gain-peak", type=float, default=0.35)
     ap.add_argument("--report", action="store_true")

@@ -71,6 +71,8 @@ import { SCIENCE, type ScienceActivity as ScienceId } from "./data/science";
 import { lessonName, todayKey, type ChildInput, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { resolvePlacement } from "./data/placement";
+import { READING } from "./data/subject";
+import { lettersOnly, traceLetters } from "./data/units";
 import { blendList, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
 import { lettersIntroduced } from "./data/schedule";
 import { nameToTrace } from "./data/tracePractice";
@@ -216,10 +218,12 @@ export default function App() {
 
   const lessonPlace = useMemo(() => {
     if (!active) return null;
-    return resolvePlacement(placement, active.id, active.createdAt);
+    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, READING, active.ageRange);
   }, [active, placement]);
 
   const lessonLetters = lessonPlace?.letters ?? [];
+  // A sound-unit week (sh, a-e) is traced letter by letter, and its letter games use single letters.
+  const drawLetters = useMemo(() => traceLetters(lessonLetters), [lessonLetters]);
 
   const mathPlace = useMemo(() => {
     if (!active) return null;
@@ -249,6 +253,7 @@ export default function App() {
   }, [active, timePlace]);
 
   const introducedLetters = useMemo(() => lettersIntroduced(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
+  const introducedAlphabet = useMemo(() => lettersOnly(introducedLetters), [introducedLetters]);
   const ladderStep = active?.ladder.step ?? 1;
   // The step the open lesson was built on. Moving up mid-lesson would swap the
   // card under the child, so the new step waits for the next visit.
@@ -260,7 +265,10 @@ export default function App() {
   // A reader picked from the cover's shelf, for this visit. Today's story is the default.
   const [pickedStoryId, setPickedStoryId] = useState<string | null>(null);
   const openStory = storyShelf.find((story) => story.id === pickedStoryId) ?? todayStory;
-  const lessonWords = useMemo(() => blendList(lessonLadderStep, lessonLetters, themes), [lessonLadderStep, lessonLetters, themes]);
+  const lessonWords = useMemo(
+    () => blendList(lessonLadderStep, lessonLetters, themes, introducedLetters),
+    [lessonLadderStep, lessonLetters, themes, introducedLetters],
+  );
   const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
   const phonicsReady = phonicsOpen(introducedLetters.length);
   const traceName = nameToTrace(active?.name ?? "");
@@ -766,12 +774,12 @@ export default function App() {
               ) : null}
               {screen === "draw" ? (
                 <LetterTrace
-                  letters={lessonLetters}
+                  letters={drawLetters}
                   settingsRef={settingsRef}
                   writing={active.writing}
                   onAttempt={(itemId, success) => recordWriting(active.id, itemId, success)}
                   onDone={() => {
-                    const learned = (lessonLetters.length > 0 ? lessonLetters : ["a"]).map((label) => ({
+                    const learned = (drawLetters.length > 0 ? drawLetters : ["a"]).map((label) => ({
                       kind: "letter" as const,
                       label,
                     }));
@@ -936,7 +944,7 @@ export default function App() {
                   {screen === "games" ? (
                     <Games
                       profile={active}
-                      knownLetters={introducedLetters}
+                      knownLetters={introducedAlphabet}
                       count={mathLesson.count}
                       color={colorLesson.hear}
                       colorOptions={colorLesson.choices}

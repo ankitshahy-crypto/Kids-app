@@ -27,6 +27,7 @@ import {
 } from "./timeMoney";
 import { learningPlace, type PathStageId } from "./path";
 import { isReviewDay, letterSchedule, lettersIntroduced, planForWeek, practiceLetters, weekIndex } from "./schedule";
+import { unitLabel } from "./units";
 import { READING, isSubjectKey, readingStages, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone } from "./time";
 
@@ -95,6 +96,7 @@ const stageStartIntroduced: Record<PathStageId, number> = {
   blending: 8,
   words: 16,
   stories: 22,
+  phonics: 26,
 };
 
 function emptySubjectPlacement(): SubjectPlacement {
@@ -194,7 +196,7 @@ export function weekLabel(index: number, subject: SubjectId = READING): string {
   }
   const week = clampWeek(index);
   const plan = letterSchedule[week];
-  const letters = plan.newLetters.map((letter) => letter.toUpperCase()).join(" ");
+  const letters = plan.newLetters.map((letter) => unitLabel(letter).toUpperCase()).join(" ");
   return `Week ${week + 1} · ${letters}`;
 }
 
@@ -314,6 +316,14 @@ export function savePlacement(doc: PlacementDocument, storage: KeyValueStore = l
   writeStored(storage, PLACEMENT_STORAGE_KEY, JSON.stringify(doc));
 }
 
+/** The last reading week inside a stage: the week before the next stage begins. */
+export function lastReadingWeekForStage(stageId: string): number {
+  const order = readingStages.findIndex((stage) => stage.id === stageId);
+  const next = order === -1 ? undefined : readingStages[order + 1];
+  if (!next) return letterSchedule.length - 1;
+  return Math.max(0, firstWeekForStage(next.id) - 1);
+}
+
 /** The last calendar week a child of this age reaches in a subject, or null for the whole path. */
 export function calendarCapWeek(subject: SubjectId, ageRange: AgeRange | string | undefined): { stageId: string; weekIndex: number } | null {
   const stageId = calendarStageCap(subject, ageRange);
@@ -321,6 +331,7 @@ export function calendarCapWeek(subject: SubjectId, ageRange: AgeRange | string 
   if (subject === MATH) return { stageId, weekIndex: lastMathWeekForStage(stageId) };
   if (subject === COLORS) return { stageId, weekIndex: lastColorWeekForStage(stageId) };
   if (subject === TIME) return { stageId, weekIndex: lastTimeWeekForStage(stageId) };
+  if (subject === READING && isPathStageId(stageId)) return { stageId, weekIndex: lastReadingWeekForStage(stageId) };
   return null;
 }
 

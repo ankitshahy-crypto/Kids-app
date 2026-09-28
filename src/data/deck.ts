@@ -16,6 +16,8 @@ export type LetterTile = {
   /** A themed letter phrase: the manifest letter id to play, and what the device voice says without it. */
   say?: string;
   sayId?: string;
+  /** The e of a magic-e word: shown on its tile, but it makes no sound of its own. */
+  silent?: boolean;
 };
 
 export type DeckWord = {

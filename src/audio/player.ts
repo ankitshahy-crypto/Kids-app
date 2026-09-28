@@ -11,6 +11,7 @@ const NATURAL_PITCH = 1;
 export const PREVIEW_PHRASE = "Hi. Let's read together.";
 
 const SILENT_BEAT_MS = 720;
+const SILENT_LETTER_MS = 320;
 
 /**
  * iOS only allows speech after a user gesture. Call this synchronously inside
@@ -287,6 +288,8 @@ export function playLetter(
   settings: Settings,
   signal: AbortSignal,
 ): Promise<void> {
+  // The silent e of cake: a short beat while its tile lights, and no sound.
+  if (letter.silent) return sleep(SILENT_LETTER_MS, signal);
   return playCue(
     letter.say
       ? { src: letter.sayId ? recordedSrc("letters", letter.sayId) : undefined, text: letter.say }
@@ -305,6 +308,7 @@ export function playLetter(
  * voice cannot say a bare sound.
  */
 export function playLetterSound(letter: LetterTile, settings: Settings, signal: AbortSignal): Promise<void> {
+  if (letter.silent) return sleep(SILENT_LETTER_MS, signal);
   const src = recordedSrc("sounds", letter.phoneme);
   if (!src) return playLetter(letter, settings, signal);
   return playCue({ src, text: letter.say ?? spokenLine("letters", letter.phoneme, letter.char) }, settings, signal);

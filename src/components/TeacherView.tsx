@@ -6,6 +6,8 @@ import { MATH, mathIntroduced } from "../data/math";
 import { practiceTotal } from "../data/reading";
 import { lettersIntroduced } from "../data/schedule";
 import { resolvePlacement, type LessonPlace, type PlacementDocument } from "../data/placement";
+import { READING } from "../data/subject";
+import { traceLetters } from "../data/units";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import type { ScaffoldLevel } from "../data/scaffold";
 import type { HatchLevel } from "../data/games";
@@ -105,7 +107,7 @@ function DeviceRewards({
         })}
       </ul>
       {profiles.map((profile) => {
-        const resolved = resolvePlacement(placement, profile.id, profile.createdAt);
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange);
         const placedIntroduced =
           resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length;
         const mathResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH, profile.ageRange);
@@ -115,7 +117,7 @@ function DeviceRewards({
           <div key={profile.id}>
             <WritingLevels
               writing={profile.writing}
-              weekLetters={resolved.letters}
+              weekLetters={traceLetters(resolved.letters)}
               childName={profile.name}
               stickers={profile.stickers}
               editable

@@ -34,19 +34,23 @@ export type SubjectDefinition = {
   steps: readonly string[];
 };
 
-/** Ages 3–5 reading, in teaching order. Sizes add up to the letter plan. */
+/**
+ * Reading in teaching order. Sizes add up to the letter plan: the 26 letters
+ * across the first four stages, then the sound units of the phonics stage.
+ */
 export const readingStages = [
   { id: "letters", title: "Letters", detail: "Hear each letter sound and trace big and little.", size: 8 },
   { id: "blending", title: "Blending", detail: "Slide sounds together into a word.", size: 8 },
   { id: "words", title: "Words", detail: "Read short words, then trace the ones they blended.", size: 6 },
   { id: "stories", title: "Stories", detail: "A tiny story with their animal.", size: 4 },
+  { id: "phonics", title: "Phonics 5–7", detail: "Two letters, one sound: sh, ee, and the magic e in cake.", size: 23 },
 ] as const;
 
 /** Shown on the reading path, not started in this app yet. */
 export const readingLater = {
-  id: "phonics",
-  title: "Phonics 5–7",
-  detail: "Comes after this path, for ages 5 to 7.",
+  id: "chapters",
+  title: "Longer stories 6–7",
+  detail: "Comes after this path.",
 } as const;
 
 export const readingSteps = ["letter", "draw", "story", "moment"] as const;
