@@ -89,92 +89,101 @@ def runs(mask: np.ndarray):
     return out
 
 
+def closed(mask: np.ndarray, gap: int = 3) -> np.ndarray:
+    """The mask with short gaps (up to `gap` frames) filled in."""
+    out = mask.copy()
+    for a, b in runs(~mask):
+        if b - a <= gap and a > 0 and b < len(mask):
+            out[a:b] = True
+    return out
+
+
+def longest(mask: np.ndarray, least: int):
+    cand = [r for r in runs(mask) if r[1] - r[0] >= least]
+    return max(cand, key=lambda r: r[1] - r[0]) if cand else None
+
+
 def find(x: np.ndarray, mode: str):
     """Sample range of the consonant, or None."""
     a = analyze(x)
     if len(a) == 0:
         return None
     rms, cen, voi = a[:, 0], a[:, 1], a[:, 2]
-    loud = rms > max(rms.max() * 0.04, 0.003)
-    voiced = (voi > 0.55) & loud
-    vowel_runs = [r for r in runs(voiced) if r[1] - r[0] >= 8]  # >= 40 ms of voicing
+    top = rms.max()
+    idx = np.arange(len(a))
+    loud = rms > max(top * 0.04, 0.003)
+    voiced = (voi > 0.55) & (rms > top * 0.02)
+    strong = rms > top * 0.3
     if mode == "whole":
         active = runs(loud)
         if not active:
             return None
         return active[0][0] * HOP, min(len(x), active[-1][1] * HOP + WIN)
-    if not vowel_runs:
+    loud_vowel = strong & (voi > 0.5)
+    if not loud_vowel.any():
         return None
     if mode == "coda-noise":
-        after = np.arange(len(a)) >= vowel_runs[-1][1]
-        noise = loud & ~(voi > 0.55) & after & (cen > 2500)
-        cand = [r for r in runs(noise) if r[1] - r[0] >= 8]
-        if not cand:
+        # After the vowel (its last loud voiced frame), the hiss: high centroid, any level above the floor.
+        vowel_end = int(np.where(loud_vowel)[0][-1])
+        hiss = (idx > vowel_end) & (cen > 2500) & (rms > max(top * 0.003, 0.0015))
+        r = longest(closed(hiss), 8)
+        if r is None:
             return None
-        start, end = max(cand, key=lambda r: r[1] - r[0])
-        return start * HOP, min(len(x), end * HOP + WIN)
+        return r[0] * HOP, min(len(x), r[1] * HOP + WIN)
     if mode == "coda-burst":
-        # The vowel is where it is loud; then a closure (quiet), then the k burst and the s hiss.
-        strong = rms > rms.max() * 0.3
-        vowel_end = int(np.where(strong)[0][-1]) if strong.any() else 0
-        quiet = rms < rms.max() * 0.04
+        # Vowel, then a closure (quiet), then the k burst and the s hiss.
+        vowel_end = int(np.where(loud_vowel)[0][-1])
+        quiet = rms < top * 0.04
         gaps = [r for r in runs(quiet) if r[0] >= vowel_end and r[1] - r[0] >= 6]
         if not gaps:
             return None
         start = gaps[0][1]
-        tail = [r for r in runs(loud) if r[0] >= start]
+        tail = [r for r in runs(closed(loud, 4)) if r[1] > start]
         if not tail:
             return None
-        end = tail[-1][1]
-        return start * HOP, min(len(x), end * HOP + WIN)
-    if mode == "mid":
-        # Between two vowels: the dip in loudness between the two loudest voiced stretches.
-        if len(vowel_runs) < 2:
-            vowel = max(vowel_runs, key=lambda r: rms[r[0] : r[1]].sum())
-            vs, ve = vowel
-            # One long voiced stretch: the consonant is the quiet valley inside it.
-            inner = rms[vs:ve]
-            peak = inner.max()
-            valley = inner < peak * 0.45
-            cand = [r for r in runs(valley) if r[1] - r[0] >= 6 and r[0] > 4 and r[1] < len(inner) - 4]
-            if not cand:
-                return None
-            r = max(cand, key=lambda r: r[1] - r[0])
-            return (vs + r[0]) * HOP, min(len(x), (vs + r[1]) * HOP + WIN)
-        v1, v2 = sorted(sorted(vowel_runs, key=lambda r: rms[r[0] : r[1]].sum())[-2:])
-        left = rms[v1[0] : v1[1]].max()
-        right = rms[v2[0] : v2[1]].max()
-        between = np.arange(len(a))
-        dip = (between >= v1[0]) & (between < v2[1]) & (rms < min(left, right) * 0.45)
-        cand = [r for r in runs(dip) if r[1] - r[0] >= 6]
-        if not cand:
-            return None
-        r = max(cand, key=lambda r: r[1] - r[0])
-        return r[0] * HOP, min(len(x), r[1] * HOP + WIN)
+        return max(start, tail[0][0]) * HOP, min(len(x), tail[-1][1] * HOP + WIN)
     if mode == "coda-voiced":
-        # The vowel is the loudest voiced stretch; the murmur is the quieter,
-        # darker voiced tail after it. Split where the centroid drops.
-        vowel = max(vowel_runs, key=lambda r: rms[r[0] : r[1]].sum())
-        vs, ve = vowel
-        peak_cen = np.median(cen[vs:ve][rms[vs:ve] > rms[vs:ve].max() * 0.5])
-        tail = np.arange(len(a)) >= vs
-        dark = voiced & tail & (cen < peak_cen * 0.72)
-        cand = [r for r in runs(dark) if r[1] - r[0] >= 8 and r[0] >= vs + 8]
-        if not cand:
+        # The vowel is the loud voiced stretch; the murmur is the quieter, darker
+        # voiced tail after it. Split where the centroid drops well below the vowel's.
+        vowel = longest(closed(voiced & strong), 6)
+        if vowel is None:
             return None
-        start, end = cand[-1]
-        return start * HOP, min(len(x), end * HOP + WIN)
+        vs, ve = vowel
+        vowel_cen = float(np.median(cen[vs:ve]))
+        dark = (idx >= ve - 2) & voiced & (cen < vowel_cen * 0.72)
+        r = longest(closed(dark), 8)
+        if r is None:
+            return None
+        return max(r[0], ve - 2) * HOP, min(len(x), r[1] * HOP + WIN)
     if mode == "onset":
         # The consonant is what sounds before the vowel gets loud.
-        vowel = max(vowel_runs, key=lambda r: rms[r[0] : r[1]].sum())
-        vs, ve = vowel
-        peak = rms[vs:ve].max()
-        # Vowel onset: first frame in the vowel run above 55% of its peak.
-        onset = vs + int(np.argmax(rms[vs:ve] > peak * 0.55))
-        first = int(np.argmax(loud)) if loud.any() else 0
+        first = int(np.argmax(loud))
+        onset = int(np.argmax(strong))
         if onset - first < 8:
             return None
         return first * HOP, onset * HOP
+    if mode == "mid":
+        # Between two vowels: the quiet valley between the two loudest stretches.
+        peaks = runs(closed(strong, 2))
+        if len(peaks) >= 2:
+            left, right = sorted(sorted(peaks, key=lambda r: rms[r[0] : r[1]].sum())[-2:])
+            valley = (idx >= left[1]) & (idx < right[0]) & (rms > top * 0.02)
+            r = longest(closed(valley), 6)
+            if r is None:
+                # No sound between them: take the middle 70% of the dip anyway.
+                span = right[0] - left[1]
+                if span < 6:
+                    return None
+                r = (left[1] + span * 15 // 100, right[0] - span * 15 // 100)
+            return r[0] * HOP, min(len(x), r[1] * HOP + WIN)
+        # One long loud stretch: the consonant is the quietest valley inside it.
+        vs, ve = peaks[0]
+        inner = rms[vs:ve]
+        valley = inner < inner.max() * 0.45
+        r = longest(valley, 6)
+        if r is None or r[0] < 4 or r[1] > len(inner) - 4:
+            return None
+        return (vs + r[0]) * HOP, min(len(x), (vs + r[1]) * HOP + WIN)
     raise SystemExit(f"unknown mode {mode}")
 
 
