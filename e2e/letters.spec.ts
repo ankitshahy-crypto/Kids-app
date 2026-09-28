@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { createdThisWeek } from "./clock";
 
 const profile = {
   activeId: "mia",
@@ -8,7 +9,7 @@ const profile = {
       name: "Mia",
       ageRange: "4",
       animal: "fox",
-      createdAt: "2026-09-01T15:00:00.000Z",
+      createdAt: createdThisWeek(),
       stars: 1,
       days: {},
       ladder: { step: 3, successes: 0 },

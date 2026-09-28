@@ -6,7 +6,7 @@ import { HearAgainButton, BreakButton } from "./components/ComfortButtons";
 import { WrapUpSheet } from "./components/WrapUpSheet";
 import { extraAllowed, noteExtra } from "./data/extras";
 import { themeForDay } from "./data/themes";
-import { storyForDay } from "./data/stories";
+import { storyChoices, storyForDay } from "./data/stories";
 import { animalById } from "./data/animals";
 import { installReadableFont } from "./readableFont";
 import { Background } from "./components/Background";
@@ -256,6 +256,10 @@ export default function App() {
   const themes = active?.themes ?? [];
   const themeToday = themeForDay(themes, todayKey());
   const todayStory = useMemo(() => storyForDay(lessonPlace?.weekIndex ?? 0, themes, todayKey()), [lessonPlace, themes]);
+  const storyShelf = useMemo(() => storyChoices(lessonPlace?.weekIndex ?? 0, themes), [lessonPlace, themes]);
+  // A reader picked from the cover's shelf, for this visit. Today's story is the default.
+  const [pickedStoryId, setPickedStoryId] = useState<string | null>(null);
+  const openStory = storyShelf.find((story) => story.id === pickedStoryId) ?? todayStory;
   const lessonWords = useMemo(() => blendList(lessonLadderStep, lessonLetters, themes), [lessonLadderStep, lessonLetters, themes]);
   const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
   const phonicsReady = phonicsOpen(introducedLetters.length);
@@ -797,8 +801,10 @@ export default function App() {
               ) : null}
               {screen === "story" ? (
                 <StoryReader
-                  key={todayStory.id}
-                  story={todayStory}
+                  key={openStory.id}
+                  story={openStory}
+                  others={storyShelf.filter((story) => story.id !== openStory.id)}
+                  onPick={setPickedStoryId}
                   hero={{ name: animalById(active.animal).name, kind: active.animal }}
                   animal={active.animal}
                   outfit={active.outfit}

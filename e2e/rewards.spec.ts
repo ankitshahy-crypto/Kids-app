@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { finishLetterTracing } from "./traceFlow";
+import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -36,7 +37,7 @@ const mia = {
   name: "Mia",
   ageRange: "4",
   animal: "fox",
-  createdAt: "2026-09-01T15:00:00.000Z",
+  createdAt: createdThisWeek(),
   days: {},
 };
 

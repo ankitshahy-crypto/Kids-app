@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
+import { createdThisWeek } from "./clock";
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -9,7 +10,7 @@ function child(extra: Record<string, unknown> = {}) {
     name: "Mia",
     ageRange: "4",
     animal: "fox",
-    createdAt: "2026-09-01T15:00:00.000Z",
+    createdAt: createdThisWeek(),
     stars: 0,
     days: {},
     ladder: { step: 1, successes: 0 },
@@ -44,11 +45,23 @@ async function install(page: Page, profile: Record<string, unknown>, weekIndex: 
   await page.getByRole("button", { name: "Mia" }).click();
 }
 
-test("week one's reader stars the child's animal, blends the words it can, and earns the story star", async ({ page }) => {
-  await install(page, child(), 0);
+/** Open the Story stop, then the named reader: today's if it is the one, else from the cover's shelf. */
+async function openReader(page: Page, id: string) {
   await page.getByRole("button", { name: "Story" }).click();
   const story = page.locator("[data-screen=story]");
-  await expect(story).toHaveAttribute("data-story", "w01-i-am");
+  await expect(story).toHaveAttribute("data-story", /.+/);
+  if ((await story.getAttribute("data-story")) !== id) {
+    await page.locator(`[data-story-pick="${id}"]`).click();
+  }
+  await expect(story).toHaveAttribute("data-story", id);
+  return story;
+}
+
+test("week one's reader stars the child's animal, blends the words it can, and earns the story star", async ({ page }) => {
+  await install(page, child(), 0);
+  const story = await openReader(page, "w01-i-am");
+  // The cover offers the week's other readers.
+  await expect(page.locator(".story-shelf-book")).toHaveCount(2);
   await expect(page.getByRole("heading", { name: "I Am Fox" })).toBeVisible();
   await expect(page.locator(".story-parent")).toContainText("who is this");
   await page.getByRole("button", { name: "Read", exact: true }).click();
@@ -91,8 +104,7 @@ test("week one's reader stars the child's animal, blends the words it can, and e
 
 test("later weeks read harder words, and the reader is read aloud page by page", async ({ page }) => {
   await install(page, child(), 6);
-  await page.getByRole("button", { name: "Story" }).click();
-  await expect(page.locator("[data-screen=story]")).toHaveAttribute("data-story", "w07-the-hat");
+  await openReader(page, "w07-the-hat");
   await page.getByRole("button", { name: "Read", exact: true }).click();
   await expect(page.locator(".story-word[data-role=target]")).toHaveText(["has", "a", "big", "hat"]);
   await expect.poll(() => spokenLines(page)).toContain("fox has a big hat.");
@@ -106,7 +118,9 @@ test("a picked theme brings its own reader once its letters are taught, and tips
   await install(page, child({ themes: ["space"] }), 9, { showTips: false });
   await page.getByRole("button", { name: "Story" }).click();
   const id = await page.locator("[data-screen=story]").getAttribute("data-story");
-  expect(["w10-milk", "t-space-rocket"]).toContain(id);
+  expect(["w10-milk", "w10-the-mask", "w10-the-sink", "t-space-rocket"]).toContain(id);
+  // The themed reader is on the shelf (or open), now that its letters are taught.
+  if (id !== "t-space-rocket") await expect(page.locator('[data-story-pick="t-space-rocket"]')).toBeVisible();
   await expect(page.locator(".story-parent")).toHaveCount(0);
   await page.getByRole("button", { name: "Read", exact: true }).click();
   await expect(page.locator(".story-parent")).toHaveCount(0);

@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { installAudioSpy, spokenLines } from "./audioSpy";
+import { createdThisWeek } from "./clock";
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -9,7 +10,7 @@ function child(extra: Record<string, unknown> = {}) {
     name: "Mia",
     ageRange: "4",
     animal: "fox",
-    createdAt: "2026-09-01T15:00:00.000Z",
+    createdAt: createdThisWeek(),
     stars: 0,
     days: {},
     ladder: { step: 3, successes: 0 },
@@ -222,7 +223,8 @@ test("Hear it again repeats the last line as often as a child likes", async ({ p
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Story" }).click();
   // The cover reads the title. Hear it again says that title, not the surprise line.
-  await expect.poll(() => spokenLines(page)).toContain("i am fox");
+  const title = (await page.locator(".story-title").innerText()).toLowerCase();
+  await expect.poll(() => spokenLines(page)).toContain(title);
   const count = (await spokenLines(page)).length;
   for (let repeat = 0; repeat < 3; repeat += 1) {
     await page.locator("[data-hear-again]").click();
@@ -231,7 +233,7 @@ test("Hear it again repeats the last line as often as a child likes", async ({ p
   await expect.poll(async () => (await spokenLines(page)).length).toBeGreaterThanOrEqual(count + 3);
   const replays = (await spokenLines(page)).slice(count);
   expect(replays).not.toContain(line);
-  expect(new Set(replays)).toEqual(new Set(["i am fox"]));
+  expect(new Set(replays)).toEqual(new Set([title]));
 });
 
 test("a break keeps everything and comes back to Today", async ({ page }) => {

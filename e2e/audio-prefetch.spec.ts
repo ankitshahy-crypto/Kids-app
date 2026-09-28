@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -20,7 +21,7 @@ const profile = {
       name: "Mia",
       ageRange: "4",
       animal: "fox",
-      createdAt: "2026-09-01T15:00:00.000Z",
+      createdAt: createdThisWeek(),
       stars: 0,
       days: {},
     },
@@ -55,6 +56,8 @@ async function answer(page: Page) {
 }
 
 test("opening Grown-ups settings does not request missing audio files", async ({ page }) => {
+  // The offline download fetches every bundled clip (a few thousand files) through the dev server.
+  test.setTimeout(240000);
   const missing: string[] = [];
   page.on("response", (response) => {
     const url = response.url();
@@ -71,7 +74,7 @@ test("opening Grown-ups settings does not request missing audio files", async ({
   await page.getByRole("button", { name: /Settings/ }).click();
   await expect(page.locator("[data-setting=explore]")).toBeVisible();
   await expect
-    .poll(async () => page.evaluate(() => document.documentElement.dataset.offline ?? ""), { timeout: 20000 })
+    .poll(async () => page.evaluate(() => document.documentElement.dataset.offline ?? ""), { timeout: 180000 })
     .toBe("ready");
   expect(missing).toEqual([]);
 });

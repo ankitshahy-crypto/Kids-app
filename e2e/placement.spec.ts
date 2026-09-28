@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -20,7 +21,7 @@ const profile = {
       name: "Mia",
       ageRange: "4",
       animal: "fox",
-      createdAt: "2026-09-01T15:00:00.000Z",
+      createdAt: createdThisWeek(),
       stars: 0,
       days: {},
     },
