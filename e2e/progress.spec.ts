@@ -59,7 +59,22 @@ const mia = {
 };
 
 async function openApp(page: Page) {
-  await page.clock.setFixedTime(FRIDAY);
+  // Shift the page's calendar to that Friday but leave its timers alone: the
+  // game and the double-tap guard need real setTimeout.
+  await page.addInitScript((friday) => {
+    const RealDate = Date;
+    const offset = friday - RealDate.now();
+    class ShiftedDate extends RealDate {
+      constructor(...args: unknown[]) {
+        if (args.length === 0) super(RealDate.now() + offset);
+        else super(...(args as [number]));
+      }
+      static now() {
+        return RealDate.now() + offset;
+      }
+    }
+    (globalThis as { Date: DateConstructor }).Date = ShiftedDate as DateConstructor;
+  }, FRIDAY.getTime());
   await page.addInitScript((saved) => {
     if (sessionStorage.getItem("littlenest-test-seeded")) return;
     sessionStorage.setItem("littlenest-test-seeded", "1");
@@ -106,6 +121,7 @@ test("the Friday sound game notes first tries quietly and shows grown-ups what t
       await expect(wrong).toBeDisabled();
       missed = answer;
     }
+    await expect(game).toHaveAttribute("data-answer", answer);
     await game.locator(`[data-choice="${answer}"]`).click();
   }
   await expect(game).toHaveAttribute("data-check", "done");

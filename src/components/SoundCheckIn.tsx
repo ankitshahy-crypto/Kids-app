@@ -47,7 +47,7 @@ function tile(sound: string) {
  */
 export function SoundCheckIn({
   profile,
-  rounds,
+  rounds: given,
   settingsRef,
   onRecord,
   onDone,
@@ -58,6 +58,8 @@ export function SoundCheckIn({
   onRecord: (sound: string, firstTry: boolean) => void;
   onDone: () => void;
 }) {
+  // The game keeps the rounds it started with, even if the lesson around it re-renders.
+  const [rounds] = useState(given);
   const [index, setIndex] = useState(0);
   const [missed, setMissed] = useState<string[]>([]);
   const [solved, setSolved] = useState(false);
@@ -96,25 +98,38 @@ export function SoundCheckIn({
     const right = choice === round.answer;
     if (missed.length === 0) onRecord(round.answer, right);
     if (!right) {
-      playEffect("pop", settingsRef.current);
+      try {
+        playEffect("pop", settingsRef.current);
+      } catch {
+        // No audio here.
+      }
       setMissed((list) => [...list, choice]);
       return;
     }
     setSolved(true);
-    playEffect("chime", settingsRef.current);
-    const letter = tile(choice);
-    if (letter) void playLetter(letter, settingsRef.current, begin()).catch(() => undefined);
+    // Move on first; sound is a bonus and must never hold the game on this round.
     window.setTimeout(() => {
       setSolved(false);
       setMissed([]);
       if (index + 1 >= rounds.length) {
         setFinished(true);
-        playEffect("celebrate", settingsRef.current);
-        void playOnDevice("You played the sound game!", settingsRef.current, begin()).catch(() => undefined);
+        try {
+          playEffect("celebrate", settingsRef.current);
+          void playOnDevice("You played the sound game!", settingsRef.current, begin()).catch(() => undefined);
+        } catch {
+          // No audio here; the screen still says it.
+        }
       } else {
         setIndex(index + 1);
       }
     }, 1000);
+    try {
+      playEffect("chime", settingsRef.current);
+      const letter = tile(choice);
+      if (letter) void playLetter(letter, settingsRef.current, begin()).catch(() => undefined);
+    } catch {
+      // No audio here; the lit letter still shows the answer.
+    }
   };
 
   if (finished || !round) {

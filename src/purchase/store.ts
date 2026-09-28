@@ -17,6 +17,7 @@ type StorePlugin = {
   purchase(options: { id: string }): Promise<{ owned: boolean; cancelled?: boolean; pending?: boolean }>;
   restore(options: { id: string }): Promise<{ owned: boolean }>;
   redeemCode(): Promise<void>;
+  beta(): Promise<{ beta: boolean }>;
   addListener(event: "owned", listener: (data: { productId: string; owned: boolean }) => void): Promise<{ remove: () => Promise<void> }>;
 };
 
@@ -34,6 +35,8 @@ export type UnlockState = {
   status: UnlockStatus;
   /** The web preview's pretend store, so the screen can say no money moves. */
   preview: boolean;
+  /** A TestFlight pilot build: everything is open and nothing is bought or cached. */
+  beta: boolean;
 };
 
 function readFlag(key: string): string | null {
@@ -79,6 +82,7 @@ function initial(): UnlockState {
     price: preview ? "$29.99" : "",
     status: "idle",
     preview,
+    beta: false,
   };
 }
 
@@ -88,6 +92,8 @@ function publish(patch: Partial<UnlockState>): void {
 }
 
 function setOwned(owned: boolean): void {
+  // A pilot build stays open, and never writes an unlock the App Store version could inherit.
+  if (state.beta) return;
   writeUnlocked(owned);
   publish({ unlocked: owned });
 }
@@ -123,6 +129,11 @@ export function startStore(): void {
   started = true;
   state = initial();
   if (!isNativeApp()) return;
+  void Store.beta()
+    .then((result: { beta: boolean }) => {
+      if (result.beta) publish({ beta: true, unlocked: true });
+    })
+    .catch(() => undefined);
   void Store.addListener("owned", (data: { productId: string; owned: boolean }) => {
     if (data.productId === unlockProductId) setOwned(data.owned);
   }).catch(() => undefined);
