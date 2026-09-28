@@ -110,12 +110,27 @@ export async function finishLetterTracing(page: Page) {
   };
   page.on("pageerror", onError);
   page.on("console", onConsole);
+  // A timeline of screen and phase changes, for the same reason.
+  await page.evaluate(() => {
+    const target = window as Window & { __phaseLog?: string[] };
+    if (target.__phaseLog) return;
+    target.__phaseLog = [];
+    const note = () => {
+      const screens = [...document.querySelectorAll("[data-screen]")].map((el) => `${el.getAttribute("data-screen")}${el.getAttribute("data-phase") ? `:${el.getAttribute("data-phase")}` : ""}`);
+      const line = screens.join(" ");
+      const log = target.__phaseLog ?? [];
+      if (log.length === 0 || !log[log.length - 1].endsWith(line)) log.push(`${Math.round(performance.now())}ms ${line}`);
+    };
+    new MutationObserver(note).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["data-screen", "data-phase"], childList: true });
+    note();
+  });
   try {
     await finishLetterTracingSteps(page);
   } catch (error) {
     const root = page.locator("[data-screen=draw]");
     const where = (await root.count()) > 0 ? await root.evaluate((el) => JSON.stringify({ ...el.dataset })) : `screen ${await page.locator("[data-screen]").first().getAttribute("data-screen")}`;
-    throw new Error(`${error instanceof Error ? error.message : String(error)}\nstate: ${where}\n${errors.slice(0, 6).join("\n")}`);
+    const timeline = await page.evaluate(() => ((window as Window & { __phaseLog?: string[] }).__phaseLog ?? []).slice(-12).join(" | ")).catch(() => "");
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\nstate: ${where}\ntimeline: ${timeline}\n${errors.slice(0, 6).join("\n")}`);
   } finally {
     page.off("pageerror", onError);
     page.off("console", onConsole);
