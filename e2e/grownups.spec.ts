@@ -118,6 +118,8 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
 
   await page.getByRole("button", { name: /Help/ }).click();
   await expect(page.getByRole("heading", { name: "Help", exact: true })).toBeVisible();
+  // Refunds are Apple's: Help says where to ask, and promises nothing it cannot keep.
+  await expect(page.locator("[data-faq=refund] + dd")).toContainText("reportaproblem.apple.com");
   await expect(page.getByRole("heading", { name: "How the daily lesson works" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Drag to blend" })).toBeVisible();
   await expect(page.locator("[data-section='help']").getByText("switch on the side")).toBeVisible();
