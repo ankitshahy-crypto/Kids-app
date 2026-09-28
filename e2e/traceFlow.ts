@@ -101,6 +101,27 @@ async function pairOne(page: Page) {
 
 /** Finish big and little tracing, matching, and reversal practice for today's letters. */
 export async function finishLetterTracing(page: Page) {
+  // Page errors and the screen's state ride along on a failure, since CI keeps its logs elsewhere.
+  const errors: string[] = [];
+  const onError = (error: Error) => errors.push(`pageerror: ${error.message}`);
+  const onConsole = (message: { type: () => string; text: () => string }) => {
+    if (message.type() === "error") errors.push(`console: ${message.text()}`);
+  };
+  page.on("pageerror", onError);
+  page.on("console", onConsole);
+  try {
+    await finishLetterTracingSteps(page);
+  } catch (error) {
+    const root = page.locator("[data-screen=draw]");
+    const where = (await root.count()) > 0 ? await root.evaluate((el) => JSON.stringify({ ...el.dataset })) : `screen ${await page.locator("[data-screen]").first().getAttribute("data-screen")}`;
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\nstate: ${where}\n${errors.slice(0, 6).join("\n")}`);
+  } finally {
+    page.off("pageerror", onError);
+    page.off("console", onConsole);
+  }
+}
+
+async function finishLetterTracingSteps(page: Page) {
   const root = page.locator("[data-screen=draw]");
   await expect(root).toBeVisible();
   for (let step = 0; step < 80; step += 1) {
