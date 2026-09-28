@@ -59,9 +59,22 @@ const mia = {
 };
 
 async function openApp(page: Page) {
-  // Start the page's clock on that Friday and let it run, so the game's and the
-  // press guard's timers still fire.
-  await page.clock.install({ time: FRIDAY });
+  // Shift the page's calendar to that Friday but leave its timers alone: the
+  // game and the double-tap guard need real setTimeout.
+  await page.addInitScript((friday) => {
+    const RealDate = Date;
+    const offset = friday - RealDate.now();
+    class ShiftedDate extends RealDate {
+      constructor(...args: unknown[]) {
+        if (args.length === 0) super(RealDate.now() + offset);
+        else super(...(args as [number]));
+      }
+      static now() {
+        return RealDate.now() + offset;
+      }
+    }
+    (globalThis as { Date: DateConstructor }).Date = ShiftedDate as DateConstructor;
+  }, FRIDAY.getTime());
   await page.addInitScript((saved) => {
     if (sessionStorage.getItem("littlenest-test-seeded")) return;
     sessionStorage.setItem("littlenest-test-seeded", "1");
@@ -69,7 +82,6 @@ async function openApp(page: Page) {
     localStorage.removeItem("kids-app-silent-hint-v1");
   }, { activeId: "mia", profiles: [mia] });
   await page.goto("./");
-  await page.clock.resume();
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
 }
