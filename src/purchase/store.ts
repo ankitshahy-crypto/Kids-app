@@ -101,7 +101,23 @@ export function subscribeUnlock(listener: (next: UnlockState) => void): () => vo
   return () => listeners.delete(listener);
 }
 
-/** Ask the App Store once at launch: is the unlock owned, and what does it cost here? */
+/**
+ * Ask the App Store what this family owns. A refunded unlock is revoked and
+ * drops out of the family's current entitlements, so the answer turns false
+ * and weeks 3 and up lock again. A failed check keeps the last answer, so a
+ * launch with no connection does not lock a family that paid.
+ */
+function recheckOwned(): void {
+  void Store.owned({ id: unlockProductId })
+    .then((result: { owned: boolean }) => setOwned(result.owned))
+    .catch(() => undefined);
+}
+
+/**
+ * At launch: is the unlock owned, and what does it cost here? The check runs
+ * again whenever the app comes back to the foreground, and a refund while the
+ * app is open arrives through the plugin's "owned" event.
+ */
 export function startStore(): void {
   if (started) return;
   started = true;
@@ -110,9 +126,11 @@ export function startStore(): void {
   void Store.addListener("owned", (data: { productId: string; owned: boolean }) => {
     if (data.productId === unlockProductId) setOwned(data.owned);
   }).catch(() => undefined);
-  void Store.owned({ id: unlockProductId })
-    .then((result: { owned: boolean }) => setOwned(result.owned))
-    .catch(() => undefined);
+  recheckOwned();
+  // Back from the background: ask again, so a refund given meanwhile locks the paid weeks.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") recheckOwned();
+  });
   void Store.product({ id: unlockProductId })
     .then((product: { price: string }) => publish({ price: product.price }))
     .catch(() => undefined);
