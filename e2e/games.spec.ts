@@ -223,6 +223,19 @@ test("memory flip matches letters and a number with its dots", async ({ page }, 
 });
 
 test("a teacher sets the hatch level and the egg follows it", async ({ page }) => {
+  // Week one (m and a), whatever today's date: the egg's word must have a letter not yet taught.
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "littlenest-placement-v1",
+      JSON.stringify({
+        version: 1,
+        origin: "device",
+        classId: "device-class",
+        updatedAt: "2026-09-26T00:00:00.000Z",
+        subjects: { reading: { classDefault: { subject: "reading", stageId: "letters", weekIndex: 0 }, byChildId: {} } },
+      }),
+    );
+  });
   await install(page);
   await page.getByRole("button", { name: "Switch child" }).click();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
@@ -241,8 +254,13 @@ test("a teacher sets the hatch level and the egg follows it", async ({ page }) =
   await page.locator("[data-game-tile=hatch]").click();
   const board = page.locator("[data-game=hatch] .game-board");
   await expect(board).toHaveAttribute("data-level", "2");
-  await expect(board.locator('[data-blank="shown"]')).toHaveCount(1);
-  await expect(board.locator('[data-blank="open"]')).toHaveCount(2);
+  // Level 2 blanks every taught letter (week one teaches m and a) and shows the rest.
+  const word = (await board.getAttribute("data-word")) ?? "";
+  expect(word).toHaveLength(3);
+  const taught = [...word].filter((letter) => "ma".includes(letter)).length;
+  expect(taught).toBeGreaterThan(0);
+  await expect(board.locator('[data-blank="open"]')).toHaveCount(taught);
+  await expect(board.locator('[data-blank="shown"]')).toHaveCount(3 - taught);
 });
 
 async function traceWheel(page: Page, board: Locator) {
