@@ -60,8 +60,8 @@ export async function finishPathTrace(page: Page, screen: string) {
     if ((await root.count()) === 0) return;
     const phase = await root.getAttribute("data-phase");
     if (phase === "demo") {
-      await root.getByRole("button", { name: "Your turn" }).click();
-      await expect(root).toHaveAttribute("data-phase", "trace");
+      await root.getByRole("button", { name: "Your turn" }).click({ timeout: 1500 }).catch(() => undefined);
+      await expect.poll(() => leftPhase(root, "demo"), { timeout: 15000 }).toBe(true);
     } else if (phase === "trace") {
       await traceCurrentStroke(page, screen);
     } else if (phase === "cheer") {
@@ -79,11 +79,19 @@ export async function finishPathTrace(page: Page, screen: string) {
   throw new Error(`${screen} tracing did not finish`);
 }
 
+/** True once the screen has moved on from this phase, or has gone altogether. */
+async function leftPhase(root: ReturnType<Page["locator"]>, phase: string): Promise<boolean> {
+  if ((await root.count()) === 0) return true;
+  return (await root.getAttribute("data-phase")) !== phase;
+}
+
 async function pairOne(page: Page) {
   const root = page.locator("[data-screen=draw]");
   const waiting = root.locator("[data-match-upper][data-paired=false]");
   if ((await waiting.count()) === 0) {
-    await expect(root).not.toHaveAttribute("data-phase", "match");
+    // The last pair ends the letter a moment later, and the last letter ends the screen.
+    // CI's dev server can take a few seconds over that last hand-off, so this waits longer.
+    await expect.poll(() => leftPhase(root, "match"), { timeout: 15000 }).toBe(true);
     return;
   }
   const tile = waiting.first();
@@ -94,14 +102,36 @@ async function pairOne(page: Page) {
 
 /** Finish big and little tracing, matching, and reversal practice for today's letters. */
 export async function finishLetterTracing(page: Page) {
+  // Page errors and the screen's state ride along on a failure, since CI keeps its logs elsewhere.
+  const errors: string[] = [];
+  const onError = (error: Error) => errors.push(`pageerror: ${error.message}`);
+  const onConsole = (message: { type: () => string; text: () => string }) => {
+    if (message.type() === "error") errors.push(`console: ${message.text()}`);
+  };
+  page.on("pageerror", onError);
+  page.on("console", onConsole);
+  try {
+    await finishLetterTracingSteps(page);
+  } catch (error) {
+    const root = page.locator("[data-screen=draw]");
+    const where = (await root.count()) > 0 ? await root.evaluate((el) => JSON.stringify({ ...el.dataset })) : `screen ${await page.locator("[data-screen]").first().getAttribute("data-screen")}`;
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\nstate: ${where}\n${errors.slice(0, 6).join("\n")}`);
+  } finally {
+    page.off("pageerror", onError);
+    page.off("console", onConsole);
+  }
+}
+
+async function finishLetterTracingSteps(page: Page) {
   const root = page.locator("[data-screen=draw]");
   await expect(root).toBeVisible();
   for (let step = 0; step < 80; step += 1) {
     if ((await page.locator("[data-screen=today]").count()) > 0) return;
     const phase = await root.getAttribute("data-phase");
     if (phase === "demo") {
-      await root.getByRole("button", { name: "Your turn" }).click();
-      await expect(root).toHaveAttribute("data-phase", "trace");
+      // The demo moves on by itself after each stroke, so the button can be gone by the click.
+      await root.getByRole("button", { name: "Your turn" }).click({ timeout: 1500 }).catch(() => undefined);
+      await expect.poll(() => leftPhase(root, "demo"), { timeout: 15000 }).toBe(true);
     } else if (phase === "trace") {
       await traceCurrentStroke(page);
     } else if (phase === "cheer") {
