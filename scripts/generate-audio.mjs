@@ -544,8 +544,15 @@ for (const [file, job] of todo) {
     console.log(`${file}  ${describe(plan)}`);
     continue;
   }
-  const audio = await makeClip(plan, `${job.kind} ${job.id}`);
-  writeClip(dest, audio, `${job.kind} ${job.id}`);
+  try {
+    const audio = await makeClip(plan, `${job.kind} ${job.id}`);
+    writeClip(dest, audio, `${job.kind} ${job.id}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    // On GitHub this line becomes an annotation, readable without the log.
+    if (process.env.GITHUB_ACTIONS) console.log(`::error::${job.kind} ${job.id} (${describe(plan)}): ${message.replace(/\n/g, " ")}`);
+    throw error;
+  }
   made += 1;
   if (made % 50 === 0 || made === todo.length) console.log(`${made}/${todo.length}  public/audio/${file}`);
 }

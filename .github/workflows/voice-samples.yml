@@ -58,7 +58,9 @@ jobs:
           PROMPT: ${{ inputs.prompt }}
           SPEED: ${{ inputs.speed }}
           TRIES: ${{ inputs.tries }}
+        shell: bash
         run: |
+          set -o pipefail
           args=(--sample "$VOICES" --sample-dir samples --speed "$SPEED" --force)
           [ -n "$PROMPT" ] && args+=(--prompt "$PROMPT")
           if [ -n "$TRIES" ]; then

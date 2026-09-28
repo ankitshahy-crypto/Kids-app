@@ -227,7 +227,9 @@ def main() -> int:
     x = read(args.src)
     found = find(x, args.mode)
     if found is None:
-        print(f"{args.src}: no {args.mode} sound found", file=sys.stderr)
+        a = analyze(x)
+        shape = "".join("V" if v > 0.55 and r > 0.01 else "S" if c > 2500 and r > 0.003 else "x" if r > 0.003 else "." for r, c, v in a[::4])
+        print(f"{args.src}: no {args.mode} sound found in {len(x) / SR:.2f}s ({shape})", file=sys.stderr)
         return 2
     start, end = found
     seg = x[start:end].astype(np.float32)

@@ -91,7 +91,9 @@ jobs:
           SPEED: ${{ inputs.speed }}
           ONLY: ${{ inputs.only }}
           FORCE: ${{ inputs.force }}
+        shell: bash
         run: |
+          set -o pipefail
           args=(--voice "$VOICE" --model "$MODEL" --letter-style "$LETTER_STYLE" --speed "$SPEED")
           [ -n "$PROMPT" ] && args+=(--prompt "$PROMPT")
           [ -n "$LETTER_VOICE" ] && args+=(--letter-voice "$LETTER_VOICE")
