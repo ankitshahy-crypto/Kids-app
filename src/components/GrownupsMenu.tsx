@@ -296,6 +296,18 @@ export function GrownupsMenu({
             <dd>On this device. {PRODUCT_NAME} does not upload them.</dd>
             <dt>How do I quiet the taps?</dt>
             <dd>Open Settings, then turn Tap sounds & buzz off. Dragging across a word stays quiet either way.</dd>
+            <dt>Is it a subscription?</dt>
+            <dd>
+              No. The first two weeks of reading are free for good, and one payment opens the rest. With Family Sharing,
+              your family's other devices get it too.
+            </dd>
+            <dt>New phone or tablet?</dt>
+            <dd>Open Full {PRODUCT_SHORT} in this menu and tap Restore purchase.</dd>
+            <dt data-faq="refund">Not right for your family?</dt>
+            <dd>
+              You can ask Apple for a refund at reportaproblem.apple.com. Apple handles App Store refunds. If one is given,
+              the app goes back to the free weeks.
+            </dd>
           </dl>
           {showHelpContact ? (
             <div data-section="contact">
