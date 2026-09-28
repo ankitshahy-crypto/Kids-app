@@ -88,6 +88,11 @@ test("the parent sees lessons finished this week, never a score", async ({ page 
 });
 
 test("the Friday sound game notes first tries quietly and shows grown-ups what they know", async ({ page }) => {
+  const problems: string[] = [];
+  page.on("pageerror", (error) => problems.push(`pageerror: ${error.message}`));
+  page.on("console", (message) => {
+    if (message.type() === "error" || message.type() === "warning") problems.push(`${message.type()}: ${message.text().slice(0, 300)}`);
+  });
   await openApp(page);
   await page.getByRole("button", { name: "Mia" }).click();
   await page.locator("[data-practice=sounds]").click();
@@ -97,7 +102,7 @@ test("the Friday sound game notes first tries quietly and shows grown-ups what t
   expect(rounds).toBeGreaterThanOrEqual(2);
   let missed = "";
   for (let round = 0; round < rounds; round += 1) {
-    await expect(game).toHaveAttribute("data-round", String(round));
+    await expect(game, `round ${round}; ${await game.evaluate((el) => el.outerHTML.slice(0, 900)).catch(() => "")}; ${problems.join(" | ")}`).toHaveAttribute("data-round", String(round));
     const answer = (await game.getAttribute("data-answer")) ?? "";
     if (round === 0) {
       // A miss just means try again: the letter dims, the round stays.
