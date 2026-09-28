@@ -67,6 +67,7 @@ export function StartScreen({
           </div>
         )}
       </div>
+      <p className="gate-note">For grown-ups: progress, settings, and lesson place</p>
       <div className="gate-row">
         <button type="button" className="gate-button" onClick={() => setAsk("parent")}>
           <LockIcon />

@@ -78,3 +78,19 @@ test("removing a child clears them from the start screen", async ({ page }) => {
   const saved = await page.evaluate(() => localStorage.getItem("littlenest-profiles-v1") ?? "");
   expect(saved).not.toContain("Sam");
 });
+
+test("removing the child who is on screen goes back to the first screen, never a blank one", async ({ page }) => {
+  await page.goto("./");
+  await addSam(page);
+  // Sam is on Today. Open Grown-ups from there and remove Sam.
+  await page.getByRole("button", { name: "Grown-ups" }).click();
+  await passGate(page);
+  await page.getByRole("button", { name: /Child profiles/ }).click();
+  await page.locator("[data-confirm=ask]").click();
+  await page.locator("[data-confirm=ready]").click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator("[data-screen=start]")).toBeVisible();
+  await expect(page.locator("[data-first-run=true]")).toBeVisible();
+  await expect(page.locator("[data-screen=today]")).toHaveCount(0);
+});

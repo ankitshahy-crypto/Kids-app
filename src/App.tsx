@@ -319,6 +319,16 @@ export default function App() {
     if (!settings.showTips) setTip(null);
   }, [settings.showTips]);
 
+  // The child on screen was removed (or the store was cleared): go back to the first screen, never a blank one.
+  useEffect(() => {
+    if (!active && (mode === "kid" || grownupsReturn === "kid")) {
+      setScreen("today");
+      setTip(null);
+      setGrownupsReturn("start");
+      if (mode === "kid") setMode("start");
+    }
+  }, [active, mode, grownupsReturn]);
+
   useEffect(() => {
     if (settings.showExplore) return;
     if (course !== "reading") setCourse("reading");

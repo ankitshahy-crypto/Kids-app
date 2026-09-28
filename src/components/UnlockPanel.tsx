@@ -38,7 +38,8 @@ export function UnlockPanel() {
         </p>
         <p className="adult-copy">
           Thank you for trying {PRODUCT_SHORT} early. When it launches, install it from the App Store. The first{" "}
-          {FREE_WEEKS} weeks of reading stay free, and your school's code gives a discount on the one-time unlock.
+          {FREE_WEEKS} weeks of reading stay free, and one payment opens the rest. If a school or partner gave you a
+          code, enter it there under Have a code?.
         </p>
       </section>
     );
