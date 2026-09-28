@@ -150,8 +150,10 @@ const SOUND_PLAN = {
   f: { carve: ["ahh", "ɑf", "coda-noise"], fallback: ["fuh", "fʌ"] },
   x: { carve: ["ahh", "ɑks", "coda-burst"], fallback: ["ks", "ɛks"] },
   n: { carve: ["ahh", "ɑn", "coda-voiced"], fallback: ["nuh", "nʌ"] },
-  v: { carve: ["ahha", "ɑvɑ", "mid"], fallback: ["vuh", "vʌ"] },
+  v: { pron: ["vuh", "vʌ"] },
 };
+// v was carved from "ahva" at first, but the voice devoices it as often as
+// not, and a whispered v is an f; "vuh" is at least the right sound.
 // A carve that fails three times (the voice renders a carrier a little
 // differently each time) falls back to the syllable, with a warning.
 const SOUND_ALIAS = { ae: "a", eh: "e", ih: "i", aw: "o", uh: "u", ks: "x" };
@@ -200,12 +202,14 @@ function planFor(kind, id, say, main, letters, style) {
     if (kind === "letters" && style === "name") return { say: [{ text: `${LETTER_NAMES[char] ?? char}, as in ${example}.`, voice: main }] };
     if (!plan) throw new Error(`No sound plan for letter "${char}"`);
     const tail = kind === "letters" ? `, as in ${example}.` : ".";
-    if (plan.text) return { say: [{ text: `${plan.text}${tail}`, voice: letters }] };
-    if (plan.pron) return { say: [syllable(letters, plan.pron[0], plan.pron[1], tail)] };
+    // A bare sound is held to a beat or so, and every letter clip sits at one level.
+    const finish = { level: true, cap: kind === "sounds" ? ("aeiou".includes(char) ? 0.5 : 0.65) : 0 };
+    if (plan.text) return { say: [{ text: `${plan.text}${tail}`, voice: letters }], ...finish };
+    if (plan.pron) return { say: [syllable(letters, plan.pron[0], plan.pron[1], tail)], ...finish };
     const [token, ipa, mode] = plan.carve;
     const carrier = { ...syllable(letters, token, ipa, "."), carve: mode, fallback: syllable(letters, plan.fallback[0], plan.fallback[1], tail) };
-    if (kind === "sounds") return { say: [carrier] };
-    return { say: [carrier, { gap: 0.25 }, { text: `as in ${example}.`, voice: letters }] };
+    if (kind === "sounds") return { say: [carrier], ...finish };
+    return { say: [carrier, { gap: 0.25 }, { text: `as in ${example}.`, voice: letters }], ...finish };
   }
   let text = say.trim();
   if (kind === "words" && text === "I") text = "I.";
@@ -311,14 +315,63 @@ function ffmpeg(args, input) {
   return run.stdout;
 }
 
-const TRIM_FILTER =
-  "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06," +
-  "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,areverse";
-
 /** Google leaves about 0.4 s of silence before a clip; keep a short lead-in instead. */
-function trimWav(wav) {
-  const out = ffmpeg(["-f", "wav", "-i", "pipe:0", "-af", TRIM_FILTER, "-f", "wav", "pipe:1"], wav);
+function trimWav(wav, threshold = "-45dB") {
+  const filter =
+    `silenceremove=start_periods=1:start_threshold=${threshold}:start_silence=0.06,` +
+    `areverse,silenceremove=start_periods=1:start_threshold=${threshold}:start_silence=0.12,areverse`;
+  const out = ffmpeg(["-f", "wav", "-i", "pipe:0", "-af", filter, "-f", "wav", "pipe:1"], wav);
   return out.length > 2000 ? out : wav;
+}
+
+/** The PCM samples of a 16-bit WAV buffer, with the offset of its data chunk. */
+function pcmOf(wav) {
+  let at = 12;
+  while (at + 8 <= wav.length) {
+    const id = wav.toString("ascii", at, at + 4);
+    const size = wav.readUInt32LE(at + 4);
+    if (id === "data") return { start: at + 8, end: Math.min(wav.length, at + 8 + size) };
+    at += 8 + size + (size % 2);
+  }
+  throw new Error("WAV has no data chunk");
+}
+
+/**
+ * Bring a short clip to one level: RMS of its louder half at -20 dBFS, peak
+ * no higher than -1 dBFS. Letter sounds vary a lot in level otherwise
+ * (a "t" burst peaks four times higher than a vowel).
+ */
+function levelWav(wav, targetRms = 0.1) {
+  const { start, end } = pcmOf(wav);
+  const samples = new Int16Array(wav.buffer.slice(wav.byteOffset + start, wav.byteOffset + end - ((end - start) % 2)));
+  const block = 480;
+  const blocks = [];
+  for (let i = 0; i + block <= samples.length; i += block) {
+    let sum = 0;
+    for (let j = i; j < i + block; j += 1) sum += (samples[j] / 32768) ** 2;
+    blocks.push(Math.sqrt(sum / block));
+  }
+  if (blocks.length === 0) return wav;
+  const sorted = [...blocks].sort((a, b) => a - b);
+  const upper = sorted.slice(Math.floor(sorted.length / 2));
+  const rms = Math.sqrt(upper.reduce((acc, v) => acc + v * v, 0) / upper.length);
+  if (rms < 1e-4) return wav;
+  let peak = 0;
+  for (const v of samples) peak = Math.max(peak, Math.abs(v) / 32768);
+  const gain = Math.min(targetRms / rms, 0.89 / (peak || 1));
+  const out = Buffer.from(wav);
+  const view = new Int16Array(out.buffer.slice(out.byteOffset + start, out.byteOffset + start + samples.length * 2));
+  for (let i = 0; i < samples.length; i += 1) view[i] = Math.max(-32768, Math.min(32767, Math.round(samples[i] * gain)));
+  Buffer.from(view.buffer).copy(out, start);
+  return out;
+}
+
+/** Cut a clip that runs on (a vowel the voice held for a second) with a short fade. */
+function capWav(wav, seconds) {
+  const { start, end } = pcmOf(wav);
+  const have = (end - start) / 2 / 24000;
+  if (have <= seconds + 0.05) return wav;
+  return ffmpeg(["-f", "wav", "-i", "pipe:0", "-af", `atrim=0:${seconds},afade=t=out:st=${seconds - 0.06}:d=0.06`, "-f", "wav", "pipe:1"], wav);
 }
 
 function encodeMp3(wav) {
@@ -394,7 +447,7 @@ async function makeClip(plan, label) {
     }
     if (!step.carve) {
       const wav = await request(step);
-      parts.push(trim ? trimWav(wav) : wav);
+      parts.push(trim ? trimWav(wav, plan.level ? "-40dB" : "-45dB") : wav);
       continue;
     }
     let carved = null;
@@ -415,15 +468,23 @@ async function makeClip(plan, label) {
     const note = `${label}: could not carve the sound (${reason.split("\n")[0]}); said as a syllable instead.`;
     console.log(process.env.GITHUB_ACTIONS ? `::warning::${note}` : note);
     const wav = await request(step.fallback);
-    return encodeMp3(trim ? trimWav(wav) : wav);
+    return encodeMp3(finishWav(trim ? trimWav(wav) : wav, plan));
   }
-  return encodeMp3(parts.length === 1 ? parts[0] : joinWav(parts));
+  return encodeMp3(finishWav(parts.length === 1 ? parts[0] : joinWav(parts), plan));
+}
+
+function finishWav(wav, plan) {
+  let out = wav;
+  if (plan.cap) out = capWav(out, plan.cap);
+  if (plan.level) out = levelWav(out);
+  return out;
 }
 
 /** A single experiment or sample line: text, SSML, or JSON with pron / carve. */
 async function synthesize(spec, label = "") {
-  const step = { voice: mainVoice, ...spec };
-  return makeClip({ say: [step] }, label);
+  const { level, cap, ...rest } = spec;
+  const step = { voice: mainVoice, ...rest };
+  return makeClip({ say: [step], level, cap }, label);
 }
 
 function writeClip(dest, audio, label) {
