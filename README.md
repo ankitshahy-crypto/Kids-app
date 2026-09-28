@@ -88,7 +88,7 @@ export GOOGLE_TTS_API_KEY=...            # or GOOGLE_APPLICATION_CREDENTIALS=/pa
 npm run generate-audio -- --voice Aoede  # a Chirp 3 HD voice; --model gemini-2.5-pro-tts for a Gemini voice
 ```
 
-Letter phrases and bare sounds are made with SSML phonemes in the same voice, so "m" is said as the sound /m/, never "em". The "Voice samples (Google)" workflow makes one short comparison clip per voice on the `voice-samples` branch, for picking a voice by ear. Kokoro, a free local model, is the other engine (`scripts/generate-audio-kokoro.py`, the "Voice clips" workflow).
+Letter phrases and bare sounds come from the same voice, but not from SSML phonemes: Google's voices read a `<phoneme>` tag's text rather than its IPA when the IPA has no vowel, so "sss" would come out as "ess, ess, ess". Instead, `SOUND_PLAN` in the generator says each sound as a short syllable through a custom pronunciation ("buh" as /bʌ/, the vowels on their own), as plain text the voice already hums ("mmm"), or by carving the consonant out of a carrier syllable such as "ahs" with `scripts/carve-sound.py` (s, f, x, n, v). Sounds that still end in a short "uh" (l, r, z) are the first to replace with a person's recording. The "Voice samples (Google)" workflow makes one short comparison clip per voice on the `voice-samples` branch, and takes `tries` lines for experiments; its report says what a speech recognizer heard in each clip. Kokoro, a free local model, is the other engine (`scripts/generate-audio-kokoro.py`, the "Voice clips" workflow).
 
 A person's recording can replace any clip: save it at the path in the manifest (for example `public/audio/sounds/m.mp3` or `public/audio/letters/m.mp3`), then refresh the index without calling Google:
 

@@ -71,6 +71,7 @@ jobs:
           npm ci
           command -v ffmpeg >/dev/null || sudo apt-get install -y -q ffmpeg
           ffmpeg -version | head -n 1
+          pip install -q numpy
 
       - name: Check the key
         run: |
@@ -90,7 +91,9 @@ jobs:
           SPEED: ${{ inputs.speed }}
           ONLY: ${{ inputs.only }}
           FORCE: ${{ inputs.force }}
+        shell: bash
         run: |
+          set -o pipefail
           args=(--voice "$VOICE" --model "$MODEL" --letter-style "$LETTER_STYLE" --speed "$SPEED")
           [ -n "$PROMPT" ] && args+=(--prompt "$PROMPT")
           [ -n "$LETTER_VOICE" ] && args+=(--letter-voice "$LETTER_VOICE")
@@ -111,7 +114,9 @@ jobs:
         continue-on-error: true
         run: |
           pip install -q faster-whisper
-          python3 scripts/hear-clips.py public/audio/sounds public/audio/letters public/audio/words/mat.mp3 public/audio/words/sun.mp3 > heard.md
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q transformers
+          python3 scripts/hear-clips.py --phonemes public/audio/sounds public/audio/letters public/audio/words/mat.mp3 public/audio/words/sun.mp3 > heard.md
           {
             echo "report<<HEARD"
             echo "What a speech recognizer heard in the letter clips (a blank or odd line means listen to that one):"

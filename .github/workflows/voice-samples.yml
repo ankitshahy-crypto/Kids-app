@@ -17,6 +17,9 @@ on:
       speed:
         description: "Speaking rate for the Chirp 3 HD voices (1 is normal)"
         default: "0.95"
+      tries:
+        description: "Experiments, one per line: label=text or label=<speak>ssml</speak>, made in the first voice listed instead of the samples"
+        default: ""
 
 permissions:
   contents: write
@@ -39,6 +42,7 @@ jobs:
           npm ci
           command -v ffmpeg >/dev/null || sudo apt-get install -y -q ffmpeg
           ffmpeg -version | head -n 1
+          pip install -q numpy
 
       - name: Check the key
         run: |
@@ -53,15 +57,27 @@ jobs:
           VOICES: ${{ inputs.voices }}
           PROMPT: ${{ inputs.prompt }}
           SPEED: ${{ inputs.speed }}
+          TRIES: ${{ inputs.tries }}
+        shell: bash
         run: |
+          set -o pipefail
           args=(--sample "$VOICES" --sample-dir samples --speed "$SPEED" --force)
           [ -n "$PROMPT" ] && args+=(--prompt "$PROMPT")
+          if [ -n "$TRIES" ]; then
+            printf '%s\n' "$TRIES" > tries.txt
+            first="${VOICES%%,*}"
+            model=chirp3; [ "${first%%:*}" != "$first" ] && model="${first%%:*}"
+            args=(--voice "${first#*:}" --model "$model" --try tries.txt --sample-dir samples --speed "$SPEED")
+          fi
           # Errors become annotations, which can be read without the full log.
           if ! node scripts/generate-audio.mjs "${args[@]}" 2>&1 | tee make.log; then
             tail -n 5 make.log | sed 's/^/::error::/'
             exit 1
           fi
-          grep -h . samples/*.error.txt 2>/dev/null | sed 's/^/::warning::/' || true
+          for f in samples/*.error.txt samples/*/*.error.txt; do
+            [ -e "$f" ] && echo "::warning::$(basename "$f" .error.txt): $(head -c 300 "$f")"
+          done
+          true
 
       - name: Join each voice into one clip
         continue-on-error: true
@@ -77,7 +93,9 @@ jobs:
         continue-on-error: true
         run: |
           pip install -q faster-whisper
-          python3 scripts/hear-clips.py samples/*/ > heard.md
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q transformers
+          python3 scripts/hear-clips.py --phonemes samples/*/ > heard.md
           cat heard.md
 
       - name: Push the voice-samples branch
@@ -92,7 +110,7 @@ jobs:
           cp samples/*.error.txt "$out"/ 2>/dev/null || true
           # The separate parts too, in case a joined clip is missing.
           for dir in samples/*/; do
-            mkdir -p "$out/parts/$(basename "$dir")" && cp "$dir"*.mp3 "$out/parts/$(basename "$dir")/" 2>/dev/null || true
+            mkdir -p "$out/parts/$(basename "$dir")" && cp "$dir"*.mp3 "$dir"*.error.txt "$out/parts/$(basename "$dir")/" 2>/dev/null || true
           done
           {
             echo "# Voice samples"
@@ -108,7 +126,7 @@ jobs:
               [ -e "$f" ] || continue
               echo "- $(basename "$f"): $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" | cut -c1-4) s"
             done
-            for f in "$out"/*.error.txt; do
+            for f in "$out"/*.error.txt "$out"/parts/*/*.error.txt; do
               [ -e "$f" ] || continue
               echo "- $(basename "$f" .error.txt): failed: $(cat "$f")"
             done
