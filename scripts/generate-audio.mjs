@@ -146,12 +146,14 @@ const SOUND_PLAN = {
   r: { pron: ["ruh", "ɹʌ"] },
   z: { pron: ["zuh", "zʌ"] },
   m: { text: "mmm" },
-  s: { carve: ["ahh", "ɑs", "coda-noise"] },
-  f: { carve: ["ahh", "ɑf", "coda-noise"] },
-  x: { carve: ["ahh", "ɑks", "coda-burst"] },
-  n: { carve: ["eee", "in", "coda-voiced"] },
-  v: { carve: ["ahha", "ɑvɑ", "mid"] },
+  s: { carve: ["ahh", "ɑs", "coda-noise"], fallback: ["suh", "sʌ"] },
+  f: { carve: ["ahh", "ɑf", "coda-noise"], fallback: ["fuh", "fʌ"] },
+  x: { carve: ["ahh", "ɑks", "coda-burst"], fallback: ["ks", "ɛks"] },
+  n: { carve: ["ahh", "ɑn", "coda-voiced"], fallback: ["nuh", "nʌ"] },
+  v: { carve: ["ahha", "ɑvɑ", "mid"], fallback: ["vuh", "vʌ"] },
 };
+// A carve that fails three times (the voice renders a carrier a little
+// differently each time) falls back to the syllable, with a warning.
 const SOUND_ALIAS = { ae: "a", eh: "e", ih: "i", aw: "o", uh: "u", ks: "x" };
 
 const LETTER_NAMES = {
@@ -201,7 +203,7 @@ function planFor(kind, id, say, main, letters, style) {
     if (plan.text) return { say: [{ text: `${plan.text}${tail}`, voice: letters }] };
     if (plan.pron) return { say: [syllable(letters, plan.pron[0], plan.pron[1], tail)] };
     const [token, ipa, mode] = plan.carve;
-    const carrier = { ...syllable(letters, token, ipa, "."), carve: mode };
+    const carrier = { ...syllable(letters, token, ipa, "."), carve: mode, fallback: syllable(letters, plan.fallback[0], plan.fallback[1], tail) };
     if (kind === "sounds") return { say: [carrier] };
     return { say: [carrier, { gap: 0.25 }, { text: `as in ${example}.`, voice: letters }] };
   }
@@ -390,8 +392,30 @@ async function makeClip(plan, label) {
       parts.push(silenceWav(step.gap));
       continue;
     }
-    const wav = await request(step);
-    parts.push(step.carve ? carveWav(wav, step.carve, label) : trim ? trimWav(wav) : wav);
+    if (!step.carve) {
+      const wav = await request(step);
+      parts.push(trim ? trimWav(wav) : wav);
+      continue;
+    }
+    let carved = null;
+    let reason = "";
+    for (let attempt = 0; attempt < 3 && !carved; attempt += 1) {
+      try {
+        carved = carveWav(await request(step), step.carve, label);
+      } catch (error) {
+        reason = error instanceof Error ? error.message : String(error);
+      }
+    }
+    if (carved) {
+      parts.push(carved);
+      continue;
+    }
+    if (!step.fallback) throw new Error(reason);
+    // The whole phrase from the fallback syllable, so it stays one natural line.
+    const note = `${label}: could not carve the sound (${reason.split("\n")[0]}); said as a syllable instead.`;
+    console.log(process.env.GITHUB_ACTIONS ? `::warning::${note}` : note);
+    const wav = await request(step.fallback);
+    return encodeMp3(trim ? trimWav(wav) : wav);
   }
   return encodeMp3(parts.length === 1 ? parts[0] : joinWav(parts));
 }
