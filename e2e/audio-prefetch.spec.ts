@@ -56,6 +56,8 @@ async function answer(page: Page) {
 }
 
 test("opening Grown-ups settings does not request missing audio files", async ({ page }) => {
+  // The offline download fetches every bundled clip (a few thousand files) through the dev server.
+  test.setTimeout(240000);
   const missing: string[] = [];
   page.on("response", (response) => {
     const url = response.url();
@@ -72,7 +74,7 @@ test("opening Grown-ups settings does not request missing audio files", async ({
   await page.getByRole("button", { name: /Settings/ }).click();
   await expect(page.locator("[data-setting=explore]")).toBeVisible();
   await expect
-    .poll(async () => page.evaluate(() => document.documentElement.dataset.offline ?? ""), { timeout: 20000 })
+    .poll(async () => page.evaluate(() => document.documentElement.dataset.offline ?? ""), { timeout: 180000 })
     .toBe("ready");
   expect(missing).toEqual([]);
 });
