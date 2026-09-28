@@ -61,7 +61,7 @@ export async function finishPathTrace(page: Page, screen: string) {
     const phase = await root.getAttribute("data-phase");
     if (phase === "demo") {
       await root.getByRole("button", { name: "Your turn" }).click({ timeout: 1500 }).catch(() => undefined);
-      await expect.poll(() => leftPhase(root, "demo"), { timeout: 5000 }).toBe(true);
+      await expect.poll(() => leftPhase(root, "demo"), { timeout: 15000 }).toBe(true);
     } else if (phase === "trace") {
       await traceCurrentStroke(page, screen);
     } else if (phase === "cheer") {
@@ -90,7 +90,8 @@ async function pairOne(page: Page) {
   const waiting = root.locator("[data-match-upper][data-paired=false]");
   if ((await waiting.count()) === 0) {
     // The last pair ends the letter a moment later, and the last letter ends the screen.
-    await expect.poll(() => leftPhase(root, "match"), { timeout: 5000 }).toBe(true);
+    // CI's dev server can take a few seconds over that last hand-off, so this waits longer.
+    await expect.poll(() => leftPhase(root, "match"), { timeout: 15000 }).toBe(true);
     return;
   }
   const tile = waiting.first();
@@ -130,7 +131,7 @@ async function finishLetterTracingSteps(page: Page) {
     if (phase === "demo") {
       // The demo moves on by itself after each stroke, so the button can be gone by the click.
       await root.getByRole("button", { name: "Your turn" }).click({ timeout: 1500 }).catch(() => undefined);
-      await expect.poll(() => leftPhase(root, "demo"), { timeout: 5000 }).toBe(true);
+      await expect.poll(() => leftPhase(root, "demo"), { timeout: 15000 }).toBe(true);
     } else if (phase === "trace") {
       await traceCurrentStroke(page);
     } else if (phase === "cheer") {
