@@ -22,6 +22,7 @@ public class StorePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "restore", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "redeemCode", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "beta", returnType: CAPPluginReturnPromise),
     ]
 
     private var updates: Task<Void, Never>?
@@ -126,6 +127,28 @@ public class StorePlugin: CAPPlugin, CAPBridgedPlugin {
             let owned = await self.isOwned(id)
             call.resolve(["owned": owned])
         }
+    }
+
+    /// Is this a TestFlight build? Pilot families test the whole app free, so the
+    /// JavaScript side opens everything and remembers nothing about it: the App
+    /// Store version installed at launch starts locked and asks Apple as usual.
+    /// Builds run from Xcode (Debug) keep the paywall so it can still be tested.
+    @objc func beta(_ call: CAPPluginCall) {
+        #if DEBUG
+        call.resolve(["beta": false])
+        #else
+        Task {
+            if #available(iOS 16.0, *) {
+                if let result = try? await AppTransaction.shared, case .verified(let transaction) = result {
+                    call.resolve(["beta": transaction.environment == .sandbox])
+                    return
+                }
+            }
+            // Older iOS, or no answer from AppTransaction: TestFlight installs carry a sandbox receipt.
+            let receipt = Bundle.main.appStoreReceiptURL?.lastPathComponent
+            call.resolve(["beta": receipt == "sandboxReceipt"])
+        }
+        #endif
     }
 
     /// Apple's own sheet for an offer code (a school's or a partner's).

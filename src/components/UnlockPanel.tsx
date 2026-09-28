@@ -29,6 +29,21 @@ export function UnlockPanel() {
     );
   }
 
+  if (unlock.beta) {
+    return (
+      <section className="adult-section" data-section="unlock" data-unlock="beta">
+        <h2>Full {PRODUCT_SHORT}</h2>
+        <p className="account-status" data-unlocked="true">
+          Pilot version: everything is open, free.
+        </p>
+        <p className="adult-copy">
+          Thank you for trying {PRODUCT_SHORT} early. When it launches, install it from the App Store. The first{" "}
+          {FREE_WEEKS} weeks of reading stay free, and your school's code gives a discount on the one-time unlock.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="adult-section" data-section="unlock" data-unlock={unlock.unlocked ? "open" : "locked"}>
       <h2>Full {PRODUCT_SHORT}</h2>
