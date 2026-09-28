@@ -212,7 +212,7 @@ export function SoundItOut({
         {word.photoSrc ? (
           <img className="photo" src={word.photoSrc} alt="" />
         ) : word.glyph ? (
-          <span className="letter-glyph" data-glyph={word.glyph} aria-hidden="true">
+          <span className="letter-glyph" data-glyph={word.glyph} data-glyph-long={word.glyph.length > 1 ? "true" : undefined} aria-hidden="true">
             {word.glyph}
             <small>{word.word}</small>
           </span>
@@ -228,6 +228,8 @@ export function SoundItOut({
             const highlighted = shown && (active === "all" || active === letterIndex);
             const sounding = active === letterIndex;
             const chunk = Boolean(letter.wordId);
+            // A sound unit (sh, a-e) is one tile with two or three letters on it.
+            const unit = !chunk && letter.char.length > 1;
             const label = chunk ? letter.char : letter.char.toUpperCase();
             return (
               <div
@@ -235,16 +237,17 @@ export function SoundItOut({
                 ref={(element) => {
                   tileRefs.current[letterIndex] = element;
                 }}
-                className={`tile-wrap${chunk ? " is-chunk" : ""}${shown ? " is-lit" : " is-dim"}${highlighted ? " is-active" : ""}`}
+                className={`tile-wrap${chunk ? " is-chunk" : ""}${unit ? " is-unit" : ""}${letter.silent ? " is-silent" : ""}${shown ? " is-lit" : " is-dim"}${highlighted ? " is-active" : ""}`}
                 data-letter={letterIndex}
                 data-lit={shown ? "true" : "false"}
+                data-sound={chunk ? undefined : letter.silent ? "silent" : letter.phoneme}
               >
-                {sounding ? <SoundWaves /> : null}
+                {sounding && !letter.silent ? <SoundWaves /> : null}
                 <button
                   type="button"
                   className="tile"
                   disabled={!shown}
-                  aria-label={chunk ? letter.char : `${letter.char.toUpperCase()} sound`}
+                  aria-label={chunk ? letter.char : letter.silent ? `silent ${letter.char}` : `${letter.char.toUpperCase()} sound`}
                   onPointerDown={(event) => event.stopPropagation()}
                   onPointerUp={(event) => {
                     if (event.pointerType === "mouse" || !shown) return;

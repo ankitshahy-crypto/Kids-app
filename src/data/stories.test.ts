@@ -8,12 +8,15 @@ import { THEME_IDS } from "./themes";
 const hero = { name: "Fox", kind: "fox" };
 
 describe("decodable readers", () => {
-  it("has three readers for each of the fourteen letter weeks and one per theme", () => {
+  it("has three readers for each of the fourteen letter weeks, two for each phonics week, and one per theme", () => {
     const weekly = STORIES.filter((story) => !story.theme).map((story) => story.week);
     for (let week = 1; week <= 14; week += 1) {
       expect(weekly.filter((value) => value === week).length, `week ${week}`).toBe(3);
     }
-    expect(readerWeeks()).toBe(14);
+    for (let week = 15; week <= 26; week += 1) {
+      expect(weekly.filter((value) => value === week).length, `week ${week}`).toBe(2);
+    }
+    expect(readerWeeks()).toBe(26);
     for (const theme of THEME_IDS) {
       expect(STORIES.some((story) => story.theme === theme), theme).toBe(true);
     }
@@ -40,6 +43,16 @@ describe("decodable readers", () => {
     expect(decodable("am", ["m", "a"])).toBe(true);
     expect(decodable("sat", ["m", "a"])).toBe(false);
     expect(decodable("moon", ["m", "o", "n"])).toBe(false);
+    // Sound units: a word waits for its team, and a sight word is always read whole.
+    expect(decodable("moon", ["m", "o", "n", "oo"])).toBe(true);
+    expect(decodable("ship", ["s", "h", "i", "p"])).toBe(false);
+    expect(decodable("ship", ["s", "h", "i", "p", "sh"])).toBe(true);
+    expect(decodable("cake", ["c", "a", "k", "e"])).toBe(false);
+    expect(decodable("cake", ["c", "a", "k", "e", "a_e"])).toBe(true);
+    expect(decodable("kick", ["k", "i", "c"])).toBe(true);
+    expect(decodable("the", ["t", "h", "e", "th"])).toBe(false);
+    expect(decodable("cow", ["c", "o", "w"])).toBe(false);
+    expect(decodable("happy", ["h", "a", "p", "y", "ee"])).toBe(true);
     const tokens = storyTokens("Hi! I am {hero}.", hero, ["m", "a"]);
     expect(tokens.map((token) => (token.kind === "word" ? `${token.text}:${token.role}` : token.text))).toEqual([
       "Hi:glue",
@@ -57,7 +70,9 @@ describe("decodable readers", () => {
   it("picks among the week's readers, brings in themed readers once their letters are taught, and repeats by day", () => {
     expect(storyForWeek(0).id).toBe("w01-i-am");
     expect(storyForWeek(13).id).toBe("w14-fox-box");
-    expect(storyForWeek(14).id).toBe("w01-i-am");
+    expect(storyForWeek(14).id).toBe("w15-the-ship");
+    expect(storyForWeek(25).id).toBe("w26-the-coin");
+    expect(storyForWeek(26).id).toBe("w01-i-am");
     expect(storiesForWeek(0).map((story) => story.id)).toEqual(["w01-i-am", "w01-am-i-big", "w01-look-at-me"]);
     // 2026-10-05 is a Monday.
     expect(weekdayOf("2026-10-05")).toBe(0);

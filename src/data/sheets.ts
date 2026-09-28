@@ -2,6 +2,7 @@ import type { IllustrationName } from "../illustrations";
 import type { DeckWord } from "./deck";
 import { blendList, type LadderStep } from "./ladder";
 import { letterSchedule } from "./schedule";
+import { lettersOnly } from "./units";
 import { COLORS } from "./colors";
 import { MATH } from "./math";
 import { READING, type SubjectId } from "./subject";
@@ -92,8 +93,9 @@ export const pictureWords: Record<string, PictureWord> = {
   q: { letter: "q", word: "quilt", pictogram: "quilt" },
 };
 
+/** The single letters of the plan, for the letter sheets. The sound-unit weeks print their letters. */
 export function scheduleLetters(): string[] {
-  return letterSchedule.flatMap((week) => week.newLetters);
+  return lettersOnly(letterSchedule.flatMap((week) => week.newLetters));
 }
 
 export function pictureForLetter(letter: string): PictureWord {

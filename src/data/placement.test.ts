@@ -83,8 +83,9 @@ describe("lesson placement", () => {
     );
     const loaded = loadPlacement(storage);
     expect(loaded.subjects.reading.classDefault).toEqual({ subject: "reading", stageId: "blending", weekIndex: 4 });
-    expect(loaded.subjects.reading.byChildId.mia.stageId).toBe("stories");
-    expect(loaded.subjects.reading.byChildId.mia.weekIndex).toBe(13);
+    // Week 99 lands on the last week of the plan, which is a phonics week.
+    expect(loaded.subjects.reading.byChildId.mia.stageId).toBe("phonics");
+    expect(loaded.subjects.reading.byChildId.mia.weekIndex).toBe(25);
   });
 
   it("ignores a broken save", () => {

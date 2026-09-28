@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { CALENDAR_STAGE_CAPS, ageBand, calendarStageCap, lastWeekWithinStage } from "./ageBand";
 import { colorLessonForChild, lastColorWeekForStage } from "./colors";
 import { lastMathWeekForStage, lessonForChild as mathLessonForChild, mathWeekCount } from "./math";
-import { emptyPlacement, placeForStage, resolvePlacement, withChildPlace } from "./placement";
-import { weekIndex } from "./schedule";
+import { emptyPlacement, lastReadingWeekForStage, placeForStage, resolvePlacement, withChildPlace } from "./placement";
+import { alphabetWeeks, lettersIntroduced, weekIndex } from "./schedule";
 import { lastTimeWeekForStage, lessonForChild as timeLessonForChild, timeWeekCount } from "./timeMoney";
 
 /** A profile old enough to have walked every week of every course. */
@@ -29,8 +29,10 @@ describe("age bands", () => {
     expect(calendarStageCap("math", "3")).toBe("shapes");
     expect(calendarStageCap("math", "4")).toBeNull();
     expect(calendarStageCap("colors", "3")).toBeNull();
-    expect(calendarStageCap("reading", "3")).toBeNull();
-    expect(Object.keys(CALENDAR_STAGE_CAPS).sort()).toEqual(["math", "time"]);
+    expect(calendarStageCap("reading", "3")).toBe("stories");
+    expect(calendarStageCap("reading", "4")).toBe("stories");
+    expect(calendarStageCap("reading", "5")).toBeNull();
+    expect(Object.keys(CALENDAR_STAGE_CAPS).sort()).toEqual(["math", "reading", "time"]);
   });
 
   it("finds the last week inside a stage", () => {
@@ -72,6 +74,28 @@ describe("age bands", () => {
       colorLessonForChild(CREATED, NOW, "UTC", undefined, "6-7").weekIndex,
     );
     expect(lastColorWeekForStage("mixing")).toBeGreaterThan(lastColorWeekForStage("names"));
+  });
+
+  it("holds reading at the last letter week for ages 3 and 4, and opens the phonics weeks from age 5", () => {
+    const lastLetters = lastReadingWeekForStage("stories");
+    expect(lastLetters).toBe(alphabetWeeks() - 1);
+    expect(lettersIntroduced(lastLetters)).toHaveLength(26);
+    expect(lettersIntroduced(lastLetters + 1)).toContain("sh");
+    for (const age of ["3", "4"]) {
+      const held = resolvePlacement(emptyPlacement(), "mia", CREATED, NOW, "UTC", "reading", age);
+      expect(held.weekIndex).toBe(lastLetters);
+      expect(held.ageCap).toBe("stories");
+      expect(held.letters.every((letter) => /^[a-z]$/.test(letter))).toBe(true);
+    }
+    const open = resolvePlacement(emptyPlacement(), "mia", CREATED, NOW, "UTC", "reading", "5");
+    expect(open.ageCap).toBeNull();
+    expect(open.weekIndex).toBe(weekIndex(CREATED, NOW, "UTC"));
+    // A grown-up can place a younger child on the phonics weeks.
+    const placed = withChildPlace(emptyPlacement(), "mia", placeForStage("phonics", "reading"), NOW);
+    const chosen = resolvePlacement(placed, "mia", CREATED, NOW, "UTC", "reading", "4");
+    expect(chosen.stageId).toBe("phonics");
+    expect(chosen.weekIndex).toBe(lastLetters + 1);
+    expect(chosen.letters).toEqual(["sh", "ch"]);
   });
 
   it("caps the calendar in placement, and leaves a grown-up's placement alone", () => {

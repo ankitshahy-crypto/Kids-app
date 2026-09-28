@@ -2,16 +2,41 @@ import { useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
 import { cancelSpeech, isAbortError, playLetterSound, playStoryLine, playWordId, sleep } from "../audio/player";
 import type { AnimalId } from "../data/animals";
-import type { PhonemeId } from "../data/phonemes";
 import { storyLineId, storyText, storyTitleId, storyTokens, type Story, type StoryHero, type StoryToken } from "../data/stories";
+import { splitSounds } from "../data/units";
 import type { Outfit } from "../data/wardrobe";
-import { PHONEME } from "../data/wordBuild";
+import { phonemeOf } from "../data/wordBuild";
 import type { Settings } from "../settings";
 import { Chevron, SpeakerIcon } from "./icons";
 import { StoryScene } from "./StoryScene";
 
 const BETWEEN_LETTERS_MS = 240;
 const BEFORE_WORD_MS = 300;
+const SILENT_E_MS = 320;
+
+/**
+ * The shown word cut into the pieces it is sounded out by: "Ship" is Sh-i-p,
+ * "cake" is c-a-k-e with a silent e. Marks between letters stay with the
+ * piece before them.
+ */
+function shownPieces(text: string, word: string): string[] {
+  const pieces = splitSounds(word);
+  const out: string[] = [];
+  let at = 0;
+  for (const piece of pieces) {
+    let taken = "";
+    let letters = 0;
+    while (at < text.length && letters < piece.text.length) {
+      const char = text[at];
+      taken += char;
+      if (/[A-Za-z]/.test(char)) letters += 1;
+      at += 1;
+    }
+    out.push(taken);
+  }
+  if (at < text.length) out[out.length - 1] = `${out[out.length - 1] ?? ""}${text.slice(at)}`;
+  return out;
+}
 
 /**
  * A decodable reader. The narrator reads each page; every word can be
@@ -85,13 +110,18 @@ export function StoryReader({
     setActiveLetter(null);
     try {
       if (token.role === "target") {
-        const chars = [...token.word];
-        for (let at = 0; at < chars.length; at += 1) {
+        // One sound at a time: a digraph or vowel team is one piece, the e of cake is silent.
+        const pieces = splitSounds(token.word);
+        for (let at = 0; at < pieces.length; at += 1) {
           if (signal.aborted) return;
+          const piece = pieces[at];
           setActiveLetter(at);
+          if (piece.silent) {
+            await sleep(SILENT_E_MS, signal);
+            continue;
+          }
           playEffect("pop", settingsRef.current);
-          const char = chars[at];
-          await playLetterSound({ char, phoneme: (PHONEME[char] ?? char) as PhonemeId }, settingsRef.current, signal);
+          await playLetterSound({ char: piece.text, phoneme: phonemeOf(piece.sound) }, settingsRef.current, signal);
           await sleep(BETWEEN_LETTERS_MS, signal);
         }
         setActiveLetter(null);
@@ -163,9 +193,9 @@ export function StoryReader({
                   onClick={() => void sayWord(token, index)}
                 >
                   {token.role === "target" && speaking === index
-                    ? [...token.text].map((char, at) => (
+                    ? shownPieces(token.text, token.word).map((piece, at) => (
                         <span key={at} className={activeLetter === at ? "is-sounding" : ""}>
-                          {char}
+                          {piece}
                         </span>
                       ))
                     : token.text}

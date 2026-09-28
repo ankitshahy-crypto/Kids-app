@@ -10,6 +10,7 @@ import { SCIENCE, type ScienceActivity } from "../data/science";
 import { READING } from "../data/subject";
 import type { PlacementSource } from "../data/placement";
 import { isReviewDay } from "../data/schedule";
+import { isUnit, unitLabel } from "../data/units";
 import { dayProgress, todayKey, type ChildProfile, type LessonStep } from "../data/profiles";
 import { practiceTotal } from "../data/reading";
 import { sectionVisible } from "../explore/flags";
@@ -118,7 +119,9 @@ export function TodayPath({
   const colorDone = profile.days[todayKey(now)]?.[COLORS] ?? {};
   const timeDone = profile.days[todayKey(now)]?.[TIME] ?? {};
   const current = stops.find((stop) => !done[stop.id]) ?? stops[stops.length - 1];
-  const letter = (letters[0] ?? "a").toUpperCase();
+  // The Letters stop shows the week's first letter, or a sound unit as it is written: "sh", "a-e".
+  const first = letters[0] ?? "a";
+  const letter = isUnit(first) ? unitLabel(first) : first.toUpperCase();
   const finishedCount = stops.filter((stop) => done[stop.id]).length;
   const left = stops.length - finishedCount;
   const strip = left === 0 ? "All done today!" : finishedCount === 0 ? `${left} more!` : `${finishedCount} of ${stops.length} · ${left} more!`;
@@ -196,7 +199,9 @@ export function TodayPath({
               aria-label={stop.label}
               onClick={() => onOpen(stop.id)}
             >
-              {stop.id === "letter" ? <span className="trail-letter">{letter}</span> : null}
+              {stop.id === "letter" ? (
+                <span className={`trail-letter${letter.length > 1 ? " is-unit" : ""}`}>{letter}</span>
+              ) : null}
               {stop.id === "draw" ? <PencilMark /> : null}
               {stop.id === "story" ? <BookMark /> : null}
               {stop.id === "moment" ? <ShapesMark /> : null}

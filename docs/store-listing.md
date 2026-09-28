@@ -35,7 +35,7 @@ LittleNest Learning helps young children take their first steps into letters, nu
 
 ## How LittleNest Learning teaches
 
-LittleNest Learning has seven sections. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Longer words and short sentences wait for phonics at ages 5 to 7. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. Games, including Think & Code, start with hatching, popping, feeding, rhymes, memory, and a spin, then a path home, a picture pattern, morning order, and an if-then garden. Build It stacks picture blocks that play. Ages 5 to 7 add longer paths, a repeat, a bug fix, and a short line on each block. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7. LittleNest Build starts with a bridge, a tower, a ramp, and simple machines. Ages 5 to 7 balance weights and test a design again. LittleNest Science starts with life cycles, homes, body parts, on-screen changes, weather, senses, and sink or float. Ages 5 to 7 predict a result, then test it, and follow a food chain and the water cycle.
+LittleNest Learning has seven sections. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Phonics for ages 5 to 7 follows: two letters that make one sound, like sh and ee, the magic e in cake, and longer words and short sentences. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. Games, including Think & Code, start with hatching, popping, feeding, rhymes, memory, and a spin, then a path home, a picture pattern, morning order, and an if-then garden. Build It stacks picture blocks that play. Ages 5 to 7 add longer paths, a repeat, a bug fix, and a short line on each block. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7. LittleNest Build starts with a bridge, a tower, a ramp, and simple machines. Ages 5 to 7 balance weights and test a design again. LittleNest Science starts with life cycles, homes, body parts, on-screen changes, weather, senses, and sink or float. Ages 5 to 7 predict a result, then test it, and follow a food chain and the water cycle.
 
 LittleNest Words:
 
@@ -43,7 +43,8 @@ LittleNest Words:
 2. **Blending:** Slide sounds together into a word.
 3. **Words:** Read short words, then trace the ones they blended.
 4. **Stories:** A tiny story with their animal.
-5. **Phonics 5–7:** Comes after this path, for ages 5 to 7.
+5. **Phonics 5–7:** Two letters, one sound: sh, ee, and the magic e in cake.
+6. **Longer stories 6–7:** Comes after this path.
 
 LittleNest Numbers:
 

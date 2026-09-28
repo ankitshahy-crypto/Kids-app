@@ -3,7 +3,7 @@ import { laterPath, learningPlace, pathCoversLetterPlan, placeForChild } from ".
 import { READING } from "./subject";
 
 describe("learning path", () => {
-  it("covers the letter plan and moves Letters, then Blending, then Words, then Stories", () => {
+  it("covers the letter plan and moves Letters, then Blending, then Words, then Stories, then Phonics", () => {
     expect(pathCoversLetterPlan()).toBe(true);
     expect(learningPlace(READING, 0).currentId).toBe("letters");
     expect(learningPlace(READING, 0).subject).toBe(READING);
@@ -12,10 +12,14 @@ describe("learning path", () => {
     expect(learningPlace(READING, 8).stages[0].state).toBe("done");
     expect(learningPlace(READING, 16).currentId).toBe("words");
     expect(learningPlace(READING, 22).currentId).toBe("stories");
-    const done = learningPlace(READING, 26);
-    expect(done.currentId).toBe("stories");
-    expect(done.stages.find((stage) => stage.id === "stories")?.progress).toBe(1);
-    expect(laterPath.id).toBe("phonics");
+    const letters = learningPlace(READING, 26);
+    expect(letters.currentId).toBe("phonics");
+    expect(letters.stages.find((stage) => stage.id === "stories")?.progress).toBe(1);
+    expect(letters.stages.find((stage) => stage.id === "phonics")?.progress).toBe(0);
+    const done = learningPlace(READING, 49);
+    expect(done.currentId).toBe("phonics");
+    expect(done.stages.find((stage) => stage.id === "phonics")?.progress).toBe(1);
+    expect(laterPath.id).toBe("chapters");
   });
 
   it("places a new child in Letters", () => {

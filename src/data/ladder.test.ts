@@ -17,7 +17,7 @@ import {
   wordsForStep,
   wordsToTrace,
 } from "./ladder";
-import { letterPlanSize } from "./schedule";
+import { alphabetSize, letterPlanSize } from "./schedule";
 import { wordGlyphs } from "./tracePractice";
 
 const say = (kind: "words" | "sentences", id: string) =>
@@ -37,7 +37,18 @@ describe("word ladder lists", () => {
     const four = wordsForStep(4).map((word) => word.word);
     expect(four).toEqual(expect.arrayContaining(["frog", "jump", "fish", "milk"]));
     expect(wordsForStep(4).every((word) => word.word.length === 4)).toBe(true);
-    expect(wordsForStep(5).every((word) => word.word.length >= 5)).toBe(true);
+    // Step 5 is longer words, and the words of the sound units (one tile per sound).
+    expect(wordsForStep(5).every((word) => word.word.length >= 5 || word.letters.some((tile) => tile.silent || tile.char.length > 1))).toBe(true);
+    const ship = wordsForStep(5).find((word) => word.id === "ship");
+    expect(ship?.letters.map((tile) => `${tile.char}:${tile.phoneme}`)).toEqual(["sh:sh", "i:ih", "p:p"]);
+    const cake = wordsForStep(5).find((word) => word.id === "cake");
+    expect(cake?.letters.map((tile) => `${tile.char}${tile.silent ? "()" : `:${tile.phoneme}`}`)).toEqual(["c:k", "a:a_e", "k:k", "e()"]);
+    // A magic-e word that was already on the ladder now sounds right too.
+    const grape = wordsForStep(5).find((word) => word.id === "grape");
+    expect(grape?.letters.map((tile) => tile.phoneme)).toEqual(["g", "r", "a_e", "p", "eh"]);
+    expect(grape?.letters[4].silent).toBe(true);
+    const fish = wordsForStep(4).find((word) => word.id === "fish");
+    expect(fish?.letters.map((tile) => tile.char)).toEqual(["f", "i", "sh"]);
     expect(sentencesForStep(4)).toEqual([]);
     expect(sentencesForStep(5).map((line) => line.sentenceId)).toEqual(["i-am", "a-cat", "sun-is-up", "see-dog"]);
     expect(ladderDetail(5)).toMatch(/sentence/i);
@@ -90,8 +101,11 @@ describe("word ladder progression", () => {
     const opened = recordLadderSuccess({ step: 4, successes: 2 }, { phonicsOpen: true });
     expect(opened.advanced).toBe(true);
     expect(opened.ladder.step).toBe(5);
+    // Phonics opens once the 26 letters are in, before the sound-unit weeks.
+    expect(alphabetSize()).toBe(26);
+    expect(phonicsOpen(alphabetSize())).toBe(true);
+    expect(phonicsOpen(alphabetSize() - 1)).toBe(false);
     expect(phonicsOpen(letterPlanSize())).toBe(true);
-    expect(phonicsOpen(letterPlanSize() - 1)).toBe(false);
   });
 
   it("lets a teacher set the step, including phonics", () => {
@@ -154,6 +168,26 @@ describe("letter of the week cards", () => {
     expect(blendList(1, ["M", "m", "?"]).map((word) => word.id)).toEqual(["letter-m", "a", "i"]);
     expect(blendList(2, ["m", "a"]).some((word) => word.letterCard)).toBe(false);
     expect(letterCards([]).length).toBe(0);
+  });
+
+  it("builds a card for a sound unit, and leads every step with it in its week", () => {
+    const sh = letterCard("sh");
+    expect(sh.id).toBe("letter-sh");
+    expect(sh.word).toBe("ship");
+    expect(sh.illustration).toBe("ship");
+    expect(sh.letters).toEqual([{ char: "sh", phoneme: "sh" }]);
+    const magic = letterCard("a_e");
+    expect(magic.word).toBe("cake");
+    expect(magic.letters).toEqual([{ char: "a-e", phoneme: "a_e" }]);
+    expect(letterCards(["sh", "ch", "sh"]).map((card) => card.id)).toEqual(["letter-sh", "letter-ch"]);
+    // Week 15 on step 5: the sh and ch cards, then words that use them, then the rest.
+    const week15 = blendList(5, ["sh", "ch"]);
+    expect(week15.slice(0, 2).map((word) => word.id)).toEqual(["letter-sh", "letter-ch"]);
+    const words = week15.slice(2);
+    expect(words.length).toBeGreaterThanOrEqual(4);
+    expect(words.slice(0, 4).every((word) => word.letters.some((tile) => tile.char === "sh" || tile.char === "ch"))).toBe(true);
+    // A letter week on step 5 has no cards.
+    expect(blendList(5, ["x", "q"]).some((word) => word.letterCard)).toBe(false);
   });
 });
 

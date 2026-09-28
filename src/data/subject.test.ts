@@ -25,7 +25,7 @@ describe("subject key", () => {
     const reading = learningPlace(READING, 0);
     expect(reading.subject).toBe("reading");
     expect(reading.currentId).toBe("letters");
-    expect(reading.stages).toHaveLength(4);
+    expect(reading.stages).toHaveLength(5);
 
     const later = learningPlace("science", 3);
     expect(later.subject).toBe("science");

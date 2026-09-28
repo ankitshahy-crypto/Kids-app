@@ -113,14 +113,14 @@ test("parent and teacher show the learning path", async ({ page }) => {
   await passGate(page);
   const path = page.locator("[data-screen=parent] [data-section=path]");
   await expect(path).toBeVisible();
-  for (const title of ["Letters", "Blending", "Words", "Stories"]) {
+  for (const title of ["Letters", "Blending", "Words", "Stories", "Phonics 5–7"]) {
     await expect(path.getByText(title, { exact: true })).toBeVisible();
   }
-  await expect(path.getByText("Phonics 5–7")).toBeVisible();
+  await expect(path.getByText("Longer stories 6–7")).toBeVisible();
   await expect(path.locator("[data-later=true]")).toBeVisible();
   await expect(path.locator("[data-state=current]")).toHaveCount(1);
   const stage = await path.getAttribute("data-current-stage");
-  expect(["letters", "blending", "words", "stories"]).toContain(stage);
+  expect(["letters", "blending", "words", "stories", "phonics"]).toContain(stage);
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
