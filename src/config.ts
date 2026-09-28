@@ -10,10 +10,9 @@ import { PRODUCT_NAME } from "./brand";
 
 /**
  * Public page shared from Grown-ups. No referral code and no tracking parameters.
- * littlenestlearning.app is the planned domain and is not purchased yet, so this
- * stays the GitHub Pages demo. The site path stays /Kids-app/.
+ * The LittleNest website (the repo's website/ folder), never the GitHub demo.
  */
-export const shareUrl = "https://ankitshahy-crypto.github.io/Kids-app/";
+export const shareUrl = "https://littlenestlearning.app/";
 
 export const shareMessage = `${PRODUCT_NAME} is reading, math, colors, games and coding, time and money, building, and science for ages 3–7. Five happy minutes a day.`;
 

@@ -17,8 +17,5 @@ export const MODULE_TIME = "LittleNest Time & Money";
 export const MODULE_BUILD = "LittleNest Build";
 export const MODULE_SCIENCE = "LittleNest Science";
 
-/**
- * Planned public site. The domain is not purchased yet, so sharing still
- * uses the GitHub Pages demo.
- */
+/** Public site and help mailbox domain. Owned by TriageDesk AI LLC; the site is the repo's website/ folder. */
 export const PLANNED_DOMAIN = "littlenestlearning.app";
