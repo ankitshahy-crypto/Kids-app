@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
-import { lessonName, starsThisWeek, type ChildInput, type ChildProfile } from "../data/profiles";
+import { lessonName, type ChildInput, type ChildProfile } from "../data/profiles";
+import { completion, WEEKLY_TARGET } from "../data/progress";
 import { resolvePlacement, stageTitle, weekLabel, type PlacementDocument } from "../data/placement";
 import { READING } from "../data/subject";
 import { isUnit, traceLetters, unitLabel } from "../data/units";
@@ -25,14 +26,16 @@ import { WordLadder } from "./WordLadder";
 import { WritingLevels } from "./WritingLevels";
 import { ReadingChart } from "./ReadingChart";
 import { SettingsFields } from "./SettingsFields";
+import { FamilyProgress, TeacherNote } from "./ProgressViews";
+import type { LessonPlace } from "../data/placement";
+import type { LadderStep } from "../data/ladder";
+import type { TeacherLink } from "../data/profileExtras";
 
-const WEEKLY_LESSONS = 4;
 
-type ParentPage = "home" | "children" | "join" | "progress" | "teacher" | "rewards" | "settings" | "privacy";
+type ParentPage = "home" | "children" | "progress" | "teacher" | "rewards" | "settings" | "privacy";
 
 const rows: { id: ParentPage; label: string; tint: string }[] = [
   { id: "children", label: "Children", tint: tint.mintCard },
-  { id: "join", label: "Join a class", tint: tint.sky },
   { id: "progress", label: "Progress", tint: tint.peach },
   { id: "teacher", label: "From Teacher", tint: tint.sky },
   { id: "rewards", label: "Home Rewards", tint: tint.blush },
@@ -50,6 +53,9 @@ export function ParentView({
   onAdd,
   onUpdate,
   onRemove,
+  onChildPlace,
+  onLadderStep,
+  onTeacherLink,
   onClose,
 }: {
   settings: Settings;
@@ -61,6 +67,9 @@ export function ParentView({
   onAdd: (input: ChildInput) => void;
   onUpdate: (id: string, input: ChildInput) => void;
   onRemove: (id: string) => void;
+  onChildPlace: (childId: string, place: LessonPlace | null) => void;
+  onLadderStep: (childId: string, step: LadderStep) => void;
+  onTeacherLink: (childId: string, link: TeacherLink | undefined) => void;
   onClose: () => void;
 }) {
   const [page, setPage] = useState<ParentPage>(profiles.length === 0 ? "children" : "home");
@@ -171,19 +180,16 @@ export function ParentView({
       ) : null}
 
       {page === "progress" ? (
-        <section className="adult-section" data-section="notes">
+        <section className="adult-section" data-section="progress">
           <h2>Progress</h2>
-          <p className="adult-copy">A fuller progress view comes later. This is the short note for now.</p>
-          {profiles.length === 0 ? <p className="adult-copy">Add a child to see letters and stars.</p> : null}
-          <ul className="note-list">
-            {profiles.map((profile) => (
-              <ProgressNote
-                key={profile.id}
-                profile={profile}
-                letters={resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange).letters}
-              />
-            ))}
-          </ul>
+          <p className="adult-copy">Lessons finished this week, the days they practiced, and the sounds they know. Never a score.</p>
+          <FamilyProgress
+            profiles={profiles}
+            placement={placement}
+            onChildPlace={onChildPlace}
+            onLadderStep={onLadderStep}
+            onTeacherLink={onTeacherLink}
+          />
         </section>
       ) : null}
 
@@ -191,10 +197,16 @@ export function ParentView({
         <section className="adult-section" data-section="teacher">
           <h2>From your teacher</h2>
           <p className="adult-copy">
-            Goals, certificates, the class star jar, and short notes will show here. Nothing is linked yet. Notes use
-            the child's app name only, and never include health or diagnosis information.
+            A teacher can give you a short code. Type it in under Progress, and their note and lesson place show here.
+            Notes are picked from a friendly list and never include health or diagnosis information.
           </p>
+          {profiles.map((profile) => (
+            <TeacherNote key={profile.id} link={profile.fromTeacher} />
+          ))}
           {child ? <PlacementSummary child={child} placement={placement} /> : null}
+          <button type="button" className="done-button" onClick={() => setPage("progress")}>
+            Enter a teacher's code
+          </button>
         </section>
       ) : null}
 
@@ -227,22 +239,13 @@ export function ParentView({
         </section>
       ) : null}
 
-      {page === "join" ? (
-        <section className="adult-section" data-section="join">
-          <h2>Join a class</h2>
-          <p className="adult-copy">
-            Only a parent can link a child. The consent screen and the class QR scan arrive in step 6. Nothing is
-            shared yet. A child cannot join a class.
-          </p>
-        </section>
-      ) : null}
-
       {page === "privacy" ? (
         <section className="adult-section" data-section="consent">
           <h2>Privacy</h2>
           <p className="adult-copy">
-            Before a class link, consent is asked here. You can unlink or delete at any time. Class linking is not
-            available yet. Delete a profile with Remove under Children. Photos and names stay on this device.
+            Nothing is linked to a school automatically. A code only moves when you type it in or give it to the
+            teacher, and it carries lesson places, counts, and a note number. Never a name. Delete a profile with Remove
+            under Children. Names stay on this device.
           </p>
         </section>
       ) : null}
@@ -314,8 +317,8 @@ function ParentHome({
   const pct = total === 0 ? 0 : Math.round((introduced.length / total) * 100);
   const review = isReviewDay(now);
   const weekLetters = traceLetters(resolved.letters);
-  const lessons = starsThisWeek(child, now);
-  const lessonPct = Math.min(100, Math.round((lessons / WEEKLY_LESSONS) * 100));
+  const lessons = completion(child, now).lessonsThisWeek;
+  const lessonPct = Math.min(100, Math.round((lessons / WEEKLY_TARGET) * 100));
   const age = child.ageRange === "6-7" ? "6–7" : child.ageRange;
   const ring = 2 * Math.PI * 28;
 
@@ -404,7 +407,7 @@ function ParentHome({
         <section className="dash-card" data-section="lessons">
           <h2>Lessons this week</h2>
           <p className="dash-stat">
-            {lessons} of {WEEKLY_LESSONS}
+            {lessons} of {WEEKLY_TARGET}
           </p>
           <span className="dash-bar" aria-hidden="true">
             <span style={{ width: `${lessonPct}%` }} />
@@ -428,7 +431,7 @@ function ParentHome({
       <button type="button" className="teacher-card-link" data-section="teacher" onClick={() => onOpen("teacher")}>
         <span>
           <strong>From your teacher</strong>
-          <small>Goals, certificates, and notes will show here.</small>
+          <small>Notes and the lesson place from a teacher's code.</small>
         </span>
       </button>
 
@@ -507,21 +510,5 @@ function RewardFacts({ profile }: { profile: ChildProfile }) {
         {milestoneLine(profile)}
       </p>
     </div>
-  );
-}
-
-function ProgressNote({ profile, letters }: { profile: ChildProfile; letters: string[] }) {
-  const now = new Date();
-  const review = isReviewDay(now);
-  return (
-    <li className="progress-note" data-note={profile.id}>
-      <p className="child-name">{lessonName(profile)}</p>
-      <p className="child-note">
-        {review ? "Friday review. " : ""}
-        Letters {letters.map((letter) => unitLabel(letter).toUpperCase()).join(" ")}. Stars {profile.stars}. Stickers{" "}
-        {profile.stickers.length}. This week {starsThisWeek(profile, now)}.
-        {profile.celebrated.length > 0 ? ` Milestones ${profile.celebrated.join(", ")}.` : ""}
-      </p>
-    </li>
   );
 }

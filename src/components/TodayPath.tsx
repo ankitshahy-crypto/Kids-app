@@ -44,6 +44,7 @@ export function TodayPath({
   onCloset,
   onStickers,
   onGames,
+  onSoundGame,
   onSurprise,
   goalMinutes,
   course,
@@ -78,6 +79,8 @@ export function TodayPath({
   onCloset: () => void;
   onStickers: () => void;
   onGames: () => void;
+  /** Fridays: the sound game. Absent when there are too few sounds yet. */
+  onSoundGame?: () => void;
   onSurprise: () => void;
   goalMinutes: number;
   course: "reading" | "math" | "colors" | "time" | "build" | "science";
@@ -242,6 +245,11 @@ export function TodayPath({
               <button type="button" data-practice="name" disabled={!canTraceName} onClick={onTraceName}>
                 Trace my name
               </button>
+              {review && onSoundGame ? (
+                <button type="button" data-practice="sounds" onClick={onSoundGame}>
+                  Sound game
+                </button>
+              ) : null}
             </div>
           ) : null}
 

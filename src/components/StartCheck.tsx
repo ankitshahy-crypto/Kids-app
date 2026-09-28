@@ -36,9 +36,12 @@ export function StartCheck({
   settingsRef,
   onAccept,
   onSkip,
+  onRecord,
 }: {
   profile: ChildProfile;
   settingsRef: { current: Settings };
+  /** Each letter-sound round, quietly: picked on the first try or not. */
+  onRecord?: (sound: string, firstTry: boolean) => void;
   onAccept: (result: CheckResult) => void;
   onSkip: () => void;
 }) {
@@ -102,6 +105,7 @@ export function StartCheck({
     if (!round || picked) return;
     setPicked(choice);
     const right = choice === round.answer;
+    if (round.part === "sound") onRecord?.(round.answer, right);
     playEffect(right ? "chime" : "pop", settingsRef.current);
     if (round.part !== "sound") {
       const signal = begin();

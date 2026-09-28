@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { FamilyProgress } from "./ProgressViews";
+import type { LadderStep } from "../data/ladder";
+import type { TeacherLink } from "../data/profileExtras";
 import { Avatar } from "../avatars";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
 import { aboutContent } from "../content/about";
@@ -8,7 +11,7 @@ import { deviceLine, feedbackMailto } from "../feedback";
 import { PRODUCT_NAME, PRODUCT_SHORT } from "../brand";
 import { tint } from "../palette";
 import { shareWordNest, type ShareResult } from "../share";
-import type { PlacementDocument } from "../data/placement";
+import type { LessonPlace, PlacementDocument } from "../data/placement";
 import { lessonName, type ChildInput, type ChildProfile } from "../data/profiles";
 import { corruptProfileNotice } from "../data/profiles";
 import type { Settings } from "../settings";
@@ -32,10 +35,12 @@ export type GrownupsPage =
   | "about"
   | "share"
   | "printables"
-  | "offline";
+  | "offline"
+  | "progress";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
   { id: "unlock", title: `Full ${PRODUCT_SHORT}`, note: "Every week and activity, one payment, and Restore", tint: tint.peach },
+  { id: "progress", title: "Progress", note: "Lessons finished, sounds they know, and teacher codes", tint: tint.mintCard },
   { id: "settings", title: "Settings", note: "Volume, voice, lesson length, calm mode, easier reading, tips, and Explore", tint: tint.mint },
   { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach },
@@ -108,6 +113,9 @@ export function GrownupsMenu({
   onCheck,
   onUpdate,
   onRemove,
+  onChildPlace,
+  onLadderStep,
+  onTeacherLink,
   onClose,
   initialPage = "menu",
 }: {
@@ -122,6 +130,9 @@ export function GrownupsMenu({
   onCheck: (id: string) => void;
   onUpdate: (id: string, input: ChildInput) => void;
   onRemove: (id: string) => void;
+  onChildPlace: (childId: string, place: LessonPlace | null) => void;
+  onLadderStep: (childId: string, step: LadderStep) => void;
+  onTeacherLink: (childId: string, link: TeacherLink | undefined) => void;
   onClose: () => void;
   /** Open on a page, as when a child's "ask a grown-up" leads here. */
   initialPage?: GrownupsPage;
@@ -187,6 +198,20 @@ export function GrownupsMenu({
       ) : null}
 
       {page === "offline" ? <OfflinePanel /> : null}
+
+      {page === "progress" ? (
+        <section className="adult-section" data-section="progress">
+          <h2>Progress</h2>
+          <p className="adult-copy">Lessons finished this week, the days they practiced, and the sounds they know. Never a score.</p>
+          <FamilyProgress
+            profiles={profiles}
+            placement={placement}
+            onChildPlace={onChildPlace}
+            onLadderStep={onLadderStep}
+            onTeacherLink={onTeacherLink}
+          />
+        </section>
+      ) : null}
 
       {page === "unlock" ? <UnlockPanel /> : null}
 
@@ -259,7 +284,7 @@ export function GrownupsMenu({
           <p className="adult-copy">
             {PRODUCT_NAME} works without an account. Progress stays on this device, and nothing asks for an email or a
             card. The one-time unlock goes through the App Store with your Apple ID, so Restore finds it on a new device.
-            A school can connect a class later, with a parent's say-so, but that is optional.
+            A teacher and a family can swap short codes to share lesson places and progress. No account either way.
           </p>
         </section>
       ) : null}
@@ -267,6 +292,22 @@ export function GrownupsMenu({
       {page === "help" ? (
         <section className="adult-section" data-section="help">
           <h2>Help</h2>
+          <h3>Setting up at home</h3>
+          <ol className="setup-steps" data-setup="home">
+            <li>Add a child: a first name or initial, an age range, and the animal they pick.</li>
+            <li>Pick a lesson length in Settings. Five minutes is a good start.</li>
+            <li>Not sure where to start? Choose Where to start in Child profiles for a two-minute check.</li>
+            <li>Tap the child's animal to begin. On Fridays, the week comes back with a sound game.</li>
+            <li>Open Progress here to see lessons finished, practice days, and the sounds they know.</li>
+          </ol>
+          <h3>Setting up in a classroom</h3>
+          <ol className="setup-steps" data-setup="class">
+            <li>On the class iPad, add each child with a first name or initial and an animal.</li>
+            <li>Tap Teacher on the first screen and place the class, or one child, at a week. Where to start in Child profiles can suggest one.</li>
+            <li>Class progress lists who has been away longest first. Tap a child to see what they finished.</li>
+            <li>Pick a note for home, then give the family the code under it.</li>
+            <li>Families type that code under Progress at home, and can give you a progress code back.</li>
+          </ol>
           <h3>How the daily lesson works</h3>
           <p className="adult-copy">
             Each day starts with the reading lesson, Pilot focus. Explore adds LittleNest Numbers, LittleNest Colors, LittleNest Time & Money, LittleNest Build, and LittleNest Science. LittleNest Words
@@ -342,7 +383,7 @@ export function GrownupsMenu({
             <li>There is no health data and no diagnosis.</li>
             <li>There are no ads and no tracking.</li>
             <li>The one-time unlock is paid through the App Store. {PRODUCT_NAME} never sees card or Apple ID details.</li>
-            <li>Nothing is sent to a school. Class linking is not available yet.</li>
+            <li>Nothing is sent to a school on its own. A teacher code or a progress code moves only when a grown-up types it in or reads it out, and it carries lesson places and counts, never a name.</li>
           </ul>
         </section>
       ) : null}
