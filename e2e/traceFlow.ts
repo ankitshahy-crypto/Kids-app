@@ -57,11 +57,11 @@ export async function finishPathTrace(page: Page, screen: string) {
   const root = page.locator(`[data-screen=${screen}]`);
   await expect(root).toBeVisible();
   for (let step = 0; step < 80; step += 1) {
-    if ((await root.count()) === 0) return;
-    const phase = await root.getAttribute("data-phase");
+    const phase = await screenPhase(page, screen);
+    if (phase === null) return;
     if (phase === "demo") {
       await root.getByRole("button", { name: "Your turn" }).click({ timeout: 1500 }).catch(() => undefined);
-      await expect.poll(() => leftPhase(root, "demo"), { timeout: 15000 }).toBe(true);
+      await expect.poll(() => leftPhase(page, "demo", screen), { timeout: 15000 }).toBe(true);
     } else if (phase === "trace") {
       await traceCurrentStroke(page, screen);
     } else if (phase === "cheer") {
@@ -79,10 +79,18 @@ export async function finishPathTrace(page: Page, screen: string) {
   throw new Error(`${screen} tracing did not finish`);
 }
 
+/**
+ * The draw screen's phase, or null once the screen is gone. Read in one
+ * page call: a locator's getAttribute waits for a detached element to come
+ * back, which on a slow runner turned the hand-off to Today into a hang.
+ */
+function screenPhase(page: Page, screen = "draw"): Promise<string | null> {
+  return page.evaluate((name) => document.querySelector(`[data-screen=${name}]`)?.getAttribute("data-phase") ?? null, screen);
+}
+
 /** True once the screen has moved on from this phase, or has gone altogether. */
-async function leftPhase(root: ReturnType<Page["locator"]>, phase: string): Promise<boolean> {
-  if ((await root.count()) === 0) return true;
-  return (await root.getAttribute("data-phase")) !== phase;
+async function leftPhase(page: Page, phase: string, screen = "draw"): Promise<boolean> {
+  return (await screenPhase(page, screen)) !== phase;
 }
 
 async function pairOne(page: Page) {
@@ -91,7 +99,7 @@ async function pairOne(page: Page) {
   if ((await waiting.count()) === 0) {
     // The last pair ends the letter a moment later, and the last letter ends the screen.
     // CI's dev server can take a few seconds over that last hand-off, so this waits longer.
-    await expect.poll(() => leftPhase(root, "match"), { timeout: 15000 }).toBe(true);
+    await expect.poll(() => leftPhase(page, "match"), { timeout: 15000 }).toBe(true);
     return;
   }
   const tile = waiting.first();
@@ -142,11 +150,15 @@ async function finishLetterTracingSteps(page: Page) {
   await expect(root).toBeVisible();
   for (let step = 0; step < 80; step += 1) {
     if ((await page.locator("[data-screen=today]").count()) > 0) return;
-    const phase = await root.getAttribute("data-phase");
+    const phase = await screenPhase(page);
+    if (phase === null) {
+      await expect(page.locator("[data-screen=today]")).toBeVisible();
+      return;
+    }
     if (phase === "demo") {
       // The demo moves on by itself after each stroke, so the button can be gone by the click.
       await root.getByRole("button", { name: "Your turn" }).click({ timeout: 1500 }).catch(() => undefined);
-      await expect.poll(() => leftPhase(root, "demo"), { timeout: 15000 }).toBe(true);
+      await expect.poll(() => leftPhase(page, "demo"), { timeout: 15000 }).toBe(true);
     } else if (phase === "trace") {
       await traceCurrentStroke(page);
     } else if (phase === "cheer") {
