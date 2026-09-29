@@ -37,6 +37,8 @@ export function SoundItOut({
   const [lit, setLit] = useState<boolean[]>(() => word.letters.map(() => false));
   const [litOrder, setLitOrder] = useState<number[]>([]);
   const [blended, setBlended] = useState(false);
+  // The tiles slide together while the whole word plays, so the sounds are seen joining into one word.
+  const [joined, setJoined] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
   const [progress, setProgress] = useState(0.06);
   const [dragging, setDragging] = useState(false);
@@ -57,6 +59,7 @@ export function SoundItOut({
     setLit(word.letters.map(() => false));
     setLitOrder([]);
     setBlended(false);
+    setJoined(false);
     setCelebrating(false);
     setProgress(0.06);
   }, [word]);
@@ -140,6 +143,8 @@ export function SoundItOut({
     if (clientX >= rect.right - 28 && allSounded && !blendedPass.current) {
       blendedPass.current = true;
       setBlended(true);
+      // Single letters and sound units join; a sentence's word chunks wrap onto rows and stay put.
+      setJoined(!word.sentenceId);
       setCelebrating(true);
       window.setTimeout(() => setCelebrating(false), 900);
       soundWord();
@@ -163,6 +168,8 @@ export function SoundItOut({
     setDragging(true);
     sounded.current = new Set();
     blendedPass.current = false;
+    // A new pass starts from separate sounds again.
+    setJoined(false);
     unlockAudio();
     resumeSpeech();
     moveToken(event.clientX, event.clientX);
@@ -235,7 +242,11 @@ export function SoundItOut({
         )}
       </PictureCard>
       <SoundLabel />
-      <div className={`blend${celebrating ? " is-celebrating" : ""}${dragging ? " is-dragging" : ""}`} data-lit-order={litOrder.join(",")}>
+      <div
+        className={`blend${celebrating ? " is-celebrating" : ""}${dragging ? " is-dragging" : ""}${joined ? " is-joined" : ""}`}
+        data-lit-order={litOrder.join(",")}
+        data-joined={joined ? "true" : "false"}
+      >
         <div className={`letters${word.sentenceId ? " chunks" : ""}`} role="group" aria-label={word.word}>
           {word.letters.map((letter, letterIndex) => {
             const shown = lit[letterIndex] || letterIndex < revealed || active === "all";
@@ -245,6 +256,8 @@ export function SoundItOut({
             // A sound unit (sh, a-e) is one tile with two or three letters on it.
             const unit = !chunk && letter.char.length > 1;
             const label = chunk ? letter.char : letter.char.toUpperCase();
+            // How many gaps this tile crosses toward the middle when the word joins: +1.5, +0.5, -0.5, -1.5 for four tiles.
+            const joinSteps = (word.letters.length - 1) / 2 - letterIndex;
             return (
               <div
                 key={`${word.id}-${letterIndex}`}
@@ -252,6 +265,7 @@ export function SoundItOut({
                   tileRefs.current[letterIndex] = element;
                 }}
                 className={`tile-wrap${chunk ? " is-chunk" : ""}${unit ? " is-unit" : ""}${letter.silent ? " is-silent" : ""}${shown ? " is-lit" : " is-dim"}${highlighted ? " is-active" : ""}`}
+                style={{ "--join-steps": joinSteps } as React.CSSProperties}
                 data-letter={letterIndex}
                 data-lit={shown ? "true" : "false"}
                 data-sound={chunk ? undefined : letter.silent ? "silent" : letter.phoneme}

@@ -454,12 +454,13 @@ button:focus-visible {
 
 .letters,
 .letter-slot {
+  --tile-gap: 10px;
   width: 100%;
   min-height: 84px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--tile-gap);
   flex: 0 0 auto;
 }
 
@@ -615,6 +616,20 @@ button:focus-visible {
 
 .blend.is-celebrating .tile-wrap.is-lit .tile {
   animation: blend-pop 0.7s ease;
+}
+
+/*
+ * Blending: the tiles slide together as the whole word plays, each one
+ * crossing its share of the gaps toward the middle, so the sounds are seen
+ * joining into one word. Transform only, so nothing reflows and it stays
+ * smooth on an older iPad; a new drag lets them apart again.
+ */
+.tile-wrap {
+  transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.blend.is-joined .tile-wrap {
+  transform: translateX(calc(var(--join-steps, 0) * var(--tile-gap, 10px)));
 }
 
 @keyframes blend-pop {
@@ -2842,8 +2857,8 @@ button:focus-visible {
 
   .letters,
   .letter-slot {
+    --tile-gap: 14px;
     min-height: 120px;
-    gap: 14px;
   }
 
   .tile-wrap {
