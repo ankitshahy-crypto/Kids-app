@@ -8,6 +8,8 @@ import type { Settings } from "../settings";
 export type ActiveLetter = number | "all" | null;
 
 const PICTURE_BEAT_MS = 1000;
+/** Before a card that opened on its own starts to speak. */
+const OPENING_BEAT_MS = 450;
 const BETWEEN_LETTERS_MS = 260;
 const BEFORE_WORD_MS = 320;
 
@@ -40,7 +42,7 @@ export function usePlayback(
   }, []);
 
   const playThrough = useCallback(
-    async (run: { controller: AbortController; token: number }, options: { finish?: boolean } = {}) => {
+    async (run: { controller: AbortController; token: number }, options: { finish?: boolean; beatMs?: number } = {}) => {
       const { controller, token } = run;
       const signal = controller.signal;
       const current = wordRef.current;
@@ -50,7 +52,7 @@ export function usePlayback(
         setActive(null);
       }
       try {
-        await sleep(hasFreshPrimedSpeech() ? 280 : PICTURE_BEAT_MS, signal);
+        await sleep(hasFreshPrimedSpeech() ? 280 : (options.beatMs ?? PICTURE_BEAT_MS), signal);
         for (let index = 0; index < current.letters.length; index += 1) {
           if (!live()) return;
           setRevealed(index + 1);
@@ -120,7 +122,8 @@ export function usePlayback(
    */
   const autoplay = useCallback(() => {
     const run = begin(false);
-    void playThrough(run, { finish: false });
+    // A shorter look at the picture: the card has only just appeared.
+    void playThrough(run, { finish: false, beatMs: OPENING_BEAT_MS });
   }, [begin, playThrough]);
 
   const soundLetter = useCallback(

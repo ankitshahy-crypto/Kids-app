@@ -71,7 +71,7 @@ export function SoundItOut({
     const timer = window.setTimeout(() => {
       autoPlayed.current = word.id;
       autoplay();
-    }, 350);
+    }, 200);
     return () => window.clearTimeout(timer);
   }, [word, paused, autoplay]);
 
