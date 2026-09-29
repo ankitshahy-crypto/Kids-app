@@ -341,6 +341,23 @@ export function wordCue(id: string, fallback: string): Cue {
   return { src: recordedSrc("words", id), text: spokenLine("words", id, fallback) };
 }
 
+/** A letter's phrase ("m, as in moon"): names the letter, for games that ask to find it. */
+export function letterCue(letter: LetterTile): Cue {
+  if (letter.say) return { src: letter.sayId ? recordedSrc("letters", letter.sayId) : undefined, text: letter.say };
+  return { src: letter.audioSrc ?? recordedSrc("letters", letter.phoneme), text: spokenLine("letters", letter.phoneme, letter.char) };
+}
+
+/** A letter's bare sound ("mmm"), or its phrase when no sound clip is on the device. */
+export function letterSoundCue(letter: LetterTile): Cue {
+  const src = recordedSrc("sounds", letter.phoneme);
+  return src ? { src, text: letter.say ?? spokenLine("letters", letter.phoneme, letter.char) } : letterCue(letter);
+}
+
+/** A whole word from the deck. */
+export function deckWordCue(word: DeckWord): Cue {
+  return { src: word.audioSrc ?? recordedSrc("words", word.id), text: spokenLine("words", word.id, word.word) };
+}
+
 /** A line for the device voice only, such as the child's own name. Nothing is fetched. */
 export function deviceCue(text: string): Cue {
   return { text };

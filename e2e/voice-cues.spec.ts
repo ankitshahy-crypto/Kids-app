@@ -199,3 +199,29 @@ test("Hear a number says the instruction, then the number, and the shape match n
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await expectOpeningLine(page, () => page.getByRole("button", { name: "Match a shape" }).click(), "shape", [/^find the same shape\.$/, new RegExp(`^${shape}$`)]);
 });
+
+async function openGame(page: Page, id: string) {
+  const back = page.getByRole("button", { name: "All games" });
+  if (await back.count()) await back.click();
+  else await page.locator("[data-dock=games]").click();
+  await expect(page.locator("[data-game=home]")).toBeVisible();
+  await page.locator(`[data-game-tile=${id}]`).click();
+  await expect(page.locator(`[data-game=${id}]`)).toBeVisible();
+}
+
+test("each game says what to do as it opens, and Again says it back", async ({ page }) => {
+  test.setTimeout(120000);
+  await install(page);
+  const games: { id: string; parts: RegExp[] }[] = [
+    { id: "hatch", parts: [/^tap the missing letters\.$/] },
+    { id: "pop", parts: [/^pop the balloons with this letter\.$/, /, as in /] },
+    { id: "feed", parts: [/^feed the foods that start with this letter\.$/, /, as in /] },
+    { id: "rhyme", parts: [/^find two pictures that rhyme\.$/] },
+    { id: "memory", parts: [/^flip two cards\. find a match\.$/] },
+    { id: "spin", parts: [/^spin the wheel\.$/] },
+  ];
+  for (const game of games) {
+    await expectOpeningLine(page, () => openGame(page, game.id), "games", game.parts);
+    if (game.id !== "spin") await expect(page.locator(`[data-game=${game.id}] .game-hear .hear-icon`).first()).toBeVisible();
+  }
+});

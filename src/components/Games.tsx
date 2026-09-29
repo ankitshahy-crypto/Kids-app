@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { playLetter, playLetterSound, playNumber, playOnDevice, playWord } from "../audio/player";
+import { deckWordCue, letterCue, letterSoundCue, playLetter, playLine, playNumber, playOnDevice, promptCue } from "../audio/player";
 import type { Settings } from "../settings";
 import { Illustration } from "../illustrations";
 import {
@@ -21,6 +21,7 @@ import {
 import { wordsForStep, type LadderStep } from "../data/ladder";
 import { LockBadge } from "./LockBadge";
 import type { ChildProfile, StickerInput } from "../data/profiles";
+import { HearButton } from "./HearButton";
 import { Hero } from "./Hero";
 import { SpinSay } from "./SpinSay";
 import { BuildIt } from "./BuildIt";
@@ -256,14 +257,10 @@ function HatchGame({
   const hatched = round.blanks.every((index) => filled.includes(index));
   const glow = misses >= 2 ? glowLetter(round, filled) : null;
 
+  // What to do, then the word sounded out and said whole. Again repeats all of it.
   const speakSlowly = () => {
-    play(async (signal) => {
-      for (const letter of round.word.letters) {
-        if (signal.aborted) return;
-        await playLetterSound(letter, settingsRef.current, signal);
-      }
-      if (!signal.aborted) await playWord(round.word, settingsRef.current, signal);
-    });
+    const sounds = round.word.letters.filter((letter) => !letter.silent).map(letterSoundCue);
+    play((signal) => playLine([promptCue("game-hatch", "Tap the missing letters."), ...sounds, deckWordCue(round.word)], settingsRef.current, signal));
   };
 
   useEffect(() => {
@@ -323,9 +320,7 @@ function HatchGame({
           );
         })}
       </p>
-      <button type="button" className="hear-button" onClick={speakSlowly}>
-        Hear it
-      </button>
+      <HearButton className="game-hear" onHear={speakSlowly} />
       <div className="letter-tiles">
         {round.choices.map((letter) => (
           <button
@@ -412,9 +407,14 @@ function PopGame({
   const targets = round.balloons.filter((balloon) => balloon.target);
   const done = targets.every((balloon) => popped.includes(balloon.id));
 
+  const hearTarget = () =>
+    play((signal) => playLine([promptCue("game-pop", "Pop the balloons with this letter."), letterCue(letterTile(round.target))], settingsRef.current, signal));
+
   useEffect(() => {
-    play((signal) => playLetter(letterTile(round.target), settingsRef.current, signal));
-  }, [play, round.target, settingsRef]);
+    hearTarget();
+    // Once per round: the line follows the letter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round.target]);
 
   const pop = (id: string, letter: string, target: boolean) => {
     if (popped.includes(id) || done) return;
@@ -435,9 +435,7 @@ function PopGame({
       <p className="game-prompt">
         Pop <strong>{round.target.toUpperCase()}</strong>
       </p>
-      <button type="button" className="hear-button" onClick={() => play((signal) => playLetter(letterTile(round.target), settingsRef.current, signal))}>
-        Hear it
-      </button>
+      <HearButton className="game-hear" onHear={hearTarget} />
       <div className="balloon-grid">
         {round.balloons.map((balloon) => (
           <button
@@ -485,9 +483,14 @@ function FeedGame({
   const needed = round.foods.filter((food) => food.letter === round.target);
   const done = needed.every((food) => fed.includes(food.id));
 
+  const hearTarget = () =>
+    play((signal) => playLine([promptCue("game-feed", "Feed the foods that start with this letter."), letterCue(letterTile(round.target))], settingsRef.current, signal));
+
   useEffect(() => {
-    play((signal) => playLetter(letterTile(round.target), settingsRef.current, signal));
-  }, [play, round.target, settingsRef]);
+    hearTarget();
+    // Once per round: the line follows the letter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round.target]);
 
   const attempt = (food: Food) => {
     if (fed.includes(food.id) || done) return;
@@ -508,6 +511,7 @@ function FeedGame({
       <p className="game-prompt">
         Foods that start with <strong>{round.target.toUpperCase()}</strong>
       </p>
+      <HearButton className="game-hear" onHear={hearTarget} />
       <div className="feed-row">
         <div className="food-tray">
           {round.foods.map((food) => (
@@ -583,6 +587,13 @@ function RhymeGame({
   const [wiggle, setWiggle] = useState<string | null>(null);
   const play = useCue();
   const done = new Set(cards.map((card) => card.pair)).size === matched.length && cards.length > 0;
+  const hearRule = () => play((signal) => playLine([promptCue("game-rhyme", "Find two pictures that rhyme.")], settingsRef.current, signal));
+
+  useEffect(() => {
+    hearRule();
+    // Once, when the game opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const choose = (card: RhymeCard) => {
     if (done || matched.includes(card.pair)) return;
@@ -608,6 +619,7 @@ function RhymeGame({
   return (
     <div className="game-board" data-phase={done ? "done" : "play"}>
       <h1>Rhyme Match</h1>
+      <HearButton className="game-hear" onHear={hearRule} />
       <div className="rhyme-grid">
         {cards.map((card) => (
           <button
@@ -685,6 +697,13 @@ function MemoryBoard({
   const play = useCue();
   const pairs = new Set(cards.map((card) => card.pair));
   const done = matched.length === pairs.size && pairs.size > 0;
+  const hearRule = () => play((signal) => playLine([promptCue("game-memory", "Flip two cards. Find a match.")], settingsRef.current, signal));
+
+  useEffect(() => {
+    hearRule();
+    // Once per board: switching letters and numbers starts a new one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const flip = (card: MemoryCard) => {
     if (lock || done || matched.includes(card.pair) || up.includes(card.id)) return;
@@ -713,6 +732,7 @@ function MemoryBoard({
 
   return (
     <div data-phase={done ? "done" : "play"}>
+      <HearButton className="game-hear" onHear={hearRule} />
       <div className="memory-grid">
         {cards.map((card) => {
           const faceUp = up.includes(card.id) || matched.includes(card.pair);
