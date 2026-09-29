@@ -409,21 +409,27 @@ test("the bounce is for the first finish: finishing the same card again joins th
   await neverBounces(page);
 });
 
-test("Home stops the opening instruction while it is being said", async ({ page }) => {
-  await watchClips(page);
-  await install(page, mia({ saysSounds: true }));
-  await openLetters(page);
-  // "Say each sound as you slide." is the one long clip on this screen (about two seconds).
-  const long = (clip: { seconds: number }) => clip.seconds > 1.5;
-  const started = await expect
-    .poll(async () => (await clips(page)).some((clip) => clip.event === "start" && long(clip)), { timeout: 8000, intervals: [25] })
-    .toBe(true)
-    .then(() => true, () => false);
-  test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
-  await page.getByRole("slider", { name: "Slide across the letters" }).focus();
-  await page.keyboard.press("Home");
-  await expect.poll(async () => (await clips(page)).some((clip) => clip.event === "stop" && long(clip)), { timeout: 1000 }).toBe(true);
-});
+for (const [key, what] of [
+  ["Home", "Home"],
+  ["ArrowLeft", "a step back"],
+  ["ArrowRight", "a step forward"],
+] as const) {
+  test(`${what} stops the opening instruction while it is being said`, async ({ page }) => {
+    await watchClips(page);
+    await install(page, mia({ saysSounds: true }));
+    await openLetters(page);
+    // "Say each sound as you slide." is the one long clip on this screen (about two seconds).
+    const long = (clip: { seconds: number }) => clip.seconds > 1.5;
+    const started = await expect
+      .poll(async () => (await clips(page)).some((clip) => clip.event === "start" && long(clip)), { timeout: 8000, intervals: [25] })
+      .toBe(true)
+      .then(() => true, () => false);
+    test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
+    await page.getByRole("slider", { name: "Slide across the letters" }).focus();
+    await page.keyboard.press(key);
+    await expect.poll(async () => (await clips(page)).some((clip) => clip.event === "stop" && long(clip)), { timeout: 1000 }).toBe(true);
+  });
+}
 
 test("a step back stops the word that was still being said", async ({ page }) => {
   await watchClips(page);

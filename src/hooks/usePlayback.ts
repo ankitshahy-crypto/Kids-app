@@ -190,8 +190,8 @@ export function usePlayback(
 
   /**
    * Stop whatever this card is saying, and put down the tiles a Play sound
-   * pass had shown: a fresh try starts in quiet, with nothing lit that the
-   * slider does not count.
+   * pass had shown, so nothing is lit that the slider does not count. Called
+   * when a fresh try starts (Home or a new drag) and on a step back.
    */
   const stop = useCallback(() => {
     tokenRef.current += 1;
