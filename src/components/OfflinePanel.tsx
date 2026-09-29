@@ -6,7 +6,7 @@ function statusLine(state: OfflineSnapshot): string {
   const size = state.size ? ` ${state.size} of sound clips for the children on this device.` : "";
   if (state.phase === "ready") return "Every lesson, picture, and sound is saved on this device.";
   if (state.phase === "partial") {
-    return `${state.failed} of ${state.total} files could not be saved. Try again when the connection is better.`;
+    return `${state.failed} of ${state.total} files are not saved on this device yet. Try again when the connection is better.`;
   }
   if (state.phase === "downloading") return `Saving lessons, pictures, and sounds on this device.${size}`;
   if (state.hold === "no-child") return "Add a child first. The sounds for their stories are saved after that.";

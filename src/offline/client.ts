@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { registerSW } from "virtual:pwa-register";
 import { isNativeApp } from "../audio/platform";
 import { animalsOnDevice, describeBytes, hasChildOnDevice, offlineAudioBytes } from "./assets";
-import { downloadForOffline } from "./download";
+import { downloadForOffline, moveClipsToAudioCache } from "./download";
 import { PROFILES_EVENT } from "./events";
 import { networkHold, type NetworkHold } from "./network";
 import { onOutbox, readOutbox } from "./queue";
@@ -55,7 +55,11 @@ let attempted: string | null = null;
 function publish(patch: Partial<OfflineSnapshot>): void {
   snapshot = { ...snapshot, ...patch, queued: readOutbox().length };
   if (typeof document !== "undefined") {
-    document.documentElement.dataset.offline = snapshot.phase === "ready" ? "ready" : snapshot.phase === "waiting" ? "waiting" : "working";
+    const root = document.documentElement.dataset;
+    root.offline = snapshot.phase === "ready" ? "ready" : snapshot.phase === "waiting" ? "waiting" : "working";
+    // How many files this device needs, and how many are not saved yet, for a grown-up's panel and for tests.
+    root.offlineTotal = String(snapshot.total);
+    root.offlineMissing = String(snapshot.phase === "ready" ? 0 : snapshot.failed);
   }
   listeners.forEach((listener) => listener(snapshot));
 }
@@ -174,6 +178,10 @@ export function startOffline(): void {
     publish({ phase: "ready", bundled: true, done: 1, total: 1 });
     return;
   }
+  // Clips saved by an earlier version sit in the trimmed runtime cache; move
+  // them to the audio pack now, so they are found (and kept) even before the
+  // next download.
+  void moveClipsToAudioCache().catch(() => 0);
   // A child added or removed changes what this device needs.
   window.addEventListener(PROFILES_EVENT, () => {
     if (snapshot.phase === "ready" && attempted !== animalsKey()) publish({ phase: "waiting", hold: holdNow(), size: sizeNow() });

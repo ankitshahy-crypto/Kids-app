@@ -4,7 +4,8 @@ import config from "../../capacitor.config";
 import available from "../data/audioAvailable.json";
 import { animals } from "../data/animals";
 import { animalsOnDevice, clipForDevice, describeBytes, hasChildOnDevice, lessonAudioFiles, offlineAudioBytes, offlineUrls, shippedAudioFiles } from "./assets";
-import { isComplete } from "./download";
+import { AUDIO_CACHE, RUNTIME_CACHE, isAudioClip } from "./cacheName";
+import { cacheFor, isComplete, missingFrom, moveClipsToAudioCache } from "./download";
 import { networkHold } from "./network";
 import { enqueue, readOutbox, requestClassSync } from "./queue";
 import { shareWordNest } from "../share";
@@ -92,7 +93,7 @@ describe("offline bundle", () => {
     expect(urls.some((url) => url.endsWith("/favicon.svg"))).toBe(true);
   });
 
-  it("precaches the app shell only, and leaves the clips to the runtime cache", () => {
+  it("precaches the app shell only, and leaves the clips to the offline download", () => {
     const vite = readFileSync(new URL("../../vite.config.ts", import.meta.url), "utf8");
     const includeAssets = vite.match(/includeAssets:\s*\[([^\]]*)\]/)?.[1] ?? "";
     const globPatterns = vite.match(/globPatterns:\s*\[([^\]]*)\]/)?.[1] ?? "";
@@ -102,6 +103,68 @@ describe("offline bundle", () => {
     expect(globPatterns).not.toContain("mp3");
     expect(vite).toContain('handler: "CacheFirst"');
     expect(vite).toContain("cacheName: RUNTIME_CACHE");
+  });
+
+  it("keeps sound clips in their own cache that is never trimmed, ahead of the trimmed runtime cache", () => {
+    const vite = readFileSync(new URL("../../vite.config.ts", import.meta.url), "utf8");
+    const audioAt = vite.indexOf("cacheName: AUDIO_CACHE");
+    const runtimeAt = vite.indexOf("cacheName: RUNTIME_CACHE");
+    expect(audioAt).toBeGreaterThan(0);
+    expect(runtimeAt).toBeGreaterThan(audioAt);
+    // The audio route's options, up to the next route: no expiration of any kind.
+    const audioRoute = vite.slice(vite.lastIndexOf("urlPattern", audioAt), vite.indexOf("urlPattern", audioAt));
+    expect(audioRoute).not.toMatch(/expiration|maxEntries|maxAgeSeconds/);
+    expect(audioRoute).toContain('handler: "CacheFirst"');
+    // The runtime route stays trimmed, and leaves the clips alone.
+    const runtimeRoute = vite.slice(vite.indexOf("urlPattern", audioAt), vite.indexOf("],", runtimeAt));
+    expect(runtimeRoute).toContain("maxEntries: 500");
+    expect(runtimeRoute).toMatch(/audio.*mp3.*return false/s);
+    expect(AUDIO_CACHE).not.toBe(RUNTIME_CACHE);
+  });
+
+  it("sends each file to the right cache and finds the ones that are missing", () => {
+    expect(isAudioClip("/Kids-app/audio/letters/m.mp3")).toBe(true);
+    expect(isAudioClip("/Kids-app/audio/stories/w01-i-am/p1-fox.mp3")).toBe(true);
+    expect(isAudioClip("/Kids-app/src/audio/manager.ts")).toBe(false);
+    expect(isAudioClip("/Kids-app/icons/icon-192.png")).toBe(false);
+    const base = "https://littlenestlearning.app/Kids-app/";
+    expect(cacheFor(`${base}audio/sounds/m.mp3`)).toBe(AUDIO_CACHE);
+    expect(cacheFor(`${base}favicon.svg`)).toBe(RUNTIME_CACHE);
+    const urls = [`${base}audio/letters/m.mp3`, `${base}audio/prompts/count.mp3`, `${base}favicon.svg`, `${base}#today`];
+    const audio = new Set([`${base}audio/letters/m.mp3`]);
+    const runtime = new Set([`${base}favicon.svg`, base]);
+    // A clip in the wrong cache does not count, and a page's #fragment is the page.
+    expect(missingFrom(urls, audio, runtime)).toEqual([`${base}audio/prompts/count.mp3`]);
+    expect(missingFrom(urls, new Set([...audio, `${base}audio/prompts/count.mp3`]), runtime)).toEqual([]);
+    expect(missingFrom([`${base}audio/prompts/count.mp3`], new Set(), new Set([`${base}audio/prompts/count.mp3`]))).toHaveLength(1);
+  });
+
+  it("moves clips an earlier version left in the runtime cache into the audio pack", async () => {
+    const stores = new Map<string, Map<string, string>>();
+    const open = (name: string) => {
+      if (!stores.has(name)) stores.set(name, new Map());
+      const store = stores.get(name)!;
+      const key = (request: string | { url: string }) => (typeof request === "string" ? request : request.url);
+      return {
+        keys: async () => [...store.keys()].map((url) => ({ url })),
+        match: async (request: string | { url: string }) => (store.has(key(request)) ? { body: store.get(key(request)) } : undefined),
+        put: async (request: string | { url: string }, response: { body: string }) => {
+          store.set(key(request), response.body);
+        },
+        delete: async (request: string | { url: string }) => store.delete(key(request)),
+      };
+    };
+    vi.stubGlobal("caches", { open: async (name: string) => open(name), has: async (name: string) => stores.has(name) });
+    const base = "https://littlenestlearning.app/Kids-app/";
+    const runtime = open(RUNTIME_CACHE);
+    await runtime.put(`${base}audio/letters/m.mp3`, { body: "m" });
+    await runtime.put(`${base}audio/stories/w01-i-am/p1-fox.mp3`, { body: "p1" });
+    await runtime.put(`${base}favicon.svg`, { body: "icon" });
+    expect(await moveClipsToAudioCache()).toBe(2);
+    expect([...stores.get(AUDIO_CACHE)!.keys()].sort()).toEqual([`${base}audio/letters/m.mp3`, `${base}audio/stories/w01-i-am/p1-fox.mp3`]);
+    expect([...stores.get(RUNTIME_CACHE)!.keys()]).toEqual([`${base}favicon.svg`]);
+    // Nothing left to move the second time.
+    expect(await moveClipsToAudioCache()).toBe(0);
   });
 
   it("waits for a child before there is anything to download", () => {
