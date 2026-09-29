@@ -3,14 +3,16 @@
  * the profile store can read them without importing the progress views.
  */
 export type SoundCheck = {
-  /** The latest check: picked on the first try, or still practicing. */
+  /** The latest day's first try: picked on the first try, or still practicing. A replay the same day does not change it. */
   firstTry: boolean;
   /** Local date of the latest check. */
   date: string;
-  /** First-try picks, all time. */
+  /** First-try picks, all time, one per day. */
   got: number;
-  /** Times asked, all time. */
+  /** Days asked, all time. */
   asked: number;
+  /** From the Where to start check rather than the Friday sound game. */
+  start?: true;
 };
 
 export type SoundChecks = Record<string, SoundCheck>;
@@ -26,7 +28,7 @@ export function normalizeSoundChecks(value: unknown): SoundChecks {
     if (typeof check.firstTry !== "boolean" || typeof check.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(check.date)) continue;
     const asked = typeof check.asked === "number" && check.asked >= 1 ? Math.floor(check.asked) : 1;
     const got = typeof check.got === "number" && check.got >= 0 ? Math.min(asked, Math.floor(check.got)) : check.firstTry ? 1 : 0;
-    out[key] = { firstTry: check.firstTry, date: check.date, got, asked };
+    out[key] = { firstTry: check.firstTry, date: check.date, got, asked, ...(check.start === true ? { start: true as const } : {}) };
   }
   return out;
 }

@@ -127,6 +127,84 @@ test("when Mia says the sounds, Play sound helps without finishing the word; her
   await expect.poll(async () => stars(page)).toBe(start + 1);
 });
 
+test("without a finger: the right arrow lights the next letter, quietly, and the step after the last one finishes the word", async ({ page }) => {
+  // A keyboard, or VoiceOver and Switch Control adjusting the slider, which send the same arrow keys.
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  const track = page.getByRole("slider", { name: "Drag across the letters" });
+  const tiles = page.locator(".letters .tile-wrap");
+  const count = await tiles.count();
+  const start = await stars(page);
+  await track.focus();
+  await expect(track).toBeFocused();
+  const before = (await requestedCues(page)).length;
+  for (let step = 0; step < count; step += 1) {
+    await page.keyboard.press("ArrowRight");
+    await expect(tiles.nth(step)).toHaveAttribute("data-lit", "true");
+    await expect(track).toHaveAttribute("aria-valuenow", String(step + 1));
+    if (step + 1 < count) await expect(tiles.nth(step + 1)).toHaveAttribute("data-lit", "false");
+  }
+  await expect(activity).toHaveAttribute("data-blended", "false");
+  await page.waitForTimeout(400);
+  expect((await requestedCues(page)).slice(before).filter((cue) => LETTER_SOUND.test(cue))).toEqual([]);
+  expect(await stars(page)).toBe(start);
+
+  // One more step: the end of the track. The whole word plays and the step is done.
+  await page.keyboard.press("ArrowRight");
+  await expect(activity).toHaveAttribute("data-blended", "true");
+  await expect(page.locator(".blend")).toHaveAttribute("data-joined", "true");
+  await expect.poll(async () => (await requestedCues(page)).length).toBeGreaterThan(before);
+  await expect.poll(async () => stars(page)).toBe(start + 1);
+  expect((await requestedCues(page)).slice(before).filter((cue) => LETTER_SOUND.test(cue))).toEqual([]);
+});
+
+test("without a finger and with the app saying the sounds, each step sounds its letter, and End finishes the word", async ({ page }) => {
+  await install(page, mia());
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  const track = page.getByRole("slider", { name: "Drag across the letters" });
+  const tiles = page.locator(".letters .tile-wrap");
+  await track.focus();
+  const before = (await requestedCues(page)).length;
+  await page.keyboard.press("ArrowRight");
+  await expect(tiles.nth(0)).toHaveAttribute("data-lit", "true");
+  await expect.poll(async () => (await requestedCues(page)).slice(before).filter((cue) => LETTER_SOUND.test(cue)).length).toBeGreaterThan(0);
+  await page.keyboard.press("End");
+  await expect(activity).toHaveAttribute("data-blended", "true");
+  await expect(activity).toHaveAttribute("data-revealed", String(await tiles.count()));
+});
+
+test("a sentence is still read by the app, even when the child says the sounds", async ({ page }) => {
+  // Step 5, placed at a phonics week: the deck ends with short sentences.
+  await install(page, mia({ saysSounds: true, ageRange: "5", ladder: { step: 5, successes: 0 } }));
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "littlenest-placement-v1",
+      JSON.stringify({
+        version: 1,
+        origin: "device",
+        classId: "device-class",
+        updatedAt: "2026-09-26T00:00:00.000Z",
+        subjects: { reading: { classDefault: { subject: "reading", stageId: "phonics", weekIndex: 20 }, byChildId: {} } },
+      }),
+    );
+  });
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  for (let tries = 0; tries < 12; tries += 1) {
+    if ((await activity.getAttribute("data-sentence")) === "true") break;
+    await page.getByRole("button", { name: "Next word" }).click();
+  }
+  await expect(activity).toHaveAttribute("data-sentence", "true");
+  await expect(activity).toHaveAttribute("data-says-sounds", "app");
+  // And a word on the same deck is the child's to sound out.
+  await page.getByRole("button", { name: "Previous word" }).click();
+  await expect(activity).toHaveAttribute("data-sentence", "false");
+  await expect(activity).toHaveAttribute("data-letter-card", "false");
+  await expect(activity).toHaveAttribute("data-says-sounds", "child");
+});
+
 test("a new letter is still said by the app, even when the child says the sounds", async ({ page }) => {
   // Step 1 opens on the week's letter card.
   await install(page, mia({ saysSounds: true, ladder: { step: 1, successes: 0 } }));
@@ -162,6 +240,27 @@ test("a parent turns it on for one child, and the last sound game suggests when"
   await card.getByRole("button", { name: "The app" }).click();
   await expect(card).toHaveAttribute("data-says-sounds", "app");
   expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "{}").profiles?.[0]?.saysSounds, KEY)).toBeUndefined();
+});
+
+test("the Where to start check does not make a new child 'ready' on day one", async ({ page }) => {
+  const today = "2026-09-28";
+  await install(
+    page,
+    mia({
+      soundChecks: {
+        m: { firstTry: true, date: today, got: 1, asked: 1, start: true },
+        s: { firstTry: true, date: today, got: 1, asked: 1, start: true },
+        t: { firstTry: true, date: today, got: 1, asked: 1, start: true },
+        p: { firstTry: true, date: today, got: 1, asked: 1, start: true },
+      },
+    }),
+  );
+  await page.goto("./");
+  await page.getByRole("button", { name: "Parent", exact: true }).click();
+  await passGate(page);
+  const card = page.locator("[data-section=says-sounds][data-child=mia]");
+  await expect(card).toHaveAttribute("data-hint", "none");
+  await expect(card.locator("[data-says-hint]")).toHaveCount(0);
 });
 
 test("a teacher can set it on the child's page", async ({ page }) => {

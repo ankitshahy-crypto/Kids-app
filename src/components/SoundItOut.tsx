@@ -33,7 +33,8 @@ export function SoundItOut({
    * A grown-up's choice: the child says each letter sound out loud. The drag
    * lights the tiles without sound and the app says only the whole word at
    * the end, for the child to check. A tapped tile and Play sound still play
-   * the sounds. A letter card, which teaches a new letter, is always voiced.
+   * the sounds. A letter card, which teaches a new letter, is always voiced,
+   * and so is a sentence: its tiles are whole words, not letter sounds.
    */
   saysSounds?: boolean;
   onFinished?: (word: DeckWord) => void;
@@ -43,7 +44,7 @@ export function SoundItOut({
   const word = deck[index % deck.length];
   const finish = () => onFinished?.(word);
   const { revealed, active, replay, autoplay, soundLetter, soundWord } = usePlayback(word, settingsRef, paused, finish);
-  const quiet = saysSounds && !word.letterCard;
+  const quiet = saysSounds && !word.letterCard && !word.sentenceId;
   const speak = useSpeaker(settingsRef);
   const [lit, setLit] = useState<boolean[]>(() => word.letters.map(() => false));
   const [litOrder, setLitOrder] = useState<number[]>([]);
@@ -163,20 +164,62 @@ export function SoundItOut({
     const clamped = Math.min(rect.right - half, Math.max(rect.left + half, clientX));
     setProgress((clamped - rect.left) / rect.width);
     light(tilesCrossed(fromX, clientX));
+    if (clientX >= rect.right - 28) finishWord();
+  };
+
+  /** The end of the track, once every tile has been passed: the whole word, and the step is done. */
+  const finishWord = () => {
     const allSounded = word.letters.every((_, tileIndex) => sounded.current.has(tileIndex));
-    if (clientX >= rect.right - 28 && allSounded && !blendedPass.current) {
-      blendedPass.current = true;
-      setBlended(true);
-      // Single letters and sound units join; a sentence's word chunks wrap onto rows and stay put.
-      setJoined(!word.sentenceId);
-      setCelebrating(true);
-      window.setTimeout(() => setCelebrating(false), 900);
-      soundWord();
-      if (!rewarded.current) {
-        rewarded.current = true;
-        onFinished?.(word);
-      }
+    if (!allSounded || blendedPass.current) return;
+    blendedPass.current = true;
+    setBlended(true);
+    // Single letters and sound units join; a sentence's word chunks wrap onto rows and stay put.
+    setJoined(!word.sentenceId);
+    setCelebrating(true);
+    window.setTimeout(() => setCelebrating(false), 900);
+    soundWord();
+    if (!rewarded.current) {
+      rewarded.current = true;
+      onFinished?.(word);
     }
+  };
+
+  /** Put the hero over a tile, or at the end of the track, for a step made without a finger. */
+  const placeToken = (at: number | "end") => {
+    const track = trackRef.current;
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const half = (tokenRef.current?.offsetWidth ?? 72) / 2;
+    const tile = at === "end" ? null : tileRefs.current[at]?.getBoundingClientRect();
+    const x = at === "end" ? rect.right : tile ? tile.left + tile.width / 2 : rect.left + ((at + 0.5) / word.letters.length) * rect.width;
+    const clamped = Math.min(rect.right - half, Math.max(rect.left + half, x));
+    setProgress((clamped - rect.left) / rect.width);
+  };
+
+  /**
+   * The slider without a finger: a keyboard's right arrow, or VoiceOver and
+   * Switch Control adjusting it. Each step is the next tile, in order; the
+   * step after the last tile is the end of the track. A step after a finished
+   * word starts a new pass, as a new drag does.
+   */
+  const stepForward = (toEnd = false) => {
+    unlockAudio();
+    resumeSpeech();
+    if (blendedPass.current) {
+      sounded.current = new Set();
+      blendedPass.current = false;
+      setJoined(false);
+    }
+    const remaining = word.letters.map((_, tileIndex) => tileIndex).filter((tileIndex) => !sounded.current.has(tileIndex));
+    if (remaining.length > 0 && !toEnd) {
+      light([remaining[0]]);
+      placeToken(remaining[0]);
+      return;
+    }
+    if (remaining.length > 0) light(remaining);
+    placeToken("end");
+    finishWord();
   };
 
   const onTrackDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -329,8 +372,18 @@ export function SoundItOut({
           aria-valuemin={0}
           aria-valuemax={word.letters.length}
           aria-valuenow={lit.filter(Boolean).length}
-          aria-valuetext={blended ? word.word : "Drag from left to right"}
+          aria-valuetext={blended ? word.word : lit.some(Boolean) ? `${lit.filter(Boolean).length} of ${word.letters.length}` : "Drag from left to right"}
+          tabIndex={0}
           style={{ touchAction: "none" }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowRight" || event.key === "ArrowUp" || event.key === "PageUp") {
+              event.preventDefault();
+              stepForward();
+            } else if (event.key === "End") {
+              event.preventDefault();
+              stepForward(true);
+            }
+          }}
           onPointerDown={(event) => {
             if (trackRef.current) trackRef.current.dataset.lastX = String(event.clientX);
             onTrackDown(event);

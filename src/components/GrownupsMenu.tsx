@@ -337,7 +337,8 @@ export function GrownupsMenu({
             When a child is ready, a grown-up can let them say the sounds. Under Sounding out in Progress, or on the
             child's Teacher page, choose the child's name. The letters then light without their sounds, the child says
             each one out loud, and the app says the whole word at the end. Tapping a letter or Play sound still plays
-            the sounds. The Friday sound game suggests when a child may be ready.
+            the sounds, and only the child's own slide finishes the word. New letters and sentences are always said by
+            the app. The Friday sound game suggests when a child may be ready.
           </p>
           <h3>If an iPhone is quiet</h3>
           <p className="adult-copy">

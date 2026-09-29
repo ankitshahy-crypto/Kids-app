@@ -140,21 +140,31 @@ export function byNudge<T extends { completion: Completion }>(rows: readonly T[]
  * "Still practicing"; the child only ever sees stars for trying.
  * ------------------------------------------------------------------------- */
 
+export type SoundCheckSource = "friday" | "start";
+
+/**
+ * One check per sound per day: the day's first try is the one that counts.
+ * Playing the game again the same day, after seeing the answer, changes nothing.
+ */
 export function recordSoundCheck(
   profile: ChildProfile,
   sound: string,
   firstTry: boolean,
   now = new Date(),
   timeZone = deviceTimeZone(),
+  source: SoundCheckSource = "friday",
 ): ChildProfile {
   const key = sound.toLowerCase();
   if (!SOUND_KEY.test(key)) return profile;
   const before = profile.soundChecks?.[key];
+  const date = localDateKey(now, timeZone);
+  if (before?.date === date) return profile;
   const next: SoundCheck = {
     firstTry,
-    date: localDateKey(now, timeZone),
+    date,
     got: (before?.got ?? 0) + (firstTry ? 1 : 0),
     asked: (before?.asked ?? 0) + 1,
+    ...(source === "start" ? { start: true as const } : {}),
   };
   return { ...profile, soundChecks: { ...(profile.soundChecks ?? {}), [key]: next } };
 }
@@ -177,8 +187,10 @@ export function soundSummary(profile: ChildProfile): { knows: string[]; practici
 }
 
 /**
- * What the latest sound game suggests about who says the sounds in Sound It
- * Out, for a grown-up to decide on. The app never switches on its own.
+ * What the latest Friday sound game suggests about who says the sounds in
+ * Sound It Out, for a grown-up to decide on. The app never switches on its
+ * own. The Where to start check does not count: a child who aces it on day
+ * one has not sounded out a word here yet.
  * - "ready": the app says the sounds, and every sound in the latest game
  *   (three or more) was right on the first try.
  * - "practicing": the child says the sounds, and the latest game had two or
@@ -190,7 +202,7 @@ export const SAYS_SOUNDS_READY_AFTER = 3;
 export const SAYS_SOUNDS_BACK_AFTER = 2;
 
 export function saysSoundsHint(profile: Pick<ChildProfile, "soundChecks" | "saysSounds">): SaysSoundsHint {
-  const checks = Object.entries(profile.soundChecks ?? {});
+  const checks = Object.entries(profile.soundChecks ?? {}).filter(([, check]) => !check.start);
   if (checks.length === 0) return { kind: "none" };
   const latest = checks.reduce((max, [, check]) => (check.date > max ? check.date : max), "");
   const last = checks.filter(([, check]) => check.date === latest);
