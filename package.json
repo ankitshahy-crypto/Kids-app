@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/copy-spa-fallback.mjs",
+    "build": "tsc --noEmit && vite build && node scripts/copy-spa-fallback.mjs && node scripts/check-precache.mjs",
     "preview": "vite preview",
     "ios:sync": "VITE_BASE=./ npm run build && npx cap sync ios",
     "generate-audio": "node scripts/generate-audio.mjs",

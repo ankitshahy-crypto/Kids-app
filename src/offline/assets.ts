@@ -32,6 +32,36 @@ export function fontUrls(): string[] {
   return [font400, font600, font700];
 }
 
+type Storage = { getItem(key: string): string | null; setItem(key: string, value: string): void };
+
+/** True once a child has been added on this device. Before that there is nothing to download for. */
+export function hasChildOnDevice(storage?: Storage): boolean {
+  try {
+    return loadStore(storage ?? localStorage).profiles.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+type SizeIndex = { shared?: number; byAnimal?: Record<string, number> };
+
+/**
+ * How much the sound clips for this device's children add up to: the clips
+ * every device keeps, plus the story lines that name each of their animals.
+ */
+export function offlineAudioBytes(animals: ReadonlySet<string>, sizes: SizeIndex = (available as { bytes?: SizeIndex }).bytes ?? {}): number {
+  let total = sizes.shared ?? 0;
+  for (const animal of animals) total += sizes.byAnimal?.[animal] ?? 0;
+  return total;
+}
+
+/** "About 24 MB", rounded up so the estimate is never smaller than the download. */
+export function describeBytes(bytes: number): string {
+  if (bytes <= 0) return "";
+  const mb = Math.ceil(bytes / 1_000_000);
+  return `About ${mb} MB`;
+}
+
 /**
  * The animals of the children on this device, for the story lines to keep.
  * A story line that names the hero has one clip per animal (p1-fox.mp3);

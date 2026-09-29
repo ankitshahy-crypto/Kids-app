@@ -18,6 +18,7 @@ import { assignWritingLevel, recordWritingAttempt, type ScaffoldLevel, type Writ
 import { READING, type SubjectId } from "../data/subject";
 import { recordSoundCheck } from "../data/progress";
 import type { HomeReport, TeacherLink } from "../data/profileExtras";
+import { noteProfilesChanged } from "../offline/events";
 
 export function useProfiles() {
   const [store, setStore] = useState(() => loadStore());
@@ -30,6 +31,8 @@ export function useProfiles() {
     if (next === saved.current) return;
     saveStore(store);
     saved.current = next;
+    // The offline download follows the children on this device.
+    noteProfilesChanged();
   }, [store]);
 
   const active = store.profiles.find((profile) => profile.id === store.activeId) ?? null;
