@@ -72,15 +72,26 @@ async function playCount(page: Page): Promise<number> {
   });
 }
 
+/**
+ * A child's drag: about a second from one end to the other. Each letter's
+ * sound starts when the finger reaches it, and the next letter's stops it,
+ * so a drag faster than a clip can load would skip letters (as it would on a
+ * phone). A near-instant drag made the letter count here depend on how fast
+ * the machine fetched the clips.
+ */
 async function dragAcross(page: Page, track: Locator) {
   const box = await track.boundingBox();
   if (!box) throw new Error("The blend track has no box");
   const y = box.y + box.height / 2;
   const start = box.x + 8;
   const end = box.x + box.width - 4;
+  const steps = 40;
   await page.mouse.move(start, y);
   await page.mouse.down();
-  await page.mouse.move(end, y, { steps: 48 });
+  for (let step = 1; step <= steps; step += 1) {
+    await page.mouse.move(start + ((end - start) * step) / steps, y);
+    await page.waitForTimeout(25);
+  }
   await page.mouse.up();
 }
 
