@@ -121,6 +121,7 @@ export function GrownupsMenu({
   onChildPlace,
   onLadderStep,
   onTeacherLink,
+  onSaysSounds,
   onClose,
   initialPage = "menu",
 }: {
@@ -138,6 +139,8 @@ export function GrownupsMenu({
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
   onLadderStep: (childId: string, step: LadderStep) => void;
   onTeacherLink: (childId: string, link: TeacherLink | undefined) => void;
+  /** Who says the letter sounds in Sound It Out, per child. */
+  onSaysSounds: (childId: string, on: boolean) => void;
   onClose: () => void;
   /** Open on a page, as when a child's "ask a grown-up" leads here. */
   initialPage?: GrownupsPage;
@@ -214,6 +217,7 @@ export function GrownupsMenu({
             onChildPlace={onChildPlace}
             onLadderStep={onLadderStep}
             onTeacherLink={onTeacherLink}
+            onSaysSounds={onSaysSounds}
           />
         </section>
       ) : null}
@@ -328,6 +332,12 @@ export function GrownupsMenu({
             In Letters the word starts dim. Drag the animal along the track from left to right. Each letter lights and
             says its sound as the finger passes it. A slow drag says the sounds separately. The end of the track says
             the whole word and leaves the letters lit. Tap a lit letter to hear that sound again.
+          </p>
+          <p className="adult-copy" data-help="says-sounds">
+            When a child is ready, a grown-up can let them say the sounds. Under Sounding out in Progress, or on the
+            child's Teacher page, choose the child's name. The letters then light without their sounds, the child says
+            each one out loud, and the app says the whole word at the end. Tapping a letter or Play sound still plays
+            the sounds. The Friday sound game suggests when a child may be ready.
           </p>
           <h3>If an iPhone is quiet</h3>
           <p className="adult-copy">

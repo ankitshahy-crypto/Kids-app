@@ -25,6 +25,7 @@ import { LearningPath } from "./LearningPath";
 import { HatchLevelControl } from "./HatchLevel";
 import { WordLadder } from "./WordLadder";
 import { WritingLevels } from "./WritingLevels";
+import { SaysSoundsControl } from "./SaysSounds";
 import { ReadingChart } from "./ReadingChart";
 import { SettingsFields } from "./SettingsFields";
 import { FamilyProgress, TeacherNote } from "./ProgressViews";
@@ -57,6 +58,7 @@ export function ParentView({
   onChildPlace,
   onLadderStep,
   onTeacherLink,
+  onSaysSounds,
   onClose,
 }: {
   settings: Settings;
@@ -71,6 +73,8 @@ export function ParentView({
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
   onLadderStep: (childId: string, step: LadderStep) => void;
   onTeacherLink: (childId: string, link: TeacherLink | undefined) => void;
+  /** Who says the letter sounds in Sound It Out, per child. */
+  onSaysSounds: (childId: string, on: boolean) => void;
   onClose: () => void;
 }) {
   const [page, setPage] = useState<ParentPage>(profiles.length === 0 ? "children" : "home");
@@ -127,7 +131,15 @@ export function ParentView({
       ) : null}
 
       {page === "home" && child ? (
-        <ParentHome child={child} profiles={profiles} onSelect={onSelect} goalMinutes={settings.readingGoal} placement={placement} onOpen={setPage} />
+        <ParentHome
+          child={child}
+          profiles={profiles}
+          onSelect={onSelect}
+          goalMinutes={settings.readingGoal}
+          placement={placement}
+          onOpen={setPage}
+          onSaysSounds={onSaysSounds}
+        />
       ) : null}
       {page === "home" && !child ? (
         <header className="parent-hero">
@@ -211,6 +223,7 @@ export function ParentView({
             onChildPlace={onChildPlace}
             onLadderStep={onLadderStep}
             onTeacherLink={onTeacherLink}
+            onSaysSounds={onSaysSounds}
           />
         </section>
       ) : null}
@@ -325,6 +338,7 @@ function ParentHome({
   goalMinutes,
   placement,
   onOpen,
+  onSaysSounds,
 }: {
   child: ChildProfile;
   profiles: ChildProfile[];
@@ -332,6 +346,7 @@ function ParentHome({
   goalMinutes: number;
   placement: PlacementDocument;
   onOpen: (page: ParentPage) => void;
+  onSaysSounds: (childId: string, on: boolean) => void;
 }) {
   const now = new Date();
   const resolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange);
@@ -437,6 +452,7 @@ function ParentHome({
       <WritingLevels writing={child.writing} weekLetters={weekLetters} childName={child.name} stickers={child.stickers} />
       <HatchLevelControl games={child.games} />
       <WordLadder ladder={child.ladder} />
+      <SaysSoundsControl profile={child} onChange={(on) => onSaysSounds(child.id, on)} />
 
       <div className="dash-split">
         <section className="dash-card" data-section="lessons">

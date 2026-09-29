@@ -5456,6 +5456,16 @@ input.is-pressed,
   color: var(--ink);
 }
 
+.says-sounds .writing-level button {
+  padding: 0 16px;
+}
+
+.says-hint {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--mint-wash);
+}
+
 .dock-games svg {
   width: 42px;
   height: 42px;

@@ -176,6 +176,34 @@ export function soundSummary(profile: ChildProfile): { knows: string[]; practici
   return { knows: knows.sort(soundOrder), practicing: practicing.sort(soundOrder) };
 }
 
+/**
+ * What the latest sound game suggests about who says the sounds in Sound It
+ * Out, for a grown-up to decide on. The app never switches on its own.
+ * - "ready": the app says the sounds, and every sound in the latest game
+ *   (three or more) was right on the first try.
+ * - "practicing": the child says the sounds, and the latest game had two or
+ *   more sounds still being practiced.
+ */
+export type SaysSoundsHint = { kind: "none" } | { kind: "ready" | "practicing"; sounds: string[]; date: string };
+
+export const SAYS_SOUNDS_READY_AFTER = 3;
+export const SAYS_SOUNDS_BACK_AFTER = 2;
+
+export function saysSoundsHint(profile: Pick<ChildProfile, "soundChecks" | "saysSounds">): SaysSoundsHint {
+  const checks = Object.entries(profile.soundChecks ?? {});
+  if (checks.length === 0) return { kind: "none" };
+  const latest = checks.reduce((max, [, check]) => (check.date > max ? check.date : max), "");
+  const last = checks.filter(([, check]) => check.date === latest);
+  const practicing = last.filter(([, check]) => !check.firstTry).map(([sound]) => sound).sort(soundOrder);
+  if (profile.saysSounds) {
+    return practicing.length >= SAYS_SOUNDS_BACK_AFTER ? { kind: "practicing", sounds: practicing, date: latest } : { kind: "none" };
+  }
+  if (last.length >= SAYS_SOUNDS_READY_AFTER && practicing.length === 0) {
+    return { kind: "ready", sounds: last.map(([sound]) => sound).sort(soundOrder), date: latest };
+  }
+  return { kind: "none" };
+}
+
 /** Sounds for this Friday's check-in: this week's and the week before's, newest first, at most five. */
 export function checkInSounds(weekLetters: readonly string[], introduced: readonly string[], limit = 5): string[] {
   const seen = new Set<string>();
