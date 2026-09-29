@@ -2,6 +2,7 @@ import { registerPlugin } from "@capacitor/core";
 import { isNativeApp } from "../audio/platform";
 import { unlockProductId } from "../config";
 import { PAYWALL_PREVIEW_KEY, UNLOCK_KEY } from "../storage";
+import { afterPilotAnswer, type PilotAnswer } from "./pilot";
 
 /**
  * The one-time unlock. On the iPhone app this asks the App Store (StoreKit,
@@ -17,11 +18,14 @@ type StorePlugin = {
   purchase(options: { id: string }): Promise<{ owned: boolean; cancelled?: boolean; pending?: boolean }>;
   restore(options: { id: string }): Promise<{ owned: boolean }>;
   redeemCode(): Promise<void>;
-  beta(): Promise<{ beta: boolean }>;
+  beta(): Promise<PilotAnswer>;
   addListener(event: "owned", listener: (data: { productId: string; owned: boolean }) => void): Promise<{ remove: () => Promise<void> }>;
 };
 
 const Store = registerPlugin<StorePlugin>("Store");
+
+/** StoreKit can take a moment; the locks never wait on it for longer than this. */
+const PILOT_CHECK_MS = 8000;
 
 export type UnlockStatus = "idle" | "busy" | "pending" | "cancelled" | "restored" | "not-found" | "error";
 
@@ -135,12 +139,18 @@ export function startStore(): void {
   started = true;
   state = initial();
   if (!isNativeApp()) return;
+  // No answer in time: show the app as any App Store copy would. A pilot
+  // answer that arrives later still opens it.
+  const waiting = window.setTimeout(() => publish({ ready: true }), PILOT_CHECK_MS);
   void Store.beta()
-    .then((result: { beta: boolean }) => {
-      if (result.beta) publish({ beta: true, unlocked: true, ready: true });
-      else publish({ ready: true });
+    .then((result: PilotAnswer) => {
+      window.clearTimeout(waiting);
+      publish(afterPilotAnswer(result));
     })
-    .catch(() => publish({ ready: true }));
+    .catch(() => {
+      window.clearTimeout(waiting);
+      publish({ ready: true });
+    });
   void Store.addListener("owned", (data: { productId: string; owned: boolean }) => {
     if (data.productId === unlockProductId) setOwned(data.owned);
   }).catch(() => undefined);
