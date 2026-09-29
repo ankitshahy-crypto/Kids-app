@@ -63,12 +63,15 @@ export function SoundItOut({
 
   // A letter card says its line once when it appears, so a child who cannot
   // read the button still hears the letter. Play sound says it again and
-  // finishes the step.
+  // finishes the step. The card is marked as heard when the line starts, not
+  // when the effect runs, so a cancelled effect (StrictMode) still plays it.
   const autoPlayed = useRef("");
   useEffect(() => {
     if (!word.letterCard || paused || autoPlayed.current === word.id) return undefined;
-    autoPlayed.current = word.id;
-    const timer = window.setTimeout(autoplay, 350);
+    const timer = window.setTimeout(() => {
+      autoPlayed.current = word.id;
+      autoplay();
+    }, 350);
     return () => window.clearTimeout(timer);
   }, [word, paused, autoplay]);
 
