@@ -19,7 +19,7 @@ export function OfflinePanel() {
   const state = useOfflineState();
   const bundled = state.bundled || isNativeApp();
   const working = state.phase === "downloading";
-  const label = state.phase === "partial" ? "Try again" : state.hold && state.hold !== "no-child" ? "Download now" : "Download for offline";
+  const label = working ? "Saving…" : state.phase === "partial" ? "Try again" : state.hold && state.hold !== "no-child" ? "Download now" : "Download for offline";
 
   return (
     <section
