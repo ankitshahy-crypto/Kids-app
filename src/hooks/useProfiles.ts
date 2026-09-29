@@ -207,6 +207,10 @@ export function useProfiles() {
   const setFromHome = (id: string, report: HomeReport | undefined) =>
     patchChild(id, (item) => ({ ...item, fromHome: report }));
 
+  /** A grown-up's choice: the child says the letter sounds in Sound It Out, or the app does. */
+  const setSaysSounds = (id: string, on: boolean) =>
+    patchChild(id, (item) => ({ ...item, saysSounds: on ? true : undefined }));
+
   const setWritingLevel = (id: string, itemId: string, level: ScaffoldLevel) => {
     setStore((current) => ({
       ...current,
@@ -238,6 +242,7 @@ export function useProfiles() {
     setHatchLevel,
     noteLadder,
     setLadderStep,
+    setSaysSounds,
     noteSpin,
     giveGift,
     wear,

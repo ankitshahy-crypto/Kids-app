@@ -5,6 +5,7 @@ import type { AnimalId } from "../data/animals";
 import { starterDeck, type DeckWord } from "../data/deck";
 import { emptyOutfit, type Outfit } from "../data/wardrobe";
 import { usePlayback } from "../hooks/usePlayback";
+import { useSpeaker } from "../hooks/useSpeaker";
 import type { Settings } from "../settings";
 import { Illustration } from "../illustrations";
 import { Hero } from "./Hero";
@@ -19,6 +20,7 @@ export function SoundItOut({
   animal = null,
   outfit = emptyOutfit(),
   ladderStep = 1,
+  saysSounds = false,
   onFinished,
 }: {
   settingsRef: { current: Settings };
@@ -27,6 +29,13 @@ export function SoundItOut({
   animal?: AnimalId | null;
   outfit?: Outfit;
   ladderStep?: number;
+  /**
+   * A grown-up's choice: the child says each letter sound out loud. The drag
+   * lights the tiles without sound and the app says only the whole word at
+   * the end, for the child to check. A tapped tile and Play sound still play
+   * the sounds. A letter card, which teaches a new letter, is always voiced.
+   */
+  saysSounds?: boolean;
   onFinished?: (word: DeckWord) => void;
 }) {
   const deck = words.length > 0 ? words : starterDeck.words;
@@ -34,6 +43,8 @@ export function SoundItOut({
   const word = deck[index % deck.length];
   const finish = () => onFinished?.(word);
   const { revealed, active, replay, autoplay, soundLetter, soundWord } = usePlayback(word, settingsRef, paused, finish);
+  const quiet = saysSounds && !word.letterCard;
+  const speak = useSpeaker(settingsRef);
   const [lit, setLit] = useState<boolean[]>(() => word.letters.map(() => false));
   const [litOrder, setLitOrder] = useState<number[]>([]);
   const [blended, setBlended] = useState(false);
@@ -78,6 +89,18 @@ export function SoundItOut({
     return () => window.clearTimeout(timer);
   }, [word, paused, autoplay]);
 
+  // The first word the child sounds out on their own starts with what to do.
+  // Said once per visit, marked when the line starts (StrictMode runs effects twice).
+  const toldSay = useRef(false);
+  useEffect(() => {
+    if (!quiet || paused || toldSay.current) return undefined;
+    const timer = window.setTimeout(() => {
+      toldSay.current = true;
+      speak.prompt("blend-say", "Say each sound as you slide.");
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [quiet, paused, speak]);
+
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -111,7 +134,8 @@ export function SoundItOut({
       });
       return next;
     });
-    fresh.forEach((item) => soundLetter(item));
+    // The child says these sounds; the app waits for the whole word.
+    if (!quiet) fresh.forEach((item) => soundLetter(item));
   };
 
   const tilesCrossed = (fromX: number, toX: number) => {
@@ -208,6 +232,7 @@ export function SoundItOut({
       data-revealed={Math.max(revealed, lit.filter(Boolean).length)}
       data-active={active === null ? "" : String(active)}
       data-blended={blended ? "true" : "false"}
+      data-says-sounds={quiet ? "child" : "app"}
       onPointerDown={(event) => {
         const target = event.target as HTMLElement;
         gesture.current = {
@@ -336,7 +361,8 @@ export function SoundItOut({
           onClick={() => {
             unlockAudio();
             resumeSpeech();
-            replay();
+            // When the child says the sounds, Play sound is help: it plays them all, and only the child's own slide finishes the word.
+            replay(!quiet);
           }}
         >
           <span className="play-icon" aria-hidden="true">

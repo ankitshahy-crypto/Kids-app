@@ -110,10 +110,14 @@ export function usePlayback(
     };
   }, []);
 
-  const replay = useCallback(() => {
-    const run = begin();
-    void playThrough(run);
-  }, [begin, playThrough]);
+  /** The whole word, sound by sound. `finish: false` plays it as help without finishing the step. */
+  const replay = useCallback(
+    (finish = true) => {
+      const run = begin();
+      void playThrough(run, { finish });
+    },
+    [begin, playThrough],
+  );
 
   /**
    * The card's line when it opens, started by the screen rather than a tap:

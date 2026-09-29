@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createChild, type ChildProfile } from "./profiles";
-import { byNudge, checkInSounds, completion, lastActiveLabel, recordSoundCheck, soundSummary } from "./progress";
+import { byNudge, checkInSounds, completion, lastActiveLabel, recordSoundCheck, saysSoundsHint, soundSummary } from "./progress";
 
 const zone = "America/New_York";
 // Thursday 1 October 2026, midday in New York. The week runs 28 Sep – 4 Oct.
@@ -76,5 +76,47 @@ describe("quiet check-ins", () => {
 
   it("pick this week's sounds first, then recent ones", () => {
     expect(checkInSounds(["p", "n"], ["m", "s", "a", "t", "p", "n"])).toEqual(["p", "n", "t", "a", "s"]);
+  });
+});
+
+describe("who says the sounds in Sound It Out", () => {
+  const friday = new Date("2026-10-02T16:00:00Z");
+  const lastFriday = new Date("2026-09-25T16:00:00Z");
+
+  function played(profile: ChildProfile, results: Record<string, boolean>, when: Date): ChildProfile {
+    let next = profile;
+    for (const [sound, firstTry] of Object.entries(results)) next = recordSoundCheck(next, sound, firstTry, when, zone);
+    return next;
+  }
+
+  it("suggests nothing before any sound game", () => {
+    expect(saysSoundsHint(child())).toEqual({ kind: "none" });
+  });
+
+  it("suggests the child is ready when every sound in the latest game was right on the first try", () => {
+    const profile = played(child(), { m: true, s: true, t: true }, friday);
+    expect(saysSoundsHint(profile)).toEqual({ kind: "ready", sounds: ["m", "s", "t"], date: "2026-10-02" });
+  });
+
+  it("needs three sounds, and a miss in the latest game holds it", () => {
+    expect(saysSoundsHint(played(child(), { m: true, s: true }, friday)).kind).toBe("none");
+    expect(saysSoundsHint(played(child(), { m: true, s: true, t: true, p: false }, friday)).kind).toBe("none");
+  });
+
+  it("goes by the latest game, not older ones", () => {
+    const older = played(child(), { a: false, i: false }, lastFriday);
+    expect(saysSoundsHint(played(older, { m: true, s: true, t: true }, friday)).kind).toBe("ready");
+  });
+
+  it("never suggests turning it on again once the child says the sounds", () => {
+    const profile = played(child({ saysSounds: true }), { m: true, s: true, t: true }, friday);
+    expect(saysSoundsHint(profile)).toEqual({ kind: "none" });
+  });
+
+  it("when the child says the sounds, two or more still practicing in the latest game suggests the app help again", () => {
+    const one = played(child({ saysSounds: true }), { m: true, s: false, t: true }, friday);
+    expect(saysSoundsHint(one)).toEqual({ kind: "none" });
+    const two = played(child({ saysSounds: true }), { m: true, s: false, sh: false }, friday);
+    expect(saysSoundsHint(two)).toEqual({ kind: "practicing", sounds: ["s", "sh"], date: "2026-10-02" });
   });
 });

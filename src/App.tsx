@@ -146,7 +146,7 @@ const moneyScreens: MoneyGame[] = ["jars", "lemonade", "choose", "needs", "cards
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
-  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteLadder, setLadderStep, noteSpin, giveGift, noteSoundCheck, setNoteForHome, setFromTeacher, setFromHome } = useProfiles();
+  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteLadder, setLadderStep, setSaysSounds, noteSpin, giveGift, noteSoundCheck, setNoteForHome, setFromTeacher, setFromHome } = useProfiles();
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
@@ -920,6 +920,7 @@ export default function App() {
                   animal={active.animal}
                   outfit={active.outfit}
                   ladderStep={lessonLadderStep}
+                  saysSounds={active.saysSounds === true}
                   onFinished={finishLetter}
                 />
               ) : null}
@@ -1132,6 +1133,7 @@ export default function App() {
               onChildPlace={setChildPlace}
               onLadderStep={setLadderStep}
               onTeacherLink={setFromTeacher}
+              onSaysSounds={setSaysSounds}
               onClose={() => setMode("start")}
             />
           </div>
@@ -1148,6 +1150,7 @@ export default function App() {
             onWritingLevel={setWritingLevel}
             onHatchLevel={setHatchLevel}
             onLadderStep={setLadderStep}
+            onSaysSounds={setSaysSounds}
             onNote={setNoteForHome}
             onHomeReport={setFromHome}
             sharedDevice={settings.sharedDevice}
@@ -1208,6 +1211,7 @@ export default function App() {
               onChildPlace={setChildPlace}
               onLadderStep={setLadderStep}
               onTeacherLink={setFromTeacher}
+              onSaysSounds={setSaysSounds}
               onClose={() => setMode(grownupsReturn)}
             />
           </div>

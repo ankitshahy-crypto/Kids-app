@@ -115,3 +115,15 @@ describe("profile saves", () => {
     expect(awardStar(child, "letter", now, zone).stars).toBe(1);
   });
 });
+
+describe("who says the sounds", () => {
+  it("keeps a grown-up's choice and reads anything else as the app saying them", () => {
+    const storage = memory();
+    const on = { ...createChild({ name: "Mia", ageRange: "4", animal: "fox" }), saysSounds: true };
+    const odd = { ...createChild({ name: "Leo", ageRange: "5", animal: "owl" }), saysSounds: "yes" };
+    const off = createChild({ name: "Ava", ageRange: "6-7", animal: "cat" });
+    storage.setItem(PROFILES_KEY, JSON.stringify({ activeId: on.id, profiles: [on, odd, off] }));
+    const loaded = loadStore(storage).profiles;
+    expect(loaded.map((profile) => profile.saysSounds)).toEqual([true, undefined, undefined]);
+  });
+});

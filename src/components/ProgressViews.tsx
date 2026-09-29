@@ -8,6 +8,7 @@ import { lessonName, todayKey, type ChildProfile } from "../data/profiles";
 import { byNudge, completion, EXPLORE_LABELS, lastActiveLabel, soundSummary, WEEKLY_TARGET, type Completion } from "../data/progress";
 import { READING } from "../data/subject";
 import { unitLabel } from "../data/units";
+import { SaysSoundsControl } from "./SaysSounds";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -211,12 +212,15 @@ export function FamilyProgress({
   onChildPlace,
   onLadderStep,
   onTeacherLink,
+  onSaysSounds,
 }: {
   profiles: ChildProfile[];
   placement: PlacementDocument;
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
   onLadderStep: (childId: string, step: LadderStep) => void;
   onTeacherLink: (childId: string, link: TeacherLink | undefined) => void;
+  /** Who says the letter sounds in Sound It Out, per child. */
+  onSaysSounds?: (childId: string, on: boolean) => void;
 }) {
   if (profiles.length === 0) return <p className="adult-copy">Add a child to see their progress.</p>;
   return (
@@ -229,6 +233,7 @@ export function FamilyProgress({
           </header>
           <TeacherNote link={profile.fromTeacher} />
           <CompletionSummary profile={profile} placement={placement} />
+          {onSaysSounds ? <SaysSoundsControl profile={profile} onChange={(on) => onSaysSounds(profile.id, on)} /> : null}
           <details className="code-details" data-section="share-code">
             <summary>Share progress with the teacher</summary>
             <p className="adult-copy">

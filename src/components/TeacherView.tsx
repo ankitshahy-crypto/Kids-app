@@ -16,6 +16,7 @@ import type { HomeReport } from "../data/profileExtras";
 import { HatchLevelControl } from "./HatchLevel";
 import { WordLadder } from "./WordLadder";
 import { WritingLevels } from "./WritingLevels";
+import { SaysSoundsControl } from "./SaysSounds";
 import { LearningPath } from "./LearningPath";
 import { PlacementControls } from "./PlacementControls";
 import { Printables } from "./Printables";
@@ -36,6 +37,7 @@ function ChildSheet({
   onWritingLevel,
   onHatchLevel,
   onLadderStep,
+  onSaysSounds,
   onNote,
   onHomeReport,
 }: {
@@ -47,6 +49,7 @@ function ChildSheet({
   onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
   onHatchLevel: (childId: string, level: HatchLevel) => void;
   onLadderStep: (childId: string, step: LadderStep) => void;
+  onSaysSounds: (childId: string, on: boolean) => void;
   onNote: (childId: string, note: number) => void;
   onHomeReport: (childId: string, report: HomeReport | undefined) => void;
 }) {
@@ -94,6 +97,7 @@ function ChildSheet({
       />
       <HatchLevelControl games={profile.games} editable onSetLevel={(level) => onHatchLevel(profile.id, level)} />
       <WordLadder ladder={profile.ladder} editable onSetStep={(step) => onLadderStep(profile.id, step)} />
+      <SaysSoundsControl profile={profile} onChange={(on) => onSaysSounds(profile.id, on)} />
       <LearningPath profile={profile} name={name} placedIntroduced={placedIntroduced} />
       <LearningPath
         profile={profile}
@@ -132,6 +136,7 @@ export function TeacherView({
   onWritingLevel,
   onHatchLevel,
   onLadderStep,
+  onSaysSounds,
   onNote,
   onHomeReport,
   sharedDevice = false,
@@ -146,6 +151,7 @@ export function TeacherView({
   onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
   onHatchLevel: (childId: string, level: HatchLevel) => void;
   onLadderStep: (childId: string, step: LadderStep) => void;
+  onSaysSounds: (childId: string, on: boolean) => void;
   onNote: (childId: string, note: number) => void;
   onHomeReport: (childId: string, report: HomeReport | undefined) => void;
   /** Shared class iPad is on: say so, since the Teacher screen turns it on by itself. */
@@ -179,6 +185,7 @@ export function TeacherView({
             onWritingLevel={onWritingLevel}
             onHatchLevel={onHatchLevel}
             onLadderStep={onLadderStep}
+            onSaysSounds={onSaysSounds}
             onNote={onNote}
             onHomeReport={onHomeReport}
           />

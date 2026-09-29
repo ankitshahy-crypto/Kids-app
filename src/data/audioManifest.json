@@ -1117,7 +1117,8 @@
     "science-chain": { "file": "prompts/science-chain.mp3", "say": "Who eats what?", "source": "neural" },
     "science-water": { "file": "prompts/science-water.mp3", "say": "Where does the rain come from?", "source": "neural" },
     "science-again": { "file": "prompts/science-again.mp3", "say": "Try again.", "source": "neural" },
-    "science-grownup": { "file": "prompts/science-grownup.mp3", "say": "Do this with a grown-up. Do not taste it.", "source": "neural" }
+    "science-grownup": { "file": "prompts/science-grownup.mp3", "say": "Do this with a grown-up. Do not taste it.", "source": "neural" },
+    "blend-say": { "file": "prompts/blend-say.mp3", "say": "Say each sound as you slide.", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },

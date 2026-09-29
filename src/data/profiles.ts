@@ -90,6 +90,12 @@ export type ChildProfile = {
   themes: ThemeId[];
   /** Quiet check-ins: each sound's latest first try. Shown to grown-ups only. */
   soundChecks?: SoundChecks;
+  /**
+   * Sound It Out: the child says each letter sound out loud and the app stays
+   * quiet until the whole word. A grown-up turns it on. Missing means the app
+   * says the sounds.
+   */
+  saysSounds?: boolean;
   /** Family device: the last family code from the teacher. */
   fromTeacher?: TeacherLink;
   /** Class iPad: the preset note the teacher picked for this child's family. */
@@ -353,6 +359,7 @@ function withRewards(profile: ChildProfile): ChildProfile {
     gifts: normalizeGifts((profile as { gifts?: unknown }).gifts),
     themes: normalizeThemes((profile as { themes?: unknown }).themes),
     soundChecks: nonEmpty(normalizeSoundChecks((profile as { soundChecks?: unknown }).soundChecks)),
+    saysSounds: (profile as { saysSounds?: unknown }).saysSounds === true ? true : undefined,
     fromTeacher: normalizeTeacherLink((profile as { fromTeacher?: unknown }).fromTeacher),
     noteForHome: normalizeNote((profile as { noteForHome?: unknown }).noteForHome),
     fromHome: normalizeHomeReport((profile as { fromHome?: unknown }).fromHome),
