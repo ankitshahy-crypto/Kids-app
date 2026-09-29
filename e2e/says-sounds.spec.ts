@@ -58,6 +58,33 @@ async function dragAcross(page: Page, track: Locator) {
   await page.mouse.up();
 }
 
+/** The finishing chime and other effects are synthesized: count the oscillators they start. */
+async function countEffects(page: Page) {
+  await page.addInitScript(() => {
+    const target = window as Window & { __tones?: number; webkitAudioContext?: typeof AudioContext };
+    target.__tones = 0;
+    const Ctor = window.AudioContext ?? target.webkitAudioContext;
+    if (!Ctor) return;
+    const create = Ctor.prototype.createOscillator;
+    Ctor.prototype.createOscillator = function (this: AudioContext) {
+      target.__tones = (target.__tones ?? 0) + 1;
+      return create.apply(this);
+    };
+  });
+}
+
+async function tones(page: Page): Promise<number> {
+  return page.evaluate(() => (window as Window & { __tones?: number }).__tones ?? 0);
+}
+
+/** What a finished word adds to the saved child: stars, word ladder progress, stickers. */
+async function earned(page: Page): Promise<{ stars: number; ladder: unknown; stickers: number }> {
+  return page.evaluate((key) => {
+    const child = JSON.parse(localStorage.getItem(key) ?? "{}").profiles?.[0] ?? {};
+    return { stars: child.stars ?? 0, ladder: child.ladder ?? null, stickers: (child.stickers ?? []).length };
+  }, KEY);
+}
+
 async function stars(page: Page): Promise<number> {
   return page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "{}").profiles?.[0]?.stars ?? 0, KEY);
 }
@@ -162,6 +189,7 @@ test("without a finger: the right arrow lights the next letter, quietly, and the
 });
 
 test("like any slider it stops at the end, where a step says the word again; Home or a step back starts a fresh try that counts up again", async ({ page }) => {
+  await countEffects(page);
   await install(page, mia({ saysSounds: true }));
   await openLetters(page);
   const activity = page.locator(".activity");
@@ -197,6 +225,12 @@ test("like any slider it stops at the end, where a step says the word again; Hom
   await expect(track).toHaveAttribute("aria-valuenow", String(count + 1));
   await expect(track).toHaveAttribute("aria-valuetext", word);
   await expect.poll(async () => stars(page)).toBe(start + 1);
+  // What the first finish earned, once it has settled: every replay below must leave it exactly as it is.
+  await expect.poll(async () => (await earned(page)).stickers).toBeGreaterThan(0);
+  await page.waitForTimeout(300);
+  const firstFinish = await earned(page);
+  const tonesAfterFirst = await tones(page);
+  expect(tonesAfterFirst, "the first finish chimes").toBeGreaterThan(0);
 
   // A swipe down from the end is back to the last tile, still lit; up again is the word again, for the same one star.
   await page.keyboard.press("ArrowLeft");
@@ -252,6 +286,11 @@ test("like any slider it stops at the end, where a step says the word again; Hom
   await page.keyboard.press("ArrowRight");
   await expect(track).toHaveAttribute("aria-valuetext", `1 of ${count}`);
 
+  // After all of that: no second chime, and not a star, a ladder try or a sticker more than the first finish.
+  await page.waitForTimeout(400);
+  expect(await tones(page), "only the first finish chimes").toBe(tonesAfterFirst);
+  expect(await earned(page)).toEqual(firstFinish);
+
   // A new drag after a finished word starts from the beginning too.
   const box = (await page.locator(".blend-track").boundingBox())!;
   await page.mouse.move(box.x + 8, box.y + box.height / 2);
@@ -260,6 +299,103 @@ test("like any slider it stops at the end, where a step says the word again; Hom
   await expect(track).toHaveAttribute("aria-valuenow", /^[01]$/);
   await expect(track).not.toHaveAttribute("aria-valuetext", word);
   await page.mouse.up();
+});
+
+test("a fresh try right after a finish drops the finishing bounce at once", async ({ page }) => {
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  const blend = page.locator(".blend");
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
+
+  /** The bounce is for a card's first finish, so each case starts on a card not finished yet. */
+  async function finishNewCard() {
+    const was = await activity.getAttribute("data-word");
+    await page.getByRole("button", { name: "Next word" }).click();
+    await expect(activity).not.toHaveAttribute("data-word", was ?? "");
+    await expect(activity).toHaveAttribute("data-letter-card", "false");
+    await track.focus();
+    await page.keyboard.press("End");
+    await expect(blend).toHaveClass(/is-celebrating/);
+  }
+
+  // Home, straight after the finish.
+  await track.focus();
+  await page.keyboard.press("End");
+  await expect(blend).toHaveClass(/is-celebrating/);
+  await page.keyboard.press("Home");
+  await expect(blend).not.toHaveClass(/is-celebrating/, { timeout: 200 });
+
+  // A step back from the end, straight after the finish.
+  await finishNewCard();
+  await page.keyboard.press("ArrowLeft");
+  await expect(blend).not.toHaveClass(/is-celebrating/, { timeout: 200 });
+
+  // A new drag, straight after the finish.
+  await finishNewCard();
+  const box = (await page.locator(".blend-track").boundingBox())!;
+  await page.mouse.move(box.x + 8, box.y + box.height / 2);
+  await page.mouse.down();
+  await expect(blend).not.toHaveClass(/is-celebrating/, { timeout: 200 });
+  await page.mouse.up();
+});
+
+test("the bounce is for the first finish: finishing the same card again joins the tiles and says the word, with no bounce", async ({ page }) => {
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const blend = page.locator(".blend");
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
+  await track.focus();
+  await page.keyboard.press("End");
+  await expect(blend).toHaveClass(/is-celebrating/);
+  await expect(blend).not.toHaveClass(/is-celebrating/, { timeout: 2000 });
+  // A step back and forward finishes it again: joined, the word, no bounce.
+  await page.keyboard.press("ArrowLeft");
+  await expect(blend).toHaveAttribute("data-joined", "false");
+  const before = (await requestedCues(page)).length;
+  await page.keyboard.press("ArrowRight");
+  await expect(blend).toHaveAttribute("data-joined", "true");
+  await expect.poll(async () => (await requestedCues(page)).length).toBeGreaterThan(before);
+  for (let check = 0; check < 5; check += 1) {
+    await expect(blend).not.toHaveClass(/is-celebrating/);
+    await page.waitForTimeout(100);
+  }
+  // So does a new drag across the whole track.
+  const box = (await page.locator(".blend-track").boundingBox())!;
+  await page.mouse.move(box.x + 8, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2, { steps: 48 });
+  await page.mouse.up();
+  await expect(blend).toHaveAttribute("data-joined", "true");
+  for (let check = 0; check < 5; check += 1) {
+    await expect(blend).not.toHaveClass(/is-celebrating/);
+    await page.waitForTimeout(100);
+  }
+});
+
+test("Home stops a sound that is still playing, and the pass it was part of", async ({ page }) => {
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  const tiles = page.locator(".letters .tile-wrap");
+  const count = await tiles.count();
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
+  // Play sound says every letter, one by one; Home in the middle of it stops it there.
+  await page.getByRole("button", { name: "Play sound" }).click();
+  // Partway through the letters: the first or second one is sounding (a poll can miss one letter's turn).
+  expect(count).toBeGreaterThan(2);
+  await expect(activity).toHaveAttribute("data-active", /^[01]$/, { timeout: 8000 });
+  await track.focus();
+  await page.keyboard.press("Home");
+  await expect(activity).toHaveAttribute("data-active", "");
+  const heard = (await requestedCues(page)).length;
+  const shown = Number(await activity.getAttribute("data-revealed"));
+  expect(shown).toBeLessThan(count);
+  // Long enough for the rest of the pass to have played, had it gone on.
+  await page.waitForTimeout(2500);
+  expect((await requestedCues(page)).slice(heard)).toEqual([]);
+  await expect(activity).toHaveAttribute("data-revealed", String(shown));
+  await expect(activity).toHaveAttribute("data-active", "");
 });
 
 test("without a finger and with the app saying the sounds, each step sounds its letter, and End finishes the word", async ({ page }) => {
@@ -314,6 +450,16 @@ test("a new letter is still said by the app, even when the child says the sounds
   await openLetters(page);
   await expect(page.locator(".activity")).toHaveAttribute("data-letter-card", "true");
   await expect(page.locator(".activity")).toHaveAttribute("data-says-sounds", "app");
+  // Its one step is the letter; the step after it is the card's picture word ("m, as in moon", then "moon").
+  const example = (await page.locator(".activity .picture-card").getAttribute("aria-label")) ?? "";
+  expect(example).toBeTruthy();
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
+  await track.focus();
+  await expect(track).toHaveAttribute("aria-valuetext", "0 of 1");
+  await page.keyboard.press("ArrowRight");
+  await expect(track).toHaveAttribute("aria-valuetext", `1 of 1. One more for ${example}.`);
+  await page.keyboard.press("ArrowRight");
+  await expect(track).toHaveAttribute("aria-valuetext", example);
 });
 
 test("a parent turns it on for one child, and the last sound game suggests when", async ({ page }) => {

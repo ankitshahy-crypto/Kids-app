@@ -188,5 +188,13 @@ export function usePlayback(
     [begin, settingsRef],
   );
 
-  return { revealed, active, replay, autoplay, replayLetter, soundLetter, soundWord };
+  /** Stop whatever this card is saying: a fresh try starts in quiet. */
+  const stop = useCallback(() => {
+    tokenRef.current += 1;
+    abortRef.current?.abort();
+    cancelSpeech();
+    setActive(null);
+  }, []);
+
+  return { revealed, active, replay, autoplay, replayLetter, soundLetter, soundWord, stop };
 }

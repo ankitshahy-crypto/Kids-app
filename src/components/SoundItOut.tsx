@@ -43,7 +43,7 @@ export function SoundItOut({
   const [index, setIndex] = useState(0);
   const word = deck[index % deck.length];
   const finish = () => onFinished?.(word);
-  const { revealed, active, replay, autoplay, soundLetter, soundWord } = usePlayback(word, settingsRef, paused, finish);
+  const { revealed, active, replay, autoplay, soundLetter, soundWord, stop: stopPlayback } = usePlayback(word, settingsRef, paused, finish);
   const quiet = saysSounds && !word.letterCard && !word.sentenceId;
   const speak = useSpeaker(settingsRef);
   const [lit, setLit] = useState<boolean[]>(() => word.letters.map(() => false));
@@ -63,6 +63,21 @@ export function SoundItOut({
   const blendedPass = useRef(false);
   const rewarded = useRef(false);
   const touchHandled = useRef(false);
+  // The finishing bounce ends on its own after a moment, or at once when a fresh try starts.
+  const celebrationTimer = useRef<number | null>(null);
+
+  const stopCelebrating = () => {
+    if (celebrationTimer.current !== null) window.clearTimeout(celebrationTimer.current);
+    celebrationTimer.current = null;
+    setCelebrating(false);
+  };
+
+  useEffect(
+    () => () => {
+      if (celebrationTimer.current !== null) window.clearTimeout(celebrationTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     sounded.current = new Set();
@@ -72,6 +87,8 @@ export function SoundItOut({
     setLitOrder([]);
     setBlended(false);
     setJoined(false);
+    if (celebrationTimer.current !== null) window.clearTimeout(celebrationTimer.current);
+    celebrationTimer.current = null;
     setCelebrating(false);
     setProgress(0.06);
   }, [word]);
@@ -175,10 +192,19 @@ export function SoundItOut({
     setBlended(true);
     // Single letters and sound units join; a sentence's word chunks wrap onto rows and stay put.
     setJoined(!word.sentenceId);
-    setCelebrating(true);
-    window.setTimeout(() => setCelebrating(false), 900);
-    soundWord();
-    if (!rewarded.current) {
+    // The chime, the bounce and the reward are for the card's first finish. Finishing it again
+    // (a step back and forward, or a new drag) says the word and joins the tiles, and that is all.
+    const first = !rewarded.current;
+    if (first) {
+      stopCelebrating();
+      setCelebrating(true);
+      celebrationTimer.current = window.setTimeout(() => {
+        celebrationTimer.current = null;
+        setCelebrating(false);
+      }, 900);
+    }
+    soundWord(first);
+    if (first) {
       rewarded.current = true;
       onFinished?.(word);
     }
@@ -209,6 +235,9 @@ export function SoundItOut({
     setLitOrder([]);
     setBlended(false);
     setJoined(false);
+    stopCelebrating();
+    // Nothing from the last try keeps talking over this one.
+    stopPlayback();
   };
 
   /**
@@ -223,6 +252,7 @@ export function SoundItOut({
       blendedPass.current = false;
       setBlended(false);
       setJoined(false);
+      stopCelebrating();
       if (last === undefined) setProgress(0.06);
       else placeToken(last);
       return;
@@ -264,6 +294,7 @@ export function SoundItOut({
 
   /** Home: back to the start of the track, every tile unlit, for a fresh try. */
   const startOver = () => {
+    speak.stop();
     startPass();
     setProgress(0.06);
   };
@@ -425,7 +456,7 @@ export function SoundItOut({
               ? word.word
               : litCount < word.letters.length
                 ? `${litCount} of ${word.letters.length}`
-                : `${litCount} of ${word.letters.length}. One more for the ${word.sentenceId ? "sentence" : "word"}.`
+                : `${litCount} of ${word.letters.length}. One more for ${word.letterCard ? word.word : word.sentenceId ? "the sentence" : "the word"}.`
           }
           aria-orientation="horizontal"
           tabIndex={0}
