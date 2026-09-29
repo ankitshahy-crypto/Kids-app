@@ -578,6 +578,12 @@ button:focus-visible {
   cursor: grabbing;
 }
 
+.blend-track:focus-visible {
+  outline: 3px solid var(--sage-soft);
+  outline-offset: 3px;
+  border-radius: 20px;
+}
+
 .blend-arrow {
   position: absolute;
   left: 8px;

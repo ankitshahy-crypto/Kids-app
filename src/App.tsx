@@ -872,7 +872,7 @@ export default function App() {
                   key={active.id}
                   profile={active}
                   settingsRef={settingsRef}
-                  onRecord={(sound, firstTry) => noteSoundCheck(active.id, sound, firstTry)}
+                  onRecord={(sound, firstTry) => noteSoundCheck(active.id, sound, firstTry, "start")}
                   onAccept={(result) => {
                     setChildPlace(active.id, result.place);
                     setLadderStep(active.id, result.ladderStep);

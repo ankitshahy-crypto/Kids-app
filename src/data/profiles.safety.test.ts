@@ -116,6 +116,25 @@ describe("profile saves", () => {
   });
 });
 
+describe("quiet check-ins", () => {
+  it("keeps the Where to start mark, and only as true", () => {
+    const storage = memory();
+    const child = {
+      ...createChild({ name: "Mia", ageRange: "4", animal: "fox" }),
+      soundChecks: {
+        m: { firstTry: true, date: "2026-09-25", got: 1, asked: 1, start: true },
+        s: { firstTry: true, date: "2026-09-25", got: 1, asked: 1, start: "yes" },
+        t: { firstTry: true, date: "2026-09-25", got: 1, asked: 1 },
+      },
+    };
+    storage.setItem(PROFILES_KEY, JSON.stringify({ activeId: child.id, profiles: [child] }));
+    const loaded = loadStore(storage).profiles[0];
+    expect(loaded.soundChecks?.m).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1, start: true });
+    expect(loaded.soundChecks?.s).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1 });
+    expect(loaded.soundChecks?.t).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1 });
+  });
+});
+
 describe("who says the sounds", () => {
   it("keeps a grown-up's choice and reads anything else as the app saying them", () => {
     const storage = memory();

@@ -23,9 +23,9 @@ export function SaysSoundsControl({ profile, onChange }: { profile: ChildProfile
       <h2>Sounding out</h2>
       <p className="adult-copy">
         {on
-          ? `${name} says each letter sound out loud while sliding across a word. The app stays quiet until the end, then says the whole word so ${name} can check.`
-          : `The app says each letter sound as ${name} slides across a word.`}{" "}
-        Tapping a letter or Play sound always plays the sounds. New letters are always said by the app.
+          ? `${name} says each letter sound out loud while sliding across a word. The app stays quiet until the end, then says the whole word so ${name} can check. Tapping a letter or Play sound still plays the sounds, and only ${name}'s own slide finishes the word.`
+          : `The app says each letter sound as ${name} slides across a word. Tapping a letter or Play sound always plays the sounds.`}{" "}
+        New letters and sentences are always said by the app.
       </p>
       <div className="writing-level" role="group" aria-label={`Who says the letter sounds for ${name}`}>
         <span className="writing-name">Sounds</span>

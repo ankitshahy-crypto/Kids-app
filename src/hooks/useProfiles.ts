@@ -16,7 +16,7 @@ import { assignHatchLevel, recordHatch, recordSpin, type HatchLevel } from "../d
 import { assignLadderStep, recordLadderSuccess, type LadderStep } from "../data/ladder";
 import { assignWritingLevel, recordWritingAttempt, type ScaffoldLevel, type WritingOutcome } from "../data/scaffold";
 import { READING, type SubjectId } from "../data/subject";
-import { recordSoundCheck } from "../data/progress";
+import { recordSoundCheck, type SoundCheckSource } from "../data/progress";
 import type { HomeReport, TeacherLink } from "../data/profileExtras";
 import { noteProfilesChanged } from "../offline/events";
 
@@ -192,8 +192,8 @@ export function useProfiles() {
   };
 
   /** A quiet check-in: was this sound picked on the first try? Grown-ups see it; the child does not. */
-  const noteSoundCheck = (id: string, sound: string, firstTry: boolean) =>
-    patchChild(id, (item) => recordSoundCheck(item, sound, firstTry));
+  const noteSoundCheck = (id: string, sound: string, firstTry: boolean, source: SoundCheckSource = "friday") =>
+    patchChild(id, (item) => recordSoundCheck(item, sound, firstTry, new Date(), undefined, source));
 
   /** Class iPad: the preset note for this child's family. 0 clears it. */
   const setNoteForHome = (id: string, note: number) =>
