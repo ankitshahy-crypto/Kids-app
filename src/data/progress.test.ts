@@ -66,7 +66,7 @@ describe("quiet check-ins", () => {
     profile = recordSoundCheck(profile, "s", true, now, zone);
     profile = recordSoundCheck(profile, "a_e", false, now, zone);
     expect(soundSummary(profile)).toEqual({ knows: ["m", "sh"], practicing: ["s", "a_e"] });
-    expect(profile.soundChecks?.s).toEqual({ firstTry: false, date: "2026-10-01", got: 0, asked: 1 });
+    expect(profile.soundChecks?.s).toEqual({ firstTry: false, date: "2026-10-01", got: 0, asked: 1, friday: { firstTry: false, date: "2026-10-01" } });
   });
 
   it("take the latest day's first try", () => {
@@ -74,16 +74,37 @@ describe("quiet check-ins", () => {
     let profile = recordSoundCheck(child(), "s", false, now, zone);
     profile = recordSoundCheck(profile, "s", true, nextWeek, zone);
     expect(soundSummary(profile)).toEqual({ knows: ["s"], practicing: [] });
-    expect(profile.soundChecks?.s).toEqual({ firstTry: true, date: "2026-10-08", got: 1, asked: 2 });
+    expect(profile.soundChecks?.s).toEqual({ firstTry: true, date: "2026-10-08", got: 1, asked: 2, friday: { firstTry: true, date: "2026-10-08" } });
   });
 
-  it("mark the Where to start check's rounds, and the Friday game's not", () => {
+  it("keep the Where to start check's try and the Friday game's apart", () => {
     let profile = recordSoundCheck(child(), "m", true, now, zone, "start");
-    expect(profile.soundChecks?.m).toEqual({ firstTry: true, date: "2026-10-01", got: 1, asked: 1, start: true });
+    expect(profile.soundChecks?.m).toEqual({ firstTry: true, date: "2026-10-01", got: 1, asked: 1, start: { firstTry: true, date: "2026-10-01" } });
     profile = recordSoundCheck(profile, "s", true, now, zone);
-    expect(profile.soundChecks?.s?.start).toBeUndefined();
+    expect(profile.soundChecks?.s).toEqual({ firstTry: true, date: "2026-10-01", got: 1, asked: 1, friday: { firstTry: true, date: "2026-10-01" } });
     // The list of what they know counts both.
     expect(soundSummary(profile)).toEqual({ knows: ["m", "s"], practicing: [] });
+  });
+
+  it("on one day, the Where to start check and the Friday game each keep their own try of the same sound", () => {
+    let profile = recordSoundCheck(child(), "m", true, now, zone, "start");
+    profile = recordSoundCheck(profile, "m", false, now, zone);
+    expect(profile.soundChecks?.m).toEqual({
+      firstTry: false,
+      date: "2026-10-01",
+      got: 1,
+      asked: 2,
+      start: { firstTry: true, date: "2026-10-01" },
+      friday: { firstTry: false, date: "2026-10-01" },
+    });
+    // The other way round, too: the game first, then the check, and the game's try is still there.
+    let other = recordSoundCheck(child(), "m", true, now, zone);
+    other = recordSoundCheck(other, "m", false, now, zone, "start");
+    expect(other.soundChecks?.m?.friday).toEqual({ firstTry: true, date: "2026-10-01" });
+    expect(other.soundChecks?.m?.start).toEqual({ firstTry: false, date: "2026-10-01" });
+    // A replay of either the same day still changes nothing.
+    expect(recordSoundCheck(other, "m", true, now, zone, "start")).toBe(other);
+    expect(recordSoundCheck(other, "m", false, now, zone)).toBe(other);
   });
 
   it("ignore anything that is not a sound", () => {
@@ -133,6 +154,17 @@ describe("who says the sounds in Sound It Out", () => {
     const nextFriday = new Date("2026-10-09T16:00:00Z");
     const later = played(profile, { n: true, d: true, c: true }, nextFriday);
     expect(saysSoundsHint(later)).toEqual({ kind: "ready", sounds: ["c", "d", "n"], date: "2026-10-09" });
+  });
+
+  it("goes by the Friday game's own tries when the Where to start check happens the same day", () => {
+    // Added on a Friday: the check first, all right; then the game, with a miss. Not ready.
+    let profile = child();
+    for (const sound of ["m", "s", "t", "p"]) profile = recordSoundCheck(profile, sound, true, friday, zone, "start");
+    expect(saysSoundsHint(played(profile, { m: true, s: false, t: true }, friday))).toEqual({ kind: "none" });
+    // The game first, all right; then the check, with misses. Still ready: the check does not hide the game.
+    let other = played(child(), { m: true, s: true, t: true }, friday);
+    for (const sound of ["m", "s"]) other = recordSoundCheck(other, sound, false, friday, zone, "start");
+    expect(saysSoundsHint(other)).toEqual({ kind: "ready", sounds: ["m", "s", "t"], date: "2026-10-02" });
   });
 
   it("is not fooled by a replay the same day", () => {

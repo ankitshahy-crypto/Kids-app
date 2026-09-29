@@ -580,7 +580,8 @@ button:focus-visible {
 
 .blend-track:focus-visible {
   outline: 3px solid var(--sage-soft);
-  outline-offset: 3px;
+  /* Inside the track, so the ring is not cut off at a phone's edge. */
+  outline-offset: -3px;
   border-radius: 20px;
 }
 

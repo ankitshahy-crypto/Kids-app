@@ -331,7 +331,9 @@ export function GrownupsMenu({
           <p className="adult-copy">
             In Letters the word starts dim. Drag the animal along the track from left to right. Each letter lights and
             says its sound as the finger passes it. A slow drag says the sounds separately. The end of the track says
-            the whole word and leaves the letters lit. Tap a lit letter to hear that sound again.
+            the whole word and leaves the letters lit. Tap a lit letter to hear that sound again. Without a finger, the
+            track is a slider: the right arrow on a keyboard lights the next letter, one more step at the end finishes the
+            word, and the left arrow takes a letter back. VoiceOver and Switch Control adjust it the same way.
           </p>
           <p className="adult-copy" data-help="says-sounds">
             When a child is ready, a grown-up can let them say the sounds. Under Sounding out in Progress, or on the

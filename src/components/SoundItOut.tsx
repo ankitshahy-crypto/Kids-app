@@ -198,19 +198,55 @@ export function SoundItOut({
   };
 
   /**
+   * A pass along the track starts from the beginning: separate, unlit tiles,
+   * nothing sounded yet, and the slider back at "0 of 3", so a second try
+   * lights up (and, for a screen reader, counts up) like the first.
+   */
+  const startPass = () => {
+    sounded.current = new Set();
+    blendedPass.current = false;
+    setLit(word.letters.map(() => false));
+    setLitOrder([]);
+    setBlended(false);
+    setJoined(false);
+  };
+
+  /**
+   * One step back, for a keyboard's left arrow or a swipe down. From the end
+   * of the track it is back to the last tile, with the word to hear again on
+   * the next step forward; from a tile it is that tile unlit and unsounded,
+   * without a sound.
+   */
+  const stepBack = () => {
+    const last = litOrder[litOrder.length - 1];
+    if (blendedPass.current) {
+      blendedPass.current = false;
+      setBlended(false);
+      setJoined(false);
+      if (last === undefined) setProgress(0.06);
+      else placeToken(last);
+      return;
+    }
+    if (last === undefined) return;
+    sounded.current.delete(last);
+    setLit((current) => current.map((on, tileIndex) => (tileIndex === last ? false : on)));
+    setLitOrder((current) => current.slice(0, -1));
+    const before = litOrder[litOrder.length - 2];
+    if (before === undefined) setProgress(0.06);
+    else placeToken(before);
+  };
+
+  /**
    * The slider without a finger: a keyboard's right arrow, or VoiceOver and
-   * Switch Control adjusting it. Each step is the next tile, in order; the
+   * Switch Control adjusting it (WebKit turns their increment on a horizontal
+   * slider into the same arrow key). Each step is the next tile, in order; the
    * step after the last tile is the end of the track. A step after a finished
    * word starts a new pass, as a new drag does.
    */
   const stepForward = (toEnd = false) => {
     unlockAudio();
     resumeSpeech();
-    if (blendedPass.current) {
-      sounded.current = new Set();
-      blendedPass.current = false;
-      setJoined(false);
-    }
+    if (blendedPass.current) startPass();
     const remaining = word.letters.map((_, tileIndex) => tileIndex).filter((tileIndex) => !sounded.current.has(tileIndex));
     if (remaining.length > 0 && !toEnd) {
       light([remaining[0]]);
@@ -233,10 +269,7 @@ export function SoundItOut({
     }
     draggingRef.current = true;
     setDragging(true);
-    sounded.current = new Set();
-    blendedPass.current = false;
-    // A new pass starts from separate sounds again.
-    setJoined(false);
+    startPass();
     unlockAudio();
     resumeSpeech();
     moveToken(event.clientX, event.clientX);
@@ -257,6 +290,9 @@ export function SoundItOut({
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
   };
+
+  // The slider's value: the tiles passed on this pass, and one more for the whole word at the end of the track.
+  const litCount = lit.filter(Boolean).length;
 
   const tapLetter = (letterIndex: number) => {
     if (!lit[letterIndex] && letterIndex >= revealed && active !== "all") return;
@@ -370,15 +406,27 @@ export function SoundItOut({
           role="slider"
           aria-label={word.sentenceId ? "Drag across the words" : "Drag across the letters"}
           aria-valuemin={0}
-          aria-valuemax={word.letters.length}
-          aria-valuenow={lit.filter(Boolean).length}
-          aria-valuetext={blended ? word.word : lit.some(Boolean) ? `${lit.filter(Boolean).length} of ${word.letters.length}` : "Drag from left to right"}
+          aria-valuemax={word.letters.length + 1}
+          aria-valuenow={blended ? word.letters.length + 1 : litCount}
+          aria-valuetext={
+            blended
+              ? word.word
+              : litCount === 0
+                ? "Drag from left to right"
+                : litCount < word.letters.length
+                  ? `${litCount} of ${word.letters.length}`
+                  : `${litCount} of ${word.letters.length}. One more for the ${word.sentenceId ? "sentence" : "word"}.`
+          }
+          aria-orientation="horizontal"
           tabIndex={0}
           style={{ touchAction: "none" }}
           onKeyDown={(event) => {
             if (event.key === "ArrowRight" || event.key === "ArrowUp" || event.key === "PageUp") {
               event.preventDefault();
               stepForward();
+            } else if (event.key === "ArrowLeft" || event.key === "ArrowDown" || event.key === "PageDown") {
+              event.preventDefault();
+              stepBack();
             } else if (event.key === "End") {
               event.preventDefault();
               stepForward(true);

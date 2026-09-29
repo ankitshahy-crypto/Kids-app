@@ -7,7 +7,7 @@ import { READING } from "./subject";
 import { TIME } from "./timeMoney";
 import { calendarDayNumber, deviceTimeZone, localDateKey, weekDateKeys } from "./time";
 import { isUnit } from "./units";
-import { SOUND_KEY, type SoundCheck } from "./profileExtras";
+import { SOUND_KEY, type SoundCheck, type SoundTry } from "./profileExtras";
 
 export type { SoundCheck, SoundChecks } from "./profileExtras";
 
@@ -143,8 +143,10 @@ export function byNudge<T extends { completion: Completion }>(rows: readonly T[]
 export type SoundCheckSource = "friday" | "start";
 
 /**
- * One check per sound per day: the day's first try is the one that counts.
- * Playing the game again the same day, after seeing the answer, changes nothing.
+ * One try per sound per day for each check: the day's first try is the one
+ * that counts. Playing the game again the same day, after seeing the answer,
+ * changes nothing. The Friday game and the Where to start check keep their
+ * own latest tries, so one on the same day never hides the other.
  */
 export function recordSoundCheck(
   profile: ChildProfile,
@@ -158,13 +160,15 @@ export function recordSoundCheck(
   if (!SOUND_KEY.test(key)) return profile;
   const before = profile.soundChecks?.[key];
   const date = localDateKey(now, timeZone);
-  if (before?.date === date) return profile;
+  if ((source === "start" ? before?.start : before?.friday)?.date === date) return profile;
+  const attempt: SoundTry = { firstTry, date };
   const next: SoundCheck = {
-    firstTry,
-    date,
+    ...attempt,
     got: (before?.got ?? 0) + (firstTry ? 1 : 0),
     asked: (before?.asked ?? 0) + 1,
-    ...(source === "start" ? { start: true as const } : {}),
+    ...(before?.friday ? { friday: before.friday } : {}),
+    ...(before?.start ? { start: before.start } : {}),
+    [source]: attempt,
   };
   return { ...profile, soundChecks: { ...(profile.soundChecks ?? {}), [key]: next } };
 }
@@ -202,7 +206,7 @@ export const SAYS_SOUNDS_READY_AFTER = 3;
 export const SAYS_SOUNDS_BACK_AFTER = 2;
 
 export function saysSoundsHint(profile: Pick<ChildProfile, "soundChecks" | "saysSounds">): SaysSoundsHint {
-  const checks = Object.entries(profile.soundChecks ?? {}).filter(([, check]) => !check.start);
+  const checks = Object.entries(profile.soundChecks ?? {}).flatMap(([sound, check]) => (check.friday ? [[sound, check.friday] as const] : []));
   if (checks.length === 0) return { kind: "none" };
   const latest = checks.reduce((max, [, check]) => (check.date > max ? check.date : max), "");
   const last = checks.filter(([, check]) => check.date === latest);
