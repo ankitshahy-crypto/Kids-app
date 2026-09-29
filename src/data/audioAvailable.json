@@ -186,6 +186,16 @@
     "prompts/engineer-tower.mp3",
     "prompts/engineer-wrong.mp3",
     "prompts/five-dollars.mp3",
+    "prompts/game-feed.mp3",
+    "prompts/game-hatch.mp3",
+    "prompts/game-memory.mp3",
+    "prompts/game-pop.mp3",
+    "prompts/game-rhyme.mp3",
+    "prompts/game-spin-color.mp3",
+    "prompts/game-spin-count.mp3",
+    "prompts/game-spin-sound.mp3",
+    "prompts/game-spin-word.mp3",
+    "prompts/game-spin.mp3",
     "prompts/half-1.mp3",
     "prompts/half-10.mp3",
     "prompts/half-11.mp3",
@@ -3459,7 +3469,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 14691813,
+    "shared": 14809191,
     "byAnimal": {
       "bear": 4858326,
       "bunny": 4848150,
