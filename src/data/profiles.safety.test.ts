@@ -117,21 +117,29 @@ describe("profile saves", () => {
 });
 
 describe("quiet check-ins", () => {
-  it("keeps the Where to start mark, and only as true", () => {
+  it("keeps each check's own try, and reads older saves as the Friday game's, or the start check's when marked", () => {
     const storage = memory();
     const child = {
       ...createChild({ name: "Mia", ageRange: "4", animal: "fox" }),
       soundChecks: {
-        m: { firstTry: true, date: "2026-09-25", got: 1, asked: 1, start: true },
-        s: { firstTry: true, date: "2026-09-25", got: 1, asked: 1, start: "yes" },
-        t: { firstTry: true, date: "2026-09-25", got: 1, asked: 1 },
+        // Both checks on record.
+        m: { firstTry: false, date: "2026-09-25", got: 1, asked: 2, friday: { firstTry: false, date: "2026-09-25" }, start: { firstTry: true, date: "2026-09-21" } },
+        // A save with the older `start: true` mark.
+        s: { firstTry: true, date: "2026-09-25", got: 1, asked: 1, start: true },
+        // A save with an odd mark, or none: the Friday game's.
+        t: { firstTry: true, date: "2026-09-25", got: 1, asked: 1, start: "yes" },
+        p: { firstTry: true, date: "2026-09-25", got: 1, asked: 1 },
+        // A broken try is dropped, and the latest try stands in.
+        n: { firstTry: true, date: "2026-09-25", got: 1, asked: 1, friday: { firstTry: "yes", date: "2026-09-25" } },
       },
     };
     storage.setItem(PROFILES_KEY, JSON.stringify({ activeId: child.id, profiles: [child] }));
     const loaded = loadStore(storage).profiles[0];
-    expect(loaded.soundChecks?.m).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1, start: true });
-    expect(loaded.soundChecks?.s).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1 });
-    expect(loaded.soundChecks?.t).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1 });
+    expect(loaded.soundChecks?.m).toEqual(child.soundChecks.m);
+    expect(loaded.soundChecks?.s).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1, start: { firstTry: true, date: "2026-09-25" } });
+    expect(loaded.soundChecks?.t).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1, friday: { firstTry: true, date: "2026-09-25" } });
+    expect(loaded.soundChecks?.p).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1, friday: { firstTry: true, date: "2026-09-25" } });
+    expect(loaded.soundChecks?.n).toEqual({ firstTry: true, date: "2026-09-25", got: 1, asked: 1, friday: { firstTry: true, date: "2026-09-25" } });
   });
 });
 

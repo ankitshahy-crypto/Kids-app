@@ -2,22 +2,39 @@
  * Quiet check-in results, kept on the child's profile. A separate module so
  * the profile store can read them without importing the progress views.
  */
-export type SoundCheck = {
-  /** The latest day's first try: picked on the first try, or still practicing. A replay the same day does not change it. */
+/** One day's first try at a sound: picked on the first try, or still practicing. */
+export type SoundTry = {
   firstTry: boolean;
-  /** Local date of the latest check. */
+  /** Local date. */
   date: string;
-  /** First-try picks, all time, one per day. */
+};
+
+export type SoundCheck = {
+  /** The latest try, from either check. A replay the same day does not change it. */
+  firstTry: boolean;
+  /** Local date of the latest try. */
+  date: string;
+  /** First-try picks, all time, one per day for each check. */
   got: number;
-  /** Days asked, all time. */
+  /** Days asked, all time, for each check. */
   asked: number;
-  /** From the Where to start check rather than the Friday sound game. */
-  start?: true;
+  /** The latest Friday sound game try. What the "says the sounds" hint goes by. */
+  friday?: SoundTry;
+  /** The latest Where to start check try. */
+  start?: SoundTry;
 };
 
 export type SoundChecks = Record<string, SoundCheck>;
 
 export const SOUND_KEY = /^[a-z]{1,3}$|^[aiou]_e$/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function soundTry(raw: unknown): SoundTry | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const attempt = raw as Partial<SoundTry>;
+  if (typeof attempt.firstTry !== "boolean" || typeof attempt.date !== "string" || !DATE.test(attempt.date)) return undefined;
+  return { firstTry: attempt.firstTry, date: attempt.date };
+}
 
 export function normalizeSoundChecks(value: unknown): SoundChecks {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -25,10 +42,18 @@ export function normalizeSoundChecks(value: unknown): SoundChecks {
   for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
     if (!SOUND_KEY.test(key) || !raw || typeof raw !== "object") continue;
     const check = raw as Partial<SoundCheck>;
-    if (typeof check.firstTry !== "boolean" || typeof check.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(check.date)) continue;
+    if (typeof check.firstTry !== "boolean" || typeof check.date !== "string" || !DATE.test(check.date)) continue;
     const asked = typeof check.asked === "number" && check.asked >= 1 ? Math.floor(check.asked) : 1;
     const got = typeof check.got === "number" && check.got >= 0 ? Math.min(asked, Math.floor(check.got)) : check.firstTry ? 1 : 0;
-    out[key] = { firstTry: check.firstTry, date: check.date, got, asked, ...(check.start === true ? { start: true as const } : {}) };
+    const latest = { firstTry: check.firstTry, date: check.date };
+    let friday = soundTry(check.friday);
+    let start = soundTry(check.start);
+    // A save from before the two checks kept their own tries: a `start: true` mark, or nothing, on the latest try.
+    if (!friday && !start) {
+      if ((check as { start?: unknown }).start === true) start = latest;
+      else friday = latest;
+    }
+    out[key] = { ...latest, got, asked, ...(friday ? { friday } : {}), ...(start ? { start } : {}) };
   }
   return out;
 }

@@ -159,6 +159,81 @@ test("without a finger: the right arrow lights the next letter, quietly, and the
   expect((await requestedCues(page)).slice(before).filter((cue) => LETTER_SOUND.test(cue))).toEqual([]);
 });
 
+test("a second pass counts up again for a screen reader, the left arrow takes a letter back, and the word earns one star", async ({ page }) => {
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  const blend = page.locator(".blend");
+  const track = page.getByRole("slider", { name: "Drag across the letters" });
+  const tiles = page.locator(".letters .tile-wrap");
+  const count = await tiles.count();
+  expect(count).toBeGreaterThan(1);
+  const word = (await activity.getAttribute("data-word")) ?? "";
+  const start = await stars(page);
+  await track.focus();
+  await expect(track).toHaveAttribute("aria-orientation", "horizontal");
+
+  // Two steps forward, one back: the second tile goes dark again, and the count says so.
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await expect(track).toHaveAttribute("aria-valuenow", "2");
+  await page.keyboard.press("ArrowLeft");
+  await expect(track).toHaveAttribute("aria-valuenow", "1");
+  await expect(track).toHaveAttribute("aria-valuetext", `1 of ${count}`);
+  await expect(tiles.nth(0)).toHaveAttribute("data-lit", "true");
+  await expect(tiles.nth(1)).toHaveAttribute("data-lit", "false");
+
+  // On to the last tile: the slider has one more step in it, and says so.
+  await expect(track).toHaveAttribute("aria-valuemax", String(count + 1));
+  for (let step = 1; step < count; step += 1) await page.keyboard.press("ArrowRight");
+  await expect(track).toHaveAttribute("aria-valuenow", String(count));
+  await expect(track).toHaveAttribute("aria-valuetext", `${count} of ${count}. One more for the word.`);
+  await expect(activity).toHaveAttribute("data-blended", "false");
+  // The end of the track: the word, at the slider's maximum.
+  await page.keyboard.press("ArrowRight");
+  await expect(activity).toHaveAttribute("data-blended", "true");
+  await expect(track).toHaveAttribute("aria-valuenow", String(count + 1));
+  await expect(track).toHaveAttribute("aria-valuetext", word);
+  await expect.poll(async () => stars(page)).toBe(start + 1);
+
+  // A swipe down from the end is back to the last tile, still lit; up again is the word again, for the same one star.
+  await page.keyboard.press("ArrowLeft");
+  await expect(activity).toHaveAttribute("data-blended", "false");
+  await expect(blend).toHaveAttribute("data-joined", "false");
+  await expect(track).toHaveAttribute("aria-valuenow", String(count));
+  await expect(tiles.nth(count - 1)).toHaveAttribute("data-lit", "true");
+  const beforeAgain = (await requestedCues(page)).length;
+  await page.keyboard.press("ArrowRight");
+  await expect(activity).toHaveAttribute("data-blended", "true");
+  await expect(track).toHaveAttribute("aria-valuetext", word);
+  await expect.poll(async () => (await requestedCues(page)).length).toBeGreaterThan(beforeAgain);
+  await page.waitForTimeout(400);
+  expect(await stars(page)).toBe(start + 1);
+
+  // A second pass: the tiles go dark and separate, and the slider counts from one again.
+  await page.keyboard.press("ArrowRight");
+  await expect(activity).toHaveAttribute("data-blended", "false");
+  await expect(blend).toHaveAttribute("data-joined", "false");
+  await expect(track).toHaveAttribute("aria-valuenow", "1");
+  await expect(track).toHaveAttribute("aria-valuetext", `1 of ${count}`);
+  await expect(tiles.nth(0)).toHaveAttribute("data-lit", "true");
+  await expect(tiles.nth(1)).toHaveAttribute("data-lit", "false");
+  for (let step = 1; step <= count; step += 1) await page.keyboard.press("ArrowRight");
+  await expect(activity).toHaveAttribute("data-blended", "true");
+  await expect(track).toHaveAttribute("aria-valuetext", word);
+  await page.waitForTimeout(400);
+  expect(await stars(page)).toBe(start + 1);
+
+  // A new drag after a finished word starts from the beginning too.
+  const box = (await page.locator(".blend-track").boundingBox())!;
+  await page.mouse.move(box.x + 8, box.y + box.height / 2);
+  await page.mouse.down();
+  await expect(activity).toHaveAttribute("data-blended", "false");
+  await expect(track).toHaveAttribute("aria-valuenow", /^[01]$/);
+  await expect(track).not.toHaveAttribute("aria-valuetext", word);
+  await page.mouse.up();
+});
+
 test("without a finger and with the app saying the sounds, each step sounds its letter, and End finishes the word", async ({ page }) => {
   await install(page, mia());
   await openLetters(page);
@@ -248,10 +323,10 @@ test("the Where to start check does not make a new child 'ready' on day one", as
     page,
     mia({
       soundChecks: {
-        m: { firstTry: true, date: today, got: 1, asked: 1, start: true },
-        s: { firstTry: true, date: today, got: 1, asked: 1, start: true },
-        t: { firstTry: true, date: today, got: 1, asked: 1, start: true },
-        p: { firstTry: true, date: today, got: 1, asked: 1, start: true },
+        m: { firstTry: true, date: today, got: 1, asked: 1, start: { firstTry: true, date: today } },
+        s: { firstTry: true, date: today, got: 1, asked: 1, start: { firstTry: true, date: today } },
+        t: { firstTry: true, date: today, got: 1, asked: 1, start: { firstTry: true, date: today } },
+        p: { firstTry: true, date: today, got: 1, asked: 1, start: { firstTry: true, date: today } },
       },
     }),
   );
