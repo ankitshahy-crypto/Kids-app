@@ -2,9 +2,10 @@ name: Story word timings
 
 # Times every word in the recorded story pages, so the reader can light each
 # word as the narrator reads it. A speech recognizer (faster-whisper) listens
-# to the clips on GitHub's machines; the app only reads the resulting JSON.
-# Run it after story clips change (Voice clips with `stories`), from the
-# Actions tab. It opens a pull request with src/data/storyTimings.json.
+# to the clips on GitHub's machines, in eight parts at once; the app only
+# reads the resulting JSON. Run it after story clips change (Voice clips with
+# `stories`), from the Actions tab. It opens a pull request with
+# src/data/storyTimings.json.
 
 on:
   workflow_dispatch:
@@ -18,9 +19,13 @@ permissions:
   pull-requests: write
 
 jobs:
-  timings:
+  time:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -33,25 +38,57 @@ jobs:
       - name: Check the matching
         run: python3 scripts/story-timings.py --self-test
 
-      - name: Time the words
+      - name: Time this part
         env:
           ONLY: ${{ inputs.only }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          args=(--shard "$SHARD/8" --out "part-$SHARD.json")
+          [ -n "$ONLY" ] && args+=(--only "$ONLY")
+          python3 scripts/story-timings.py "${args[@]}" | tee "part-$SHARD.log"
+
+      - name: Keep this part
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: part-${{ matrix.shard }}
+          path: |
+            part-${{ matrix.shard }}.json
+            part-${{ matrix.shard }}.log
+          if-no-files-found: ignore
+
+  join:
+    needs: time
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Collect the parts
+        uses: actions/download-artifact@v4
+        with:
+          path: parts
+          merge-multiple: true
+
+      - name: Join
+        id: join
         run: |
           set -o pipefail
-          if [ -n "$ONLY" ]; then args=(--only "$ONLY"); else args=(); fi
-          python3 scripts/story-timings.py "${args[@]}" | tee timings.log
+          python3 scripts/story-timings.py --merge parts/part-*.json | tee joined.log
           {
             echo "### Story word timings"
             echo
-            cat timings.log
+            cat joined.log
+            echo
+            grep -h -A 40 "fewer than 3 in 4" parts/part-*.log || true
           } >> "$GITHUB_STEP_SUMMARY"
           {
             echo "report<<TIMED"
-            cat timings.log
+            cat joined.log
+            grep -h "clips where fewer" parts/part-*.log || true
             echo "TIMED"
           } >> "$GITHUB_OUTPUT"
-          rm -f timings.log
-        id: time
 
       - name: Open pull request
         uses: peter-evans/create-pull-request@v7
@@ -65,12 +102,12 @@ jobs:
             Made by scripts/story-timings.py with faster-whisper on GitHub's
             machines. The app reads the times; it never runs a recognizer.
 
-            ${{ steps.time.outputs.report }}
+            ${{ steps.join.outputs.report }}
           body: |
             When each word starts in every recorded story page, for the reader's follow-along highlight.
 
             ```
-            ${{ steps.time.outputs.report }}
+            ${{ steps.join.outputs.report }}
             ```
 
             Open a story on a phone and watch a few pages before merging: each word should light as it is said.
