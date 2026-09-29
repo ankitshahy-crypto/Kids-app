@@ -404,18 +404,18 @@ export function SoundItOut({
           ref={trackRef}
           className="blend-track"
           role="slider"
-          aria-label={word.sentenceId ? "Drag across the words" : "Drag across the letters"}
+          // Named for what it does, not a gesture: a finger drags, a keyboard steps, and VoiceOver adds its own
+          // "adjustable, swipe up or down" hint to any slider.
+          aria-label={word.sentenceId ? "Slide across the words" : "Slide across the letters"}
           aria-valuemin={0}
           aria-valuemax={word.letters.length + 1}
           aria-valuenow={blended ? word.letters.length + 1 : litCount}
           aria-valuetext={
             blended
               ? word.word
-              : litCount === 0
-                ? "Drag from left to right"
-                : litCount < word.letters.length
-                  ? `${litCount} of ${word.letters.length}`
-                  : `${litCount} of ${word.letters.length}. One more for the ${word.sentenceId ? "sentence" : "word"}.`
+              : litCount < word.letters.length
+                ? `${litCount} of ${word.letters.length}`
+                : `${litCount} of ${word.letters.length}. One more for the ${word.sentenceId ? "sentence" : "word"}.`
           }
           aria-orientation="horizontal"
           tabIndex={0}

@@ -132,12 +132,14 @@ test("without a finger: the right arrow lights the next letter, quietly, and the
   await install(page, mia({ saysSounds: true }));
   await openLetters(page);
   const activity = page.locator(".activity");
-  const track = page.getByRole("slider", { name: "Drag across the letters" });
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
   const tiles = page.locator(".letters .tile-wrap");
   const count = await tiles.count();
   const start = await stars(page);
   await track.focus();
   await expect(track).toBeFocused();
+  // Named for what it does, not a gesture, and it starts at nothing passed yet.
+  await expect(track).toHaveAttribute("aria-valuetext", `0 of ${count}`);
   const before = (await requestedCues(page)).length;
   for (let step = 0; step < count; step += 1) {
     await page.keyboard.press("ArrowRight");
@@ -164,7 +166,7 @@ test("a second pass counts up again for a screen reader, the left arrow takes a 
   await openLetters(page);
   const activity = page.locator(".activity");
   const blend = page.locator(".blend");
-  const track = page.getByRole("slider", { name: "Drag across the letters" });
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
   const tiles = page.locator(".letters .tile-wrap");
   const count = await tiles.count();
   expect(count).toBeGreaterThan(1);
@@ -238,7 +240,7 @@ test("without a finger and with the app saying the sounds, each step sounds its 
   await install(page, mia());
   await openLetters(page);
   const activity = page.locator(".activity");
-  const track = page.getByRole("slider", { name: "Drag across the letters" });
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
   const tiles = page.locator(".letters .tile-wrap");
   await track.focus();
   const before = (await requestedCues(page)).length;
