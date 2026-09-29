@@ -58,6 +58,48 @@ async function dragAcross(page: Page, track: Locator) {
   await page.mouse.up();
 }
 
+/**
+ * No bounce at any moment for the next second, read straight off the page
+ * each time. A retrying `not.toHaveClass` would wait out a 0.9 s bounce and
+ * pass, so it could never catch one.
+ */
+async function neverBounces(page: Page, ms = 1100) {
+  const blend = page.locator(".blend");
+  for (let waited = 0; waited < ms; waited += 50) {
+    expect((await blend.getAttribute("class")) ?? "").not.toMatch(/is-celebrating/);
+    await page.waitForTimeout(50);
+  }
+}
+
+/** Each recorded clip that starts or is stopped through Web Audio, with its length in seconds. */
+async function watchClips(page: Page) {
+  await page.addInitScript(() => {
+    const target = window as Window & { __clips?: { event: string; seconds: number }[]; webkitAudioContext?: typeof AudioContext };
+    target.__clips = [];
+    const Ctor = window.AudioContext ?? target.webkitAudioContext;
+    if (!Ctor) return;
+    const create = Ctor.prototype.createBufferSource;
+    Ctor.prototype.createBufferSource = function (this: AudioContext) {
+      const node = create.apply(this);
+      const start = node.start.bind(node);
+      const stop = node.stop.bind(node);
+      node.start = ((...args: Parameters<AudioBufferSourceNode["start"]>) => {
+        target.__clips?.push({ event: "start", seconds: node.buffer?.duration ?? 0 });
+        return start(...args);
+      }) as AudioBufferSourceNode["start"];
+      node.stop = ((...args: Parameters<AudioBufferSourceNode["stop"]>) => {
+        target.__clips?.push({ event: "stop", seconds: node.buffer?.duration ?? 0 });
+        return stop(...args);
+      }) as AudioBufferSourceNode["stop"];
+      return node;
+    };
+  });
+}
+
+async function clips(page: Page): Promise<{ event: string; seconds: number }[]> {
+  return page.evaluate(() => (window as Window & { __clips?: { event: string; seconds: number }[] }).__clips ?? []);
+}
+
 /** The finishing chime and other effects are synthesized: count the oscillators they start. */
 async function countEffects(page: Page) {
   await page.addInitScript(() => {
@@ -356,10 +398,7 @@ test("the bounce is for the first finish: finishing the same card again joins th
   await page.keyboard.press("ArrowRight");
   await expect(blend).toHaveAttribute("data-joined", "true");
   await expect.poll(async () => (await requestedCues(page)).length).toBeGreaterThan(before);
-  for (let check = 0; check < 5; check += 1) {
-    await expect(blend).not.toHaveClass(/is-celebrating/);
-    await page.waitForTimeout(100);
-  }
+  await neverBounces(page);
   // So does a new drag across the whole track.
   const box = (await page.locator(".blend-track").boundingBox())!;
   await page.mouse.move(box.x + 8, box.y + box.height / 2);
@@ -367,10 +406,47 @@ test("the bounce is for the first finish: finishing the same card again joins th
   await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2, { steps: 48 });
   await page.mouse.up();
   await expect(blend).toHaveAttribute("data-joined", "true");
-  for (let check = 0; check < 5; check += 1) {
-    await expect(blend).not.toHaveClass(/is-celebrating/);
-    await page.waitForTimeout(100);
-  }
+  await neverBounces(page);
+});
+
+test("Home stops the opening instruction while it is being said", async ({ page }) => {
+  await watchClips(page);
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  // "Say each sound as you slide." is the one long clip on this screen (about two seconds).
+  const long = (clip: { seconds: number }) => clip.seconds > 1.5;
+  const started = await expect
+    .poll(async () => (await clips(page)).some((clip) => clip.event === "start" && long(clip)), { timeout: 8000, intervals: [25] })
+    .toBe(true)
+    .then(() => true, () => false);
+  test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
+  await page.getByRole("slider", { name: "Slide across the letters" }).focus();
+  await page.keyboard.press("Home");
+  await expect.poll(async () => (await clips(page)).some((clip) => clip.event === "stop" && long(clip)), { timeout: 1000 }).toBe(true);
+});
+
+test("a step back stops the word that was still being said", async ({ page }) => {
+  await watchClips(page);
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
+  const activity = page.locator(".activity");
+  await track.focus();
+  // Let the opening instruction go by, so the word is the only clip playing.
+  await page.waitForTimeout(3000);
+  const before = (await clips(page)).length;
+  await page.keyboard.press("End");
+  await expect(activity).toHaveAttribute("data-blended", "true");
+  const started = await expect
+    .poll(async () => (await clips(page)).slice(before).some((clip) => clip.event === "start"), { timeout: 8000, intervals: [25] })
+    .toBe(true)
+    .then(() => true, () => false);
+  test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
+  const playing = (await clips(page)).slice(before).find((clip) => clip.event === "start")!;
+  await page.keyboard.press("ArrowLeft");
+  await expect
+    .poll(async () => (await clips(page)).slice(before).some((clip) => clip.event === "stop" && clip.seconds === playing.seconds), { timeout: 1000 })
+    .toBe(true);
 });
 
 test("Home stops a sound that is still playing, and puts down the tiles its pass had shown", async ({ page }) => {

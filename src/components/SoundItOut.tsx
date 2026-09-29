@@ -248,6 +248,8 @@ export function SoundItOut({
    */
   const stepBack = () => {
     const last = litOrder[litOrder.length - 1];
+    // Whatever was still being said (the word just finished, a letter) stops, so it does not talk over VoiceOver.
+    stopPlayback();
     if (blendedPass.current) {
       blendedPass.current = false;
       setBlended(false);
