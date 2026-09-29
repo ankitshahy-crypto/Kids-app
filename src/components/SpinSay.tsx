@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { playEffect } from "../audio/manager";
-import { playColor, playLetter, playNumber, playOnDevice, playWord } from "../audio/player";
+import { colorCue, deckWordCue, letterCue, playColor, playLetter, playLine, playNumber, playOnDevice, playWord, promptCue } from "../audio/player";
 import { Illustration } from "../illustrations";
 import { colorFill } from "../data/colors";
 import {
@@ -26,6 +26,7 @@ import type { StickerInput } from "../data/profiles";
 import { guideFor, letterItemId, writingLevel, type WritingMap } from "../data/scaffold";
 import { followStroke, stationsAttribute, strokeComplete, traceTolerance } from "../data/trace";
 import type { Settings } from "../settings";
+import { HearButton } from "./HearButton";
 import { StrokeFigure } from "./StrokeFigure";
 
 const pastel = ["#F6C3CB", "#B7D7F2", "#C9E6D4", "#F6E3B4", "#E4D4F2", "#F6D56B"];
@@ -73,6 +74,13 @@ export function SpinSay({
   const drag = useRef<{ angle: number; time: number; moved: number; velocity: number } | null>(null);
 
   useEffect(() => setIndex(spins), [spins]);
+  const hearSpin = useCue();
+  useEffect(() => {
+    if (phase !== "ready") return;
+    hearSpin((signal) => playLine([promptCue("game-spin", "Spin the wheel.")], settingsRef.current, signal));
+    // When the wheel is ready again: on opening, and after each challenge.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
   useEffect(() => {
     rotationRef.current = rotation;
   }, [rotation]);
@@ -297,7 +305,7 @@ function Challenge({
         target={round.target}
         choices={round.choices.map((letter) => ({ id: letter, label: letter.toUpperCase() }))}
         glow={glow}
-        onHear={() => play((signal) => playLetter(letterTile(round.target), settingsRef.current, signal))}
+        onHear={() => play((signal) => playLine([promptCue("game-spin-sound", "Tap the letter you hear."), letterCue(letterTile(round.target))], settingsRef.current, signal))}
         onCorrect={() => {
           play((signal) => playLetter(letterTile(round.target), settingsRef.current, signal));
           onDone();
@@ -315,6 +323,10 @@ function Challenge({
     return (
       <div className="spin-challenge" data-target={answer} data-word={round.word.word}>
         <p className="game-prompt">Fill the missing letter.</p>
+        <SayOnce
+          id={`word:${round.word.id}:${round.blank}`}
+          onHear={() => play((signal) => playLine([promptCue("game-spin-word", "Fill the missing letter."), deckWordCue(round.word)], settingsRef.current, signal))}
+        />
         <div className="hatch-picture">
           <Illustration name={round.word.illustration} />
         </div>
@@ -346,6 +358,7 @@ function Challenge({
     return (
       <div className="spin-challenge" data-target={String(round.total)}>
         <p className="game-prompt">How many?</p>
+        <SayOnce id={`count:${round.total}`} onHear={() => play((signal) => playLine([promptCue("game-spin-count", "How many?")], settingsRef.current, signal))} />
         <div className="spin-objects" aria-hidden="true">
           {Array.from({ length: round.total }, (_, dot) => (
             <span key={dot} className="spin-object" />
@@ -375,7 +388,7 @@ function Challenge({
         target={round.target}
         choices={round.choices.map((name) => ({ id: name, label: name, fill: colorFill(name) }))}
         glow={glow}
-        onHear={() => play((signal) => playColor(round.target, settingsRef.current, signal))}
+        onHear={() => play((signal) => playLine([promptCue("game-spin-color", "Find the color."), colorCue(round.target)], settingsRef.current, signal))}
         onCorrect={() => {
           play((signal) => playColor(round.target, settingsRef.current, signal));
           onDone();
@@ -422,6 +435,15 @@ function Challenge({
   );
 }
 
+/** A Hear button that also speaks once when its challenge appears. */
+function SayOnce({ id, onHear }: { id: string; onHear: () => void }) {
+  useEffect(() => {
+    onHear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+  return <HearButton className="game-hear" onHear={onHear} />;
+}
+
 function ChoiceChallenge({
   prompt,
   target,
@@ -439,15 +461,15 @@ function ChoiceChallenge({
   onCorrect: () => void;
   onMiss: () => void;
 }) {
+  // Once per challenge. onHear is a new function each render; the target decides when to speak.
   useEffect(() => {
     onHear();
-  }, [onHear]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target]);
   return (
     <div className="spin-challenge" data-target={target}>
       <p className="game-prompt">{prompt}</p>
-      <button type="button" className="hear-button" onClick={onHear}>
-        Hear it
-      </button>
+      <HearButton className="game-hear" onHear={onHear} />
       <Choices target={target} choices={choices} glow={glow} onCorrect={onCorrect} onMiss={onMiss} />
     </div>
   );
