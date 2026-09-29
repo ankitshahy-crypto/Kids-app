@@ -93,7 +93,7 @@ test("read-together tips can be dismissed and turned off", async ({ page }) => {
   await expect(page.locator(".grownup-tip")).toBeVisible();
 });
 
-test("parent and teacher show the learning path", async ({ page }) => {
+test("parent and teacher show each subject's path, up to what the child's age reaches", async ({ page }) => {
   await page.addInitScript((saved) => {
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
     localStorage.removeItem("kids-app-silent-hint-v1");
@@ -101,25 +101,48 @@ test("parent and teacher show the learning path", async ({ page }) => {
   await page.goto("./");
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
-  const path = page.locator("[data-screen=parent] [data-section=path]");
-  await expect(path).toBeVisible();
-  for (const title of ["Letters", "Blending", "Words", "Stories", "Phonics 5–7"]) {
+  // Four paths, each named for its subject.
+  const parent = page.locator("[data-screen=parent]");
+  await expect(parent.locator("[data-section=path] .module-heading")).toHaveText("Reading path");
+  await expect(parent.locator("[data-section=path-math] .module-heading")).toHaveText("Numbers path");
+  await expect(parent.locator("[data-section=path-colors] .module-heading")).toHaveText("Colors path");
+  await expect(parent.locator("[data-section=path-time] .module-heading")).toHaveText("Time and money path");
+  const path = parent.locator("[data-section=path]");
+  for (const title of ["Letters", "Blending", "Words", "Stories"]) {
     await expect(path.getByText(title, { exact: true })).toBeVisible();
   }
-  await expect(path.getByText("Longer stories 6–7")).toBeVisible();
-  await expect(path.locator("[data-later=true]")).toBeVisible();
+  // Mia is four: the 5–7 and 6–7 stages wait, with a line saying so.
+  await expect(path.getByText("Phonics 5–7")).toHaveCount(0);
+  await expect(path.getByText("Longer stories 6–7")).toHaveCount(0);
+  await expect(path.locator("[data-path-more]")).toContainText("as your child grows");
+  await expect(parent.locator("[data-section=path-time]").getByText("Hours and half hours")).toHaveCount(0);
   await expect(path.locator("[data-state=current]")).toHaveCount(1);
   const stage = await path.getAttribute("data-current-stage");
-  expect(["letters", "blending", "words", "stories", "phonics"]).toContain(stage);
+  expect(["letters", "blending", "words", "stories"]).toContain(stage);
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
   await openTeacherChild(page, "mia");
   const childPath = page.locator("[data-card=device] [data-section=path]");
-  await expect(childPath).toContainText("Mia");
+  await expect(childPath.locator(".module-heading")).toHaveText("Reading path · Mia");
   await expect(childPath.locator("[data-state=current]")).toHaveCount(1);
-  await expect(childPath.locator("[data-later=true]")).toBeVisible();
+  await expect(childPath.locator("[data-later=true]")).toHaveCount(0);
+});
+
+test("a six- or seven-year-old's path shows every stage, longer stories included", async ({ page }) => {
+  await page.addInitScript((saved) => {
+    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+    localStorage.removeItem("kids-app-silent-hint-v1");
+  }, { ...profile, profiles: [{ ...profile.profiles[0], ageRange: "6-7" }] });
+  await page.goto("./");
+  await page.getByRole("button", { name: "Parent", exact: true }).click();
+  await passGate(page);
+  const path = page.locator("[data-screen=parent] [data-section=path]");
+  await expect(path.getByText("Phonics 5–7")).toBeVisible();
+  await expect(path.locator("[data-later=true]")).toBeVisible();
+  await expect(path.locator("[data-path-more]")).toHaveCount(0);
+  await expect(page.locator("[data-screen=parent] [data-section=path-time]").getByText("Hours and half hours")).toBeVisible();
 });
 
 test("sharing falls back to copying the link", async ({ page }) => {

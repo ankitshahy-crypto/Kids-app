@@ -134,6 +134,7 @@ export function TeacherView({
   onLadderStep,
   onNote,
   onHomeReport,
+  sharedDevice = false,
   onClose,
 }: {
   profiles: ChildProfile[];
@@ -147,6 +148,8 @@ export function TeacherView({
   onLadderStep: (childId: string, step: LadderStep) => void;
   onNote: (childId: string, note: number) => void;
   onHomeReport: (childId: string, report: HomeReport | undefined) => void;
+  /** Shared class iPad is on: say so, since the Teacher screen turns it on by itself. */
+  sharedDevice?: boolean;
   onClose: () => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -181,6 +184,11 @@ export function TeacherView({
           />
         ) : (
           <>
+            {sharedDevice ? (
+              <p className="adult-copy teacher-shared" data-shared-note="on">
+                Shared class iPad is on: switching children asks for the grown-up check. Change it in Settings.
+              </p>
+            ) : null}
             <ClassProgress profiles={profiles} onOpen={setOpenId} />
             <details className="teacher-card teacher-fold" data-card="class-place">
               <summary>

@@ -48,6 +48,12 @@ export const EXTRAS_KEY = "littlenest-extras-v1";
 export const OUTBOX_KEY = "littlenest-outbox-v1";
 /** "1" once the PIN offer after the first child has been shown, so it never nags. */
 export const PIN_OFFERED_KEY = "littlenest-pin-offered-v1";
+/**
+ * "1" once Shared class iPad has been set, by a grown-up in Settings or by the
+ * Teacher screen turning it on the first time. After that the Teacher screen
+ * leaves it alone, so a grown-up who turned it off keeps it off.
+ */
+export const SHARED_CHOSEN_KEY = "littlenest-shared-chosen-v1";
 
 export function readStored(storage: KeyValueStore, key: string): string | null {
   const current = storage.getItem(key);

@@ -8,6 +8,7 @@ import {
   type SubjectLater,
 } from "./subject";
 import { deviceTimeZone } from "./time";
+import { calendarStageCap } from "./ageBand";
 
 export const pathStages = readingStages;
 export const laterPath = readingLater;
@@ -82,4 +83,23 @@ export function placeForChild(createdAt: string, now = new Date(), timeZone = de
 export function pathCoversLetterPlan(): boolean {
   const total = pathStages.reduce((sum, stage) => sum + stage.size, 0);
   return total === letterPlanSize();
+}
+
+/**
+ * The stages to show for this child: up to the last stage their age reaches
+ * (see CALENDAR_STAGE_CAPS), or further if a grown-up placed them there. A
+ * three- or four-year-old's parent does not need the 5–7 stages yet.
+ */
+export function stagesForAge<T extends { id: string; state: string }>(stages: readonly T[], subject: SubjectId, ageRange: string | undefined): { shown: T[]; hidden: number } {
+  const cap = calendarStageCap(subject, ageRange);
+  const capAt = cap ? stages.findIndex((stage) => stage.id === cap) : -1;
+  if (capAt === -1) return { shown: [...stages], hidden: 0 };
+  const currentAt = stages.findIndex((stage) => stage.state === "current");
+  const last = Math.max(capAt, currentAt);
+  return { shown: stages.slice(0, last + 1), hidden: stages.length - last - 1 };
+}
+
+/** The "Longer stories 6–7" row is for six- and seven-year-olds. */
+export function showsLaterReading(ageRange: string | undefined): boolean {
+  return ageRange === "6-7";
 }

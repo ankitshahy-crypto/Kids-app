@@ -93,7 +93,10 @@ test("a class place and a child override stay on this device", async ({ page }, 
   await expect(today).toHaveAttribute("data-letters", /^f/);
   await expect(today.locator(".trail-letter")).toHaveText("F");
 
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  // Using the Teacher screen made this a class iPad: switching children now asks the grown-up check.
+  await page.getByRole("button", { name: "Switch child" }).click();
+  await expect(page.locator("[data-gate]")).toBeVisible();
+  await passGate(page);
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
   const parentPlace = page.locator("[data-screen=parent] [data-section=placement]");
