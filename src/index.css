@@ -7481,18 +7481,14 @@ input.is-pressed,
 }
 
 .held-note {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  align-self: center;
-  margin: 4px auto 0;
-  padding: 8px 16px 8px 8px;
-  min-height: 44px;
-  border-radius: 999px;
-  background: var(--paper, #fffaf2);
-  color: var(--text, #3d3a36);
-  font-weight: 600;
-  box-shadow: var(--shadow, 0 6px 16px rgba(90, 70, 50, 0.08));
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  display: grid;
+  place-items: center;
 }
 
 .held-note .lock-badge {
@@ -7876,4 +7872,25 @@ input.is-pressed,
   font-size: 14px;
   color: var(--text-muted);
   text-align: center;
+}
+
+/* Sun and moon: DOM circles so they stay round when the backdrop stretches. */
+.story-sky {
+  position: absolute;
+  top: 9%;
+  right: 9%;
+  width: 12%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f7d774;
+}
+
+.story-sky.is-left {
+  right: auto;
+  left: 9%;
+}
+
+.story-moon {
+  background: #fff1c4;
+  width: 11%;
 }

@@ -3,8 +3,9 @@ import { ParentGate } from "./ParentGate";
 
 /**
  * What a child sees on a part of the app that opens with the full unlock: a
- * friendly "ask a grown-up", never a price. The grown-up check comes first,
- * as the Kids Category asks; the price and the purchase live behind it.
+ * quiet lock and "ask a grown-up", never a price, never a pitch. The grown-up
+ * check comes first, as the Kids Category asks; what is locked, why, and the
+ * price all live behind it.
  */
 export function LockSheet({ onGrownup, onClose }: { onGrownup: () => void; onClose: () => void }) {
   const [asking, setAsking] = useState(false);
@@ -18,11 +19,10 @@ export function LockSheet({ onGrownup, onClose }: { onGrownup: () => void; onClo
             <circle cx="24" cy="31" r="3" fill="#fbf6ee" />
           </svg>
         </span>
-        <h2 id="lock-sheet-title">More is waiting!</h2>
-        <p>Ask a grown-up to open it.</p>
+        <h2 id="lock-sheet-title">Ask a grown-up</h2>
         <div className="lock-actions">
           <button type="button" className="done-button" onClick={() => setAsking(true)}>
-            I'm a grown-up
+            Grown-ups
           </button>
           <button type="button" className="text-button" onClick={onClose}>
             Back

@@ -82,6 +82,7 @@ import { blendList, phonicsOpen, wordsToTrace, type LadderStep } from "./data/la
 import { lettersIntroduced } from "./data/schedule";
 import { nameToTrace } from "./data/tracePractice";
 import { usePlacement } from "./hooks/usePlacement";
+import { useDayKey } from "./hooks/useDayKey";
 import { useProfiles } from "./hooks/useProfiles";
 import { useReadingTime } from "./hooks/useReadingTime";
 import { useSettings } from "./hooks/useSettings";
@@ -223,11 +224,16 @@ export default function App() {
   }, [mode, screen]);
 
   const unlock = useUnlock();
-  const unlocked = !unlock.paywall || unlock.unlocked;
+  // The local date, live: memos below depend on it so the lesson rolls over at midnight.
+  const dayKey = useDayKey();
+  // Not ready = the iPhone app has not heard back yet: treat as open, so nothing flashes a lock.
+  const unlocked = !unlock.paywall || unlock.unlocked || !unlock.ready;
   const placedLesson = useMemo(() => {
     if (!active) return null;
     return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, READING, active.ageRange);
-  }, [active, placement]);
+    // dayKey: a new day may mean a new week or Friday's review.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, placement, dayKey]);
   // Before the one-time unlock, a child past the free weeks replays the last free week.
   const lessonPlace = useMemo(
     () => (placedLesson ? atReadingWeek(placedLesson, playableWeek(placedLesson.weekIndex, unlocked)) : null),
@@ -249,43 +255,46 @@ export default function App() {
   const mathPlace = useMemo(() => {
     if (!active) return null;
     return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, MATH, active.ageRange);
-  }, [active, placement]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, placement, dayKey]);
 
   const mathLesson = useMemo(() => {
     return lessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, mathPlace?.weekIndex, active?.ageRange);
-  }, [active, mathPlace]);
+  }, [active, mathPlace, dayKey]);
 
   const colorPlace = useMemo(() => {
     if (!active) return null;
     return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, COLORS, active.ageRange);
-  }, [active, placement]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, placement, dayKey]);
 
   const colorLesson = useMemo(() => {
     return colorLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, colorPlace?.weekIndex, active?.ageRange);
-  }, [active, colorPlace]);
+  }, [active, colorPlace, dayKey]);
 
   const timePlace = useMemo(() => {
     if (!active) return null;
     return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, TIME, active.ageRange);
-  }, [active, placement]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, placement, dayKey]);
 
   const timeLesson = useMemo(() => {
     return timeLessonForChild(active?.createdAt ?? new Date().toISOString(), new Date(), undefined, timePlace?.weekIndex, active?.ageRange);
-  }, [active, timePlace]);
+  }, [active, timePlace, dayKey]);
 
   const introducedLetters = useMemo(() => lettersIntroduced(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
   const introducedAlphabet = useMemo(() => lettersOnly(introducedLetters), [introducedLetters]);
   const checkIn = useMemo(
-    () => checkInRounds(checkInSounds(lessonLetters, introducedLetters), introducedLetters, `${active?.id ?? ""}:${todayKey()}`),
-    [lessonLetters, introducedLetters, active?.id],
+    () => checkInRounds(checkInSounds(lessonLetters, introducedLetters), introducedLetters, `${active?.id ?? ""}:${dayKey}`),
+    [lessonLetters, introducedLetters, active?.id, dayKey],
   );
   const ladderStep = active?.ladder.step ?? 1;
   // The step the open lesson was built on. Moving up mid-lesson would swap the
   // card under the child, so the new step waits for the next visit.
   const [lessonLadderStep, setLessonLadderStep] = useState<LadderStep>(ladderStep);
   const themes = active?.themes ?? [];
-  const themeToday = themeForDay(themes, todayKey());
-  const todayStory = useMemo(() => storyForDay(lessonPlace?.weekIndex ?? 0, themes, todayKey()), [lessonPlace, themes]);
+  const themeToday = themeForDay(themes, dayKey);
+  const todayStory = useMemo(() => storyForDay(lessonPlace?.weekIndex ?? 0, themes, dayKey), [lessonPlace, themes, dayKey]);
   const storyShelf = useMemo(() => storyChoices(lessonPlace?.weekIndex ?? 0, themes), [lessonPlace, themes]);
   // A reader picked from the cover's shelf, for this visit. Today's story is the default.
   const [pickedStoryId, setPickedStoryId] = useState<string | null>(null);
@@ -791,6 +800,7 @@ export default function App() {
                       : undefined
                   }
                   showExplore={settings.showExplore}
+                  dayKey={dayKey}
                   lockedActivity={lockedActivity}
                   held={lessonHeld}
                   onHeld={askGrownup}
@@ -833,7 +843,7 @@ export default function App() {
               ) : null}
               {screen === "sound-check" ? (
                 <SoundCheckIn
-                  key={`${active.id}:${todayKey()}`}
+                  key={`${active.id}:${dayKey}`}
                   profile={active}
                   rounds={checkIn}
                   settingsRef={settingsRef}

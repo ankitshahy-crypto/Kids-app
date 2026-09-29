@@ -129,26 +129,14 @@ public class StorePlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    /// Is this a TestFlight build? Pilot families test the whole app free, so the
-    /// JavaScript side opens everything and remembers nothing about it: the App
-    /// Store version installed at launch starts locked and asks Apple as usual.
-    /// Builds run from Xcode (Debug) keep the paywall so it can still be tested.
+    /// Is this the pilot build? Only the "App Pilot" scheme sets LN_PILOT_BUILD=YES
+    /// (through LNPilotBuild in Info.plist), so pilot families on TestFlight get
+    /// everything free. App Store and App Review builds, Debug builds, and any
+    /// other TestFlight build show the paywall. Nothing here looks at the
+    /// StoreKit environment: App Review runs in the sandbox too.
     @objc func beta(_ call: CAPPluginCall) {
-        #if DEBUG
-        call.resolve(["beta": false])
-        #else
-        Task {
-            if #available(iOS 16.0, *) {
-                if let result = try? await AppTransaction.shared, case .verified(let transaction) = result {
-                    call.resolve(["beta": transaction.environment == .sandbox])
-                    return
-                }
-            }
-            // Older iOS, or no answer from AppTransaction: TestFlight installs carry a sandbox receipt.
-            let receipt = Bundle.main.appStoreReceiptURL?.lastPathComponent
-            call.resolve(["beta": receipt == "sandboxReceipt"])
-        }
-        #endif
+        let flag = (Bundle.main.object(forInfoDictionaryKey: "LNPilotBuild") as? String ?? "NO").uppercased()
+        call.resolve(["beta": flag == "YES"])
     }
 
     /// Apple's own sheet for an offer code (a school's or a partner's).

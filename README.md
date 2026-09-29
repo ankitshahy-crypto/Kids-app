@@ -69,6 +69,13 @@ In Xcode:
 
 The installed app does not need a network connection. Everything it shows and speaks is bundled or provided by the phone.
 
+### Two schemes: App and App Pilot
+
+- **App** (Release) is the App Store build. It shows the one-time unlock and asks the App Store what the family owns. Submit only this one to App Review.
+- **App Pilot** (the Pilot configuration) is for pilot schools on TestFlight. It sets `LN_PILOT_BUILD=YES`, which reaches the app as `LNPilotBuild` in Info.plist, and the app opens everything free with a "Pilot version" note on the unlock page. It never writes an unlock, so the App Store version installed over it starts locked as usual.
+
+The flag is a build setting, not a guess from the StoreKit environment: App Review also runs in Apple's sandbox, so an environment check would have hidden the paywall from reviewers. To ship a pilot build, pick the **App Pilot** scheme, then Product › Archive and upload to TestFlight. `src/purchase/pilotBuild.test.ts` checks that only the Pilot configuration carries the flag.
+
 ## Parent settings
 
 A Grown-ups button in the top corner of the start screen and the child screens opens the same grown-up check, then a menu for settings, child profiles, account, help, privacy, and about. Parent and Teacher stay on the start screen and still open after that check. Grown-ups can add, edit, or remove a child, read letters and stars, and set music, effects, and voice separately, including volume and speech speed. Tap sounds and a short buzz can be turned off. The sliders set a Web Audio volume for each channel, so they work on iPhone as well as on Android and desktop. A tap resumes the audio context. If a file cannot be decoded that way, the app plays it with a normal audio element and then with the phone's voice, so a lesson still speaks. The phone's own speaking voice ignores that slider on iOS; the on/off switch still stops it, and Settings says to use the phone's volume buttons. Settings also lists the phone's clearer English voices and can preview one. Profiles and settings stay in `localStorage` on that device. Lessons play a file from `public/audio/` when that file is listed in the audio index, and use the phone's voice otherwise. A few soft effects are made in the app. Music loops are not included yet.
