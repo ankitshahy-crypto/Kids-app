@@ -175,7 +175,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# The pilot build opens everything for TestFlight testers. Only the Pilot\n# configuration may set the flag, and a Release build must never have it.\nif [ \"${LN_PILOT_BUILD}\" = \"YES\" ] && [ \"${CONFIGURATION}\" != \"Pilot\" ]; then\n  echo \"error: LN_PILOT_BUILD is YES in the ${CONFIGURATION} configuration. Only Pilot may set it.\"\n  exit 1\nfi\nif [ \"${CONFIGURATION}\" = \"Release\" ] && [ \"${LN_PILOT_BUILD}\" != \"NO\" ]; then\n  echo \"error: a Release build must have LN_PILOT_BUILD = NO (it is ${LN_PILOT_BUILD:-unset}).\"\n  exit 1\nfi\n";
+			shellScript = "# The pilot build opens everything for TestFlight testers. Only the Pilot\n# configuration may set the flag, and a Release build must never have it.\nif [ \"${LN_PILOT_BUILD}\" = \"YES\" ] && [ \"${CONFIGURATION}\" != \"Pilot\" ]; then\n  echo \"error: LN_PILOT_BUILD is YES in the ${CONFIGURATION} configuration. Only Pilot may set it.\"\n  exit 1\nfi\nif [ \"${CONFIGURATION}\" = \"Release\" ] && [ \"${LN_PILOT_BUILD}\" != \"NO\" ]; then\n  echo \"error: a Release build must have LN_PILOT_BUILD = NO (it is ${LN_PILOT_BUILD:-unset}).\"\n  exit 1\nfi\n# Pilot builds are 0.9.x and named LittleNest Pilot; App Store builds are 1.0 and up and named LittleNest,\n# so the two are hard to mix up in App Store Connect and on a phone.\nif [ \"${CONFIGURATION}\" = \"Pilot\" ]; then\n  case \"${MARKETING_VERSION}\" in 0.9|0.9.*) ;; *) echo \"error: a Pilot build must be version 0.9.x (it is ${MARKETING_VERSION}).\"; exit 1 ;; esac\n  [ \"${LN_DISPLAY_NAME}\" = \"LittleNest Pilot\" ] || { echo \"error: a Pilot build must be named LittleNest Pilot (it is ${LN_DISPLAY_NAME}).\"; exit 1; }\nfi\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n  case \"${MARKETING_VERSION}\" in 0.*) echo \"error: an App Store build must be version 1.0 or later (it is ${MARKETING_VERSION}).\"; exit 1 ;; esac\n  [ \"${LN_DISPLAY_NAME}\" = \"LittleNest\" ] || { echo \"error: an App Store build must be named LittleNest (it is ${LN_DISPLAY_NAME}).\"; exit 1; }\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -331,6 +331,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LN_DISPLAY_NAME = LittleNest;
 				LN_PILOT_BUILD = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -354,6 +355,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LN_DISPLAY_NAME = LittleNest;
 				LN_PILOT_BUILD = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -427,12 +429,13 @@
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LN_DISPLAY_NAME = "LittleNest Pilot";
 				LN_PILOT_BUILD = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.triagedesk.littlenest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";

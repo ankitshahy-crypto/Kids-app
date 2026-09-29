@@ -107,6 +107,22 @@ describe("the pilot build flag", () => {
     expect(phase).toContain("exit 1");
   });
 
+  it("looks different from the App Store build: version 0.9.x and named LittleNest Pilot", () => {
+    expect(targetConfig("Pilot")).toContain("MARKETING_VERSION = 0.9.0;");
+    expect(targetConfig("Pilot")).toContain('LN_DISPLAY_NAME = "LittleNest Pilot";');
+    expect(targetConfig("Release")).toMatch(/MARKETING_VERSION = [1-9]/);
+    expect(targetConfig("Release")).toContain("LN_DISPLAY_NAME = LittleNest;");
+    expect(targetConfig("Debug")).toContain("LN_DISPLAY_NAME = LittleNest;");
+    // The name under the icon comes from that setting.
+    expect(plist).toMatch(/<key>CFBundleDisplayName<\/key>\s*<string>\$\(LN_DISPLAY_NAME\)<\/string>/);
+    // And the build check refuses a Pilot build that is not 0.9.x or not so named, and an App Store build that is.
+    const phase = pbxproj.slice(pbxproj.indexOf("/* Check pilot flag */ = {"), pbxproj.indexOf("End PBXShellScriptBuildPhase"));
+    expect(phase).toContain("a Pilot build must be version 0.9.x");
+    expect(phase).toContain("a Pilot build must be named LittleNest Pilot");
+    expect(phase).toContain("an App Store build must be version 1.0 or later");
+    expect(phase).toContain("an App Store build must be named LittleNest");
+  });
+
   it("is what the App Pilot scheme archives with", () => {
     expect(scheme).toMatch(/<ArchiveAction[\s\S]*buildConfiguration = "Pilot"/);
   });
