@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate, openTeacherChild } from "./gate";
 import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
@@ -60,18 +61,7 @@ function solve(prompt: string): number {
 }
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const expected = solve(prompt);
-  const buttons = dialog.locator(".gate-choice");
-  const count = await buttons.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await buttons.nth(index).innerText()) === expected) {
-      await buttons.nth(index).click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, true);
 }
 
 async function dismissHint(page: Page) {
@@ -87,6 +77,7 @@ test("a teacher sets a writing level and a parent can see it", async ({ page }, 
   await page.goto("./");
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
+  await openTeacherChild(page, "mia");
   const circle = page.locator("[data-writing-item='shape:circle']");
   await circle.getByRole("button", { name: "Circle level 4" }).click();
   await expect(circle).toHaveAttribute("data-writing-level", "4");
@@ -96,6 +87,7 @@ test("a teacher sets a writing level and a parent can see it", async ({ page }, 
   await page.reload();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
+  await openTeacherChild(page, "mia");
   await expect(page.locator("[data-writing-item='shape:circle']")).toHaveAttribute("data-writing-level", "4");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Parent", exact: true }).click();

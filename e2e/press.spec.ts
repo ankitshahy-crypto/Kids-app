@@ -67,17 +67,8 @@ test("a press shows immediately on buttons and clears when the pointer lifts", a
   await expect(dialog).toBeVisible();
   const prompt = await dialog.getByRole("heading").innerText();
   const answer = solve(prompt);
-  const choices = dialog.locator(".gate-choice");
-  const count = await choices.count();
-  let wrong: Locator | null = null;
-  for (let i = 0; i < count; i += 1) {
-    const value = Number(await choices.nth(i).innerText());
-    if (value !== answer) {
-      wrong = choices.nth(i);
-      break;
-    }
-  }
-  if (!wrong) throw new Error("No wrong choice");
+  await dialog.getByLabel("Answer").fill(String(answer + 1));
+  const wrong = dialog.getByRole("button", { name: "Check", exact: true });
   await press(page, wrong);
   await expect(dialog).toBeVisible();
 

@@ -35,16 +35,18 @@ function distractors(answer: number, random: () => number, min: number, max: num
 }
 
 /**
- * A fresh grown-up check. Half the time the number is written as a word, so a
- * child who cannot read cannot match it to a button. Otherwise it is a small sum.
- * The four buttons are in a new order every time.
+ * A fresh grown-up check, answered by typing the number. Half the time the
+ * number is written as a word, so a child who cannot read cannot copy it;
+ * otherwise it is a small sum. Typing beats a row of buttons: four choices
+ * and five tries let random taps through most of the time. `choices` stays
+ * for anything that still wants a multiple-choice form.
  */
 export function createGrownupCheck(random: () => number = Math.random): GrownupCheck {
   if (random() < 0.5) {
     const answer = 1 + index(random, NUMBER_WORDS.length);
     return {
       kind: "word",
-      prompt: `Tap the number ${NUMBER_WORDS[answer - 1]}`,
+      prompt: `Type the number ${NUMBER_WORDS[answer - 1]}`,
       choices: shuffle([answer, ...distractors(answer, random, 1, 9)], random),
       answer,
     };

@@ -40,6 +40,11 @@ export type Settings = {
   letterSpacing: boolean;
   /** Darker text on plainer backgrounds. */
   highContrast: boolean;
+  /**
+   * A class iPad many children share. Switching child goes through the grown-up
+   * check instead of a long press, so one child cannot open a classmate's profile.
+   */
+  sharedDevice: boolean;
 };
 
 export type LessonMinutes = 2 | 5 | 10;
@@ -78,6 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
   readableFont: false,
   letterSpacing: false,
   highContrast: false,
+  sharedDevice: false,
 };
 
 /** Older saves kept a 5, 10, or 15 minute goal. 15 becomes 10, the longest lesson now. */
@@ -128,6 +134,7 @@ export function loadSettings(): Settings {
       readableFont: record.readableFont === true,
       letterSpacing: record.letterSpacing === true,
       highContrast: record.highContrast === true,
+      sharedDevice: record.sharedDevice === true,
     };
   } catch {
     return DEFAULT_SETTINGS;

@@ -1,5 +1,6 @@
 import { installAudioSpy, spokenLines } from "./audioSpy";
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate, openClassPlace } from "./gate";
 import { createdThisWeek } from "./clock";
 
 const profile = {
@@ -165,27 +166,12 @@ test("picture addition accepts the sum up to 5", async ({ page }, testInfo) => {
 });
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const sum = prompt.match(/(\d+)\s*\+\s*(\d+)/);
-  const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
-  const expected = sum
-    ? Number(sum[1]) + Number(sum[2])
-    : (words[prompt.match(/number ([a-z]+)/i)?.[1]?.toLowerCase() ?? ""] ?? 0);
-  const choices = dialog.locator(".gate-choice");
-  const count = await choices.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await choices.nth(index).innerText()) === expected) {
-      await choices.nth(index).click();
-      return;
-    }
-  }
-  throw new Error(`No matching grown-up choice for: ${prompt}`);
+  await answerGate(page, true);
 }
 
 test("number sheets and the class numbers place are on the grown-up screens", async ({ page }) => {
   await install(page);
-  await page.getByRole("button", { name: "Switch child" }).click();
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
   await passGate(page);
   await page.getByRole("button", { name: /Printables/ }).click();
@@ -197,6 +183,7 @@ test("number sheets and the class numbers place are on the grown-up screens", as
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
+  await openClassPlace(page);
   const classMath = page.locator("[data-place=class-math]");
   await classMath.getByRole("button", { name: "Adding", exact: true }).click();
   await expect(classMath).toHaveAttribute("data-stage", "adding");

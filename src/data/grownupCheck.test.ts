@@ -32,7 +32,7 @@ describe("createGrownupCheck", () => {
       const check = createGrownupCheck();
       kinds.add(check.kind);
       if (check.kind === "word") {
-        const word = check.prompt.match(/^Tap the number ([a-z]+)$/)?.[1];
+        const word = check.prompt.match(/^Type the number ([a-z]+)$/)?.[1];
         expect(word).toBeTruthy();
         expect(WORDS[word ?? ""]).toBe(check.answer);
         expect(check.prompt).not.toMatch(/\d/);

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate } from "./gate";
 import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
@@ -23,18 +24,7 @@ function solve(prompt: string): number {
 }
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const expected = solve(prompt);
-  const buttons = dialog.locator(".gate-choice");
-  const count = await buttons.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await buttons.nth(index).innerText()) === expected) {
-      await buttons.nth(index).click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, true);
 }
 
 async function install(page: Page) {

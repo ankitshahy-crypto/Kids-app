@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { answerGate, openTeacherChild } from "./gate";
 import { finishLetterTracing } from "./traceFlow";
 import { createdThisWeek } from "./clock";
 
@@ -72,19 +73,7 @@ function solve(prompt: string): number {
 }
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const expected = solve(prompt);
-  const buttons = dialog.locator(".gate-choice");
-  const count = await buttons.count();
-  for (let index = 0; index < count; index += 1) {
-    const value = Number(await buttons.nth(index).innerText());
-    if (value === expected) {
-      await buttons.nth(index).click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, true);
 }
 
 test("finishing a step earns a star and unlocks a closet item", async ({ page }, testInfo) => {
@@ -194,6 +183,7 @@ test("parent and teacher views list stars, stickers, and milestones", async ({ p
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
+  await openTeacherChild(page, "mia");
   const device = page.locator("[data-card=device]");
   await expect(device).toContainText("Mia");
   await expect(device.locator("[data-stars='12']")).toHaveText("12 stars");

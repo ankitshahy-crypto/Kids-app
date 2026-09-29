@@ -103,11 +103,17 @@ export function PlacementControls({
   profiles,
   onClassPlace,
   onChildPlace,
+  showClass = true,
+  heading = "Lesson place",
 }: {
   placement: PlacementDocument;
+  /** The children to show editors for. Empty with `showClass` shows the whole-class editors alone. */
   profiles: ChildProfile[];
   onClassPlace: (place: LessonPlace | null) => void;
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
+  /** The whole-class editors. Off inside one child's sheet. */
+  showClass?: boolean;
+  heading?: string;
 }) {
   const reading = placesFor(placement, READING);
   return (
@@ -118,31 +124,34 @@ export function PlacementControls({
       data-class-id={placement.classId}
       data-subject={READING}
     >
-      <h2>Lesson place</h2>
+      <h2>{heading}</h2>
       <h3 className="module-heading">
         <ModuleMark name="words" />
         <span>{MODULE_WORDS}</span>
       </h3>
-      <p className="adult-copy">
-        Set the starting lesson for children on this device. A child can use a different lesson. Saved here only. A
-        class server can use this same list later.
-      </p>
-      <div
-        data-place="class"
-        data-stage={reading.classDefault?.stageId ?? "calendar"}
-        data-week={reading.classDefault ? String(reading.classDefault.weekIndex) : ""}
-      >
-        <PlaceEditor
-          label="Whole class"
-          place={reading.classDefault}
-          clearLabel="Follow the calendar"
-          clearKind="class"
-          subject={READING}
-          stages={pathStages}
-          onChange={onClassPlace}
-        />
-      </div>
-      {profiles.length === 0 ? <p className="adult-copy">Add a child to set a different lesson for them.</p> : null}
+      {showClass ? (
+        <>
+          <p className="adult-copy">
+            Set the starting lesson for children on this device. A child can use a different lesson. Saved here only.
+          </p>
+          <div
+            data-place="class"
+            data-stage={reading.classDefault?.stageId ?? "calendar"}
+            data-week={reading.classDefault ? String(reading.classDefault.weekIndex) : ""}
+          >
+            <PlaceEditor
+              label="Whole class"
+              place={reading.classDefault}
+              clearLabel="Follow the calendar"
+              clearKind="class"
+              subject={READING}
+              stages={pathStages}
+              onChange={onClassPlace}
+            />
+          </div>
+        </>
+      ) : null}
+      {showClass && profiles.length === 0 ? <p className="adult-copy">Tap a child in Class progress to set a different lesson for them.</p> : null}
       {profiles.map((profile) => {
         const override = reading.byChildId[profile.id] ?? null;
         const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange);
@@ -176,9 +185,9 @@ export function PlacementControls({
           </div>
         );
       })}
-      <MathPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} />
-      <ColorPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} />
-      <TimePlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} />
+      <MathPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} showClass={showClass} />
+      <ColorPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} showClass={showClass} />
+      <TimePlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} showClass={showClass} />
     </section>
   );
 }
@@ -188,11 +197,13 @@ function MathPlacement({
   profiles,
   onClassPlace,
   onChildPlace,
+  showClass,
 }: {
   placement: PlacementDocument;
   profiles: ChildProfile[];
   onClassPlace: (place: LessonPlace | null) => void;
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
+  showClass: boolean;
 }) {
   const math = placesFor(placement, MATH);
   return (
@@ -202,6 +213,7 @@ function MathPlacement({
         <span>{MODULE_NUMBERS}</span>
       </h3>
       <p className="adult-copy">Counting, numbers, shapes, then adding. Saved on this device, the same way as reading.</p>
+      {showClass ? (
       <div
         data-place="class-math"
         data-stage={math.classDefault?.stageId ?? "calendar"}
@@ -217,6 +229,7 @@ function MathPlacement({
           onChange={onClassPlace}
         />
       </div>
+      ) : null}
       {profiles.map((profile) => {
         const override = math.byChildId[profile.id] ?? null;
         const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH, profile.ageRange);
@@ -252,11 +265,13 @@ function ColorPlacement({
   profiles,
   onClassPlace,
   onChildPlace,
+  showClass,
 }: {
   placement: PlacementDocument;
   profiles: ChildProfile[];
   onClassPlace: (place: LessonPlace | null) => void;
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
+  showClass: boolean;
 }) {
   const colors = placesFor(placement, COLORS);
   return (
@@ -266,6 +281,7 @@ function ColorPlacement({
         <span>{MODULE_COLORS}</span>
       </h3>
       <p className="adult-copy">Color names, then mixing. Saved on this device, the same way as reading.</p>
+      {showClass ? (
       <div
         data-place="class-colors"
         data-stage={colors.classDefault?.stageId ?? "calendar"}
@@ -281,6 +297,7 @@ function ColorPlacement({
           onChange={onClassPlace}
         />
       </div>
+      ) : null}
       {profiles.map((profile) => {
         const override = colors.byChildId[profile.id] ?? null;
         const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS, profile.ageRange);
@@ -316,11 +333,13 @@ function TimePlacement({
   profiles,
   onClassPlace,
   onChildPlace,
+  showClass,
 }: {
   placement: PlacementDocument;
   profiles: ChildProfile[];
   onClassPlace: (place: LessonPlace | null) => void;
   onChildPlace: (childId: string, place: LessonPlace | null) => void;
+  showClass: boolean;
 }) {
   const time = placesFor(placement, TIME);
   return (
@@ -330,6 +349,7 @@ function TimePlacement({
         <span>{MODULE_TIME}</span>
       </h3>
       <p className="adult-copy">Parts of the day, the clock, coins, and a pretend shop. Saved on this device, the same way as reading.</p>
+      {showClass ? (
       <div
         data-place="class-time"
         data-stage={time.classDefault?.stageId ?? "calendar"}
@@ -345,6 +365,7 @@ function TimePlacement({
           onChange={onClassPlace}
         />
       </div>
+      ) : null}
       {profiles.map((profile) => {
         const override = time.byChildId[profile.id] ?? null;
         const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, TIME, profile.ageRange);

@@ -94,21 +94,7 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
         <h2 id={titleId}>{title}</h2>
         {locked ? <p className="gate-miss">Wait a moment, then try again.</p> : null}
         {missed && !locked ? <p className="gate-miss">Try another one.</p> : null}
-        {mode === "math" ? (
-          <div className="gate-choices">
-            {check.choices.map((choice) => (
-              <button
-                key={`${check.prompt}-${choice}`}
-                type="button"
-                className="gate-choice"
-                disabled={locked}
-                onClick={() => choose(choice)}
-              >
-                {choice}
-              </button>
-            ))}
-          </div>
-        ) : mode === "recover" ? (
+        {mode === "math" || mode === "recover" ? (
           <form
             className="pin-form"
             onSubmit={(event) => {
@@ -124,6 +110,7 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
               value={answer}
               aria-label="Answer"
               disabled={locked}
+              autoFocus
               onChange={(event) => {
                 setAnswer(event.target.value.replace(/\D/g, "").slice(0, 6));
                 setMissed(false);

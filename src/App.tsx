@@ -76,6 +76,10 @@ import { atReadingWeek, resolvePlacement } from "./data/placement";
 import { activityOpen, playableWeek, type ExploreArea } from "./purchase/access";
 import { useUnlock } from "./purchase/useUnlock";
 import { LockSheet } from "./components/LockSheet";
+import { ParentGate } from "./components/ParentGate";
+import { PinPromptSheet } from "./components/PinPromptSheet";
+import { hasGrownupPin } from "./data/grownupPin";
+import { PIN_OFFERED_KEY } from "./storage";
 import { READING } from "./data/subject";
 import { lettersOnly, traceLetters } from "./data/units";
 import { blendList, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
@@ -110,6 +114,22 @@ function isChunkScreen(screen: Screen): boolean {
     buildScreens.includes(screen as BuildActivity) ||
     scienceScreens.includes(screen as ScienceId)
   );
+}
+
+function readFlag(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeFlag(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Storage blocked: the offer may show once more, which is fine.
+  }
 }
 
 /** The device asks for less motion. Calm mode follows it even when the switch is off. */
@@ -241,6 +261,13 @@ export default function App() {
   );
   const lessonHeld = Boolean(placedLesson && lessonPlace && lessonPlace.weekIndex !== placedLesson.weekIndex);
   const [askingGrownup, setAskingGrownup] = useState(false);
+  const [offerPin, setOfferPin] = useState(false);
+  // A shared class iPad: switching child goes through the grown-up check.
+  const [askingSwitch, setAskingSwitch] = useState(false);
+  const askSwitch = () => {
+    setTip(null);
+    setAskingSwitch(true);
+  };
   const [grownupsPage, setGrownupsPage] = useState<GrownupsPage>("menu");
   const askGrownup = () => {
     setTip(null);
@@ -665,6 +692,8 @@ export default function App() {
       primeSpeech();
       setScreen("today");
       setMode("kid");
+      // Once: offer a PIN, so a classroom is not relying on the typed sum alone.
+      if (!hasGrownupPin() && readFlag(PIN_OFFERED_KEY) !== "1") setOfferPin(true);
     }
   };
 
@@ -747,7 +776,11 @@ export default function App() {
                   placementSource={lessonPlace?.source ?? "calendar"}
                   stageId={lessonPlace?.stageId ?? "letters"}
                   weekIndex={lessonPlace?.weekIndex ?? 0}
-                  onLeave={() => setMode("start")}
+                  onLeave={() => {
+                    if (settings.sharedDevice) askSwitch();
+                    else setMode("start");
+                  }}
+                  switchNeedsGrownup={settings.sharedDevice}
                   onOpen={openStep}
                   onLibrary={() => setScreen("library")}
                   onNest={() => setScreen("nest")}
@@ -1106,6 +1139,23 @@ export default function App() {
             onNote={setNoteForHome}
             onHomeReport={setFromHome}
             onClose={() => setMode("start")}
+          />
+        ) : null}
+        {offerPin ? (
+          <PinPromptSheet
+            onDone={() => {
+              writeFlag(PIN_OFFERED_KEY, "1");
+              setOfferPin(false);
+            }}
+          />
+        ) : null}
+        {mode === "kid" && askingSwitch ? (
+          <ParentGate
+            onPass={() => {
+              setAskingSwitch(false);
+              setMode("start");
+            }}
+            onCancel={() => setAskingSwitch(false)}
           />
         ) : null}
         {mode === "kid" && askingGrownup ? (

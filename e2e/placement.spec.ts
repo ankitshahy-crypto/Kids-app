@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate, openClassPlace, openTeacherChild } from "./gate";
 import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
@@ -38,18 +39,7 @@ function solve(prompt: string): number {
 }
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const expected = solve(prompt);
-  const buttons = dialog.locator(".gate-choice");
-  const count = await buttons.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await buttons.nth(index).innerText()) === expected) {
-      await buttons.nth(index).click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, true);
 }
 
 async function openTeacher(page: Page) {
@@ -65,11 +55,13 @@ test("a class place and a child override stay on this device", async ({ page }, 
   }, profile);
   await page.goto("./");
   await openTeacher(page);
+  await openClassPlace(page);
 
   const classPlace = page.locator("[data-place=class]");
   await classPlace.getByRole("button", { name: "Blending", exact: true }).click();
   await expect(classPlace).toHaveAttribute("data-stage", "blending");
   await expect(classPlace).toHaveAttribute("data-week", "4");
+  await openTeacherChild(page, "mia");
   await expect(page.locator("[data-place=child][data-child=mia]")).toHaveAttribute("data-source", "class");
 
   await page.reload();
@@ -80,7 +72,9 @@ test("a class place and a child override stay on this device", async ({ page }, 
     weekIndex: 4,
   });
   await openTeacher(page);
+  await openClassPlace(page);
   await expect(page.locator("[data-place=class]")).toHaveAttribute("data-stage", "blending");
+  await openTeacherChild(page, "mia");
 
   const childPlace = page.locator("[data-place=child][data-child=mia]");
   await childPlace.getByRole("button", { name: "Words", exact: true }).click();
@@ -99,7 +93,7 @@ test("a class place and a child override stay on this device", async ({ page }, 
   await expect(today).toHaveAttribute("data-letters", /^f/);
   await expect(today.locator(".trail-letter")).toHaveText("F");
 
-  await page.getByRole("button", { name: "Switch child" }).click();
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
   const parentPlace = page.locator("[data-screen=parent] [data-section=placement]");
@@ -114,6 +108,7 @@ test("a class place and a child override stay on this device", async ({ page }, 
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await openTeacher(page);
+  await openTeacherChild(page, "mia");
   await page.locator("[data-place=child][data-child=mia]").getByRole("button", { name: "Same as class" }).click();
   await expect(page.locator("[data-place=child][data-child=mia]")).toHaveAttribute("data-source", "class");
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -187,6 +182,7 @@ test("printable letter and blending sheets render", async ({ page }, testInfo) =
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await openTeacher(page);
   const teacherSheets = page.locator("[data-card=printables]");
+  await teacherSheets.locator("summary").click();
   await expect(teacherSheets.locator("[data-sheet=letter]").first()).toBeVisible();
   await expect(teacherSheets.locator("[data-sheet=blend]")).toBeVisible();
   await expect(teacherSheets.getByText("Color the stars").first()).toBeVisible();

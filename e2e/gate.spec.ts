@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate } from "./gate";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -27,19 +28,7 @@ async function openGate(page: Page, which: "Parent" | "Teacher") {
 }
 
 async function choose(page: Page, correct: boolean) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const answer = solve(prompt);
-  const buttons = dialog.locator(".gate-choice");
-  const count = await buttons.count();
-  for (let i = 0; i < count; i += 1) {
-    const value = Number(await buttons.nth(i).innerText());
-    if (correct ? value === answer : value !== answer) {
-      await buttons.nth(i).click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, correct);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -54,6 +43,13 @@ test("one tap opens the grown-up check and Cancel stays on the start screen", as
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator("[data-screen='start']")).toBeVisible();
+});
+
+test("the check is typed, not tapped, so random taps cannot pass it", async ({ page }) => {
+  await openGate(page, "Parent");
+  await expect(page.locator(".gate-choice")).toHaveCount(0);
+  await expect(page.getByLabel("Answer")).toBeVisible();
+  await expect(page.getByRole("dialog")).toContainText(/Type the number|\+/);
 });
 
 test("a wrong number does not open Parent", async ({ page }) => {
@@ -80,7 +76,7 @@ test("five wrong answers lock the math check, and a reload keeps the lock", asyn
   for (let attempt = 0; attempt < 5; attempt += 1) await choose(page, false);
   await expect(page.getByText("Wait a moment, then try again.")).toBeVisible();
   await expect(page.locator("[data-locked=true]")).toBeVisible();
-  await expect(page.locator(".gate-choice").first()).toBeDisabled();
+  await expect(page.getByLabel("Answer")).toBeDisabled();
   const saved = await page.evaluate(() => localStorage.getItem("littlenest-grownup-pin-attempts-v1"));
   expect(saved).toBeTruthy();
   await page.reload();

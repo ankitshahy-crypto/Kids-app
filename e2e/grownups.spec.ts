@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate } from "./gate";
 import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
@@ -50,19 +51,7 @@ async function openCheck(page: Page) {
 }
 
 async function answer(page: Page, correct: boolean) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const expected = solve(prompt);
-  const buttons = dialog.locator(".gate-choice");
-  const count = await buttons.count();
-  for (let i = 0; i < count; i += 1) {
-    const value = Number(await buttons.nth(i).innerText());
-    if (correct ? value === expected : value !== expected) {
-      await buttons.nth(i).click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, correct);
 }
 
 async function openMenu(page: Page) {

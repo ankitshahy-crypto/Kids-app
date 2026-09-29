@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate } from "./gate";
 import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 
@@ -145,20 +146,7 @@ test("the Colors stop is a short color moment that earns the reading star", asyn
 });
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const sum = prompt.match(/(\d+)\s*\+\s*(\d+)/);
-  const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
-  const expected = sum ? Number(sum[1]) + Number(sum[2]) : (words[prompt.match(/number ([a-z]+)/i)?.[1]?.toLowerCase() ?? ""] ?? 0);
-  const choices = dialog.locator(".gate-choice");
-  const count = await choices.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await choices.nth(index).innerText()) === expected) {
-      await choices.nth(index).click();
-      return;
-    }
-  }
-  throw new Error(`No choice matched ${prompt}`);
+  await answerGate(page, true);
 }
 
 test("the where-to-start check places a reader further along, and a grown-up accepts it", async ({ page }) => {
