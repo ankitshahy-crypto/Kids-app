@@ -22,8 +22,13 @@ export function useSpeaker(settingsRef: { current: Settings }) {
       stop() {
         playRef.current?.abort();
       },
-      prompt(id: string, fallback = "") {
-        play((settings, signal) => playPrompt(id, settings, signal, fallback));
+      /** `onDone` runs only when the line is said all the way through, not when it is stopped. */
+      prompt(id: string, fallback = "", onDone?: () => void) {
+        play((settings, signal) =>
+          playPrompt(id, settings, signal, fallback).then(() => {
+            if (!signal.aborted) onDone?.();
+          }),
+        );
       },
       word(id: string, fallback: string) {
         play((settings, signal) => playWordId(id, fallback, settings, signal));
