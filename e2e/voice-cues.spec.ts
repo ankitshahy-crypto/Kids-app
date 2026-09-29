@@ -114,7 +114,24 @@ test("the letter card says its letter as soon as it opens, and Again says it bac
   await page.getByRole("button", { name: "Letters" }).click();
   const activity = page.locator(".activity");
   await expect(activity).toHaveAttribute("data-letter-card", "true");
-  await expect.poll(async () => (await requestedCues(page)).length, { timeout: CUE_WITHIN_MS }).toBeGreaterThan(asked);
+  try {
+    await expect.poll(async () => (await requestedCues(page)).length, { timeout: CUE_WITHIN_MS }).toBeGreaterThan(asked);
+  } catch (error) {
+    // What the card was doing when it stayed quiet, for a failure read from CI's annotations.
+    const state = await page.evaluate(() => {
+      const card = document.querySelector(".activity") as HTMLElement | null;
+      const target = window as Window & { __audioAttempts?: { kind: string; detail: string }[] };
+      return {
+        card: card ? { ...card.dataset } : null,
+        attempts: target.__audioAttempts ?? [],
+        offline: document.documentElement.dataset.offline,
+        settings: localStorage.getItem("littlenest-settings-v1"),
+        speech: typeof window.speechSynthesis,
+      };
+    });
+    throw new Error(`${error instanceof Error ? error.message : String(error)}
+state: ${JSON.stringify(state)}`);
+  }
   await expect.poll(async () => (await spokenLines(page)).slice(before), { timeout: LINE_WITHIN_MS }).toEqual(expect.arrayContaining([expect.stringMatching(/, as in /)]));
   // Hearing the card once does not finish the step: the star still waits for the child.
   await expect(page.locator("[data-screen=today]")).toHaveCount(0);
