@@ -136,37 +136,80 @@ public class StorePlugin: CAPPlugin, CAPBridgedPlugin {
     /// App Store by mistake still shows the paywall. The environment alone never
     /// opens anything: App Review runs in the sandbox too, with the flag off.
     /// The app (src/purchase/store.ts) makes the decision from these two answers.
+    ///
+    /// When StoreKit confirms TestFlight, the time is saved in UserDefaults (on
+    /// the phone, outside the web view, gone when the app is deleted). A later
+    /// launch where StoreKit cannot answer, say offline in a car, sends that
+    /// time along, and the app may stand on it. An App Store answer, or a build
+    /// without the flag, deletes it.
     @objc func beta(_ call: CAPPluginCall) {
         let flag = (Bundle.main.object(forInfoDictionaryKey: "LNPilotBuild") as? String ?? "NO").uppercased()
+        let defaults = UserDefaults.standard
         guard flag == "YES" else {
-            // Not a pilot build: nothing more to ask, and no StoreKit call.
+            // Not a pilot build: nothing more to ask, no StoreKit call, and no saved answer kept.
+            defaults.removeObject(forKey: Self.pilotVerifiedKey)
             call.resolve(["pilot": false, "environment": "unknown"])
             return
         }
         Task {
             let environment = await Self.storeEnvironment()
-            call.resolve(["pilot": true, "environment": environment])
+            switch environment {
+            case "sandbox", "xcode":
+                defaults.set(Date().timeIntervalSince1970, forKey: Self.pilotVerifiedKey)
+            case "production":
+                defaults.removeObject(forKey: Self.pilotVerifiedKey)
+            default:
+                break
+            }
+            var answer: [String: Any] = ["pilot": true, "environment": environment]
+            let verified = defaults.double(forKey: Self.pilotVerifiedKey)
+            if verified > 0 {
+                // Milliseconds, like the app's own clock.
+                answer["verifiedAt"] = verified * 1000
+            }
+            call.resolve(answer)
         }
     }
 
+    /// When StoreKit last confirmed this pilot build came from TestFlight.
+    private static let pilotVerifiedKey = "LNPilotVerifiedAt"
+
     /// Where this copy of the app came from: "sandbox" (TestFlight), "xcode"
-    /// (run from Xcode), "production" (the App Store), or "unknown".
+    /// (run from Xcode), "production" (the App Store), or "unknown" when
+    /// StoreKit cannot say within a few seconds (no connection and nothing
+    /// cached). The app decides what "unknown" means; see src/purchase/pilot.ts.
     private static func storeEnvironment() async -> String {
         if #available(iOS 16.0, *) {
-            do {
-                guard case .verified(let transaction) = try await AppTransaction.shared else { return "unknown" }
-                switch transaction.environment {
-                case .sandbox: return "sandbox"
-                case .xcode: return "xcode"
-                case .production: return "production"
-                default: return "unknown"
+            let once = ResumeOnce()
+            return await withCheckedContinuation { (continuation: CheckedContinuation<String, Never>) in
+                Task {
+                    let environment = await Self.appTransactionEnvironment()
+                    once.run { continuation.resume(returning: environment) }
                 }
-            } catch {
-                return "unknown"
+                Task {
+                    // Offline with nothing cached, StoreKit can wait a long time. Answer "unknown" instead.
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                    once.run { continuation.resume(returning: "unknown") }
+                }
             }
         }
         // iOS 15 has no AppTransaction; a TestFlight install carries a sandbox receipt.
         return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" ? "sandbox" : "unknown"
+    }
+
+    @available(iOS 16.0, *)
+    private static func appTransactionEnvironment() async -> String {
+        do {
+            guard case .verified(let transaction) = try await AppTransaction.shared else { return "unknown" }
+            switch transaction.environment {
+            case .sandbox: return "sandbox"
+            case .xcode: return "xcode"
+            case .production: return "production"
+            default: return "unknown"
+            }
+        } catch {
+            return "unknown"
+        }
     }
 
     /// Apple's own sheet for an offer code (a school's or a partner's).
@@ -187,5 +230,20 @@ public class StorePlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject(error.localizedDescription)
             }
         }
+    }
+}
+
+/// Runs its body the first time only, from any thread: the first of two
+/// racing answers resumes the caller, and the other is dropped.
+private final class ResumeOnce: @unchecked Sendable {
+    private let lock = NSLock()
+    private var done = false
+
+    func run(_ body: () -> Void) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !done else { return }
+        done = true
+        body()
     }
 }
