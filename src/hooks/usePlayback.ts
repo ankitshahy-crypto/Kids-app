@@ -188,12 +188,17 @@ export function usePlayback(
     [begin, settingsRef],
   );
 
-  /** Stop whatever this card is saying: a fresh try starts in quiet. */
+  /**
+   * Stop whatever this card is saying, and put down the tiles a Play sound
+   * pass had shown: a fresh try starts in quiet, with nothing lit that the
+   * slider does not count.
+   */
   const stop = useCallback(() => {
     tokenRef.current += 1;
     abortRef.current?.abort();
     cancelSpeech();
     setActive(null);
+    setRevealed(0);
   }, []);
 
   return { revealed, active, replay, autoplay, replayLetter, soundLetter, soundWord, stop };

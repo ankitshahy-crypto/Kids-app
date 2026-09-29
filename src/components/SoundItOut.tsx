@@ -13,6 +13,12 @@ import { Chevron, SpeakerIcon, StarIcon } from "./icons";
 import { PictureCard } from "./PictureCard";
 import { SoundLabel } from "./SoundLabel";
 
+/** Clear a pending timeout kept in a ref. */
+function clearTimer(timer: { current: number | null }) {
+  if (timer.current !== null) window.clearTimeout(timer.current);
+  timer.current = null;
+}
+
 export function SoundItOut({
   settingsRef,
   paused,
@@ -67,17 +73,11 @@ export function SoundItOut({
   const celebrationTimer = useRef<number | null>(null);
 
   const stopCelebrating = () => {
-    if (celebrationTimer.current !== null) window.clearTimeout(celebrationTimer.current);
-    celebrationTimer.current = null;
+    clearTimer(celebrationTimer);
     setCelebrating(false);
   };
 
-  useEffect(
-    () => () => {
-      if (celebrationTimer.current !== null) window.clearTimeout(celebrationTimer.current);
-    },
-    [],
-  );
+  useEffect(() => () => clearTimer(celebrationTimer), []);
 
   useEffect(() => {
     sounded.current = new Set();
@@ -87,8 +87,7 @@ export function SoundItOut({
     setLitOrder([]);
     setBlended(false);
     setJoined(false);
-    if (celebrationTimer.current !== null) window.clearTimeout(celebrationTimer.current);
-    celebrationTimer.current = null;
+    clearTimer(celebrationTimer);
     setCelebrating(false);
     setProgress(0.06);
   }, [word]);
@@ -236,8 +235,9 @@ export function SoundItOut({
     setBlended(false);
     setJoined(false);
     stopCelebrating();
-    // Nothing from the last try keeps talking over this one.
+    // Nothing keeps talking over this try: not the last one's sounds, a Play sound pass, or the opening instruction.
     stopPlayback();
+    speak.stop();
   };
 
   /**
@@ -248,6 +248,8 @@ export function SoundItOut({
    */
   const stepBack = () => {
     const last = litOrder[litOrder.length - 1];
+    // Whatever was still being said (the word just finished, a letter) stops, so it does not talk over VoiceOver.
+    stopPlayback();
     if (blendedPass.current) {
       blendedPass.current = false;
       setBlended(false);
@@ -294,7 +296,6 @@ export function SoundItOut({
 
   /** Home: back to the start of the track, every tile unlit, for a fresh try. */
   const startOver = () => {
-    speak.stop();
     startPass();
     setProgress(0.06);
   };
