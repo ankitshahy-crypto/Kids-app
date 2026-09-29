@@ -23,6 +23,7 @@ import { ScienceBoard } from "./SciencePlay";
 import { LockBadge } from "./LockBadge";
 import { ModuleMark } from "./ModuleMark";
 import { BookMark, EggNest, Hills, PaintMark, PencilMark, ToyBox } from "./sceneArt";
+import { HoldButton } from "./HoldButton";
 
 const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
   { id: "letter", label: "Letters", left: "50%", top: "18%" },
@@ -45,6 +46,7 @@ export function TodayPath({
   onStickers,
   onGames,
   dayKey,
+  switchNeedsGrownup,
   onSoundGame,
   onSurprise,
   goalMinutes,
@@ -82,6 +84,8 @@ export function TodayPath({
   onGames: () => void;
   /** Today's local date. A new value re-renders the path on a new day. */
   dayKey?: string;
+  /** A shared class iPad: the avatar opens the grown-up check on a tap instead of a long press. */
+  switchNeedsGrownup?: boolean;
   /** Fridays: the sound game. Absent when there are too few sounds yet. */
   onSoundGame?: () => void;
   onSurprise: () => void;
@@ -155,9 +159,15 @@ export function TodayPath({
       data-letters={letters.join("")}
     >
       <div className="today-top">
-        <button type="button" className="today-avatar" aria-label="Switch child" onClick={onLeave}>
-          <Hero animal={profile.animal} outfit={profile.outfit} />
-        </button>
+        {switchNeedsGrownup ? (
+          <button type="button" className="today-avatar" aria-label="Switch child" onClick={onLeave}>
+            <Hero animal={profile.animal} outfit={profile.outfit} />
+          </button>
+        ) : (
+          <HoldButton className="today-avatar" label="Switch child" onHold={onLeave}>
+            <Hero animal={profile.animal} outfit={profile.outfit} />
+          </HoldButton>
+        )}
         <div className="today-tools">
           <GoalRing ms={practiceTotal(profile)[todayKey(now)] ?? 0} goalMinutes={goalMinutes} />
           <p className="star-count" data-stars={profile.stars}>

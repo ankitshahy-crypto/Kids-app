@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate, openTeacherChild } from "./gate";
 import { createdThisWeek } from "./clock";
 
 const profile = {
@@ -18,22 +19,7 @@ const profile = {
 };
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const sum = prompt.match(/(\d+)\s*\+\s*(\d+)/);
-  const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
-  const expected = sum
-    ? Number(sum[1]) + Number(sum[2])
-    : (words[prompt.match(/number ([a-z]+)/i)?.[1]?.toLowerCase() ?? ""] ?? 0);
-  const choices = dialog.locator(".gate-choice");
-  const count = await choices.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await choices.nth(index).innerText()) === expected) {
-      await choices.nth(index).click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, true);
 }
 
 test("a teacher places the word ladder and the egg uses that step", async ({ page }, testInfo) => {
@@ -45,9 +31,10 @@ test("a teacher places the word ladder and the egg uses that step", async ({ pag
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
   await page.getByRole("button", { name: "Mia" }).click();
-  await page.getByRole("button", { name: "Switch child" }).click();
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
+  await openTeacherChild(page, "mia");
   await page.getByRole("button", { name: "Word ladder step 2" }).click();
   await expect(page.locator("[data-section=ladder]")).toHaveAttribute("data-ladder-step", "2");
   await expect(page.locator("[data-stage=word-ladder]")).toContainText("Two letters");

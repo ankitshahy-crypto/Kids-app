@@ -46,6 +46,8 @@ export const PAYWALL_PREVIEW_KEY = "littlenest-paywall-preview-v1";
 /** "One more?" chunks taken today, per child. Nothing else is kept here. */
 export const EXTRAS_KEY = "littlenest-extras-v1";
 export const OUTBOX_KEY = "littlenest-outbox-v1";
+/** "1" once the PIN offer after the first child has been shown, so it never nags. */
+export const PIN_OFFERED_KEY = "littlenest-pin-offered-v1";
 
 export function readStored(storage: KeyValueStore, key: string): string | null {
   const current = storage.getItem(key);

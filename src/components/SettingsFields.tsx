@@ -108,6 +108,31 @@ export function SettingsFields({
         </div>
         <p className="adult-copy">On shows the other courses on this device. Off keeps this device on reading only.</p>
       </fieldset>
+      <fieldset className="setting-group" data-setting="shared">
+        <legend>Shared class iPad</legend>
+        <div className="segment">
+          <button
+            type="button"
+            className={settings.sharedDevice ? "is-selected" : ""}
+            aria-pressed={settings.sharedDevice}
+            onClick={() => onChange({ sharedDevice: true })}
+          >
+            On
+          </button>
+          <button
+            type="button"
+            className={!settings.sharedDevice ? "is-selected" : ""}
+            aria-pressed={!settings.sharedDevice}
+            onClick={() => onChange({ sharedDevice: false })}
+          >
+            Off
+          </button>
+        </div>
+        <p className="adult-copy">
+          On: switching child asks the grown-up check, so one child cannot open a classmate's profile. Off: a child
+          holds their animal for a moment to switch.
+        </p>
+      </fieldset>
       <fieldset className="setting-group" data-setting="code">
         <legend>See the real code</legend>
         <div className="segment">

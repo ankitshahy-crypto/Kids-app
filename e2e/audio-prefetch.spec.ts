@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate } from "./gate";
 import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
@@ -38,21 +39,7 @@ function solve(prompt: string): number {
 }
 
 async function answer(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const expected = solve(prompt);
-  const buttons = dialog.locator(".gate-choice");
-  const count = await buttons.count();
-  for (let i = 0; i < count; i += 1) {
-    const button = buttons.nth(i);
-    await expect(button).not.toHaveAttribute("data-busy", "true");
-    const value = Number(await button.innerText());
-    if (value === expected) {
-      await button.click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, true);
 }
 
 test("opening Grown-ups settings does not request missing audio files", async ({ page }) => {

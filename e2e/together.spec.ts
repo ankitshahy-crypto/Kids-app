@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate, openTeacherChild } from "./gate";
 import { shareUrl } from "../src/config";
 import { finishLetterTracing } from "./traceFlow";
 import { createdThisWeek } from "./clock";
@@ -40,18 +41,7 @@ function solve(prompt: string): number {
 }
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const expected = solve(prompt);
-  const buttons = dialog.locator(".gate-choice");
-  const count = await buttons.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await buttons.nth(index).innerText()) === expected) {
-      await buttons.nth(index).click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, true);
 }
 
 async function openChild(page: Page) {
@@ -125,6 +115,7 @@ test("parent and teacher show the learning path", async ({ page }) => {
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
+  await openTeacherChild(page, "mia");
   const childPath = page.locator("[data-card=device] [data-section=path]");
   await expect(childPath).toContainText("Mia");
   await expect(childPath.locator("[data-state=current]")).toHaveCount(1);

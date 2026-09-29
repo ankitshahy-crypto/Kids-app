@@ -3,6 +3,7 @@ import { FamilyProgress } from "./ProgressViews";
 import type { LadderStep } from "../data/ladder";
 import type { TeacherLink } from "../data/profileExtras";
 import { Avatar } from "../avatars";
+import { RemoveChildSheet } from "./RemoveChildSheet";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
 import { aboutContent } from "../content/about";
 import { resolvePlacement } from "../data/placement";
@@ -88,16 +89,20 @@ function ProfileRow({
         <button type="button" className="edit-child check-child" onClick={onCheck}>
           Where to start
         </button>
-        {confirming ? (
-          <button type="button" className="remove-child" data-confirm="ready" onClick={onRemove}>
-            Remove
-          </button>
-        ) : (
-          <button type="button" className="remove-child remove-quiet" data-confirm="ask" onClick={() => setConfirming(true)}>
-            Remove
-          </button>
-        )}
+        <button type="button" className="remove-child remove-quiet" data-confirm="ask" onClick={() => setConfirming(true)}>
+          Remove
+        </button>
       </div>
+      {confirming ? (
+        <RemoveChildSheet
+          profile={profile}
+          onConfirm={() => {
+            setConfirming(false);
+            onRemove();
+          }}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : null}
     </li>
   );
 }

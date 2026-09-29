@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate } from "./gate";
 
 /**
  * Progress for grown-ups: completion on the parent's device and the class
@@ -21,16 +22,7 @@ function solve(prompt: string): number {
 }
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const expected = solve(await dialog.getByRole("heading").innerText());
-  const buttons = dialog.locator(".gate-choice");
-  for (let index = 0; index < (await buttons.count()); index += 1) {
-    if (Number(await buttons.nth(index).innerText()) === expected) {
-      await buttons.nth(index).click();
-      return;
-    }
-  }
-  throw new Error("No matching choice");
+  await answerGate(page, true);
 }
 
 /** Use code, once the press guard from the last tap has let go. */
@@ -130,7 +122,7 @@ test("the Friday sound game notes first tries quietly and shows grown-ups what t
   await page.getByRole("button", { name: "Get my star" }).click();
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", String(before + 1));
 
-  await page.getByRole("button", { name: "Switch child" }).click();
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
   await page.getByRole("button", { name: "Progress", exact: true }).click();
@@ -148,9 +140,10 @@ test("a family code and a progress code carry notes and completion both ways", a
   await passGate(page);
   const row = page.locator("[data-card=class-progress] li[data-child=mia]");
   await expect(row.locator(".class-row-week")).toHaveText("2 of 5");
-  await row.locator("summary").click();
-  await row.locator("[data-note-for=mia]").selectOption({ label: "Wonderful blending this week!" });
-  const familyCode = (await row.locator("[data-section=family-code-out] [data-code]").getAttribute("data-code")) ?? "";
+  await row.locator("[data-open-child=mia]").click();
+  const sheet = page.locator("[data-child-sheet=mia]");
+  await sheet.locator("[data-note-for=mia]").selectOption({ label: "Wonderful blending this week!" });
+  const familyCode = (await sheet.locator("[data-section=family-code-out] [data-code]").getAttribute("data-code")) ?? "";
   expect(familyCode).toMatch(/^[0-9A-Z]{4}-[0-9A-Z]{4}$/);
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
@@ -175,13 +168,13 @@ test("a family code and a progress code carry notes and completion both ways", a
   // Class iPad: the progress code from home shows next to the class numbers.
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
-  await row.locator("summary").click();
-  await row.getByLabel("Progress code from home").fill(familyCode);
-  await useCode(row);
-  await expect(row.getByRole("alert")).toContainText("family code");
-  await row.getByLabel("Progress code from home").fill(progress);
-  await useCode(row);
-  const home = row.locator("[data-section=from-home]");
+  await row.locator("[data-open-child=mia]").click();
+  await sheet.getByLabel("Progress code from home").fill(familyCode);
+  await useCode(sheet);
+  await expect(sheet.getByRole("alert")).toContainText("family code");
+  await sheet.getByLabel("Progress code from home").fill(progress);
+  await useCode(sheet);
+  const home = sheet.locator("[data-section=from-home]");
   await expect(home).toHaveAttribute("data-lessons-week", "2");
   await expect(home).toContainText("This week");
 });

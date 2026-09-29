@@ -7672,10 +7672,7 @@ input.is-pressed,
 }
 
 .progress-head .avatar-art,
-.class-row summary .avatar-art {
-  width: 40px;
-  height: 40px;
-}
+
 
 .progress-head h3 {
   margin: 0;
@@ -7778,24 +7775,24 @@ input.is-pressed,
 }
 
 .class-row {
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 6px 12px;
   background: var(--paper);
-}
-
-.class-row summary {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  min-height: 52px;
-  cursor: pointer;
-  list-style: none;
+  min-height: 56px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
 }
 
-.class-row summary::-webkit-details-marker {
-  display: none;
+.class-row .avatar-art {
+  width: 40px;
+  height: 40px;
 }
 
 .class-row-name {
@@ -7893,4 +7890,157 @@ input.is-pressed,
 .story-moon {
   background: #fff1c4;
   width: 11%;
+}
+
+.remove-sheet h2 {
+  font-size: 22px;
+}
+
+.remove-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.remove-actions .remove-cancel {
+  flex: 1;
+  background: var(--sand);
+}
+
+.remove-actions .remove-child {
+  flex: 1;
+  min-height: 64px;
+  border-radius: 18px;
+  font-size: 18px;
+  font-weight: 700;
+  background: var(--peach-deep, #f3d3bc);
+  color: var(--text-warm);
+}
+
+/* Hold to switch child: a ring fills while the animal is held. */
+.hold-button {
+  position: relative;
+  overflow: visible;
+}
+
+.hold-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  pointer-events: none;
+}
+
+.hold-button.is-holding .hold-ring {
+  border-color: var(--sage);
+  animation: hold-fill var(--hold-ms, 1500ms) linear forwards;
+}
+
+@keyframes hold-fill {
+  from {
+    clip-path: polygon(50% 50%, 50% 0, 50% 0, 50% 0, 50% 0, 50% 0);
+  }
+  25% {
+    clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 0, 100% 0, 100% 0);
+  }
+  50% {
+    clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 100% 100%, 100% 100%);
+  }
+  75% {
+    clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 100%);
+  }
+  to {
+    clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hold-button.is-holding .hold-ring {
+    animation: none;
+    clip-path: none;
+  }
+}
+
+.pin-prompt-form {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.pin-field {
+  display: grid;
+  gap: 4px;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Teacher page: folded sections and the child sheet. */
+.teacher-fold > summary {
+  list-style: none;
+  cursor: pointer;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.teacher-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.teacher-fold > summary h2 {
+  margin: 0;
+}
+
+.teacher-fold > summary h2::after {
+  content: " ›";
+  color: var(--text-sage);
+}
+
+.teacher-fold[open] > summary h2::after {
+  content: " ⌄";
+}
+
+.teacher-fold > summary .adult-copy {
+  margin: 0;
+}
+
+.child-sheet .progress-head h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.all-children {
+  min-height: 44px;
+  padding: 0 8px;
+  margin-bottom: 4px;
+  align-self: flex-start;
+}
+
+.parent-child-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.parent-child-head .avatar-art {
+  width: 44px;
+  height: 44px;
+}
+
+.parent-child-head h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.parent-child-head .child-switch {
+  margin-left: auto;
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
 }

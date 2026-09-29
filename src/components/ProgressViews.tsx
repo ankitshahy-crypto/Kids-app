@@ -310,78 +310,79 @@ function HomeFacts({ report }: { report: HomeReport }) {
   );
 }
 
-/** The teacher's class list: who might like a nudge first, then each child's completion, note, and codes. */
-export function ClassProgress({
-  profiles,
+/** One child's page on the class iPad: completion, a note for home, and the two codes. */
+export function ChildClassDetail({
+  profile,
   placement,
   onNote,
   onHomeReport,
 }: {
-  profiles: ChildProfile[];
+  profile: ChildProfile;
   placement: PlacementDocument;
   onNote: (childId: string, note: number) => void;
   onHomeReport: (childId: string, report: HomeReport | undefined) => void;
 }) {
+  return (
+    <div className="child-class-detail" data-section="class-detail">
+      <CompletionSummary profile={profile} placement={placement} />
+      {profile.fromHome ? <HomeFacts report={profile.fromHome} /> : null}
+      <label className="note-pick">
+        <span>Note for home</span>
+        <select value={profile.noteForHome ?? 0} onChange={(event) => onNote(profile.id, Number(event.target.value))} data-note-for={profile.id}>
+          {HOME_NOTES.map((note, index) => (
+            <option key={index} value={index}>
+              {index === 0 ? "No note" : note}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="code-details is-open" data-section="family-code-out">
+        <p className="completion-label">Code for {lessonName(profile)}'s family</p>
+        <p className="adult-copy">It carries the lesson place and the note. The family types it into the Progress page at home.</p>
+        <CodeBox code={familyCodeFor(profile, placement)} label="Family code" />
+      </div>
+      <CodeEntry
+        label="Progress code from home"
+        hint="XXXX-XXXX-XXXX"
+        onCode={(code) => {
+          const read = readProgressCode(code);
+          if (!read) {
+            return readFamilyCode(code)
+              ? "That is a family code. It goes from the teacher to home."
+              : "That code did not work. Check the letters and try again.";
+          }
+          onHomeReport(profile.id, { ...read, entered: todayKey() });
+          return null;
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * The teacher's class list: one short row per child, the children who have
+ * been away longest first. Tapping a row opens that child's page. It stays a
+ * list of rows at any class size.
+ */
+export function ClassProgress({ profiles, onOpen }: { profiles: ChildProfile[]; onOpen: (childId: string) => void }) {
   const rows = byNudge(profiles.map((profile) => ({ profile, completion: completion(profile) })));
   return (
     <section className="teacher-card" data-card="class-progress">
       <h2>Class progress</h2>
-      <p className="adult-copy">
-        Lessons finished, not scores. The children who have been away longest are first. Tap a child for details, a
-        note for home, and codes.
-      </p>
+      <p className="adult-copy">Lessons finished, not scores. The children who have been away longest are first. Tap a child for details.</p>
       {rows.length === 0 ? <p className="adult-copy">Add the children in your class to see their progress.</p> : null}
       <ul className="class-rows">
         {rows.map(({ profile, completion: facts }) => (
           <li key={profile.id} data-child={profile.id}>
-            <details className="class-row">
-              <summary>
-                <Avatar animal={profile.animal} />
-                <span className="class-row-name">{lessonName(profile)}</span>
-                <span className="class-row-week" data-lessons-week={facts.lessonsThisWeek}>
-                  {facts.lessonsThisWeek} of {WEEKLY_TARGET}
-                </span>
-                <DayDots days={facts.practicedDays} />
-                <span className="class-row-last">{lastActiveLabel(facts.daysSinceActive)}</span>
-              </summary>
-              <CompletionSummary profile={profile} placement={placement} done={facts} />
-              {profile.fromHome ? <HomeFacts report={profile.fromHome} /> : null}
-              <label className="note-pick">
-                <span>Note for home</span>
-                <select
-                  value={profile.noteForHome ?? 0}
-                  onChange={(event) => onNote(profile.id, Number(event.target.value))}
-                  data-note-for={profile.id}
-                >
-                  {HOME_NOTES.map((note, index) => (
-                    <option key={index} value={index}>
-                      {index === 0 ? "No note" : note}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="code-details is-open" data-section="family-code-out">
-                <p className="completion-label">Code for {lessonName(profile)}'s family</p>
-                <p className="adult-copy">
-                  It carries the lesson place and the note. The family types it into the Progress page at home.
-                </p>
-                <CodeBox code={familyCodeFor(profile, placement)} label="Family code" />
-              </div>
-              <CodeEntry
-                label="Progress code from home"
-                hint="XXXX-XXXX-XXXX"
-                onCode={(code) => {
-                  const read = readProgressCode(code);
-                  if (!read) {
-                    return readFamilyCode(code)
-                      ? "That is a family code. It goes from the teacher to home."
-                      : "That code did not work. Check the letters and try again.";
-                  }
-                  onHomeReport(profile.id, { ...read, entered: todayKey() });
-                  return null;
-                }}
-              />
-            </details>
+            <button type="button" className="class-row" data-open-child={profile.id} onClick={() => onOpen(profile.id)}>
+              <Avatar animal={profile.animal} />
+              <span className="class-row-name">{lessonName(profile)}</span>
+              <span className="class-row-week" data-lessons-week={facts.lessonsThisWeek}>
+                {facts.lessonsThisWeek} of {WEEKLY_TARGET}
+              </span>
+              <DayDots days={facts.practicedDays} />
+              <span className="class-row-last">{lastActiveLabel(facts.daysSinceActive)}</span>
+            </button>
           </li>
         ))}
       </ul>

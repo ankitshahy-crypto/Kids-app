@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate } from "./gate";
 import { finishPathTrace, scribbleCorner } from "./traceFlow";
 import { createdThisWeek } from "./clock";
 
@@ -74,21 +75,7 @@ test("printables include shape, word, and name stroke sheets", async ({ page }) 
   }, profile);
   await page.goto("./");
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const sum = prompt.match(/(\d+)\s*\+\s*(\d+)/);
-  const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
-  const expected = sum
-    ? Number(sum[1]) + Number(sum[2])
-    : (words[prompt.match(/number ([a-z]+)/i)?.[1]?.toLowerCase() ?? ""] ?? 0);
-  const choices = dialog.locator(".gate-choice");
-  const count = await choices.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await choices.nth(index).innerText()) === expected) {
-      await choices.nth(index).click();
-      break;
-    }
-  }
+  await answerGate(page, true);
   await page.getByRole("button", { name: /Printables/ }).click();
   const root = page.locator("[data-section=printables]");
   await expect(root.locator("[data-sheet=name]")).toHaveAttribute("data-name", "Mia");

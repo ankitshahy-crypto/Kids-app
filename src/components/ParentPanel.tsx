@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../avatars";
+import { RemoveChildSheet } from "./RemoveChildSheet";
 import { lessonName, type ChildInput, type ChildProfile } from "../data/profiles";
 import { completion, WEEKLY_TARGET } from "../data/progress";
 import { resolvePlacement, stageTitle, weekLabel, type PlacementDocument } from "../data/placement";
@@ -104,8 +105,29 @@ export function ParentView({
         Back
       </button>
 
+      {child && page === "teacher" ? (
+        <header className="parent-child-head" data-section="child-head" data-child={child.id}>
+          <Avatar animal={child.animal} />
+          <h2>{lessonName(child)}</h2>
+          {profiles.length > 1 ? (
+            <select
+              className="child-switch"
+              aria-label="Which child"
+              value={child.id}
+              onChange={(event) => onSelect(event.target.value)}
+            >
+              {profiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {lessonName(profile)}
+                </option>
+              ))}
+            </select>
+          ) : null}
+        </header>
+      ) : null}
+
       {page === "home" && child ? (
-        <ParentHome child={child} goalMinutes={settings.readingGoal} placement={placement} onOpen={setPage} />
+        <ParentHome child={child} profiles={profiles} onSelect={onSelect} goalMinutes={settings.readingGoal} placement={placement} onOpen={setPage} />
       ) : null}
       {page === "home" && !child ? (
         <header className="parent-hero">
@@ -298,11 +320,15 @@ function PlacementSummary({ child, placement }: { child: ChildProfile; placement
 
 function ParentHome({
   child,
+  profiles,
+  onSelect,
   goalMinutes,
   placement,
   onOpen,
 }: {
   child: ChildProfile;
+  profiles: ChildProfile[];
+  onSelect: (id: string) => void;
   goalMinutes: number;
   placement: PlacementDocument;
   onOpen: (page: ParentPage) => void;
@@ -324,6 +350,24 @@ function ParentHome({
 
   return (
     <>
+      <header className="parent-hero" data-section="child-head" data-child={child.id}>
+        <Avatar animal={child.animal} />
+        <div>
+          <h1>Parent</h1>
+          <p className="adult-note">
+            {lessonName(child)} · age {age}
+          </p>
+        </div>
+        {profiles.length > 1 ? (
+          <select className="child-switch" aria-label="Which child" value={child.id} onChange={(event) => onSelect(event.target.value)}>
+            {profiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {lessonName(profile)}
+              </option>
+            ))}
+          </select>
+        ) : null}
+      </header>
       <LearningPath
         profile={child}
         placedIntroduced={resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length}
@@ -347,15 +391,6 @@ function ParentHome({
         placedIntroduced={timeResolved.source === "calendar" ? undefined : timeIntroduced(timeResolved.weekIndex)}
       />
       <PlacementSummary child={child} placement={placement} />
-      <header className="parent-hero">
-        <Avatar animal={child.animal} />
-        <div>
-          <h1>Parent</h1>
-          <p className="adult-note">
-            {lessonName(child)} · age {age}
-          </p>
-        </div>
-      </header>
 
       <section className="dash-card" data-section="letters">
         <div className="dash-letters">
@@ -480,16 +515,20 @@ function ChildRow({
         <button type="button" className="edit-child" onClick={onEdit}>
           Edit
         </button>
-        {confirming ? (
-          <button type="button" className="remove-child" data-confirm="ready" onClick={onRemove}>
-            Remove
-          </button>
-        ) : (
-          <button type="button" className="remove-child remove-quiet" data-confirm="ask" onClick={() => setConfirming(true)}>
-            Remove
-          </button>
-        )}
+        <button type="button" className="remove-child remove-quiet" data-confirm="ask" onClick={() => setConfirming(true)}>
+          Remove
+        </button>
       </div>
+      {confirming ? (
+        <RemoveChildSheet
+          profile={profile}
+          onConfirm={() => {
+            setConfirming(false);
+            onRemove();
+          }}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : null}
     </li>
   );
 }

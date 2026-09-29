@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate, openClassPlace } from "./gate";
 import { createdThisWeek } from "./clock";
 
 const profile = {
@@ -51,22 +52,7 @@ async function openPlay(page: Page, name: string) {
 }
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const sum = prompt.match(/(\d+)\s*\+\s*(\d+)/);
-  const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
-  const expected = sum
-    ? Number(sum[1]) + Number(sum[2])
-    : (words[prompt.match(/number ([a-z]+)/i)?.[1]?.toLowerCase() ?? ""] ?? 0);
-  const choices = dialog.locator(".gate-choice");
-  const count = await choices.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await choices.nth(index).innerText()) === expected) {
-      await choices.nth(index).click();
-      return;
-    }
-  }
-  throw new Error(`No matching grown-up choice for: ${prompt}`);
+  await answerGate(page, true);
 }
 
 test("three jars earn coins and the save jar can reach the hat", async ({ page }, testInfo) => {
@@ -143,7 +129,7 @@ test("cards stay closed early, then a debit tap lowers the save jar", async ({ p
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("[data-screen=money-play]")).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "Switch child" }).click();
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
   await passGate(page);
   await page.getByRole("button", { name: /Printables/ }).click();
@@ -155,6 +141,7 @@ test("cards stay closed early, then a debit tap lowers the save jar", async ({ p
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
+  await openClassPlace(page);
   const classTime = page.locator("[data-place=class-time]");
   await classTime.getByRole("button", { name: "Cards", exact: true }).click();
   await expect(classTime).toHaveAttribute("data-stage", "cards");

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerGate } from "./gate";
 import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 
@@ -51,20 +52,7 @@ async function install(page: Page, profile: Record<string, unknown>, placed: Rec
 }
 
 async function passGate(page: Page) {
-  const dialog = page.getByRole("dialog");
-  const prompt = await dialog.getByRole("heading").innerText();
-  const sum = prompt.match(/(\d+)\s*\+\s*(\d+)/);
-  const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
-  const expected = sum ? Number(sum[1]) + Number(sum[2]) : (words[prompt.match(/number ([a-z]+)/i)?.[1]?.toLowerCase() ?? ""] ?? 0);
-  const choices = dialog.locator(".gate-choice");
-  const count = await choices.count();
-  for (let index = 0; index < count; index += 1) {
-    if (Number(await choices.nth(index).innerText()) === expected) {
-      await choices.nth(index).click();
-      return;
-    }
-  }
-  throw new Error(`No choice matched ${prompt}`);
+  await answerGate(page, true);
 }
 
 test("week 15 leads with the sh card, and its story sounds out sh as one sound", async ({ page }) => {
@@ -157,7 +145,7 @@ test("the parent panel lists the sound units learned, and the calendar holds a f
   const created = new Date(new Date(createdThisWeek()).getTime() - 20 * 7 * 24 * 60 * 60 * 1000).toISOString();
   await install(page, child({ createdAt: created }), null);
   await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", "a_ei_e");
-  await page.getByRole("button", { name: "Switch child" }).click();
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
   const letters = page.locator("[data-screen=parent] [data-section=letters]");
