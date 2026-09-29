@@ -1,0 +1,77 @@
+name: Story word timings
+
+# Times every word in the recorded story pages, so the reader can light each
+# word as the narrator reads it. A speech recognizer (faster-whisper) listens
+# to the clips on GitHub's machines; the app only reads the resulting JSON.
+# Run it after story clips change (Voice clips with `stories`), from the
+# Actions tab. It opens a pull request with src/data/storyTimings.json.
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Only clips whose id starts with this (blank = every story page)"
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  timings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install
+        run: |
+          command -v ffmpeg >/dev/null || sudo apt-get install -y -q ffmpeg
+          pip install -q faster-whisper
+
+      - name: Check the matching
+        run: python3 scripts/story-timings.py --self-test
+
+      - name: Time the words
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          set -o pipefail
+          if [ -n "$ONLY" ]; then args=(--only "$ONLY"); else args=(); fi
+          python3 scripts/story-timings.py "${args[@]}" | tee timings.log
+          {
+            echo "### Story word timings"
+            echo
+            cat timings.log
+          } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "report<<TIMED"
+            cat timings.log
+            echo "TIMED"
+          } >> "$GITHUB_OUTPUT"
+          rm -f timings.log
+        id: time
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: story/timings
+          add-paths: src/data/storyTimings.json
+          title: "Story word timings"
+          commit-message: |
+            Time every word in the recorded story pages.
+
+            Made by scripts/story-timings.py with faster-whisper on GitHub's
+            machines. The app reads the times; it never runs a recognizer.
+
+            ${{ steps.time.outputs.report }}
+          body: |
+            When each word starts in every recorded story page, for the reader's follow-along highlight.
+
+            ```
+            ${{ steps.time.outputs.report }}
+            ```
+
+            Open a story on a phone and watch a few pages before merging: each word should light as it is said.
+          delete-branch: true
