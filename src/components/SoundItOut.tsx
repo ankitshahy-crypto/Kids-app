@@ -248,8 +248,10 @@ export function SoundItOut({
    */
   const stepBack = () => {
     const last = litOrder[litOrder.length - 1];
-    // Whatever was still being said (the word just finished, a letter) stops, so it does not talk over VoiceOver.
+    // Whatever was still being said (the word just finished, a letter, the opening instruction) stops,
+    // so it does not talk over what VoiceOver reads for the step.
     stopPlayback();
+    speak.stop();
     if (blendedPass.current) {
       blendedPass.current = false;
       setBlended(false);
@@ -279,6 +281,9 @@ export function SoundItOut({
   const stepForward = (toEnd = false) => {
     unlockAudio();
     resumeSpeech();
+    // Once the child is on the track, the opening instruction has done its job: it stops, rather than
+    // talking over what VoiceOver reads for the step. (A letter's own sound would stop it anyway.)
+    speak.stop();
     if (blendedPass.current) {
       soundWord(false);
       return;
