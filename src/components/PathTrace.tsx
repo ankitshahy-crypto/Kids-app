@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { playEffect } from "../audio/manager";
-import { playOnDevice, playWord } from "../audio/player";
+import { deviceCue, playOnDevice, playWord, promptCue, wordCue } from "../audio/player";
+import { useOpeningLine, useSpeaker } from "../hooks/useSpeaker";
 import type { DeckWord } from "../data/deck";
 import type { TracePoint } from "../data/handwriting";
 import {
@@ -329,6 +330,8 @@ export function WordTrace({
   onDone: (word: string) => void;
 }) {
   const [picked, setPicked] = useState<DeckWord | null>(words.length === 1 ? (words[0] ?? null) : null);
+  const speak = useSpeaker(settingsRef);
+  useOpeningLine(speak, picked ? [promptCue("trace-word", "Trace the word."), wordCue(picked.id, picked.word)] : []);
   if (!picked) {
     return (
       <div className="letter-trace" data-screen="word" data-phase="pick">
@@ -381,6 +384,9 @@ export function NameTrace({
 }) {
   const title = nameToTrace(name) ?? name;
   const id = nameItemId(title);
+  const speak = useSpeaker(settingsRef);
+  // The name is said by the device voice only; it is never sent anywhere.
+  useOpeningLine(speak, [promptCue("trace-name", "Trace your name."), deviceCue(title)]);
   return (
     <PathTrace
       screen="my-name"

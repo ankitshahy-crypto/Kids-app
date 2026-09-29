@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { playColor, playPrompt } from "../audio/player";
+import { colorCue, promptCue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import { animalById } from "../data/animals";
 import {
@@ -14,31 +14,11 @@ import {
   type ColorStep,
 } from "../data/colors";
 import type { Outfit } from "../data/wardrobe";
+import { useSpeaker } from "../hooks/useSpeaker";
 import type { Settings } from "../settings";
+import { HearButton } from "./HearButton";
 import { Hero } from "./Hero";
 import { LockBadge } from "./LockBadge";
-
-function useSpeaker(settingsRef: { current: Settings }) {
-  const playRef = useRef<AbortController | null>(null);
-  useEffect(() => () => playRef.current?.abort(), []);
-  return {
-    stop() {
-      playRef.current?.abort();
-    },
-    color(name: string) {
-      playRef.current?.abort();
-      const controller = new AbortController();
-      playRef.current = controller;
-      void playColor(name, settingsRef.current, controller.signal).catch(() => undefined);
-    },
-    prompt(id: string) {
-      playRef.current?.abort();
-      const controller = new AbortController();
-      playRef.current = controller;
-      void playPrompt(id, settingsRef.current, controller.signal).catch(() => undefined);
-    },
-  };
-}
 
 export function ColorSwatch({ name }: { name: string }) {
   const fill = colorFill(name) ?? "var(--paper)";
@@ -107,6 +87,12 @@ export function NameActivity({
   const [tries, setTries] = useState(0);
   const [feedback, setFeedback] = useState("");
   const finished = useRef(false);
+  const hearLine = () => speak.line([promptCue("name", "Tap the color you hear."), colorCue(lesson.hear)]);
+
+  // The screen says what to do, then the color, as soon as it opens.
+  useEffect(() => {
+    speak.line([promptCue("name", "Tap the color you hear."), colorCue(lesson.hear)]);
+  }, [speak, lesson.hear]);
 
   const choose = (name: ColorId) => {
     if (finished.current) return;
@@ -125,9 +111,7 @@ export function NameActivity({
     <div className="color-play" data-screen="name" data-hear={lesson.hear} data-tries={tries}>
       <h1>Colors</h1>
       <p className="color-prompt">Hear the color, then tap that object.</p>
-      <button type="button" className="color-hear" onClick={() => speak.color(lesson.hear)}>
-        Hear it
-      </button>
+      <HearButton className="color-hear" onHear={hearLine} />
       <div className="color-choices" role="group" aria-label="Color objects">
         {lesson.choices.map((name) => (
           <button key={name} type="button" className="color-choice" data-color={name} data-pattern={colorPattern(name)} onClick={() => choose(name)}>
@@ -168,6 +152,16 @@ export function MixActivity({
   const [result, setResult] = useState("");
 
   bucketed.current = inBucket;
+
+  useEffect(() => {
+    speak.line([promptCue("mix", "Drag two colors into the bucket.")]);
+  }, [speak]);
+
+  useEffect(() => {
+    if (inBucket.length === 2 && !result) speak.line([promptCue("stir", "Stir the paint.")]);
+    // Only when the second paint lands.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inBucket.length]);
 
   const insideBucket = (clientX: number, clientY: number) => {
     const rect = bucketRef.current?.getBoundingClientRect();
@@ -297,15 +291,27 @@ export function PaintActivity({
   animal,
   outfit,
   made,
+  settingsRef,
   onDone,
 }: {
   animal: AnimalId;
   outfit: Outfit;
   made: string[];
+  settingsRef: { current: Settings };
   onDone: (label: string) => void;
 }) {
+  const speak = useSpeaker(settingsRef);
   const [picked, setPicked] = useState("");
   const name = animalById(animal).name;
+
+  useEffect(() => {
+    speak.line([promptCue("paint", "Color your animal.")]);
+  }, [speak]);
+
+  const pick = (color: string) => {
+    setPicked(color);
+    speak.color(color);
+  };
 
   return (
     <div className="color-play" data-screen="paint" data-made={made.length} data-tint={picked}>
@@ -332,7 +338,7 @@ export function PaintActivity({
               data-color={color}
               data-pattern={colorPattern(color)}
               aria-pressed={picked === color}
-              onClick={() => setPicked(color)}
+              onClick={() => pick(color)}
             >
               <ColorSwatch name={color} />
             </button>

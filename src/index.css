@@ -6639,6 +6639,36 @@ input.is-pressed,
   height: 26px;
 }
 
+/* "Hear it" on an activity: a speaker mark, then the word or the shape. */
+.hear-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.hear-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f3d7c4;
+  flex: 0 0 auto;
+}
+
+.hear-icon .icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* A shape shown on the button, next to its name. */
+.hear-button > svg {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+}
+
 .break-button {
   color: var(--text-warm);
 }

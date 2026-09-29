@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { answerGate } from "./gate";
+import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
 
 /**
  * Progress for grown-ups: completion on the parent's device and the class
@@ -92,6 +93,30 @@ test("the parent sees lessons finished this week, never a score", async ({ page 
   await expect(card.locator("[data-area=colors]")).toHaveText("Colors");
   await expect(card).toContainText("Yesterday");
   await expect(card).not.toContainText(/score|grade|behind|below/i);
+});
+
+test("the sound game plays the bare sound from the sound clips, never the letter phrase", async ({ page }) => {
+  await installAudioSpy(page);
+  await openApp(page);
+  await page.getByRole("button", { name: "Mia" }).click();
+  await page.locator("[data-practice=sounds]").click();
+  const game = page.locator("[data-screen=sound-check]");
+  await expect(game).toBeVisible();
+  const answer = (await game.getAttribute("data-answer")) ?? "";
+  expect(answer).toBeTruthy();
+  // The question, then the sound on its own: "mmm", not "m, as in moon", which would give the letter away.
+  await expect.poll(() => spokenLines(page), { timeout: 8000 }).toContain("which one says this sound?");
+  if (clipShipped(`sounds/${answer}.mp3`)) {
+    await expect.poll(() => playedClips(page), { timeout: 8000 }).toContain(`sounds/${answer}.mp3`);
+  }
+  expect(await playedClips(page)).not.toContain(`letters/${answer}.mp3`);
+  // Hear it again says the same question and sound, still from the sound clips.
+  const heard = (await playedClips(page)).length;
+  await game.getByRole("button", { name: "Hear it again" }).click();
+  if (clipShipped(`sounds/${answer}.mp3`)) {
+    await expect.poll(async () => (await playedClips(page)).slice(heard), { timeout: 8000 }).toContain(`sounds/${answer}.mp3`);
+  }
+  expect(await playedClips(page)).not.toContain(`letters/${answer}.mp3`);
 });
 
 test("the Friday sound game notes first tries quietly and shows grown-ups what they know", async ({ page }) => {

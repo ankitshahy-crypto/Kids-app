@@ -67,7 +67,9 @@ test("color names speak the color and accept the matching object", async ({ page
   const word = (hear ?? "").replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
   await expect(play.locator(`[data-color='${hear}'] .color-word`)).toHaveText(word);
   await expect(play.locator(`[data-color='${hear}'] .color-pattern`)).not.toHaveText("");
+  // Hear it says the instruction, then the color.
   await play.getByRole("button", { name: "Hear it" }).click();
+  await expect.poll(() => spoken(page), { timeout: 10000 }).toEqual(expect.arrayContaining(["tap the color you hear.", hear ?? ""]));
   const wrong = play.locator(`[data-color]:not([data-color='${hear}'])`).first();
   await wrong.click();
   await expect(play).toHaveAttribute("data-tries", "1");

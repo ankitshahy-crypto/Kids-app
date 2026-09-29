@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { cancelSpeech, playLetter, playOnDevice } from "../audio/player";
+import { cancelSpeech, playLetterSound, playPrompt } from "../audio/player";
 import type { ChildProfile } from "../data/profiles";
 import { unitLabel } from "../data/units";
 import { phonemeOf } from "../data/wordBuild";
@@ -75,12 +75,14 @@ export function SoundCheckIn({
     return controller.signal;
   };
 
+  // The question, then the bare sound ("mmm") from the sound clips: the letter
+  // phrase ("m, as in moon") would give the answer away.
   const say = async (current: CheckInRound) => {
     const signal = begin();
     const letter = tile(current.answer);
     try {
-      await playOnDevice("Which one says this sound?", settingsRef.current, signal);
-      if (letter) await playLetter(letter, settingsRef.current, signal);
+      await playPrompt("sound-which", settingsRef.current, signal, "Which one says this sound?");
+      if (letter) await playLetterSound(letter, settingsRef.current, signal);
     } catch {
       // A tap or the next round stopped the line.
     }
@@ -115,7 +117,7 @@ export function SoundCheckIn({
         setFinished(true);
         try {
           playEffect("celebrate", settingsRef.current);
-          void playOnDevice("You played the sound game!", settingsRef.current, begin()).catch(() => undefined);
+          void playPrompt("sound-done", settingsRef.current, begin(), "You played the sound game!").catch(() => undefined);
         } catch {
           // No audio here; the screen still says it.
         }
@@ -126,7 +128,7 @@ export function SoundCheckIn({
     try {
       playEffect("chime", settingsRef.current);
       const letter = tile(choice);
-      if (letter) void playLetter(letter, settingsRef.current, begin()).catch(() => undefined);
+      if (letter) void playLetterSound(letter, settingsRef.current, begin()).catch(() => undefined);
     } catch {
       // No audio here; the lit letter still shows the answer.
     }

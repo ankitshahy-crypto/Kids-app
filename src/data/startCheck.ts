@@ -49,7 +49,14 @@ const LONG_WORDS: { word: string; picture: IllustrationName }[] = [
   { word: "drum", picture: "drum" },
 ];
 
-export const ROUNDS_PER_PART: Record<CheckPart, number> = { sound: 3, word: 3, long: 2 };
+/** Four sound rounds and four word rounds, so one lucky tap cannot pass a part. */
+export const ROUNDS_PER_PART: Record<CheckPart, number> = { sound: 4, word: 4, long: 2 };
+
+/** Right answers a part needs to count as known. */
+export const NEED_PER_PART: Record<CheckPart, number> = { sound: 3, word: 3, long: 1 };
+
+/** A start past this lesson week is confirmed by a grown-up, not by the child's taps alone. */
+export const CONFIRM_PAST_WEEK = 3;
 
 function hash(text: string, seed: number): number {
   let value = seed;
@@ -102,7 +109,7 @@ export function emptyTally(): CheckTally {
 export function partSettled(tally: CheckTally, part: CheckPart): "pass" | "stop" | null {
   const { right, asked } = tally[part];
   const total = ROUNDS_PER_PART[part];
-  const need = part === "long" ? 1 : 2;
+  const need = NEED_PER_PART[part];
   if (right >= need) return "pass";
   if (asked - right > total - need) return "stop";
   if (asked >= total) return right >= need ? "pass" : "stop";
@@ -116,7 +123,19 @@ export type CheckResult = {
   summary: string;
   /** A friendly line for the child. */
   cheer: string;
+  /** The recorded clip for that line. */
+  cheerId: string;
 };
+
+/** How many taps the suggestion rests on, for the grown-up reading it. */
+export function answersIn(tally: CheckTally): number {
+  return tally.sound.asked + tally.word.asked + tally.long.asked;
+}
+
+/** A start past week 3 (weekIndex 3 and up) is a big jump: a grown-up confirms it. */
+export function needsGrownupConfirm(result: CheckResult): boolean {
+  return result.place.weekIndex >= CONFIRM_PAST_WEEK;
+}
 
 /** Turn the tally into a start. Each part passed moves the start further along. */
 export function placeFromCheck(tally: CheckTally): CheckResult {
@@ -132,5 +151,6 @@ export function placeFromCheck(tally: CheckTally): CheckResult {
     ladderStep,
     summary: `Week ${weekIndex + 1} · ${plan.newLetters.length > 1 ? "letters" : "letter"} ${plan.newLetters.join(" and ")} · ${ladderTitle(ladderStep)}`,
     cheer: long ? "You can read so much already!" : words ? "You can read words!" : sounds ? "You know your sounds!" : "Great start!",
+    cheerId: long ? "check-read" : words ? "check-words" : sounds ? "check-sounds" : "check-great",
   };
 }

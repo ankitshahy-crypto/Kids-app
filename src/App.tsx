@@ -1003,6 +1003,7 @@ export default function App() {
                     <PaintActivity
                       animal={active.animal}
                       outfit={active.outfit}
+                      settingsRef={settingsRef}
                       made={active.stickers
                         .filter((sticker) => sticker.subject === COLORS && sticker.kind === "color" && colorFill(sticker.label))
                         .map((sticker) => sticker.label)}

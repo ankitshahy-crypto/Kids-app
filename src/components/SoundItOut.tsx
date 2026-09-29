@@ -33,7 +33,7 @@ export function SoundItOut({
   const [index, setIndex] = useState(0);
   const word = deck[index % deck.length];
   const finish = () => onFinished?.(word);
-  const { revealed, active, replay, soundLetter, soundWord } = usePlayback(word, settingsRef, paused, finish);
+  const { revealed, active, replay, autoplay, soundLetter, soundWord } = usePlayback(word, settingsRef, paused, finish);
   const [lit, setLit] = useState<boolean[]>(() => word.letters.map(() => false));
   const [litOrder, setLitOrder] = useState<number[]>([]);
   const [blended, setBlended] = useState(false);
@@ -60,6 +60,17 @@ export function SoundItOut({
     setCelebrating(false);
     setProgress(0.06);
   }, [word]);
+
+  // A letter card says its line once when it appears, so a child who cannot
+  // read the button still hears the letter. Play sound says it again and
+  // finishes the step.
+  const autoPlayed = useRef("");
+  useEffect(() => {
+    if (!word.letterCard || paused || autoPlayed.current === word.id) return undefined;
+    autoPlayed.current = word.id;
+    const timer = window.setTimeout(autoplay, 350);
+    return () => window.clearTimeout(timer);
+  }, [word, paused, autoplay]);
 
   useEffect(() => {
     const track = trackRef.current;

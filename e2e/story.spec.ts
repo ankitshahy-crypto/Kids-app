@@ -164,16 +164,34 @@ test("the where-to-start check places a reader further along, and a grown-up acc
   }
   await expect(page.getByText(/wrong|incorrect|oops/i)).toHaveCount(0);
 
-  for (let turn = 0; turn < 8; turn += 1) {
+  // Each sound round plays the bare sound from the sound clips, never the letter phrase that names it.
+  const firstAnswer = (await check.getAttribute("data-answer")) ?? "";
+  if (clipShipped(`sounds/${firstAnswer}.mp3`)) {
+    await expect.poll(() => playedClips(page), { timeout: 8000 }).toContain(`sounds/${firstAnswer}.mp3`);
+    expect(await playedClips(page)).not.toContain(`letters/${firstAnswer}.mp3`);
+  }
+  await expect.poll(() => spokenLines(page)).toContain("tap the letter that makes this sound.");
+
+  let answered = 0;
+  for (let turn = 0; turn < 10; turn += 1) {
     if ((await check.getAttribute("data-check")) === "done") break;
     const answer = await check.getAttribute("data-answer");
     await check.locator(`[data-choice='${answer}']`).click();
+    answered += 1;
     await expect(check).not.toHaveAttribute("data-answer", answer!, { timeout: 5000 }).catch(() => undefined);
   }
   await expect(check).toHaveAttribute("data-check", "done");
+  // Three right in each part settles it: 3 sounds, 3 words, 1 long word.
+  expect(answered).toBe(7);
+  await expect(check).toHaveAttribute("data-answers", "7");
+  await expect(check).toContainText("Based on 7 answers");
   await expect(check).toHaveAttribute("data-week", "9");
   await expect(check).toContainText("Week 10 · letter k · Four letters");
+  // A start this far along is confirmed by a grown-up, not by the child's taps alone.
+  await expect(check).toHaveAttribute("data-confirm", "grownup");
   await page.getByRole("button", { name: "Use this start" }).click();
+  await expect(page.locator("[data-gate]")).toBeVisible();
+  await passGate(page);
   await expect(page.locator("[data-screen=grownups]")).toBeVisible();
   const placed = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-placement-v1") ?? "{}"));
   expect(placed.subjects.reading.byChildId.mia).toMatchObject({ subject: "reading", weekIndex: 9 });
@@ -197,6 +215,9 @@ test("the check stops early when the sounds are new, and keeping things as they 
   await expect(check).toHaveAttribute("data-check", "done");
   await expect(check).toHaveAttribute("data-week", "0");
   await expect(check).toContainText("Great start!");
+  await expect(check).toContainText("Based on 2 answers");
+  // The first weeks need no grown-up confirm; Use this start would apply at once.
+  await expect(check).toHaveAttribute("data-confirm", "none");
   await page.getByRole("button", { name: "Keep it as it is" }).click();
   const placed = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-placement-v1") ?? "{}"));
   expect(placed.subjects?.reading?.byChildId?.mia).toBeUndefined();

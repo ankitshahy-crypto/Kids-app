@@ -40,7 +40,7 @@ export function usePlayback(
   }, []);
 
   const playThrough = useCallback(
-    async (run: { controller: AbortController; token: number }) => {
+    async (run: { controller: AbortController; token: number }, options: { finish?: boolean } = {}) => {
       const { controller, token } = run;
       const signal = controller.signal;
       const current = wordRef.current;
@@ -76,10 +76,11 @@ export function usePlayback(
         }
         if (!live()) return;
         setActive(null);
-        if (!live()) return;
+        if (!live() || options.finish === false) return;
         onFinishedRef.current?.();
       } catch (error) {
-        if (!isAbortError(error) && token === tokenRef.current) setActive(null);
+        // Stopped by a newer line elsewhere (not by this hook): put the tiles down.
+        if (token === tokenRef.current && (!isAbortError(error) || !signal.aborted)) setActive(null);
       }
     },
     [settingsRef],
@@ -110,6 +111,16 @@ export function usePlayback(
   const replay = useCallback(() => {
     const run = begin();
     void playThrough(run);
+  }, [begin, playThrough]);
+
+  /**
+   * The card's line when it opens, started by the screen rather than a tap:
+   * nothing is finished or rewarded by it, and the tap that opened the lesson
+   * is left speaking so iOS keeps the voice unlocked.
+   */
+  const autoplay = useCallback(() => {
+    const run = begin(false);
+    void playThrough(run, { finish: false });
   }, [begin, playThrough]);
 
   const soundLetter = useCallback(
@@ -169,5 +180,5 @@ export function usePlayback(
     [begin, settingsRef],
   );
 
-  return { revealed, active, replay, replayLetter, soundLetter, soundWord };
+  return { revealed, active, replay, autoplay, replayLetter, soundLetter, soundWord };
 }

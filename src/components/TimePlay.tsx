@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { playPrompt, playWordId } from "../audio/player";
+import { promptCue } from "../audio/player";
 import { Avatar } from "../avatars";
 import type { AnimalId } from "../data/animals";
 import {
@@ -16,27 +16,10 @@ import {
   type TimeLesson,
   type TimeStep,
 } from "../data/timeMoney";
+import { useOpeningLine, useSpeaker } from "../hooks/useSpeaker";
 import type { Settings } from "../settings";
+import { HearButton } from "./HearButton";
 import { LockBadge } from "./LockBadge";
-
-function useSpeaker(settingsRef: { current: Settings }) {
-  const playRef = useRef<AbortController | null>(null);
-  useEffect(() => () => playRef.current?.abort(), []);
-  const play = (run: (settings: Settings, signal: AbortSignal) => Promise<void>) => {
-    playRef.current?.abort();
-    const controller = new AbortController();
-    playRef.current = controller;
-    void run(settingsRef.current, controller.signal).catch(() => undefined);
-  };
-  return {
-    prompt(id: string, fallback = "") {
-      play((settings, signal) => playPrompt(id, settings, signal, fallback));
-    },
-    word(id: string, fallback: string) {
-      play((settings, signal) => playWordId(id, fallback, settings, signal));
-    },
-  };
-}
 
 function pieceAudio(id: string) {
   if (id === "one") return { kind: "prompt" as const, id: "one-dollar", say: "one dollar" };
@@ -189,6 +172,8 @@ export function DayActivity({
   const speak = useSpeaker(settingsRef);
   const wiggle = useWiggle();
   const finished = useRef(false);
+  const line = lesson.dayTask === "until" ? [promptCue("time-until", "How long until then?")] : [promptCue("time-day", "Is it morning, afternoon, or night?")];
+  useOpeningLine(speak, line);
 
   const choosePart = (id: string) => {
     if (finished.current) return;
@@ -219,9 +204,7 @@ export function DayActivity({
         <p className="math-prompt">
           How many hours from {lesson.untilFrom} until {lesson.untilTo}?
         </p>
-        <button type="button" className="math-hear" onClick={() => speak.prompt("time-until")}>
-          Hear it
-        </button>
+        <HearButton className="math-hear" onHear={() => speak.line(line)} />
         <div className="math-choices" role="group" aria-label="Hours">
           {lesson.untilChoices.map((hours) => (
             <button
@@ -243,9 +226,7 @@ export function DayActivity({
     <div className="math-play" data-screen="day" data-task="parts" data-target={lesson.dayPart}>
       <h1>Parts of the day</h1>
       <p className="math-prompt">Morning, afternoon, or night?</p>
-      <button type="button" className="math-hear" onClick={() => speak.prompt("time-day")}>
-        Hear it
-      </button>
+      <HearButton className="math-hear" onHear={() => speak.line(line)} />
       <div className="math-choices" role="group" aria-label="Parts of the day">
         {dayParts.map((part) => (
           <button
@@ -278,6 +259,8 @@ export function RoutineActivity({
   const order = routineSteps.map((step) => step.id);
   const [placed, setPlaced] = useState(0);
   const next = order[placed];
+  const line = [promptCue("time-routine", "What comes next?")];
+  useOpeningLine(speak, line);
 
   const tap = (id: string) => {
     if (finished.current) return;
@@ -299,9 +282,7 @@ export function RoutineActivity({
     <div className="math-play" data-screen="routine" data-next={next ?? "done"} data-placed={placed}>
       <h1>Daily routine</h1>
       <p className="math-prompt">Tap what comes next.</p>
-      <button type="button" className="math-hear" onClick={() => speak.prompt("time-routine")}>
-        Hear it
-      </button>
+      <HearButton className="math-hear" onHear={() => speak.line(line)} />
       <div className="math-choices routine-row" role="group" aria-label="Routine">
         {lesson.routineOrder.map((id) => {
           const step = routineSteps.find((item) => item.id === id);
@@ -350,6 +331,11 @@ export function ClockActivity({
   const [hand, setHand] = useState<"hour" | "minute">("hour");
   const [motion, setMotion] = useState("ok");
   const matched = handsMatch(hour, minute, lesson.targetHour, lesson.targetMinute);
+  const line = [
+    promptCue("time-clock", "Move the hands to the time."),
+    lesson.match ? promptCue("time-match", "Match the clock.") : promptCue(lesson.clockCueId, lesson.clockSay),
+  ];
+  useOpeningLine(speak, line);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -400,13 +386,7 @@ export function ClockActivity({
     >
       <h1>Clock</h1>
       <p className="math-prompt">{lesson.match ? `Match ${digital}. ${lesson.clockSay}` : lesson.clockSay}</p>
-      <button
-        type="button"
-        className="math-hear"
-        onClick={() => speak.prompt(lesson.match ? "time-match" : lesson.clockCueId, lesson.clockSay)}
-      >
-        Hear it
-      </button>
+      <HearButton className="math-hear" onHear={() => speak.line(line)} />
       <div className="clock-digital" data-digital={digital}>
         {digital}
       </div>
@@ -470,6 +450,15 @@ export function CoinsActivity({
   const finished = useRef(false);
   const [picked, setPicked] = useState("");
   const [sorted, setSorted] = useState<string[]>([]);
+  const line =
+    lesson.coinTask === "sort"
+      ? [promptCue("time-sort", "Sort the coins.")]
+      : lesson.coinTask === "count"
+        ? [promptCue("time-count", "How many cents?")]
+        : lesson.coinTask === "compare"
+          ? [promptCue("time-compare", "Which snack costs less?")]
+          : [promptCue("time-coins", "Which one is this?")];
+  useOpeningLine(speak, line);
 
   const speakPiece = (id: string) => {
     const audio = pieceAudio(id);
@@ -536,9 +525,7 @@ export function CoinsActivity({
       <div className="math-play" data-screen="coins" data-task="sort" data-sorted={sorted.length}>
         <h1>Sort coins</h1>
         <p className="math-prompt">Tap a coin, then its jar.</p>
-        <button type="button" className="math-hear" onClick={() => speak.prompt("time-sort")}>
-          Hear it
-        </button>
+        <HearButton className="math-hear" onHear={() => speak.line(line)} />
         <div className="math-choices" role="group" aria-label="Coins">
           {lesson.sortOrder.map((id) => (
             <button key={id} type="button" data-coin={id} data-picked={picked === id ? "true" : "false"} data-sorted={sorted.includes(id) ? "true" : "false"} onClick={() => tapSortCoin(id)}>
@@ -563,6 +550,7 @@ export function CoinsActivity({
       <div className="math-play" data-screen="coins" data-task="count" data-total={lesson.countTotal}>
         <h1>Count the coins</h1>
         <p className="math-prompt">How many cents?</p>
+        <HearButton className="math-hear" onHear={() => speak.line(line)} />
         <div className="coin-pile" aria-hidden="true">
           {lesson.countCoins.flatMap((coin) => Array.from({ length: coin.count }, (_, index) => <MoneyArt key={`${coin.id}-${index}`} id={coin.id} />))}
         </div>
@@ -584,6 +572,7 @@ export function CoinsActivity({
       <div className="math-play" data-screen="coins" data-task="compare" data-cheaper={lesson.cheaper}>
         <h1>Compare prices</h1>
         <p className="math-prompt">Which snack costs less?</p>
+        <HearButton className="math-hear" onHear={() => speak.line(line)} />
         <div className="math-choices" role="group" aria-label="Prices">
           {[left, right].map((snack) => (
             <button key={snack.id} type="button" data-snack={snack.id} data-cents={snack.cents} data-wiggle={wiggle.id === snack.id ? "true" : "false"} onClick={() => chooseCheaper(snack.id)}>
@@ -604,9 +593,7 @@ export function CoinsActivity({
       <div className="coin-show" aria-hidden="true">
         <MoneyArt id={shown.id} />
       </div>
-      <button type="button" className="math-hear" onClick={() => speak.prompt("time-coins")}>
-        Hear it
-      </button>
+      <HearButton className="math-hear" onHear={() => speak.line(line)} />
       <div className="math-choices" role="group" aria-label="Money names">
         {lesson.coinChoices.map((id) => (
           <button key={id} type="button" data-coin={id} data-wiggle={wiggle.id === id ? "true" : "false"} onClick={() => chooseName(id)}>
@@ -634,6 +621,13 @@ export function ShopActivity({
   const finished = useRef(false);
   const [paid, setPaid] = useState<string[]>([]);
   const snack = snackById(lesson.snackId);
+  const line =
+    lesson.shopTask === "change"
+      ? [promptCue("time-change", "How much change?")]
+      : lesson.shopTask === "pay"
+        ? [promptCue("time-pay", "Tap each piece you need."), promptCue(centsPromptId(lesson.priceCents))]
+        : [promptCue("time-shop", "Buy the snack.")];
+  useOpeningLine(speak, line);
 
   const speakPiece = (id: string) => {
     const audio = pieceAudio(id);
@@ -687,9 +681,7 @@ export function ShopActivity({
           <Avatar animal={animal} />
           <MoneyArt id="quarter" />
         </div>
-        <button type="button" className="math-hear" onClick={() => speak.prompt("time-change")}>
-          Hear it
-        </button>
+        <HearButton className="math-hear" onHear={() => speak.line(line)} />
         <div className="math-choices" role="group" aria-label="Change">
           {lesson.changeChoices.map((cents) => (
             <button key={cents} type="button" data-cents={cents} data-wiggle={wiggle.id === String(cents) ? "true" : "false"} onClick={() => chooseChange(cents)}>
@@ -706,9 +698,7 @@ export function ShopActivity({
       <div className="math-play" data-screen="shop" data-task="pay" data-price={lesson.priceCents} data-paid={paid.join(" ")}>
         <h1>Dollars and cents</h1>
         <p className="math-prompt">Pay {lesson.priceCents}¢. Tap each piece you need.</p>
-        <button type="button" className="math-hear" onClick={() => speak.prompt(centsPromptId(lesson.priceCents))}>
-          Hear it
-        </button>
+        <HearButton className="math-hear" onHear={() => speak.line(line)} />
         <div className="math-choices" role="group" aria-label="Pay">
           {lesson.payChoices.map((id) => (
             <button key={id} type="button" data-coin={id} data-used={paid.includes(id) ? "true" : "false"} data-wiggle={wiggle.id === id ? "true" : "false"} onClick={() => payPiece(id)}>
@@ -731,9 +721,7 @@ export function ShopActivity({
         <SnackArt id={snack.id} />
         <span>{snack.cents}¢</span>
       </div>
-      <button type="button" className="math-hear" onClick={() => speak.prompt("time-shop")}>
-        Hear it
-      </button>
+      <HearButton className="math-hear" onHear={() => speak.line(line)} />
       <div className="math-choices" role="group" aria-label="Coins">
         {choices.map((id) => (
           <button key={id} type="button" data-coin={id} data-wiggle={wiggle.id === id ? "true" : "false"} onClick={() => buyOne(id)}>
