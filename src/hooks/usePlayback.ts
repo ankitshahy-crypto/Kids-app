@@ -150,11 +150,12 @@ export function usePlayback(
     [begin, settingsRef],
   );
 
-  const soundWord = useCallback(() => {
+  /** The whole word. `celebrate: false` says it again without the finishing chime. */
+  const soundWord = useCallback((celebrate = true) => {
     const current = wordRef.current;
     const { controller, token } = begin();
     setActive("all");
-    playEffect("celebrate", settingsRef.current);
+    if (celebrate) playEffect("celebrate", settingsRef.current);
     void (async () => {
       try {
         await playWhole(current, settingsRef.current, controller.signal);
