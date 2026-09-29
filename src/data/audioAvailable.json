@@ -145,6 +145,7 @@
     "numbers/8.mp3",
     "numbers/9.mp3",
     "prompts/add.mp3",
+    "prompts/blend-say.mp3",
     "prompts/build-again.mp3",
     "prompts/build-chef.mp3",
     "prompts/build-move.mp3",
@@ -3469,7 +3470,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 14809191,
+    "shared": 14828436,
     "byAnimal": {
       "bear": 4858326,
       "bunny": 4848150,
