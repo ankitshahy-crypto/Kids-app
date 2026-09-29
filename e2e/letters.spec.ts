@@ -116,3 +116,59 @@ test("dragging the track lights each letter in order and plays the word", async 
   await tiles.nth(0).locator("button").click();
   await expect.poll(async () => playCount(page)).toBeGreaterThan(afterLetters);
 });
+
+/** The translateX a tile currently has, in px, from its computed transform matrix. */
+async function shiftOf(tile: Locator): Promise<number> {
+  return tile.evaluate((element) => {
+    const transform = getComputedStyle(element).transform;
+    if (!transform || transform === "none") return 0;
+    const parts = transform.match(/matrix\(([^)]+)\)/)?.[1].split(",").map(Number) ?? [];
+    return parts[4] ?? 0;
+  });
+}
+
+test("blending slides the tiles together as the word plays, by transform alone, and a new drag lets them apart", async ({ page }) => {
+  await install(page);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Mia" }).click();
+  await page.getByRole("button", { name: "Letters" }).click();
+  const hint = page.getByRole("status").getByRole("button", { name: "OK" });
+  if (await hint.count()) await hint.click();
+
+  const blend = page.locator(".blend");
+  const tiles = page.locator(".letters .tile-wrap");
+  const track = page.locator(".blend-track");
+  await expect(tiles.nth(2)).toBeVisible();
+  const count = await tiles.count();
+  await expect(blend).toHaveAttribute("data-joined", "false");
+  const layoutBefore = await tiles.evaluateAll((elements) => elements.map((element) => (element as HTMLElement).offsetLeft));
+  const gap = (await tiles.nth(1).boundingBox())!.x - ((await tiles.nth(0).boundingBox())!.x + (await tiles.nth(0).boundingBox())!.width);
+  expect(gap).toBeGreaterThan(4);
+
+  await dragAcross(page, track);
+  await expect(page.locator(".activity")).toHaveAttribute("data-blended", "true");
+  await expect(blend).toHaveAttribute("data-joined", "true");
+  // The outer tiles move toward the middle by their share of the gaps, until the tiles touch.
+  await expect.poll(() => shiftOf(tiles.nth(0))).toBeGreaterThan(gap * (count - 1) / 2 - 1);
+  await expect.poll(() => shiftOf(tiles.nth(count - 1))).toBeLessThan(-(gap * (count - 1) / 2) + 1);
+  const first = await tiles.nth(0).boundingBox();
+  const second = await tiles.nth(1).boundingBox();
+  expect(Math.abs(second!.x - (first!.x + first!.width))).toBeLessThan(2);
+  // Transform only: nothing in the row was laid out again.
+  const layoutAfter = await tiles.evaluateAll((elements) => elements.map((element) => (element as HTMLElement).offsetLeft));
+  expect(layoutAfter).toEqual(layoutBefore);
+
+  // Tapping a letter still sounds it, with the word left joined.
+  const before = await playCount(page);
+  await tiles.nth(0).locator("button").click();
+  await expect.poll(() => playCount(page)).toBeGreaterThan(before);
+  await expect(blend).toHaveAttribute("data-joined", "true");
+
+  // A new pass along the track starts from separate sounds again.
+  const box = (await track.boundingBox())!;
+  await page.mouse.move(box.x + 8, box.y + box.height / 2);
+  await page.mouse.down();
+  await expect(blend).toHaveAttribute("data-joined", "false");
+  await expect.poll(() => shiftOf(tiles.nth(0))).toBeLessThan(1);
+  await page.mouse.up();
+});
