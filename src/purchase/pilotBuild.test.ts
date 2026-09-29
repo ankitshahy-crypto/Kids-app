@@ -61,6 +61,39 @@ describe("the pilot build flag", () => {
     expect(pilotUnlocks({ pilot: true, environment: "xcode" })).toBe(true);
   });
 
+  it("stands on a saved TestFlight answer when StoreKit cannot say, and on nothing else", () => {
+    const now = Date.UTC(2026, 9, 1, 12);
+    const day = 24 * 60 * 60 * 1000;
+    // Offline in the car, confirmed in TestFlight three days ago: everything opens.
+    expect(pilotUnlocks({ pilot: true, environment: "unknown", verifiedAt: now - 3 * day }, now)).toBe(true);
+    expect(afterPilotAnswer({ pilot: true, environment: "unknown", verifiedAt: now - 3 * day }, now)).toEqual({ beta: true, unlocked: true, ready: true });
+    // A fresh install offline, with nothing saved: the paywall.
+    expect(pilotUnlocks({ pilot: true, environment: "unknown" }, now)).toBe(false);
+    // Saved too long ago, or with a clock set ahead: the paywall.
+    expect(pilotUnlocks({ pilot: true, environment: "unknown", verifiedAt: now - 61 * day }, now)).toBe(false);
+    expect(pilotUnlocks({ pilot: true, environment: "unknown", verifiedAt: now + 2 * day }, now)).toBe(false);
+    // The App Store always wins, saved answer or not.
+    expect(pilotUnlocks({ pilot: true, environment: "production", verifiedAt: now - day }, now)).toBe(false);
+    // A build without the flag never uses it.
+    expect(pilotUnlocks({ pilot: false, environment: "unknown", verifiedAt: now - day }, now)).toBe(false);
+  });
+
+  it("saves the answer natively, only for TestFlight, and deletes it for the App Store or a build without the flag", () => {
+    const beta = plugin.slice(plugin.indexOf("@objc func beta("), plugin.indexOf("private static let pilotVerifiedKey"));
+    // Kept in UserDefaults on the phone, never in the web view's storage.
+    expect(plugin).toContain('private static let pilotVerifiedKey = "LNPilotVerifiedAt"');
+    expect(beta).toContain("UserDefaults.standard");
+    // Flag off: the saved answer goes, before anything else.
+    const flagOff = beta.slice(beta.indexOf('guard flag == "YES"'), beta.indexOf("Task {"));
+    expect(flagOff).toContain("removeObject(forKey: Self.pilotVerifiedKey)");
+    // Saved only on a TestFlight or Xcode answer; deleted on an App Store one.
+    expect(beta).toMatch(/case "sandbox", "xcode":\s*\n\s*defaults\.set\(Date\(\)\.timeIntervalSince1970, forKey: Self\.pilotVerifiedKey\)/);
+    expect(beta).toMatch(/case "production":\s*\n\s*defaults\.removeObject\(forKey: Self\.pilotVerifiedKey\)/);
+    expect(beta.match(/defaults\.set\(/g)).toHaveLength(1);
+    // StoreKit that cannot answer within a few seconds says "unknown".
+    expect(plugin).toMatch(/Task\.sleep\(nanoseconds: 4_000_000_000\)\s*\n\s*once\.run \{ continuation\.resume\(returning: "unknown"\) \}/);
+  });
+
   it("fails any build that is not Pilot but carries the flag, and any Release build without NO", () => {
     // Every configuration but Pilot says NO.
     const flags = [...pbxproj.matchAll(/LN_PILOT_BUILD = (\w+);/g)].map((match) => match[1]);
