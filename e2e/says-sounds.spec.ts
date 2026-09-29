@@ -373,7 +373,7 @@ test("the bounce is for the first finish: finishing the same card again joins th
   }
 });
 
-test("Home stops a sound that is still playing, and the pass it was part of", async ({ page }) => {
+test("Home stops a sound that is still playing, and puts down the tiles its pass had shown", async ({ page }) => {
   await install(page, mia({ saysSounds: true }));
   await openLetters(page);
   const activity = page.locator(".activity");
@@ -388,14 +388,43 @@ test("Home stops a sound that is still playing, and the pass it was part of", as
   await track.focus();
   await page.keyboard.press("Home");
   await expect(activity).toHaveAttribute("data-active", "");
+  // What is seen matches what is said: nothing lit, nothing to tap, "0 of 3".
+  await expect(activity).toHaveAttribute("data-revealed", "0");
+  await expect(track).toHaveAttribute("aria-valuetext", `0 of ${count}`);
+  for (let index = 0; index < count; index += 1) {
+    await expect(tiles.nth(index)).toHaveAttribute("data-lit", "false");
+    await expect(tiles.nth(index).locator("button")).toBeDisabled();
+  }
   const heard = (await requestedCues(page)).length;
-  const shown = Number(await activity.getAttribute("data-revealed"));
-  expect(shown).toBeLessThan(count);
   // Long enough for the rest of the pass to have played, had it gone on.
   await page.waitForTimeout(2500);
   expect((await requestedCues(page)).slice(heard)).toEqual([]);
-  await expect(activity).toHaveAttribute("data-revealed", String(shown));
+  await expect(activity).toHaveAttribute("data-revealed", "0");
   await expect(activity).toHaveAttribute("data-active", "");
+});
+
+test("a new drag in the middle of Play sound starts from nothing lit, too", async ({ page }) => {
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  const tiles = page.locator(".letters .tile-wrap");
+  const count = await tiles.count();
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
+  await page.getByRole("button", { name: "Play sound" }).click();
+  expect(count).toBeGreaterThan(2);
+  await expect(activity).toHaveAttribute("data-active", /^[01]$/, { timeout: 8000 });
+  const box = (await page.locator(".blend-track").boundingBox())!;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + 8, y);
+  await page.mouse.down();
+  // Only what the finger has passed is lit, and the slider counts only that.
+  await expect(activity).toHaveAttribute("data-active", "");
+  const lit = await tiles.evaluateAll((elements) => elements.filter((element) => element.getAttribute("data-lit") === "true").length);
+  await expect(track).toHaveAttribute("aria-valuenow", String(lit));
+  expect(lit).toBeLessThan(count);
+  await page.mouse.move(box.x + box.width - 4, y, { steps: 48 });
+  await page.mouse.up();
+  await expect(activity).toHaveAttribute("data-blended", "true");
 });
 
 test("without a finger and with the app saying the sounds, each step sounds its letter, and End finishes the word", async ({ page }) => {
