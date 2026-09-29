@@ -494,7 +494,8 @@ test("a new drag in the middle of Play sound starts from nothing lit, too", asyn
   const track = page.getByRole("slider", { name: "Slide across the letters" });
   await page.getByRole("button", { name: "Play sound" }).click();
   expect(count).toBeGreaterThan(2);
-  await expect(activity).toHaveAttribute("data-active", /^[01]$/, { timeout: 8000 });
+  // Two tiles shown by the pass: more than a drag's first touch could light, so the count only matches with the fix.
+  await expect.poll(async () => Number(await activity.getAttribute("data-revealed")), { timeout: 8000, intervals: [25] }).toBeGreaterThanOrEqual(2);
   const box = (await page.locator(".blend-track").boundingBox())!;
   const y = box.y + box.height / 2;
   await page.mouse.move(box.x + 8, y);
@@ -507,6 +508,96 @@ test("a new drag in the middle of Play sound starts from nothing lit, too", asyn
   await page.mouse.move(box.x + box.width - 4, y, { steps: 48 });
   await page.mouse.up();
   await expect(activity).toHaveAttribute("data-blended", "true");
+});
+
+test("a step forward in the middle of Play sound, or after it, lights only that step's tile", async ({ page }) => {
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  const tiles = page.locator(".letters .tile-wrap");
+  const count = await tiles.count();
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
+  const litTiles = () => tiles.evaluateAll((elements) => elements.map((element) => element.getAttribute("data-lit")).join(","));
+  const onlyFirst = Array.from({ length: count }, (_, index) => (index === 0 ? "true" : "false")).join(",");
+  expect(count).toBeGreaterThan(2);
+
+  // In the middle of the pass.
+  await page.getByRole("button", { name: "Play sound" }).click();
+  await expect.poll(async () => Number(await activity.getAttribute("data-revealed")), { timeout: 8000, intervals: [25] }).toBeGreaterThanOrEqual(2);
+  await track.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(track).toHaveAttribute("aria-valuenow", "1");
+  await expect.poll(litTiles).toBe(onlyFirst);
+  // Nothing more comes up after the rest of the pass would have played.
+  await page.waitForTimeout(2500);
+  expect(await litTiles()).toBe(onlyFirst);
+  await expect(activity).toHaveAttribute("data-active", "");
+
+  // After a pass that has finished: its tiles go down too, as on a new drag.
+  await page.keyboard.press("Home");
+  await page.getByRole("button", { name: "Play sound" }).click();
+  await expect(activity).toHaveAttribute("data-revealed", String(count), { timeout: 8000 });
+  await expect(activity).toHaveAttribute("data-active", "", { timeout: 8000 });
+  await track.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(track).toHaveAttribute("aria-valuenow", "1");
+  await expect.poll(litTiles).toBe(onlyFirst);
+});
+
+test("a swipe down with nothing to step back leaves a new letter's card saying its letter, with the letter showing", async ({ page }) => {
+  // Step 1 opens on the week's letter card, which says its letter on its own ("m, as in moon", then "moon").
+  await install(page, mia({ ladder: { step: 1, successes: 0 } }));
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  await expect(activity).toHaveAttribute("data-letter-card", "true");
+  const tile = page.locator(".letters .tile-wrap").first();
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
+  await track.focus();
+  await expect(activity).toHaveAttribute("data-active", "0", { timeout: 8000 });
+  await page.keyboard.press("ArrowLeft");
+  // Still showing, read straight off the page for a second, and the line goes on to its picture word.
+  for (let waited = 0; waited < 1000; waited += 50) {
+    expect(await tile.getAttribute("data-lit")).toBe("true");
+    await page.waitForTimeout(50);
+  }
+  await expect(activity).toHaveAttribute("data-active", "all", { timeout: 8000 });
+  await expect(track).toHaveAttribute("aria-valuenow", "0");
+});
+
+test("Play sound stops the opening instruction before its first letter, so they never overlap", async ({ page }) => {
+  await watchClips(page);
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const long = (clip: { seconds: number }) => clip.seconds > 1.5;
+  const instruction = async () =>
+    expect
+      .poll(async () => (await clips(page)).some((clip) => clip.event === "start" && long(clip)), { timeout: 8000, intervals: [25] })
+      .toBe(true)
+      .then(() => true, () => false);
+  test.skip(!(await instruction()), "this browser engine does not play the recorded clip through Web Audio");
+
+  // Play sound: the instruction is stopped, and it stops before the first letter's clip starts, so they never overlap.
+  const before = (await clips(page)).length;
+  await page.getByRole("button", { name: "Play sound" }).click();
+  await expect.poll(async () => (await clips(page)).slice(before).some((clip) => clip.event === "stop" && long(clip)), { timeout: 1000 }).toBe(true);
+  const after = (await clips(page)).slice(before);
+  const stopped = after.findIndex((clip) => clip.event === "stop" && long(clip));
+  const letter = after.findIndex((clip) => clip.event === "start");
+  expect(letter === -1 || stopped < letter, JSON.stringify(after)).toBe(true);
+});
+
+test("moving to another card stops the opening instruction", async ({ page }) => {
+  await watchClips(page);
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const long = (clip: { seconds: number }) => clip.seconds > 1.5;
+  const started = await expect
+    .poll(async () => (await clips(page)).some((clip) => clip.event === "start" && long(clip)), { timeout: 8000, intervals: [25] })
+    .toBe(true)
+    .then(() => true, () => false);
+  test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
+  await page.getByRole("button", { name: "Next word" }).click();
+  await expect.poll(async () => (await clips(page)).some((clip) => clip.event === "stop" && long(clip)), { timeout: 1000 }).toBe(true);
 });
 
 test("without a finger and with the app saying the sounds, each step sounds its letter, and End finishes the word", async ({ page }) => {
