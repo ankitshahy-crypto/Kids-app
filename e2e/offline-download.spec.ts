@@ -106,3 +106,61 @@ test("a good connection with a child starts one pass on its own", async ({ page 
   await expect(page.locator("html")).toHaveAttribute("data-offline", "working", { timeout: 15000 });
   await expect.poll(() => audio.length, { timeout: 30000 }).toBeGreaterThan(0);
 });
+
+test("with the service worker, one child's whole pack stays saved and a clip plays offline", async ({ page, context }) => {
+  // The pack is a few thousand clips, fetched through the dev server.
+  test.setTimeout(300000);
+  await page.addInitScript((saved) => {
+    localStorage.setItem("littlenest-profiles-v1", JSON.stringify(saved));
+    localStorage.setItem("littlenest-silent-hint-v1", "1");
+    Object.defineProperty(navigator, "connection", { value: { saveData: false, type: "wifi", effectiveType: "4g" }, configurable: true });
+  }, profile);
+  await page.goto("./");
+  const registered = await page.evaluate(async () => Boolean("serviceWorker" in navigator && (await navigator.serviceWorker.getRegistration())));
+  test.skip(!registered, "no service worker on this server");
+
+  const html = page.locator("html");
+  await expect(html).toHaveAttribute("data-offline", "ready", { timeout: 280000 });
+  await expect(html).toHaveAttribute("data-offline-missing", "0");
+  const total = Number(await html.getAttribute("data-offline-total"));
+  expect(total).toBeGreaterThan(500);
+
+  const saved = await page.evaluate(async () => {
+    const audio = await (await caches.open("littlenest-audio-v1")).keys();
+    const runtime = await (await caches.open("littlenest-runtime")).keys();
+    const paths = audio.map((request) => new URL(request.url).pathname);
+    return {
+      audio: audio.length,
+      runtime: runtime.length,
+      clipsInRuntime: runtime.filter((request) => /\/audio\/.*\.mp3$/.test(new URL(request.url).pathname)).length,
+      has: ["audio/letters/m.mp3", "audio/sounds/m.mp3", "audio/prompts/count.mp3", "audio/stories/w01-i-am/p1-fox.mp3"].map((file) =>
+        paths.some((path) => path.endsWith(`/${file}`)),
+      ),
+    };
+  });
+  // Far past the old 500-file trim, every file on the list is in its cache, and no clip is left in the trimmed one.
+  expect(saved.audio).toBeGreaterThan(500);
+  expect(saved.audio + saved.runtime).toBeGreaterThanOrEqual(total);
+  expect(saved.clipsInRuntime).toBe(0);
+  expect(saved.has).toEqual([true, true, true, true]);
+
+  // Offline, and past the browser's own cache: the service worker plays the clip from the pack.
+  await context.setOffline(true);
+  const played = await page.evaluate(async () => {
+    const response = await fetch(new URL("audio/letters/m.mp3", document.baseURI).href, { cache: "no-store" });
+    const bytes = await response.arrayBuffer();
+    let decoded = false;
+    try {
+      const context = new AudioContext();
+      decoded = (await context.decodeAudioData(bytes.slice(0))).duration > 0;
+      await context.close();
+    } catch {
+      decoded = false;
+    }
+    return { status: response.status, size: bytes.byteLength, decoded };
+  });
+  expect(played.status).toBe(200);
+  expect(played.size).toBeGreaterThan(1000);
+  expect(played.decoded).toBe(true);
+  await context.setOffline(false);
+});

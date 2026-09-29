@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
-import { RUNTIME_CACHE } from "./src/offline/cacheName.ts";
+import { AUDIO_CACHE, RUNTIME_CACHE } from "./src/offline/cacheName.ts";
 
 /**
  * GitHub Pages serves this repo at https://ankitshahy-crypto.github.io/Kids-app/
@@ -52,12 +52,31 @@ export default defineConfig({
         navigateFallbackAllowlist: allowlist,
         clientsClaim: true,
         runtimeCaching: [
+          // Sound clips first, from their own cache, which is never trimmed:
+          // the offline pack is thousands of clips and every one must stay.
+          {
+            urlPattern: ({ url, request }: { url: URL; request: { method: string; mode: string } }) => {
+              if (request.method !== "GET" || request.mode === "navigate") return false;
+              const origin = globalThis.location?.origin;
+              if (!origin || url.origin !== origin) return false;
+              return /\/audio\/[a-z0-9]+(?:\/[a-z0-9-]+)*\.mp3$/.test(url.pathname);
+            },
+            handler: "CacheFirst",
+            options: {
+              cacheName: AUDIO_CACHE,
+              cacheableResponse: { statuses: [200] },
+              matchOptions: { ignoreVary: true },
+              rangeRequests: true,
+            },
+          },
+          // Everything else the page loads at run time. This one is trimmed.
           {
             urlPattern: ({ url, request }: { url: URL; request: { method: string; mode: string } }) => {
               if (request.method !== "GET" || request.mode === "navigate") return false;
               const origin = globalThis.location?.origin;
               if (!origin || url.origin !== origin) return false;
               if (url.pathname.endsWith("/sw.js") || url.pathname.endsWith("/dev-sw.js")) return false;
+              if (/\/audio\/[a-z0-9]+(?:\/[a-z0-9-]+)*\.mp3$/.test(url.pathname)) return false;
               return true;
             },
             handler: "CacheFirst",

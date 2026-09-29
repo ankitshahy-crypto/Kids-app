@@ -8,9 +8,13 @@ export type NetworkHold = "saved-data" | "cellular" | null;
 
 type Connection = { saveData?: boolean; type?: string; effectiveType?: string };
 
-export function networkHold(
-  connection: Connection | undefined = (navigator as Navigator & { connection?: Connection }).connection,
-): NetworkHold {
+/** The browser's connection info, where it has any. Node and Safari have none. */
+function currentConnection(): Connection | undefined {
+  if (typeof navigator === "undefined") return undefined;
+  return (navigator as Navigator & { connection?: Connection }).connection;
+}
+
+export function networkHold(connection: Connection | undefined = currentConnection()): NetworkHold {
   if (!connection) return null;
   if (connection.saveData) return "saved-data";
   if (connection.type === "cellular") return "cellular";
