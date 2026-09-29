@@ -240,13 +240,17 @@ export function SoundItOut({
    * The slider without a finger: a keyboard's right arrow, or VoiceOver and
    * Switch Control adjusting it (WebKit turns their increment on a horizontal
    * slider into the same arrow key). Each step is the next tile, in order; the
-   * step after the last tile is the end of the track. A step after a finished
-   * word starts a new pass, as a new drag does.
+   * step after the last tile is the end of the track. Like any slider, it
+   * stops at the end: another step there says the word again. A fresh try is
+   * a step back, Home, or a new drag.
    */
   const stepForward = (toEnd = false) => {
     unlockAudio();
     resumeSpeech();
-    if (blendedPass.current) startPass();
+    if (blendedPass.current) {
+      soundWord(false);
+      return;
+    }
     const remaining = word.letters.map((_, tileIndex) => tileIndex).filter((tileIndex) => !sounded.current.has(tileIndex));
     if (remaining.length > 0 && !toEnd) {
       light([remaining[0]]);
@@ -256,6 +260,12 @@ export function SoundItOut({
     if (remaining.length > 0) light(remaining);
     placeToken("end");
     finishWord();
+  };
+
+  /** Home: back to the start of the track, every tile unlit, for a fresh try. */
+  const startOver = () => {
+    startPass();
+    setProgress(0.06);
   };
 
   const onTrackDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -430,6 +440,9 @@ export function SoundItOut({
             } else if (event.key === "End") {
               event.preventDefault();
               stepForward(true);
+            } else if (event.key === "Home") {
+              event.preventDefault();
+              startOver();
             }
           }}
           onPointerDown={(event) => {
