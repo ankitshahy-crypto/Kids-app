@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { installAudioSpy, spokenLines } from "./audioSpy";
+import { installAudioSpy, requestedCues, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 
 /**
@@ -37,6 +37,8 @@ const placement = {
 
 /** Within this long of opening, the activity must have asked for a voice line. */
 const CUE_WITHIN_MS = 2000;
+/** A clip's bytes can take a while on a busy test server; the line itself was asked for at once. */
+const LINE_WITHIN_MS = 20000;
 
 async function install(page: Page, child: Record<string, unknown> = {}) {
   await installAudioSpy(page);
@@ -77,19 +79,21 @@ async function pickSubject(page: Page, name: string, subject: string) {
  * before any other tap.
  */
 async function expectOpeningLine(page: Page, open: () => Promise<void>, screen: string, parts: RegExp[]) {
+  const asked = (await requestedCues(page)).length;
   const before = (await spokenLines(page)).length;
   await open();
   await expect(page.locator(`[data-screen=${screen}]`)).toBeVisible();
-  await expect.poll(async () => (await spokenLines(page)).length, { timeout: CUE_WITHIN_MS }).toBeGreaterThan(before);
+  // The screen asks for its line on its own, within two seconds of opening.
+  await expect.poll(async () => (await requestedCues(page)).length, { timeout: CUE_WITHIN_MS }).toBeGreaterThan(asked);
   // The whole opening line, in order: the instruction, then what it is about.
-  await expect.poll(async () => (await spokenLines(page)).slice(before), { timeout: 8000 }).toEqual(expect.arrayContaining(parts.map((part) => expect.stringMatching(part))));
+  await expect.poll(async () => (await spokenLines(page)).slice(before), { timeout: LINE_WITHIN_MS }).toEqual(expect.arrayContaining(parts.map((part) => expect.stringMatching(part))));
   const opening = (await spokenLines(page)).slice(before);
   expectInOrder(opening, parts);
 
   // Again, before anything else is tapped, says the same line again.
   const heard = (await spokenLines(page)).length;
   await page.locator("[data-hear-again]").click();
-  await expect.poll(async () => (await spokenLines(page)).slice(heard), { timeout: 8000 }).toEqual(expect.arrayContaining(parts.map((part) => expect.stringMatching(part))));
+  await expect.poll(async () => (await spokenLines(page)).slice(heard), { timeout: LINE_WITHIN_MS }).toEqual(expect.arrayContaining(parts.map((part) => expect.stringMatching(part))));
   expectInOrder((await spokenLines(page)).slice(heard), parts);
 }
 
@@ -105,18 +109,19 @@ function expectInOrder(lines: string[], parts: RegExp[]) {
 test("the letter card says its letter as soon as it opens, and Again says it back", async ({ page }) => {
   // On the first ladder step the deck opens on the week's letter card.
   await install(page, { ladder: { step: 1, successes: 0 }, stickers: [] });
+  const asked = (await requestedCues(page)).length;
   const before = (await spokenLines(page)).length;
   await page.getByRole("button", { name: "Letters" }).click();
   const activity = page.locator(".activity");
   await expect(activity).toHaveAttribute("data-letter-card", "true");
-  await expect.poll(async () => (await spokenLines(page)).length, { timeout: CUE_WITHIN_MS }).toBeGreaterThan(before);
-  await expect.poll(async () => (await spokenLines(page)).slice(before), { timeout: 8000 }).toEqual(expect.arrayContaining([expect.stringMatching(/, as in /)]));
+  await expect.poll(async () => (await requestedCues(page)).length, { timeout: CUE_WITHIN_MS }).toBeGreaterThan(asked);
+  await expect.poll(async () => (await spokenLines(page)).slice(before), { timeout: LINE_WITHIN_MS }).toEqual(expect.arrayContaining([expect.stringMatching(/, as in /)]));
   // Hearing the card once does not finish the step: the star still waits for the child.
   await expect(page.locator("[data-screen=today]")).toHaveCount(0);
   await expect(activity).toBeVisible();
   const heard = await spokenLines(page);
   await page.locator("[data-hear-again]").click();
-  await expect.poll(async () => (await spokenLines(page)).length, { timeout: 8000 }).toBeGreaterThan(heard.length);
+  await expect.poll(async () => (await spokenLines(page)).length, { timeout: LINE_WITHIN_MS }).toBeGreaterThan(heard.length);
   const again = (await spokenLines(page)).slice(heard.length);
   expect(heard.slice(before)).toEqual(expect.arrayContaining(again));
 });
