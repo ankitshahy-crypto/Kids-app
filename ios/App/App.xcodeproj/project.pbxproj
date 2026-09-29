@@ -87,6 +87,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 504EC3161FED79650016851F /* Build configuration list for PBXNativeTarget "App" */;
 			buildPhases = (
+				7A11E5F0B0B0B0B0B0B0B003 /* Check pilot flag */,
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
@@ -155,6 +156,29 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		7A11E5F0B0B0B0B0B0B0B003 /* Check pilot flag */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Check pilot flag";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# The pilot build opens everything for TestFlight testers. Only the Pilot\n# configuration may set the flag, and a Release build must never have it.\nif [ \"${LN_PILOT_BUILD}\" = \"YES\" ] && [ \"${CONFIGURATION}\" != \"Pilot\" ]; then\n  echo \"error: LN_PILOT_BUILD is YES in the ${CONFIGURATION} configuration. Only Pilot may set it.\"\n  exit 1\nfi\nif [ \"${CONFIGURATION}\" = \"Release\" ] && [ \"${LN_PILOT_BUILD}\" != \"NO\" ]; then\n  echo \"error: a Release build must have LN_PILOT_BUILD = NO (it is ${LN_PILOT_BUILD:-unset}).\"\n  exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		504EC3001FED79650016851F /* Sources */ = {

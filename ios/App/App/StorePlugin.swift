@@ -129,14 +129,44 @@ public class StorePlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    /// Is this the pilot build? Only the "App Pilot" scheme sets LN_PILOT_BUILD=YES
-    /// (through LNPilotBuild in Info.plist), so pilot families on TestFlight get
-    /// everything free. App Store and App Review builds, Debug builds, and any
-    /// other TestFlight build show the paywall. Nothing here looks at the
-    /// StoreKit environment: App Review runs in the sandbox too.
+    /// Is this the pilot build, and where is it running? Only the "App Pilot"
+    /// scheme sets LN_PILOT_BUILD=YES (through LNPilotBuild in Info.plist). The
+    /// app opens everything only when that flag is on AND StoreKit says the app
+    /// came from TestFlight (the sandbox), so a pilot archive that reached the
+    /// App Store by mistake still shows the paywall. The environment alone never
+    /// opens anything: App Review runs in the sandbox too, with the flag off.
+    /// The app (src/purchase/store.ts) makes the decision from these two answers.
     @objc func beta(_ call: CAPPluginCall) {
         let flag = (Bundle.main.object(forInfoDictionaryKey: "LNPilotBuild") as? String ?? "NO").uppercased()
-        call.resolve(["beta": flag == "YES"])
+        guard flag == "YES" else {
+            // Not a pilot build: nothing more to ask, and no StoreKit call.
+            call.resolve(["pilot": false, "environment": "unknown"])
+            return
+        }
+        Task {
+            let environment = await Self.storeEnvironment()
+            call.resolve(["pilot": true, "environment": environment])
+        }
+    }
+
+    /// Where this copy of the app came from: "sandbox" (TestFlight), "xcode"
+    /// (run from Xcode), "production" (the App Store), or "unknown".
+    private static func storeEnvironment() async -> String {
+        if #available(iOS 16.0, *) {
+            do {
+                guard case .verified(let transaction) = try await AppTransaction.shared else { return "unknown" }
+                switch transaction.environment {
+                case .sandbox: return "sandbox"
+                case .xcode: return "xcode"
+                case .production: return "production"
+                default: return "unknown"
+                }
+            } catch {
+                return "unknown"
+            }
+        }
+        // iOS 15 has no AppTransaction; a TestFlight install carries a sandbox receipt.
+        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" ? "sandbox" : "unknown"
     }
 
     /// Apple's own sheet for an offer code (a school's or a partner's).
