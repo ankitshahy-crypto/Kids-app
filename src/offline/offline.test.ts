@@ -4,7 +4,8 @@ import config from "../../capacitor.config";
 import available from "../data/audioAvailable.json";
 import { animals } from "../data/animals";
 import { animalsOnDevice, clipForDevice, describeBytes, hasChildOnDevice, lessonAudioFiles, offlineAudioBytes, offlineUrls, shippedAudioFiles } from "./assets";
-import { AUDIO_CACHE, RUNTIME_CACHE, isAudioClip } from "./cacheName";
+import manifest from "../data/audioManifest.json";
+import { AUDIO_CACHE, AUDIO_FILE, RUNTIME_CACHE, isAudioClip } from "./cacheName";
 import { cacheFor, isComplete, missingFrom, moveClipsToAudioCache } from "./download";
 import { networkHold } from "./network";
 import { enqueue, readOutbox, requestClassSync } from "./queue";
@@ -120,6 +121,23 @@ describe("offline bundle", () => {
     expect(runtimeRoute).toContain("maxEntries: 500");
     expect(runtimeRoute).toMatch(/audio.*mp3.*return false/s);
     expect(AUDIO_CACHE).not.toBe(RUNTIME_CACHE);
+  });
+
+  it("uses one clip pattern everywhere, and every clip fits it, so none falls into the trimmed cache", () => {
+    const vite = readFileSync(new URL("../../vite.config.ts", import.meta.url), "utf8");
+    // The worker's two routes repeat the pattern inline; both copies must be exactly it.
+    const inline = [...vite.matchAll(/\/(\\\/audio\\\/[^/]*(?:\\\/[^/]*)*?\.mp3\$)\//g)].map((match) => match[1]);
+    const expected = `\\/audio\\/${AUDIO_FILE.source.slice(1)}`;
+    expect(inline).toHaveLength(2);
+    for (const source of inline) expect(source).toBe(expected);
+    // Every clip the app ships, and every clip the manifest can ask for, fits the pattern.
+    const files = new Set<string>([
+      ...(available as { files: string[] }).files,
+      ...Object.values(manifest as Record<string, Record<string, { file: string }>>).flatMap((kind) => Object.values(kind).map((cue) => cue.file)),
+    ]);
+    const outside = [...files].filter((file) => !AUDIO_FILE.test(file) || !isAudioClip(`/Kids-app/audio/${file}`));
+    expect(outside).toEqual([]);
+    expect(files.size).toBeGreaterThan(3000);
   });
 
   it("sends each file to the right cache and finds the ones that are missing", () => {

@@ -4,6 +4,7 @@ import { loadStore } from "../data/profiles";
 import font400 from "../assets/fonts/fredoka-latin-400-normal.woff2?url";
 import font600 from "../assets/fonts/fredoka-latin-600-normal.woff2?url";
 import font700 from "../assets/fonts/fredoka-latin-700-normal.woff2?url";
+import { AUDIO_FILE } from "./cacheName";
 
 type Cue = { file: string };
 
@@ -12,7 +13,7 @@ const groups = [manifest.letters, manifest.sounds, manifest.words, manifest.sent
   Cue
 >[];
 
-const SHIPPED_AUDIO = /^[a-z0-9]+(?:\/[a-z0-9-]+)*\.mp3$/;
+const SHIPPED_AUDIO = AUDIO_FILE;
 
 /** Every recorded clip in the lesson manifest. Paths stay under audio/. */
 export function lessonAudioFiles(): string[] {
