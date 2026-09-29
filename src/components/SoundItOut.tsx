@@ -130,6 +130,8 @@ export function SoundItOut({
 
   const go = (direction: 1 | -1) => {
     resumeSpeech();
+    // A new card starts quiet: the opening instruction does not run on over it.
+    speak.stop();
     setIndex((current) => (current + direction + deck.length) % deck.length);
   };
 
@@ -248,10 +250,14 @@ export function SoundItOut({
    */
   const stepBack = () => {
     const last = litOrder[litOrder.length - 1];
-    // Whatever was still being said (the word just finished, a letter, the opening instruction) stops,
-    // so it does not talk over what VoiceOver reads for the step.
-    stopPlayback();
+    // Once the child is on the track, the opening instruction has done its job.
     speak.stop();
+    // Nothing to step back: the card is left as it is, so a new letter's card keeps saying its letter, with
+    // the letter showing.
+    if (!blendedPass.current && last === undefined) return;
+    // What was still being said (the word just finished, a letter, a Play sound pass) stops, and Play sound's
+    // tiles go down, so nothing talks over or shows more than what VoiceOver reads for the step.
+    stopPlayback();
     if (blendedPass.current) {
       blendedPass.current = false;
       setBlended(false);
@@ -282,12 +288,15 @@ export function SoundItOut({
     unlockAudio();
     resumeSpeech();
     // Once the child is on the track, the opening instruction has done its job: it stops, rather than
-    // talking over what VoiceOver reads for the step. (A letter's own sound would stop it anyway.)
+    // talking over what VoiceOver reads for the step.
     speak.stop();
     if (blendedPass.current) {
       soundWord(false);
       return;
     }
+    // A Play sound pass stops, and the tiles it showed go down (still going or done), so the tiles lit are
+    // the ones the slider counts, as on a new drag.
+    if (revealed > 0 || active !== null) stopPlayback();
     const remaining = word.letters.map((_, tileIndex) => tileIndex).filter((tileIndex) => !sounded.current.has(tileIndex));
     if (remaining.length > 0 && !toEnd) {
       light([remaining[0]]);
@@ -512,6 +521,8 @@ export function SoundItOut({
           onClick={() => {
             unlockAudio();
             resumeSpeech();
+            // The letters start at once; the opening instruction does not run on into them.
+            speak.stop();
             // When the child says the sounds, Play sound is help: it plays them all, and only the child's own slide finishes the word.
             replay(!quiet);
           }}
