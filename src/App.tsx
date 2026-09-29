@@ -88,6 +88,7 @@ import { nameToTrace } from "./data/tracePractice";
 import { usePlacement } from "./hooks/usePlacement";
 import { useDayKey } from "./hooks/useDayKey";
 import { useProfiles } from "./hooks/useProfiles";
+import { sharedChosen } from "./hooks/useSettings";
 import { useReadingTime } from "./hooks/useReadingTime";
 import { useSettings } from "./hooks/useSettings";
 import { bindPressFeedback } from "./input/press";
@@ -198,6 +199,16 @@ export default function App() {
   useEffect(() => {
     applyAudioSettings(settings);
   }, [settings]);
+
+  // A device whose Teacher screen is used is a class iPad: the first time,
+  // switching children starts asking the grown-up check. A grown-up can turn
+  // it off in Settings, and it then stays off.
+  useEffect(() => {
+    if (mode !== "teacher" || settings.sharedDevice || sharedChosen()) return;
+    update({ sharedDevice: true });
+    // Only when the Teacher screen opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   useEffect(() => {
     if (settings.readableFont) installReadableFont();
@@ -1139,6 +1150,7 @@ export default function App() {
             onLadderStep={setLadderStep}
             onNote={setNoteForHome}
             onHomeReport={setFromHome}
+            sharedDevice={settings.sharedDevice}
             onClose={() => setMode("start")}
           />
         ) : null}

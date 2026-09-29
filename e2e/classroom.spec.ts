@@ -70,3 +70,35 @@ test("the Parent screen names the child and can switch between children", async 
   await page.getByRole("button", { name: "From Teacher" }).click();
   await expect(page.locator("[data-section=child-head]")).toContainText("Cleo");
 });
+
+test("using the Teacher screen turns Shared class iPad on once, and a grown-up's Off stays off", async ({ page }) => {
+  await page.addInitScript((saved) => {
+    if (sessionStorage.getItem("seeded")) return;
+    sessionStorage.setItem("seeded", "1");
+    localStorage.setItem("littlenest-profiles-v1", JSON.stringify({ activeId: saved[0].id, profiles: saved }));
+    localStorage.setItem("littlenest-silent-hint-v1", "1");
+  }, classProfiles(3));
+  await page.goto("./");
+  await page.getByRole("button", { name: "Teacher", exact: true }).click();
+  await passGate(page);
+  await expect(page.locator("[data-shared-note=on]")).toContainText("Shared class iPad is on");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+
+  // Settings shows it on; the grown-up turns it off.
+  await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
+  await passGate(page);
+  await page.getByRole("button", { name: /Settings/ }).click();
+  const shared = page.locator("[data-setting=shared]");
+  await expect(shared.getByRole("button", { name: "On", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await shared.getByRole("button", { name: "Off", exact: true }).click();
+  await expect(shared.getByRole("button", { name: "Off", exact: true })).toHaveAttribute("aria-pressed", "true");
+
+  // Back in Teacher, after a reload: it stays off.
+  await page.reload();
+  await page.getByRole("button", { name: "Teacher", exact: true }).click();
+  await passGate(page);
+  await expect(page.locator("[data-screen=teacher]")).toBeVisible();
+  await expect(page.locator("[data-shared-note]")).toHaveCount(0);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-settings-v1") ?? "{}"));
+  expect(saved.sharedDevice).toBe(false);
+});

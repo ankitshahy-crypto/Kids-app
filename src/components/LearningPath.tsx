@@ -3,10 +3,19 @@ import { COLORS, colorIntroduced } from "../data/colors";
 import { MATH, mathIntroduced } from "../data/math";
 import { TIME, timeIntroduced } from "../data/timeMoney";
 import { ladderDetail, ladderTitle } from "../data/ladder";
-import { laterPath, learningPlace, placeForChild } from "../data/path";
+import { laterPath, learningPlace, placeForChild, showsLaterReading, stagesForAge } from "../data/path";
 import type { ChildProfile } from "../data/profiles";
 import { READING, type SubjectId } from "../data/subject";
 import { weekIndex } from "../data/schedule";
+
+/** Each path says which subject it is, since all four sit together on one page. */
+const SUBJECT_PATH: Record<string, string> = {
+  [READING]: "Reading path",
+  [MATH]: "Numbers path",
+  [COLORS]: "Colors path",
+  [TIME]: "Time and money path",
+};
+
 
 export function LearningPath({
   profile,
@@ -33,6 +42,8 @@ export function LearningPath({
             : placeForChild(profile.createdAt)
       : learningPlace(subject, placedIntroduced);
   const current = place.stages.find((stage) => stage.state === "current");
+  const { shown, hidden } = stagesForAge(place.stages, subject, profile.ageRange);
+  const later = subject === READING && showsLaterReading(profile.ageRange);
   const mark: ModuleMarkName = subject === MATH ? "numbers" : subject === COLORS ? "colors" : subject === TIME ? "time" : "words";
   const ladderStep = profile.ladder?.step ?? 1;
 
@@ -46,10 +57,13 @@ export function LearningPath({
     >
       <h2 className="module-heading">
         <ModuleMark name={mark} />
-        <span>Learning path{name ? ` · ${name}` : ""}</span>
+        <span>
+          {SUBJECT_PATH[subject] ?? "Learning path"}
+          {name ? ` · ${name}` : ""}
+        </span>
       </h2>
       <ol className="path-stages">
-        {place.stages.map((stage) => (
+        {shown.map((stage) => (
           <li key={stage.id} data-stage={stage.id} data-state={stage.state}>
             <span className="path-title">{stage.title}</span>
             {stage.state === "current" ? (
@@ -69,13 +83,18 @@ export function LearningPath({
             </span>
           </li>
         ) : null}
-        {subject === READING ? (
+        {later ? (
           <li data-stage={laterPath.id} data-state="later" data-later="true">
             <span className="path-title">{laterPath.title}</span>
             <span className="path-state">Later</span>
           </li>
         ) : null}
       </ol>
+      {hidden > 0 || (subject === READING && !later) ? (
+        <p className="adult-copy" data-path-more={hidden}>
+          The stages for older children show here as {name ?? "your child"} grows.
+        </p>
+      ) : null}
       {current ? (
         <p className="adult-copy">
           Now: {current.title}. {current.detail}
