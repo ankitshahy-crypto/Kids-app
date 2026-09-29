@@ -23,10 +23,12 @@ const profile = {
   ],
 };
 
+/** Sound clips the page asked for. Source modules under src/audio/ are not clips. */
 function audioRequests(page: Page): string[] {
   const urls: string[] = [];
   page.on("request", (request) => {
-    if (request.url().includes("/audio/")) urls.push(request.url());
+    const url = request.url();
+    if (url.includes("/audio/") && url.endsWith(".mp3")) urls.push(url);
   });
   return urls;
 }
