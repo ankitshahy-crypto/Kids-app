@@ -586,6 +586,35 @@ test("Play sound stops the opening instruction before its first letter, so they 
   expect(letter === -1 || stopped < letter, JSON.stringify(after)).toBe(true);
 });
 
+test("the opening instruction counts as heard once it is said through: cut off, the next word says it again", async ({ page }) => {
+  await watchClips(page);
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const long = (clip: { seconds: number }) => clip.seconds > 1.5;
+  const starts = async () => (await clips(page)).filter((clip) => clip.event === "start" && long(clip)).length;
+  const started = await expect
+    .poll(starts, { timeout: 8000, intervals: [25] })
+    .toBeGreaterThan(0)
+    .then(() => true, () => false);
+  test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
+  const activity = page.locator(".activity");
+  const next = page.getByRole("button", { name: "Next word" });
+
+  // Cut off by a step: the next word says it again.
+  await page.getByRole("slider", { name: "Slide across the letters" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await next.click();
+  await expect(activity).toHaveAttribute("data-says-sounds", "child");
+  await expect.poll(starts, { timeout: 3000, intervals: [25] }).toBe(2);
+
+  // Said all the way through this time: the word after that starts without it.
+  await page.waitForTimeout(3500);
+  await next.click();
+  await expect(activity).toHaveAttribute("data-says-sounds", "child");
+  await page.waitForTimeout(1500);
+  expect(await starts()).toBe(2);
+});
+
 test("moving to another card stops the opening instruction", async ({ page }) => {
   await watchClips(page);
   await install(page, mia({ saysSounds: true }));

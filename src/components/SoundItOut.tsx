@@ -106,17 +106,19 @@ export function SoundItOut({
     return () => window.clearTimeout(timer);
   }, [word, paused, autoplay]);
 
-  // The first word the child sounds out on their own starts with what to do.
-  // Said once per visit, marked when the line starts (StrictMode runs effects twice).
-  const toldSay = useRef(false);
+  // The first word the child sounds out on their own starts with what to do. It counts as heard once it
+  // has been said all the way through: cut off by a step, a tap or a new card, the next word says it again.
+  // (The timer keeps StrictMode's second run of the effect from saying it twice.)
+  const heardSay = useRef(false);
   useEffect(() => {
-    if (!quiet || paused || toldSay.current) return undefined;
+    if (!quiet || paused || heardSay.current) return undefined;
     const timer = window.setTimeout(() => {
-      toldSay.current = true;
-      speak.prompt("blend-say", "Say each sound as you slide.");
+      speak.prompt("blend-say", "Say each sound as you slide.", () => {
+        heardSay.current = true;
+      });
     }, 200);
     return () => window.clearTimeout(timer);
-  }, [quiet, paused, speak]);
+  }, [quiet, paused, speak, word]);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -252,13 +254,9 @@ export function SoundItOut({
     const last = litOrder[litOrder.length - 1];
     // Once the child is on the track, the opening instruction has done its job.
     speak.stop();
-    // Nothing to step back: the card is left as it is, so a new letter's card keeps saying its letter, with
-    // the letter showing.
-    if (!blendedPass.current && last === undefined) return;
-    // What was still being said (the word just finished, a letter, a Play sound pass) stops, and Play sound's
-    // tiles go down, so nothing talks over or shows more than what VoiceOver reads for the step.
-    stopPlayback();
+    // From the end of the track: back to the last tile. The word that was still being said stops.
     if (blendedPass.current) {
+      stopPlayback();
       blendedPass.current = false;
       setBlended(false);
       setJoined(false);
@@ -267,7 +265,12 @@ export function SoundItOut({
       else placeToken(last);
       return;
     }
+    // Nothing to step back: the card is left as it is, so a new letter's card keeps saying its letter, with
+    // the letter showing.
     if (last === undefined) return;
+    // What was still being said (a letter, a Play sound pass) stops, and Play sound's tiles go down, so
+    // nothing talks over or shows more than what VoiceOver reads for the step.
+    stopPlayback();
     sounded.current.delete(last);
     setLit((current) => current.map((on, tileIndex) => (tileIndex === last ? false : on)));
     setLitOrder((current) => current.slice(0, -1));
