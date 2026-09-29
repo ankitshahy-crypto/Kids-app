@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type JSX, type PointerEvent } from "react";
-import { playNumber, playPrompt } from "../audio/player";
+import { numberCue, promptCue } from "../audio/player";
 import { THEMES, type ThemeId } from "../data/themes";
 import { illustrations } from "../illustrations";
 import { themeArt } from "../themeArt";
@@ -14,27 +14,10 @@ import {
 } from "../data/math";
 import { memoryPrompt, shapeItemId, writingLevel, type WritingMap, type WritingOutcome } from "../data/scaffold";
 import { shapeStrokes } from "../data/shapeStrokes";
+import { useSpeaker } from "../hooks/useSpeaker";
 import type { Settings } from "../settings";
+import { HearButton } from "./HearButton";
 import { LockBadge } from "./LockBadge";
-
-function useSpeaker(settingsRef: { current: Settings }) {
-  const playRef = useRef<AbortController | null>(null);
-  useEffect(() => () => playRef.current?.abort(), []);
-  return {
-    number(value: number) {
-      playRef.current?.abort();
-      const controller = new AbortController();
-      playRef.current = controller;
-      void playNumber(value, settingsRef.current, controller.signal).catch(() => undefined);
-    },
-    prompt(id: string) {
-      playRef.current?.abort();
-      const controller = new AbortController();
-      playRef.current = controller;
-      void playPrompt(id, settingsRef.current, controller.signal).catch(() => undefined);
-    },
-  };
-}
 
 function Apple() {
   return (
@@ -139,6 +122,10 @@ export function CountActivity({
   const [counted, setCounted] = useState<number[]>([]);
   const finished = useRef(false);
 
+  useEffect(() => {
+    speak.line([promptCue("count", "Count each one.")]);
+  }, [speak]);
+
   const countOne = (index: number) => {
     if (finished.current || seen.current.has(index)) return;
     seen.current.add(index);
@@ -191,6 +178,11 @@ export function KnowActivity({
   const speak = useSpeaker(settingsRef);
   const [tries, setTries] = useState(0);
   const finished = useRef(false);
+  const hearLine = () => speak.line([promptCue("know", "Tap the number you hear."), numberCue(lesson.hear)]);
+
+  useEffect(() => {
+    speak.line([promptCue("know", "Tap the number you hear."), numberCue(lesson.hear)]);
+  }, [speak, lesson.hear]);
 
   const choose = (value: number) => {
     if (finished.current) return;
@@ -206,9 +198,7 @@ export function KnowActivity({
   return (
     <div className="math-play" data-screen="know" data-hear={lesson.hear} data-tries={tries}>
       <h1>Numbers</h1>
-      <button type="button" className="math-hear" onClick={() => speak.number(lesson.hear)}>
-        Hear it
-      </button>
+      <HearButton className="math-hear" onHear={hearLine} />
       <div className="math-choices" role="group" aria-label="Numbers">
         {lesson.hearChoices.map((value) => (
           <button key={value} type="button" data-number={value} onClick={() => choose(value)}>
@@ -235,6 +225,10 @@ export function TraceActivity({
   const boardRef = useRef<HTMLDivElement | null>(null);
   const finished = useRef(false);
   const cursorRef = useRef(0);
+
+  useEffect(() => {
+    speak.line([promptCue("trace", "Trace the number."), numberCue(lesson.digit)]);
+  }, [speak, lesson.digit]);
 
   const advance = () => {
     if (finished.current) return;
@@ -318,6 +312,11 @@ export function ShapeActivity({
   const [tries, setTries] = useState(0);
   const [tracing, setTracing] = useState(false);
   const finished = useRef(false);
+  const hearLine = () => speak.line([promptCue("shape", "Find the same shape."), promptCue(lesson.shape, shapeTitles[lesson.shape])]);
+
+  useEffect(() => {
+    speak.line([promptCue("shape", "Find the same shape."), promptCue(lesson.shape, shapeTitles[lesson.shape])]);
+  }, [speak, lesson.shape]);
 
   const choose = (id: ShapeId) => {
     if (finished.current) return;
@@ -354,10 +353,10 @@ export function ShapeActivity({
   return (
     <div className="math-play" data-screen="shape" data-phase="match" data-prompt={lesson.shape} data-tries={tries}>
       <h1>Shapes</h1>
-      <button type="button" className="math-hear" onClick={() => speak.prompt(lesson.shape)}>
+      <HearButton className="math-hear" onHear={hearLine}>
         <ShapeGlyph id={lesson.shape} />
         <span>{shapeTitles[lesson.shape]}</span>
-      </button>
+      </HearButton>
       <div className="math-choices" role="group" aria-label="Shapes">
         {lesson.shapeChoices.map((id) => (
           <button key={id} type="button" data-shape={id} aria-label={shapeTitles[id]} onClick={() => choose(id)}>
@@ -383,6 +382,10 @@ export function MoreActivity({
   const finished = useRef(false);
   const answer = lesson.moreLeft > lesson.moreRight ? "left" : "right";
   const answerCount = Math.max(lesson.moreLeft, lesson.moreRight);
+
+  useEffect(() => {
+    speak.line([promptCue("more", "Which has more?")]);
+  }, [speak]);
 
   const choose = (side: "left" | "right", count: number) => {
     if (finished.current) return;
@@ -436,6 +439,10 @@ export function AddActivity({
   const [tries, setTries] = useState(0);
   const finished = useRef(false);
   const sum = lesson.addLeft + lesson.addRight;
+
+  useEffect(() => {
+    speak.line([promptCue("add", "How many altogether?")]);
+  }, [speak]);
 
   const choose = (value: number) => {
     if (finished.current) return;

@@ -212,8 +212,14 @@ function playFile(src: string, signal: AbortSignal): Promise<void> {
   return playOnBus(src, "voice", signal);
 }
 
+/** One thing to say: a recorded clip when the device has it, else the line for the device voice. */
+export type Cue = { src?: string; text: string };
+
+/** A short pause between the parts of one line ("Tap the color you hear." ... "orange"). */
+const BETWEEN_CUES_MS = 350;
+
 /** The last instruction, word, or letter spoken, so "Hear again" can say it as often as a child likes. */
-let lastCue: { src?: string; text: string } | null = null;
+let lastCue: Cue[] | null = null;
 let lastCueAt = 0;
 let replayController: AbortController | null = null;
 
@@ -221,8 +227,8 @@ export function hasLastCue(): boolean {
   return lastCue !== null;
 }
 
-function remember(cue: { src?: string; text: string }): void {
-  lastCue = cue;
+function remember(cues: Cue[]): void {
+  lastCue = cues;
   lastCueAt = Date.now();
 }
 
@@ -243,21 +249,15 @@ export function replayLastCue(settings: Settings): Promise<void> {
   replayController?.abort();
   const controller = new AbortController();
   replayController = controller;
-  return playCue(lastCue, settings, controller.signal, { remember: false }).catch(() => undefined);
+  return playCues(lastCue, settings, controller.signal, { remember: false }).catch(() => undefined);
 }
 
 /**
  * Prefer a recorded file when one is passed. Otherwise use device speech.
  * A parent recording, stored only on the device, uses the same `src` path.
  */
-async function playCue(
-  cue: { src?: string; text: string },
-  settings: Settings,
-  signal: AbortSignal,
-  options: { remember?: boolean } = {},
-): Promise<void> {
+async function playOne(cue: Cue, settings: Settings, signal: AbortSignal): Promise<void> {
   if (signal.aborted) throw abortError();
-  if (options.remember !== false) remember(cue);
   if (!settings.voice) {
     await sleep(SILENT_BEAT_MS, signal);
     return;
@@ -281,6 +281,69 @@ async function playCue(
   } finally {
     endVoice();
   }
+}
+
+/**
+ * One voice at a time. A new line stops the one still being said, so an
+ * opening instruction and a tapped answer, or "Hear again", never talk over
+ * each other. The caller's own signal still stops its line as before.
+ */
+let lineController: AbortController | null = null;
+
+function takeVoice(signal: AbortSignal): AbortSignal {
+  lineController?.abort();
+  const controller = new AbortController();
+  lineController = controller;
+  if (signal.aborted) controller.abort();
+  else signal.addEventListener("abort", () => controller.abort(), { once: true });
+  return controller.signal;
+}
+
+/** Say each part in turn, with a beat between, and remember the whole line for "Hear again". */
+async function playCues(cues: Cue[], settings: Settings, signal: AbortSignal, options: { remember?: boolean } = {}): Promise<void> {
+  if (signal.aborted) throw abortError();
+  if (cues.length === 0) return;
+  if (options.remember !== false) remember(cues);
+  const voice = takeVoice(signal);
+  for (let index = 0; index < cues.length; index += 1) {
+    if (index > 0) await sleep(BETWEEN_CUES_MS, voice);
+    await playOne(cues[index], settings, voice);
+  }
+}
+
+function playCue(cue: Cue, settings: Settings, signal: AbortSignal, options: { remember?: boolean } = {}): Promise<void> {
+  return playCues([cue], settings, signal, options);
+}
+
+/**
+ * An instruction and what it is about, as one line: "Tap the color you hear."
+ * then "orange". Tapping "Hear again" says the whole line, not just the end.
+ */
+export function playLine(cues: Cue[], settings: Settings, signal: AbortSignal): Promise<void> {
+  return playCues(cues, settings, signal);
+}
+
+export function promptCue(id: string, fallback = ""): Cue {
+  return { src: recordedSrc("prompts", id), text: spokenLine("prompts", id, fallback) };
+}
+
+export function colorCue(name: string): Cue {
+  const id = name.trim().toLowerCase().replace(/\s+/g, "-");
+  return { src: recordedSrc("colors", id), text: spokenLine("colors", id, name) };
+}
+
+export function numberCue(value: number): Cue {
+  const id = String(value);
+  return { src: recordedSrc("numbers", id), text: spokenLine("numbers", id, id) };
+}
+
+export function wordCue(id: string, fallback: string): Cue {
+  return { src: recordedSrc("words", id), text: spokenLine("words", id, fallback) };
+}
+
+/** A line for the device voice only, such as the child's own name. Nothing is fetched. */
+export function deviceCue(text: string): Cue {
+  return { text };
 }
 
 export function playLetter(
@@ -336,10 +399,11 @@ export function playWhole(card: DeckWord, settings: Settings, signal: AbortSigna
 /** Speak with the device voice only. Nothing is fetched and nothing leaves the device. */
 export function playOnDevice(text: string, settings: Settings, signal: AbortSignal): Promise<void> {
   if (signal.aborted) return Promise.reject(abortError());
-  if (text.trim()) remember({ text });
+  if (text.trim()) remember([{ text }]);
   if (!settings.voice || !text.trim()) return sleep(SILENT_BEAT_MS, signal);
+  const voice = takeVoice(signal);
   beginVoice();
-  return speak(text, settings, signal).finally(() => endVoice());
+  return speak(text, settings, voice).finally(() => endVoice());
 }
 
 export function playWord(word: DeckWord, settings: Settings, signal: AbortSignal): Promise<void> {
@@ -355,49 +419,19 @@ export function playWord(word: DeckWord, settings: Settings, signal: AbortSignal
 
 /** A word from the manifest, used when a sentence tile is a whole word. */
 export function playWordId(id: string, fallback: string, settings: Settings, signal: AbortSignal): Promise<void> {
-  return playCue(
-    {
-      src: recordedSrc("words", id),
-      text: spokenLine("words", id, fallback),
-    },
-    settings,
-    signal,
-  );
+  return playCue(wordCue(id, fallback), settings, signal);
 }
 
 export function playNumber(value: number, settings: Settings, signal: AbortSignal): Promise<void> {
-  const id = String(value);
-  return playCue(
-    {
-      src: recordedSrc("numbers", id),
-      text: spokenLine("numbers", id, id),
-    },
-    settings,
-    signal,
-  );
+  return playCue(numberCue(value), settings, signal);
 }
 
 export function playColor(name: string, settings: Settings, signal: AbortSignal): Promise<void> {
-  const id = name.trim().toLowerCase().replace(/\s+/g, "-");
-  return playCue(
-    {
-      src: recordedSrc("colors", id),
-      text: spokenLine("colors", id, name),
-    },
-    settings,
-    signal,
-  );
+  return playCue(colorCue(name), settings, signal);
 }
 
 export function playPrompt(id: string, settings: Settings, signal: AbortSignal, fallback = ""): Promise<void> {
-  return playCue(
-    {
-      src: recordedSrc("prompts", id),
-      text: spokenLine("prompts", id, fallback),
-    },
-    settings,
-    signal,
-  );
+  return playCue(promptCue(id, fallback), settings, signal);
 }
 
 /** A story page, read by the bundled narrator when the line is recorded, else the device voice. */

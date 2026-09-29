@@ -36,10 +36,15 @@ export async function installAudioSpy(page: Page): Promise<void> {
       return play.apply(this);
     };
     // A clip counts when its bytes are read to play, not when the offline
-    // download caches it in the background.
+    // download caches it in the background. The moment the page asks for it
+    // is noted too, as a request, for checks on how soon a screen speaks.
     const fetchWas = window.fetch.bind(window);
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      // The offline download fetches at low priority; a lesson's own clip does not.
+      if (url.includes("/audio/") && url.endsWith(".mp3") && init?.priority !== "low") {
+        target.__audioAttempts?.push({ kind: "request", detail: url });
+      }
       const response = await fetchWas(input, init);
       if (url.includes("/audio/") && url.endsWith(".mp3")) {
         const read = response.arrayBuffer.bind(response);
@@ -58,6 +63,21 @@ for (const kind of Object.values(manifest)) {
   for (const cue of Object.values(kind)) sayByFile.set(cue.file, cue.say);
 }
 
+/**
+ * What the page has asked to say so far: a clip it started fetching to play,
+ * or a device-voice line. The blank utterance that unlocks iOS speech does
+ * not count. Use this for "speaks within N seconds"; `spokenLines` is for what
+ * was said, which for a clip waits on its bytes.
+ */
+export async function requestedCues(page: Page): Promise<string[]> {
+  const attempts = await page.evaluate(
+    () => (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [],
+  );
+  return attempts
+    .filter((item) => (item.kind === "request" || item.kind === "speech" || item.kind === "clip") && item.detail.trim() !== "")
+    .map((item) => (item.kind === "speech" ? item.detail.toLowerCase() : (item.detail.split("/audio/")[1] ?? item.detail)));
+}
+
 /** Clip files the app played, in order (letters/m.mp3), leaving out device speech. */
 export async function playedClips(page: Page): Promise<string[]> {
   const attempts = await page.evaluate(
@@ -71,9 +91,11 @@ export async function spokenLines(page: Page): Promise<string[]> {
   const attempts = await page.evaluate(
     () => (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [],
   );
-  return attempts.map((item) => {
-    if (item.kind === "speech") return item.detail.toLowerCase();
-    const file = item.detail.split("/audio/")[1] ?? item.detail;
-    return (sayByFile.get(file) ?? file).toLowerCase();
-  });
+  return attempts
+    .filter((item) => item.kind === "speech" || item.kind === "clip")
+    .map((item) => {
+      if (item.kind === "speech") return item.detail.toLowerCase();
+      const file = item.detail.split("/audio/")[1] ?? item.detail;
+      return (sayByFile.get(file) ?? file).toLowerCase();
+    });
 }

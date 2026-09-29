@@ -37,7 +37,8 @@ export async function downloadForOffline(onProgress?: (progress: DownloadProgres
       const url = pending.shift();
       if (!url) return;
       try {
-        const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        // Low priority: a lesson's own clip always goes first.
+        const response = await fetch(url, { signal: AbortSignal.timeout(8000), priority: "low" });
         if (response.ok) await cache.put(url, response);
       } catch {
         // Offline, a slow response, or a clip that is not bundled yet.

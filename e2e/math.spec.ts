@@ -86,7 +86,9 @@ test("number recognition plays the number and accepts the matching tap", async (
   await page.getByRole("button", { name: "Hear a number" }).click();
   const play = page.locator("[data-screen=know]");
   const hear = await play.getAttribute("data-hear");
+  // Hear it says the instruction, then the number.
   await play.getByRole("button", { name: "Hear it" }).click();
+  await expect.poll(() => spoken(page), { timeout: 10000 }).toEqual(expect.arrayContaining(["tap the number you hear.", WORDS[Number(hear)] ?? ""]));
   const wrong = play.locator(`[data-number]:not([data-number='${hear}'])`).first();
   if (await wrong.count()) await wrong.click();
   await expect(play).toBeVisible();

@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { cancelSpeech, playLetter, playOnDevice, playWordId } from "../audio/player";
+import { cancelSpeech, playLetterSound, playPrompt, playWordId } from "../audio/player";
 import type { PhonemeId } from "../data/phonemes";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import {
+  answersIn,
   buildCheck,
   emptyTally,
+  needsGrownupConfirm,
   partSettled,
   pictureFor,
   placeFromCheck,
@@ -19,11 +21,13 @@ import { Illustration } from "../illustrations";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
 import { SpeakerIcon } from "./icons";
+import { ParentGate } from "./ParentGate";
 
-const PROMPTS: Record<CheckPart, string> = {
-  sound: "Tap the letter that makes this sound.",
-  word: "Read the word. Tap its picture.",
-  long: "Read the word. Tap its picture.",
+/** The recorded question for each part, with the line the device voice says until the clip is on the device. */
+const PROMPTS: Record<CheckPart, { id: string; say: string }> = {
+  sound: { id: "check-sound", say: "Tap the letter that makes this sound." },
+  word: { id: "check-word", say: "Read the word. Tap its picture." },
+  long: { id: "check-word", say: "Read the word. Tap its picture." },
 };
 
 /**
@@ -50,6 +54,7 @@ export function StartCheck({
   const [tally, setTally] = useState<CheckTally>(emptyTally);
   const [done, setDone] = useState<CheckResult | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const playRef = useRef<AbortController | null>(null);
   const round: CheckRound | undefined = rounds[index];
 
@@ -61,12 +66,14 @@ export function StartCheck({
     return controller.signal;
   };
 
+  // The question, then the bare sound ("mmm") from the sound clips. The letter
+  // phrase ("m, as in moon") would name the letter the child is asked to find.
   const say = async (current: CheckRound) => {
     const signal = begin();
     try {
-      await playOnDevice(PROMPTS[current.part], settingsRef.current, signal);
+      await playPrompt(PROMPTS[current.part].id, settingsRef.current, signal, PROMPTS[current.part].say);
       if (current.part === "sound") {
-        await playLetter({ char: current.answer, phoneme: (PHONEME[current.answer] ?? current.answer) as PhonemeId }, settingsRef.current, signal);
+        await playLetterSound({ char: current.answer, phoneme: (PHONEME[current.answer] ?? current.answer) as PhonemeId }, settingsRef.current, signal);
       }
     } catch {
       // A tap or a new round stopped the line.
@@ -98,7 +105,7 @@ export function StartCheck({
     setDone(result);
     playEffect("celebrate", settingsRef.current);
     const signal = begin();
-    void playOnDevice(result.cheer, settingsRef.current, signal).catch(() => undefined);
+    void playPrompt(result.cheerId, settingsRef.current, signal, result.cheer).catch(() => undefined);
   };
 
   const choose = (choice: string) => {
@@ -123,8 +130,18 @@ export function StartCheck({
   };
 
   if (done) {
+    const answers = answersIn(tally);
+    const confirm = needsGrownupConfirm(done);
     return (
-      <section className="start-check" data-screen="check" data-check="done" data-week={done.place.weekIndex} data-ladder={done.ladderStep}>
+      <section
+        className="start-check"
+        data-screen="check"
+        data-check="done"
+        data-week={done.place.weekIndex}
+        data-ladder={done.ladderStep}
+        data-answers={answers}
+        data-confirm={confirm ? "grownup" : "none"}
+      >
         <div className="check-hero" aria-hidden="true">
           <Hero animal={profile.animal} outfit={profile.outfit} />
         </div>
@@ -132,10 +149,14 @@ export function StartCheck({
         <p className="check-note">
           A good start for {lessonName(profile)}: <strong>{done.summary}</strong>
         </p>
-        <p className="adult-copy">A grown-up can change this any time in Grown-ups.</p>
-        <button type="button" className="done-button check-accept" onClick={() => onAccept(done)}>
+        <p className="adult-copy" data-check-basis>
+          Based on {answers} {answers === 1 ? "answer" : "answers"}.
+          {confirm ? " A start this far along needs a grown-up to confirm it." : " A grown-up can change this any time in Grown-ups."}
+        </p>
+        <button type="button" className="done-button check-accept" onClick={() => (confirm ? setConfirming(true) : onAccept(done))}>
           Use this start
         </button>
+        {confirming ? <ParentGate onPass={() => onAccept(done)} onCancel={() => setConfirming(false)} /> : null}
         <button type="button" className="text-button" onClick={onSkip}>
           Keep it as it is
         </button>
