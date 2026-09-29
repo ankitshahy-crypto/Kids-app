@@ -3444,5 +3444,22 @@
     "words/zoom.mp3",
     "words/zzz.mp3",
     "words/zzzip.mp3"
-  ]
+  ],
+  "bytes": {
+    "shared": 14546844,
+    "byAnimal": {
+      "bear": 4858326,
+      "bunny": 4848150,
+      "cat": 4760982,
+      "dog": 4788054,
+      "duck": 4750230,
+      "fox": 4799574,
+      "frog": 4910934,
+      "koala": 5081814,
+      "lion": 5063382,
+      "owl": 4901526,
+      "penguin": 4864278,
+      "pig": 4750614
+    }
+  }
 }

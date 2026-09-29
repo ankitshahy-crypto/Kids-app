@@ -1,6 +1,11 @@
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import config from "../../capacitor.config";
-import { animalsOnDevice, clipForDevice, lessonAudioFiles, offlineUrls, shippedAudioFiles } from "./assets";
+import available from "../data/audioAvailable.json";
+import { animals } from "../data/animals";
+import { animalsOnDevice, clipForDevice, describeBytes, hasChildOnDevice, lessonAudioFiles, offlineAudioBytes, offlineUrls, shippedAudioFiles } from "./assets";
+import { isComplete } from "./download";
+import { networkHold } from "./network";
 import { enqueue, readOutbox, requestClassSync } from "./queue";
 import { shareWordNest } from "../share";
 
@@ -85,6 +90,59 @@ describe("offline bundle", () => {
     expect(urls.some((url) => url.includes("not-recorded-yet"))).toBe(false);
     expect(urls.some((url) => url.includes("/src/audio/manager.ts"))).toBe(true);
     expect(urls.some((url) => url.endsWith("/favicon.svg"))).toBe(true);
+  });
+
+  it("precaches the app shell only, and leaves the clips to the runtime cache", () => {
+    const vite = readFileSync(new URL("../../vite.config.ts", import.meta.url), "utf8");
+    const includeAssets = vite.match(/includeAssets:\s*\[([^\]]*)\]/)?.[1] ?? "";
+    const globPatterns = vite.match(/globPatterns:\s*\[([^\]]*)\]/)?.[1] ?? "";
+    expect(includeAssets).toContain("favicon.svg");
+    expect(includeAssets).not.toContain("mp3");
+    expect(globPatterns).toContain("js,css,html");
+    expect(globPatterns).not.toContain("mp3");
+    expect(vite).toContain('handler: "CacheFirst"');
+    expect(vite).toContain("cacheName: RUNTIME_CACHE");
+  });
+
+  it("waits for a child before there is anything to download", () => {
+    expect(hasChildOnDevice(memory())).toBe(false);
+    const storage = memory();
+    storage.setItem(
+      "littlenest-profiles-v1",
+      JSON.stringify({ activeId: "mia", profiles: [{ id: "mia", name: "Mia", ageRange: "4", animal: "fox", createdAt: "2026-09-07T15:00:00.000Z", stars: 0, days: {} }] }),
+    );
+    expect(hasChildOnDevice(storage)).toBe(true);
+  });
+
+  it("holds the automatic download on Low Data Mode or cellular, and lets Wi-Fi and older browsers go", () => {
+    expect(networkHold(undefined)).toBeNull();
+    expect(networkHold({ type: "wifi", effectiveType: "4g" })).toBeNull();
+    expect(networkHold({ saveData: true, type: "wifi" })).toBe("saved-data");
+    expect(networkHold({ type: "cellular", effectiveType: "4g" })).toBe("cellular");
+    expect(networkHold({ effectiveType: "2g" })).toBe("cellular");
+    expect(networkHold({ effectiveType: "slow-2g" })).toBe("cellular");
+  });
+
+  it("is ready only when every file was saved", () => {
+    expect(isComplete({ done: 3, total: 3, failed: 0 })).toBe(true);
+    expect(isComplete({ done: 3, total: 3, failed: 1 })).toBe(false);
+    expect(isComplete({ done: 2, total: 3, failed: 0 })).toBe(false);
+    expect(isComplete({ done: 0, total: 0, failed: 0 })).toBe(false);
+  });
+
+  it("estimates the download from the shared clips plus each animal on the device", () => {
+    const sizes = { shared: 10_000_000, byAnimal: { fox: 4_500_000, bear: 5_000_000 } };
+    expect(offlineAudioBytes(new Set(), sizes)).toBe(10_000_000);
+    expect(offlineAudioBytes(new Set(["fox"]), sizes)).toBe(14_500_000);
+    expect(offlineAudioBytes(new Set(["fox", "bear"]), sizes)).toBe(19_500_000);
+    expect(offlineAudioBytes(new Set(["owl"]), sizes)).toBe(10_000_000);
+    expect(describeBytes(14_500_000)).toBe("About 15 MB");
+    expect(describeBytes(0)).toBe("");
+    // The index on disk carries the sizes for every animal, so the estimate is real.
+    const index = available as { bytes?: { shared: number; byAnimal: Record<string, number> } };
+    expect(index.bytes?.shared).toBeGreaterThan(1_000_000);
+    for (const animal of animals) expect(index.bytes?.byAnimal[animal.id], animal.id).toBeGreaterThan(1_000_000);
+    expect(offlineAudioBytes(new Set(["fox"]))).toBeLessThan(40_000_000);
   });
 
   it("queues share and class sync while offline and does not throw", async () => {

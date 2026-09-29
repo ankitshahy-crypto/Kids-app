@@ -26,11 +26,13 @@ export default defineConfig({
     VitePWA({
       registerType: "prompt",
       injectRegister: null,
-      includeAssets: ["favicon.svg", "icons/*.png", "audio/**/*.mp3"],
+      // The shell only. Sound clips are fetched into the runtime cache by the
+      // offline download, once a child exists, so a first visit is quick.
+      includeAssets: ["favicon.svg", "icons/*.png"],
       manifest: {
         name: "LittleNest Learning",
         short_name: "LittleNest",
-        description: "Reading, math, colors, games and coding, time and money, building, and science for ages 3–7. No ads. Works offline after the first visit.",
+        description: "Reading, math, colors, games and coding, time and money, building, and science for ages 3–7. No ads. Works offline once its lessons are saved on the device.",
         theme_color: "#FBF6EE",
         background_color: "#FBF6EE",
         display: "standalone",
@@ -44,7 +46,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,mp3,webmanifest}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,webmanifest}"],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         navigateFallback: "index.html",
         navigateFallbackAllowlist: allowlist,

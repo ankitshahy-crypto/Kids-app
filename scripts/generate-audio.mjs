@@ -79,8 +79,25 @@ function scan() {
   return files.sort();
 }
 
+/**
+ * The index lists every clip on disk, and how big they are: the clips every
+ * device keeps (`shared`) and the story lines that name one hero, per animal
+ * (`byAnimal`). The offline panel adds those up for the children on a device.
+ */
 function writeIndex(files) {
-  writeFileSync(indexPath, `${JSON.stringify({ files }, null, 2)}\n`);
+  const bytes = { shared: 0, byAnimal: {} };
+  for (const file of files) {
+    let size = 0;
+    try {
+      size = statSync(join(audioRoot, file)).size;
+    } catch {
+      // A file listed but not on disk adds nothing.
+    }
+    const animal = file.match(/^stories\/[a-z0-9-]+\/(?:title|p\d+)-([a-z]+)\.mp3$/)?.[1];
+    if (animal) bytes.byAnimal[animal] = (bytes.byAnimal[animal] ?? 0) + size;
+    else bytes.shared += size;
+  }
+  writeFileSync(indexPath, `${JSON.stringify({ files, bytes }, null, 2)}\n`);
 }
 
 if (flags.has("--index-only")) {

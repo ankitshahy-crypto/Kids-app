@@ -1,15 +1,31 @@
 import { useEffect, useState } from "react";
 import { registerSW } from "virtual:pwa-register";
 import { isNativeApp } from "../audio/platform";
+import { animalsOnDevice, describeBytes, hasChildOnDevice, offlineAudioBytes } from "./assets";
 import { downloadForOffline } from "./download";
+import { PROFILES_EVENT } from "./events";
+import { networkHold, type NetworkHold } from "./network";
 import { onOutbox, readOutbox } from "./queue";
 
-export type OfflinePhase = "starting" | "downloading" | "ready";
+/**
+ * starting: the page just opened. waiting: nothing to download yet (no child
+ * on this device) or the connection asks us to wait (Low Data Mode, cellular);
+ * a grown-up can still start it. downloading: a pass is running. partial: the
+ * pass ended with files it could not save. ready: every file is on the device.
+ */
+export type OfflinePhase = "starting" | "waiting" | "downloading" | "partial" | "ready";
+
+export type OfflineHold = "no-child" | NetworkHold;
 
 export type OfflineSnapshot = {
   phase: OfflinePhase;
   done: number;
   total: number;
+  failed: number;
+  /** Why the app is not downloading on its own. */
+  hold: OfflineHold;
+  /** "About 24 MB": the clips for this device's children. */
+  size: string;
   needRefresh: boolean;
   queued: number;
   /** Bundled in the iOS app, so there is nothing to download. */
@@ -21,6 +37,9 @@ let snapshot: OfflineSnapshot = {
   phase: "starting",
   done: 0,
   total: 0,
+  failed: 0,
+  hold: null,
+  size: "",
   needRefresh: false,
   queued: 0,
   bundled: false,
@@ -30,11 +49,13 @@ let snapshot: OfflineSnapshot = {
 const listeners = new Set<(state: OfflineSnapshot) => void>();
 let started = false;
 let warming: Promise<void> | null = null;
+/** The animals the last pass set out to cover. The app does not start a second pass for the same set on its own. */
+let attempted: string | null = null;
 
 function publish(patch: Partial<OfflineSnapshot>): void {
   snapshot = { ...snapshot, ...patch, queued: readOutbox().length };
   if (typeof document !== "undefined") {
-    document.documentElement.dataset.offline = snapshot.phase === "ready" ? "ready" : "working";
+    document.documentElement.dataset.offline = snapshot.phase === "ready" ? "ready" : snapshot.phase === "waiting" ? "waiting" : "working";
   }
   listeners.forEach((listener) => listener(snapshot));
 }
@@ -78,20 +99,57 @@ async function preloadFonts(): Promise<void> {
   ]);
 }
 
-async function warm(): Promise<void> {
+function animalsKey(): string {
+  return [...animalsOnDevice()].sort().join(",");
+}
+
+function sizeNow(): string {
+  return describeBytes(offlineAudioBytes(animalsOnDevice()));
+}
+
+/** What keeps the app from downloading on its own right now. */
+function holdNow(): OfflineHold {
+  if (!hasChildOnDevice()) return "no-child";
+  return networkHold();
+}
+
+/** One pass over this device's files. Runs at most once at a time. */
+function warm(): Promise<void> {
   if (warming) return warming;
+  attempted = animalsKey();
   warming = (async () => {
-    publish({ phase: "downloading" });
+    publish({ phase: "downloading", failed: 0, hold: null, size: sizeNow() });
     await waitForController();
-    const ready = await downloadForOffline((progress) => {
-      publish({ phase: "downloading", done: progress.done, total: progress.total });
+    const result = await downloadForOffline((progress) => {
+      publish({ phase: "downloading", done: progress.done, total: progress.total, failed: progress.failed });
     });
     await preloadFonts();
-    publish({ phase: ready ? "ready" : "downloading" });
+    publish({
+      phase: result.ready ? "ready" : "partial",
+      done: result.done,
+      total: result.total,
+      failed: result.failed,
+    });
   })().finally(() => {
     warming = null;
   });
   return warming;
+}
+
+/**
+ * The automatic download: only once a child exists, only on a connection
+ * that welcomes it, and only once per set of animals. Otherwise it waits and
+ * says why; a grown-up can start it from the Offline panel.
+ */
+function warmIfWelcome(): void {
+  if (snapshot.bundled) return;
+  const hold = holdNow();
+  if (hold) {
+    if (!warming && snapshot.phase !== "ready") publish({ phase: "waiting", hold, size: sizeNow() });
+    return;
+  }
+  if (attempted === animalsKey()) return;
+  void warm();
 }
 
 function claimFirstWorker(registration: ServiceWorkerRegistration | undefined): void {
@@ -107,7 +165,7 @@ function claimFirstWorker(registration: ServiceWorkerRegistration | undefined): 
   else waiting.addEventListener("statechange", skip);
 }
 
-/** Start caching after the first visit. Native builds already have the files on disk. */
+/** Register the worker after the first visit. Native builds already have the files on disk. */
 export function startOffline(): void {
   if (started || typeof window === "undefined") return;
   started = true;
@@ -116,30 +174,46 @@ export function startOffline(): void {
     publish({ phase: "ready", bundled: true, done: 1, total: 1 });
     return;
   }
+  // A child added or removed changes what this device needs.
+  window.addEventListener(PROFILES_EVENT, () => {
+    if (snapshot.phase === "ready" && attempted !== animalsKey()) publish({ phase: "waiting", hold: holdNow(), size: sizeNow() });
+    warmIfWelcome();
+  });
   const applyUpdate = registerSW({
     immediate: true,
     onNeedRefresh() {
       publish({ needRefresh: true });
     },
     onOfflineReady() {
-      void warm();
+      warmIfWelcome();
     },
     onRegisteredSW(_url, registration) {
       claimFirstWorker(registration);
-      void warm();
+      warmIfWelcome();
     },
     onRegisterError() {
-      void warm();
+      warmIfWelcome();
     },
   });
+  // Say at once when nothing will download on its own. The pass itself starts
+  // from the worker's callbacks above, once the page is under its control.
+  const hold = holdNow();
   publish({
+    hold,
+    size: sizeNow(),
+    ...(hold ? { phase: "waiting" as const } : {}),
     applyUpdate: () => {
       void applyUpdate(true);
     },
   });
 }
 
+/** A grown-up's tap: download now, whatever the connection says. */
 export function retryOfflineDownload(): Promise<void> {
+  if (!hasChildOnDevice()) {
+    publish({ phase: "waiting", hold: "no-child" });
+    return Promise.resolve();
+  }
   return warm();
 }
 
