@@ -104,7 +104,7 @@ function speechVolume(settings: Settings): number {
   return Math.min(1, Math.max(0, level));
 }
 
-function speak(text: string, settings: Settings, signal: AbortSignal): Promise<void> {
+function speak(text: string, settings: Settings, signal: AbortSignal, follow?: ReadAlong): Promise<void> {
   const synth = window.speechSynthesis;
   if (!synth || !text.trim()) return sleep(SILENT_BEAT_MS, signal);
   if (signal.aborted) return Promise.reject(abortError());
@@ -148,6 +148,12 @@ function speak(text: string, settings: Settings, signal: AbortSignal): Promise<v
 
     utterance.onend = () => finish();
     utterance.onerror = () => finish();
+    if (follow) {
+      utterance.onstart = () => tell(follow, { kind: "speech", rate: utterance.rate });
+      utterance.onboundary = (event) => {
+        if (event.name === "word" || event.name === undefined) tell(follow, { kind: "word", charIndex: event.charIndex });
+      };
+    }
 
     const onAbort = () => {
       if (generation === speechGeneration) synth.cancel();
@@ -208,12 +214,32 @@ export function previewVoice(settings: Settings): void {
   }
 }
 
-function playFile(src: string, signal: AbortSignal): Promise<void> {
-  return playOnBus(src, "voice", signal);
+function playFile(src: string, signal: AbortSignal, follow?: ReadAlong): Promise<void> {
+  return playOnBus(src, "voice", signal, follow ? (durationMs) => tell(follow, { kind: "clip", durationMs }) : undefined);
 }
 
 /** One thing to say: a recorded clip when the device has it, else the line for the device voice. */
 export type Cue = { src?: string; text: string };
+
+/**
+ * What a read-along needs to follow a line: a clip started (and how long it
+ * is), the device voice started (and how fast it reads), or the device voice
+ * reached a word (its first letter's place in the line).
+ */
+export type ReadAlongEvent =
+  | { kind: "clip"; durationMs: number }
+  | { kind: "speech"; rate: number }
+  | { kind: "word"; charIndex: number };
+export type ReadAlong = (event: ReadAlongEvent) => void;
+
+function tell(follow: ReadAlong | undefined, event: ReadAlongEvent): void {
+  if (!follow) return;
+  try {
+    follow(event);
+  } catch {
+    // A read-along handler must not interrupt the voice.
+  }
+}
 
 /** A short pause between the parts of one line ("Tap the color you hear." ... "orange"). */
 const BETWEEN_CUES_MS = 350;
@@ -256,7 +282,7 @@ export function replayLastCue(settings: Settings): Promise<void> {
  * Prefer a recorded file when one is passed. Otherwise use device speech.
  * A parent recording, stored only on the device, uses the same `src` path.
  */
-async function playOne(cue: Cue, settings: Settings, signal: AbortSignal): Promise<void> {
+async function playOne(cue: Cue, settings: Settings, signal: AbortSignal, follow?: ReadAlong): Promise<void> {
   if (signal.aborted) throw abortError();
   if (!settings.voice) {
     await sleep(SILENT_BEAT_MS, signal);
@@ -271,13 +297,13 @@ async function playOne(cue: Cue, settings: Settings, signal: AbortSignal): Promi
     }
     if (cue.src) {
       try {
-        await playFile(cue.src, signal);
+        await playFile(cue.src, signal, follow);
         return;
       } catch (error) {
         if (isAbortError(error) || signal.aborted) throw abortError();
       }
     }
-    await speak(cue.text, settings, signal);
+    await speak(cue.text, settings, signal, follow);
   } finally {
     endVoice();
   }
@@ -300,18 +326,18 @@ function takeVoice(signal: AbortSignal): AbortSignal {
 }
 
 /** Say each part in turn, with a beat between, and remember the whole line for "Hear again". */
-async function playCues(cues: Cue[], settings: Settings, signal: AbortSignal, options: { remember?: boolean } = {}): Promise<void> {
+async function playCues(cues: Cue[], settings: Settings, signal: AbortSignal, options: { remember?: boolean; follow?: ReadAlong } = {}): Promise<void> {
   if (signal.aborted) throw abortError();
   if (cues.length === 0) return;
   if (options.remember !== false) remember(cues);
   const voice = takeVoice(signal);
   for (let index = 0; index < cues.length; index += 1) {
     if (index > 0) await sleep(BETWEEN_CUES_MS, voice);
-    await playOne(cues[index], settings, voice);
+    await playOne(cues[index], settings, voice, options.follow);
   }
 }
 
-function playCue(cue: Cue, settings: Settings, signal: AbortSignal, options: { remember?: boolean } = {}): Promise<void> {
+function playCue(cue: Cue, settings: Settings, signal: AbortSignal, options: { remember?: boolean; follow?: ReadAlong } = {}): Promise<void> {
   return playCues([cue], settings, signal, options);
 }
 
@@ -452,7 +478,7 @@ export function playPrompt(id: string, settings: Settings, signal: AbortSignal, 
 }
 
 /** A story page, read by the bundled narrator when the line is recorded, else the device voice. */
-export function playStoryLine(id: string, text: string, settings: Settings, signal: AbortSignal): Promise<void> {
+export function playStoryLine(id: string, text: string, settings: Settings, signal: AbortSignal, follow?: ReadAlong): Promise<void> {
   return playCue(
     {
       src: recordedSrc("stories", id),
@@ -460,6 +486,7 @@ export function playStoryLine(id: string, text: string, settings: Settings, sign
     },
     settings,
     signal,
+    { follow },
   );
 }
 

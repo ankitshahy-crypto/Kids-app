@@ -300,18 +300,28 @@ function busLevel(bus: AudioBus): number {
  * can decode the file. If that fails, a plain audio element plays it so iOS
  * still makes a sound. The caller speaks if both fail.
  */
-export async function playOnBus(src: string, bus: AudioBus, signal: AbortSignal): Promise<void> {
+export async function playOnBus(src: string, bus: AudioBus, signal: AbortSignal, onStart?: (durationMs: number) => void): Promise<void> {
   if (signal.aborted) throw aborted();
   unlockAudio();
   try {
-    await playBuffer(src, bus, signal);
+    await playBuffer(src, bus, signal, onStart);
   } catch (error) {
     if (signal.aborted || isAbort(error)) throw aborted();
-    await playElement(src, bus, signal);
+    await playElement(src, bus, signal, onStart);
   }
 }
 
-async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal): Promise<void> {
+/** Tell the caller the clip has started, never letting its handler stop the sound. */
+function started(onStart: ((durationMs: number) => void) | undefined, seconds: number): void {
+  if (!onStart) return;
+  try {
+    onStart(Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 0);
+  } catch {
+    // A read-along handler must not interrupt the voice.
+  }
+}
+
+async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal, onStart?: (durationMs: number) => void): Promise<void> {
   const ctx = ensure();
   if (!ctx) throw new Error("Audio is unavailable");
   if (isBlocked(ctx.state)) {
@@ -365,6 +375,7 @@ async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal): Prom
     source.onended = () => finish();
     try {
       source.start();
+      started(onStart, buffer.duration);
     } catch (error) {
       finish(error instanceof Error ? error : new Error("Could not play audio"));
     }
@@ -372,7 +383,7 @@ async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal): Prom
 }
 
 /** Plain element playback. Used when Web Audio cannot play the file. */
-function playElement(src: string, bus: AudioBus, signal: AbortSignal): Promise<void> {
+function playElement(src: string, bus: AudioBus, signal: AbortSignal, onStart?: (durationMs: number) => void): Promise<void> {
   if (signal.aborted) return Promise.reject(aborted());
   const audio = new Audio(src);
   try {
@@ -403,16 +414,17 @@ function playElement(src: string, bus: AudioBus, signal: AbortSignal): Promise<v
     signal.addEventListener("abort", onAbort, { once: true });
     audio.onended = () => done();
     audio.onerror = () => done(new Error(`Could not play ${src}`));
-    let started: Promise<void>;
+    let playing: Promise<void>;
     try {
-      started = audio.play();
+      playing = audio.play();
     } catch (error) {
       done(error instanceof Error ? error : new Error("Could not play audio"));
       return;
     }
-    void started.then(
+    void playing.then(
       () => {
         if (settled) return;
+        started(onStart, audio.duration);
         timer = setTimeout(() => done(), 15000);
       },
       (error: unknown) => done(error instanceof Error ? error : new Error("Could not play audio")),

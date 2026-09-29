@@ -222,3 +222,40 @@ test("the check stops early when the sounds are new, and keeping things as they 
   const placed = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-placement-v1") ?? "{}"));
   expect(placed.subjects?.reading?.byChildId?.mia).toBeUndefined();
 });
+
+test("each word lights up as the narrator reads it, in order, and lets go at the end", async ({ page }) => {
+  await install(page, child(), 6);
+  await openReader(page, "w07-the-hat");
+  // Note every word the page lights, in order, from the moment the page opens.
+  await page.evaluate(() => {
+    const target = window as Window & { __readAlong?: string[] };
+    target.__readAlong = [];
+    new MutationObserver(() => {
+      const line = document.querySelector(".story-line");
+      const value = line?.getAttribute("data-reading") ?? "";
+      const log = target.__readAlong ?? [];
+      if (log[log.length - 1] !== value) log.push(value);
+    }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["data-reading"], childList: true });
+  });
+  await page.getByRole("button", { name: "Read", exact: true }).click();
+  const line = page.locator(".story-line");
+  await expect(line).toHaveAttribute("data-page-text", "Fox has a big hat.");
+  // One word at a time, and only one.
+  await expect(page.locator(".story-word.is-reading")).toHaveCount(1, { timeout: 5000 });
+  await expect(page.locator(".story-word.is-reading")).toHaveCount(0, { timeout: 15000 });
+  const seen = await page.evaluate(() => (window as Window & { __readAlong?: string[] }).__readAlong ?? []);
+  const words = seen.filter((value) => value !== "").map(Number);
+  // Every word of "Fox has a big hat." was lit, first to last, never going back.
+  expect(words[0]).toBe(0);
+  expect(words.at(-1)).toBe(4);
+  expect(new Set(words)).toEqual(new Set([0, 1, 2, 3, 4]));
+  for (let index = 1; index < words.length; index += 1) expect(words[index]).toBeGreaterThanOrEqual(words[index - 1]);
+  expect(seen.at(-1)).toBe("");
+
+  // Tapping a word to hear it takes over: the read-along lets go at once.
+  await page.getByRole("button", { name: "Read it" }).click();
+  await expect(page.locator(".story-word.is-reading")).toHaveCount(1, { timeout: 5000 });
+  await page.locator(".story-word[data-word=big]").click();
+  await expect(page.locator(".story-word.is-reading")).toHaveCount(0);
+  await expect(page.locator(".story-word[data-word=big]")).toHaveClass(/is-speaking/);
+});
