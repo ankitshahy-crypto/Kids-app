@@ -65,6 +65,37 @@ test("past the free weeks, the lesson replays week 2 until a grown-up unlocks, t
   await expect(today).toHaveAttribute("data-week", "5");
 });
 
+test("the unlock page tells the grown-up what the child has done so far, as facts", async ({ page }) => {
+  const saved = {
+    ...child(5),
+    stickers: [
+      { subject: "reading", kind: "letter", label: "m" },
+      { subject: "reading", kind: "letter", label: "s" },
+      { subject: "reading", kind: "word", label: "sam" },
+    ],
+    days: { "2026-09-21": { reading: { letter: true, draw: true, story: true, moment: true } }, "2026-09-22": { reading: { letter: true, draw: false, story: false, moment: false } } },
+  };
+  await page.addInitScript((saved) => {
+    if (sessionStorage.getItem("littlenest-test-seeded")) return;
+    sessionStorage.setItem("littlenest-test-seeded", "1");
+    localStorage.setItem("littlenest-profiles-v1", JSON.stringify({ activeId: "mia", profiles: [saved] }));
+    localStorage.setItem("littlenest-silent-hint-v1", "1");
+    localStorage.setItem("littlenest-paywall-preview-v1", "1");
+  }, saved);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Mia" }).click();
+  await page.locator("[data-held=true]").click();
+  await page.locator("[data-screen=locked]").getByRole("button", { name: "Grown-ups" }).click();
+  await passGate(page);
+  const panel = page.locator("[data-section=unlock]");
+  await expect(panel).toHaveAttribute("data-unlock", "locked");
+  const line = panel.locator("[data-progress] [data-child=mia]");
+  // Opening the app today may already count as a day practiced.
+  await expect(line).toHaveText(/^Mia: learned M, S · blended 1 word · read 1 story · practiced [23] days$/);
+  // Facts, not pressure: nothing about scores, falling behind, or losing anything.
+  await expect(panel).not.toContainText(/score|behind|lose|losing|hurry|limited|expire/i);
+});
+
 test("the first activity of each Explore area is open, and the rest ask for a grown-up", async ({ page }) => {
   await install(page, 0);
   await expect(page.locator("[data-held=true]")).toHaveCount(0);

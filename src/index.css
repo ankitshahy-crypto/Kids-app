@@ -7631,6 +7631,26 @@ input.is-pressed,
   margin: 8px 0 4px;
 }
 
+/* The web demo's link to the App Store, dressed like the buy button. */
+a.unlock-buy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.unlock-so-far {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--mint-wash);
+}
+
+.unlock-so-far .adult-copy {
+  margin: 0 0 4px;
+}
+
 .unlock-more {
   display: flex;
   flex-wrap: wrap;
