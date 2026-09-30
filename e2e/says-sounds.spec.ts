@@ -544,6 +544,41 @@ test("a step forward in the middle of Play sound, or after it, lights only that 
   await expect.poll(litTiles).toBe(onlyFirst);
 });
 
+test("a step back with nothing to step back stops Play sound on a word, in the middle of the pass or after it, and puts its tiles down", async ({ page }) => {
+  await install(page, mia({ saysSounds: true }));
+  await openLetters(page);
+  const activity = page.locator(".activity");
+  const tiles = page.locator(".letters .tile-wrap");
+  const count = await tiles.count();
+  const track = page.getByRole("slider", { name: "Slide across the letters" });
+  const allDark = Array.from({ length: count }, () => "false").join(",");
+  const litTiles = () => tiles.evaluateAll((elements) => elements.map((element) => element.getAttribute("data-lit")).join(","));
+  expect(count).toBeGreaterThan(2);
+
+  // In the middle of the pass: it stops, and nothing more comes up.
+  await page.getByRole("button", { name: "Play sound" }).click();
+  await expect.poll(async () => Number(await activity.getAttribute("data-revealed")), { timeout: 8000, intervals: [25] }).toBeGreaterThanOrEqual(2);
+  await track.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(activity).toHaveAttribute("data-active", "");
+  await expect(activity).toHaveAttribute("data-revealed", "0");
+  await expect(track).toHaveAttribute("aria-valuenow", "0");
+  const heard = (await requestedCues(page)).length;
+  await page.waitForTimeout(2500);
+  expect((await requestedCues(page)).slice(heard)).toEqual([]);
+  expect(await litTiles()).toBe(allDark);
+
+  // After a finished pass: its tiles go down too, so "0 of 3" is what is seen.
+  await page.getByRole("button", { name: "Play sound" }).click();
+  await expect(activity).toHaveAttribute("data-revealed", String(count), { timeout: 8000 });
+  await expect(activity).toHaveAttribute("data-active", "", { timeout: 8000 });
+  await track.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(activity).toHaveAttribute("data-revealed", "0");
+  expect(await litTiles()).toBe(allDark);
+  await expect(track).toHaveAttribute("aria-valuenow", "0");
+});
+
 test("a swipe down with nothing to step back leaves a new letter's card saying its letter, with the letter showing", async ({ page }) => {
   // Step 1 opens on the week's letter card, which says its letter on its own ("m, as in moon", then "moon").
   await install(page, mia({ ladder: { step: 1, successes: 0 } }));

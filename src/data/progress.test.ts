@@ -208,7 +208,7 @@ describe("what a child has done so far, for the unlock page", () => {
       practiceMs: { reading: { "2026-09-28": 300000, "2026-10-02": 120000 }, math: { "2026-10-03": 0 } },
     });
     expect(soFar(profile)).toEqual({ letters: ["m", "s", "sh"], words: 2, stories: 1, days: 4 });
-    expect(soFarLine(profile)).toBe("learned M, S, SH · blended 2 words · read 1 story · practiced 4 days");
+    expect(soFarLine(profile)).toBe("learned M, S, SH · blended 2 words · finished 1 story · practiced 4 days");
   });
 
   it("says nothing for a child with nothing done yet", () => {

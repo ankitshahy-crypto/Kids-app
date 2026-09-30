@@ -211,7 +211,10 @@ function count(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** "learned M, S, A, T · blended 6 words · read 4 stories · practiced 9 days", or null when there is nothing yet. */
+/**
+ * "learned M, S, A, T · blended 6 words · finished 4 stories · practiced 9 days", or null when there
+ * is nothing yet. "Finished", not "read": the stories are read along with the narrator.
+ */
 export function soFarLine(profile: ChildProfile): string | null {
   const facts = soFar(profile);
   const parts: string[] = [];
@@ -221,7 +224,7 @@ export function soFarLine(profile: ChildProfile): string | null {
     parts.push(`learned ${shown.join(", ")}${more > 0 ? ` and ${more} more` : ""}`);
   }
   if (facts.words > 0) parts.push(`blended ${count(facts.words, "word", "words")}`);
-  if (facts.stories > 0) parts.push(`read ${count(facts.stories, "story", "stories")}`);
+  if (facts.stories > 0) parts.push(`finished ${count(facts.stories, "story", "stories")}`);
   if (facts.days > 0) parts.push(`practiced ${count(facts.days, "day", "days")}`);
   return parts.length > 0 ? parts.join(" · ") : null;
 }

@@ -265,9 +265,13 @@ export function SoundItOut({
       else placeToken(last);
       return;
     }
-    // Nothing to step back: the card is left as it is, so a new letter's card keeps saying its letter, with
-    // the letter showing.
-    if (last === undefined) return;
+    if (last === undefined) {
+      // Nothing to step back. A letter card is left as it is: its one tile is shown by the card's own line,
+      // and there is nothing to count. On a word, the app's Play sound pass stops and its tiles go down, as a
+      // step forward would do, so the tiles match the "0 of 3" VoiceOver reads.
+      if (!word.letterCard && (revealed > 0 || active !== null)) stopPlayback();
+      return;
+    }
     // What was still being said (a letter, a Play sound pass) stops, and Play sound's tiles go down, so
     // nothing talks over or shows more than what VoiceOver reads for the step.
     stopPlayback();
