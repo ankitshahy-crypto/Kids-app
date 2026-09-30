@@ -8,8 +8,10 @@ import { createdThisWeek } from "./clock";
  * as the way to open it. Nothing on the web unlocks anything, not even the
  * preview flag's pretend purchase or an unlock cached before the lock.
  *
- * These tests only mean something against a locked build; on any other
- * build (local dev, CI's dev server) they skip.
+ * These tests only mean something against a locked build. Under the locked
+ * config (EXPECT_WEB_LOCK=1, set by playwright.locked.config.ts) an unlocked
+ * page fails them, so a lost build flag can never leave CI green; on any
+ * other build (local dev, CI's dev server) they skip.
  */
 
 function child(weeksAgo: number) {
@@ -30,8 +32,13 @@ async function install(page: Page, weeksAgo: number, extra: { preview?: boolean;
     { saved: child(weeksAgo), extra },
   );
   await page.goto("./");
+  await page.getByRole("button", { name: "Mia" }).waitFor();
   const locked = (await page.locator("html").getAttribute("data-web-lock")) === "1";
-  test.skip(!locked, "not a locked web build (VITE_WEB_LOCK=1)");
+  if (process.env.EXPECT_WEB_LOCK === "1") {
+    expect(locked, "this build must be locked: it was built with VITE_WEB_LOCK=1, or the lock is broken").toBe(true);
+  } else {
+    test.skip(!locked, "not a locked web build (VITE_WEB_LOCK=1)");
+  }
   await page.getByRole("button", { name: "Mia" }).click();
 }
 

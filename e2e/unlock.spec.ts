@@ -90,8 +90,7 @@ test("the unlock page tells the grown-up what the child has done so far, as fact
   const panel = page.locator("[data-section=unlock]");
   await expect(panel).toHaveAttribute("data-unlock", "locked");
   const line = panel.locator("[data-progress] [data-child=mia]");
-  // Opening the app today may already count as a day practiced.
-  await expect(line).toHaveText(/^Mia: learned M, S · blended 1 word · finished 1 story · practiced [23] days$/);
+  await expect(line).toHaveText("Mia: worked on M, S and 1 word · read along once · 2 days of practice");
   // Facts, not pressure: nothing about scores, falling behind, or losing anything.
   await expect(panel).not.toContainText(/score|behind|lose|losing|hurry|limited|expire/i);
 });

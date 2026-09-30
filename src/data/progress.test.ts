@@ -189,7 +189,7 @@ describe("who says the sounds in Sound It Out", () => {
 
 describe("what a child has done so far, for the unlock page", () => {
   const reading = "reading";
-  it("counts letters, words, story pages and days practiced from the device", () => {
+  it("counts letters, words, read-alongs and days of practice from the device, claiming no more than it knows", () => {
     const profile = child({
       stickers: [
         { subject: reading, kind: "letter", label: "m" },
@@ -205,20 +205,24 @@ describe("what a child has done so far, for the unlock page", () => {
         "2026-09-30": { math: { count: true } },
         "2026-10-01": { reading: { letter: false, draw: false, story: false, moment: false } },
       },
-      practiceMs: { reading: { "2026-09-28": 300000, "2026-10-02": 120000 }, math: { "2026-10-03": 0 } },
+      // A minute of practice counts as a day; a glance at the screen does not, and two short spells add up.
+      practiceMs: { reading: { "2026-09-28": 300000, "2026-10-02": 120000, "2026-10-03": 1000, "2026-10-04": 40000 }, math: { "2026-10-04": 25000 } },
     });
-    expect(soFar(profile)).toEqual({ letters: ["m", "s", "sh"], words: 2, stories: 1, days: 4 });
-    expect(soFarLine(profile)).toBe("learned M, S, SH · blended 2 words · finished 1 story · practiced 4 days");
+    expect(soFar(profile)).toEqual({ letters: ["m", "s", "sh"], words: 2, stories: 1, days: 5 });
+    expect(soFarLine(profile)).toBe("worked on M, S, SH and 2 words · read along once · 5 days of practice");
   });
 
-  it("says nothing for a child with nothing done yet", () => {
+  it("says nothing for a child with nothing done yet, and a second on screen is not a day of practice", () => {
     expect(soFarLine(child())).toBeNull();
     expect(soFar(child())).toEqual({ letters: [], words: 0, stories: 0, days: 0 });
+    expect(soFarLine(child({ practiceMs: { reading: { "2026-10-01": 1200 } } }))).toBeNull();
   });
 
   it("leaves out empty parts, and keeps a long list of letters short", () => {
     const letters = ["m", "s", "a", "t", "p", "n", "d", "c", "b", "g"].map((label) => ({ subject: reading, kind: "letter" as const, label }));
     const profile = child({ stickers: letters, days: { "2026-09-28": { reading: { letter: true, draw: false, story: false, moment: false } } } });
-    expect(soFarLine(profile)).toBe("learned M, S, A, T, P, N, D, C and 2 more · practiced 1 day");
+    expect(soFarLine(profile)).toBe("worked on M, S, A, T, P, N, D, C and 2 more · 1 day of practice");
+    const words = child({ stickers: [{ subject: reading, kind: "word", label: "cat" }], days: { "2026-09-28": { reading: { story: true } }, "2026-09-29": { reading: { story: true } } } });
+    expect(soFarLine(words)).toBe("worked on 1 word · read along 2 times · 2 days of practice");
   });
 });
