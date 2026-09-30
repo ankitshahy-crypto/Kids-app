@@ -8,9 +8,11 @@ import { afterPilotAnswer, type PilotAnswer } from "./pilot";
  * The one-time unlock. On the iPhone app this asks the App Store (StoreKit,
  * through the native Store plugin in ios/App/App/StorePlugin.swift); the
  * App Store keeps the purchase with the family's Apple ID, so Restore and
- * Family Sharing work with no account of ours. On the web demo everything
- * is open, unless the preview flag is set, which shows the locked app with
- * a pretend unlock (no charge) for previews and tests.
+ * Family Sharing work with no account of ours. On the web, a build made with
+ * VITE_WEB_LOCK=1 (the public demo) shows the same free part as the app and
+ * points to the App Store for the rest; any other web build is open, unless
+ * the preview flag is set, which shows the locked app with a pretend unlock
+ * (no charge) for previews and tests.
  */
 type StorePlugin = {
   product(options: { id: string }): Promise<{ id: string; price: string; title: string }>;
@@ -39,6 +41,12 @@ export type UnlockState = {
   status: UnlockStatus;
   /** The web preview's pretend store, so the screen can say no money moves. */
   preview: boolean;
+  /**
+   * The public web demo: locked like the app, and the App Store is the way to
+   * open it. Nothing here unlocks anything. A soft lock, in the browser: it
+   * only has to keep the demo from standing in for the paid app.
+   */
+  web: boolean;
   /** The pilot build: everything is open and nothing is bought or cached. */
   beta: boolean;
   /**
@@ -73,8 +81,13 @@ function cachedOwned(): boolean {
   }
 }
 
+/** Built with VITE_WEB_LOCK=1: the GitHub Pages deploy. Never the iPhone app, local dev, or CI. */
+export function webLocked(): boolean {
+  return !isNativeApp() && import.meta.env.VITE_WEB_LOCK === "1";
+}
+
 function previewing(): boolean {
-  return !isNativeApp() && readFlag(PAYWALL_PREVIEW_KEY) === "1";
+  return !isNativeApp() && !webLocked() && readFlag(PAYWALL_PREVIEW_KEY) === "1";
 }
 
 let state: UnlockState = initial();
@@ -83,14 +96,17 @@ let started = false;
 
 function initial(): UnlockState {
   const native = isNativeApp();
+  const web = webLocked();
   const preview = previewing();
-  const paywall = native || preview;
+  const paywall = native || preview || web;
   return {
-    unlocked: paywall ? cachedOwned() : true,
+    // The locked demo ignores a cached unlock: a pretend purchase from before the lock must not open it.
+    unlocked: web ? false : paywall ? cachedOwned() : true,
     paywall,
     price: preview ? "$29.99" : "",
     status: "idle",
     preview,
+    web,
     beta: false,
     ready: !native,
   };
@@ -103,7 +119,8 @@ function publish(patch: Partial<UnlockState>): void {
 
 function setOwned(owned: boolean): void {
   // A pilot build stays open, and never writes an unlock the App Store version could inherit.
-  if (state.beta) return;
+  // The locked web demo has nothing to own.
+  if (state.beta || state.web) return;
   writeUnlocked(owned);
   publish({ unlocked: owned });
 }
@@ -138,6 +155,7 @@ export function startStore(): void {
   if (started) return;
   started = true;
   state = initial();
+  if (state.web) document.documentElement.dataset.webLock = "1";
   if (!isNativeApp()) return;
   // No answer in time: show the app as any App Store copy would. A pilot
   // answer that arrives later still opens it.

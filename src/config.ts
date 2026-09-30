@@ -17,6 +17,16 @@ export const shareUrl = "https://littlenestlearning.app/";
 export const shareMessage = `${PRODUCT_NAME} is reading, math, colors, games and coding, time and money, building, and science for ages 3–7. Five happy minutes a day.`;
 
 /**
+ * The App Store listing, once it exists. The web demo's unlock page points
+ * there in place of the purchase, which only the iPhone and iPad app can make.
+ * Empty says "coming soon". Do not invent a link here.
+ */
+export const appStoreUrl: string = "";
+
+/** The Google Play listing, once there is an Android app. Empty says "coming to Google Play". */
+export const googlePlayUrl: string = "";
+
+/**
  * The one-time unlock in App Store Connect (a non-consumable, Family Sharing on).
  * The price lives there, not here: the app shows whatever the App Store says.
  */

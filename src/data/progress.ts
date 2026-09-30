@@ -6,7 +6,7 @@ import { SCIENCE } from "./science";
 import { READING } from "./subject";
 import { TIME } from "./timeMoney";
 import { calendarDayNumber, deviceTimeZone, localDateKey, weekDateKeys } from "./time";
-import { isUnit } from "./units";
+import { isUnit, unitLabel } from "./units";
 import { SOUND_KEY, type SoundCheck, type SoundTry } from "./profileExtras";
 
 export type { SoundCheck, SoundChecks } from "./profileExtras";
@@ -171,6 +171,59 @@ export function recordSoundCheck(
     [source]: attempt,
   };
   return { ...profile, soundChecks: { ...(profile.soundChecks ?? {}), [key]: next } };
+}
+
+/**
+ * What a child has done on this device so far, for the grown-up deciding on
+ * the unlock. Facts from the device only, never a score, and nothing about
+ * where the child "should" be.
+ */
+export type SoFar = {
+  /** Letters and sound units learned, in the order they were earned. */
+  letters: string[];
+  /** Words blended. */
+  words: number;
+  /** Story pages finished, one per day at most. */
+  stories: number;
+  /** Days with any practice. */
+  days: number;
+};
+
+export function soFar(profile: ChildProfile): SoFar {
+  const letters = profile.stickers.filter((sticker) => sticker.kind === "letter" && sticker.subject === READING).map((sticker) => sticker.label);
+  const words = profile.stickers.filter((sticker) => sticker.kind === "word" && sticker.subject === READING).length;
+  let stories = 0;
+  const practiced = new Set<string>();
+  for (const [date, record] of Object.entries(profile.days)) {
+    const any = Object.values(record).some((steps) => Object.values(steps).some(Boolean));
+    if (any) practiced.add(date);
+    if (record[READING]?.story) stories += 1;
+  }
+  for (const byDate of Object.values(profile.practiceMs ?? {})) {
+    for (const [date, ms] of Object.entries(byDate)) if (ms > 0) practiced.add(date);
+  }
+  return { letters, words, stories, days: practiced.size };
+}
+
+const SHOWN_LETTERS = 8;
+
+function count(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** "learned M, S, A, T · blended 6 words · read 4 stories · practiced 9 days", or null when there is nothing yet. */
+export function soFarLine(profile: ChildProfile): string | null {
+  const facts = soFar(profile);
+  const parts: string[] = [];
+  if (facts.letters.length > 0) {
+    const shown = facts.letters.slice(0, SHOWN_LETTERS).map((letter) => unitLabel(letter).toUpperCase());
+    const more = facts.letters.length - shown.length;
+    parts.push(`learned ${shown.join(", ")}${more > 0 ? ` and ${more} more` : ""}`);
+  }
+  if (facts.words > 0) parts.push(`blended ${count(facts.words, "word", "words")}`);
+  if (facts.stories > 0) parts.push(`read ${count(facts.stories, "story", "stories")}`);
+  if (facts.days > 0) parts.push(`practiced ${count(facts.days, "day", "days")}`);
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 /** Sounds in teaching order: letters a–z first, then the phonics units. */

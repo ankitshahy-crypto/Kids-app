@@ -37,6 +37,8 @@ jobs:
         run: npm run build
         env:
           VITE_BASE: /Kids-app/
+          # The public demo is locked like the app: weeks 1–2 free, the App Store for the rest.
+          VITE_WEB_LOCK: "1"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4

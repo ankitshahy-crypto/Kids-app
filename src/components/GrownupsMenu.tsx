@@ -222,7 +222,7 @@ export function GrownupsMenu({
         </section>
       ) : null}
 
-      {page === "unlock" ? <UnlockPanel /> : null}
+      {page === "unlock" ? <UnlockPanel profiles={profiles} /> : null}
 
       {page === "settings" ? (
         <section className="adult-section" data-section="settings">
