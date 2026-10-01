@@ -176,18 +176,24 @@ export function recordSoundCheck(
 /**
  * What a child has done on this device so far, for the grown-up deciding on
  * the unlock. Facts from the device only, never a score, and nothing about
- * where the child "should" be.
+ * where the child "should" be. The words are chosen to claim no more than
+ * the device knows: a letter sticker comes from finishing the Letters step
+ * with that week's letters, a word sticker from blending, tracing or a game,
+ * and a story is read along with the narrator.
  */
 export type SoFar = {
-  /** Letters and sound units learned, in the order they were earned. */
+  /** Letters and sound units worked on, in the order their stickers were earned. */
   letters: string[];
-  /** Words blended. */
+  /** Words worked on: blended, traced, or played in a game. */
   words: number;
-  /** Story pages finished, one per day at most. */
+  /** Read-alongs finished: days a story was finished. */
   stories: number;
-  /** Days with any practice. */
+  /** Days with a finished step, or about a minute of practice. */
   days: number;
 };
+
+/** A day counts as practice from about a minute of active time, not from a glance at the screen. */
+export const PRACTICE_DAY_MS = 60000;
 
 export function soFar(profile: ChildProfile): SoFar {
   const letters = profile.stickers.filter((sticker) => sticker.kind === "letter" && sticker.subject === READING).map((sticker) => sticker.label);
@@ -199,9 +205,11 @@ export function soFar(profile: ChildProfile): SoFar {
     if (any) practiced.add(date);
     if (record[READING]?.story) stories += 1;
   }
+  const msByDate = new Map<string, number>();
   for (const byDate of Object.values(profile.practiceMs ?? {})) {
-    for (const [date, ms] of Object.entries(byDate)) if (ms > 0) practiced.add(date);
+    for (const [date, ms] of Object.entries(byDate)) msByDate.set(date, (msByDate.get(date) ?? 0) + ms);
   }
+  for (const [date, ms] of msByDate) if (ms >= PRACTICE_DAY_MS) practiced.add(date);
   return { letters, words, stories, days: practiced.size };
 }
 
@@ -211,18 +219,23 @@ function count(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** "learned M, S, A, T · blended 6 words · read 4 stories · practiced 9 days", or null when there is nothing yet. */
+/**
+ * "worked on M, S, A, T and 6 words · read along 4 times · 9 days of practice", or null when there
+ * is nothing yet.
+ */
 export function soFarLine(profile: ChildProfile): string | null {
   const facts = soFar(profile);
   const parts: string[] = [];
+  const worked: string[] = [];
   if (facts.letters.length > 0) {
     const shown = facts.letters.slice(0, SHOWN_LETTERS).map((letter) => unitLabel(letter).toUpperCase());
     const more = facts.letters.length - shown.length;
-    parts.push(`learned ${shown.join(", ")}${more > 0 ? ` and ${more} more` : ""}`);
+    worked.push(`${shown.join(", ")}${more > 0 ? ` and ${more} more` : ""}`);
   }
-  if (facts.words > 0) parts.push(`blended ${count(facts.words, "word", "words")}`);
-  if (facts.stories > 0) parts.push(`read ${count(facts.stories, "story", "stories")}`);
-  if (facts.days > 0) parts.push(`practiced ${count(facts.days, "day", "days")}`);
+  if (facts.words > 0) worked.push(count(facts.words, "word", "words"));
+  if (worked.length > 0) parts.push(`worked on ${worked.join(" and ")}`);
+  if (facts.stories > 0) parts.push(`read along ${facts.stories === 1 ? "once" : `${facts.stories} times`}`);
+  if (facts.days > 0) parts.push(`${count(facts.days, "day", "days")} of practice`);
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 

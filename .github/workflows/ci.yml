@@ -58,3 +58,5 @@ jobs:
 
       - name: Playwright, locked web demo
         run: npx playwright test -c playwright.locked.config.ts
+        env:
+          EXPECT_WEB_LOCK: "1"
