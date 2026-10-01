@@ -6,6 +6,7 @@ import { SCIENCE } from "./science";
 import { READING } from "./subject";
 import { TIME } from "./timeMoney";
 import { calendarDayNumber, deviceTimeZone, localDateKey, weekDateKeys } from "./time";
+import { IDLE_MS } from "./reading";
 import { isUnit, unitLabel } from "./units";
 import { SOUND_KEY, type SoundCheck, type SoundTry } from "./profileExtras";
 
@@ -188,12 +189,17 @@ export type SoFar = {
   words: number;
   /** Read-alongs finished: days a story was finished. */
   stories: number;
-  /** Days with a finished step, or about a minute of practice. */
+  /** Days with a finished step, or a couple of minutes of practice. */
   days: number;
 };
 
-/** A day counts as practice from about a minute of active time, not from a glance at the screen. */
-export const PRACTICE_DAY_MS = 60000;
+/**
+ * A day counts as practice from two idle windows of active time. The clock
+ * keeps running for one idle window after the last tap, so one tap and a
+ * walk away earns exactly one window; it takes a second tap, or a finished
+ * step, to make the day count.
+ */
+export const PRACTICE_DAY_MS = 2 * IDLE_MS;
 
 export function soFar(profile: ChildProfile): SoFar {
   const letters = profile.stickers.filter((sticker) => sticker.kind === "letter" && sticker.subject === READING).map((sticker) => sticker.label);
@@ -221,7 +227,7 @@ function count(n: number, one: string, many: string): string {
 
 /**
  * "worked on M, S, A, T and 6 words · read along 4 times · 9 days of practice", or null when there
- * is nothing yet.
+ * is nothing yet. A long list of letters is cut short: "M, S, A, T, P, I, N, C (+4 more) and 23 words".
  */
 export function soFarLine(profile: ChildProfile): string | null {
   const facts = soFar(profile);
@@ -230,7 +236,7 @@ export function soFarLine(profile: ChildProfile): string | null {
   if (facts.letters.length > 0) {
     const shown = facts.letters.slice(0, SHOWN_LETTERS).map((letter) => unitLabel(letter).toUpperCase());
     const more = facts.letters.length - shown.length;
-    worked.push(`${shown.join(", ")}${more > 0 ? ` and ${more} more` : ""}`);
+    worked.push(`${shown.join(", ")}${more > 0 ? ` (+${more} more)` : ""}`);
   }
   if (facts.words > 0) worked.push(count(facts.words, "word", "words"));
   if (worked.length > 0) parts.push(`worked on ${worked.join(" and ")}`);
