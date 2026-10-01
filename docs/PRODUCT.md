@@ -35,7 +35,7 @@ Step 1 sets up the shell and routing for all three views, builds the kid view, a
 
 ## Pricing
 
-Business model: free download; weeks 1–2 of reading and the first activity of each Explore area are free for good, with no timer. One payment unlocks everything (launch $29.99, then $39.99), with Family Sharing on so siblings share it. Apple offer codes give schools 20% off and influencers 10% off, one code per partner, not stackable; each partner is paid per redemption from App Store Connect's counts. Pilot schools such as Kids Villa get it free for the class. A yearly plan waits for pilot evidence (use past six months, a regular content cadence, or a paid class-sync feature).
+Business model: free download; weeks 1–2 of reading and the first activity of each Explore area are free for good, with no timer. One payment unlocks everything (launch $29.99; the regular price after launch is set from launch data, planned $49.99), with Family Sharing on so siblings share it. Apple offer codes give schools 20% off and influencers 10% off, one code per partner, not stackable; each partner is paid per redemption from App Store Connect's counts. Pilot schools such as Kids Villa get it free for the class. A yearly plan waits for pilot evidence (use past six months, a regular content cadence, or a paid class-sync feature).
 
 ## Go-to-market
 
