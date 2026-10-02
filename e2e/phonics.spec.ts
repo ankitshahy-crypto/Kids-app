@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { answerGate } from "./gate";
 import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
-import { createdThisWeek } from "./clock";
+import { createdThisWeek, midweek } from "./clock";
 
 /**
  * The sound-unit weeks (15 to 26): sh, ee, magic e. A five-year-old placed on
@@ -35,6 +35,8 @@ function placement(weekIndex: number, stageId = "phonics") {
 }
 
 async function install(page: Page, profile: Record<string, unknown>, placed: Record<string, unknown> | null) {
+  // Not a Friday: these tests are about a week's own letters, without the review letters.
+  await page.clock.setFixedTime(midweek());
   await installAudioSpy(page);
   await page.addInitScript(
     ({ saved, place }) => {

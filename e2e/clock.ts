@@ -10,3 +10,14 @@ export function createdThisWeek(): string {
   monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
   return monday.toISOString();
 }
+
+/**
+ * Wednesday noon UTC of this calendar week. Friday is review day, when the
+ * day's letters gain the review letters; a test about one week's own letters
+ * pins the page's date here with `page.clock.setFixedTime(midweek())`.
+ */
+export function midweek(): Date {
+  const day = new Date(createdThisWeek());
+  day.setUTCDate(day.getUTCDate() + 2);
+  return day;
+}
