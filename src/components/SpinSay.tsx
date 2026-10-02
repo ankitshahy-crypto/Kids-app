@@ -403,7 +403,7 @@ function Challenge({
   if (kind === "trace") {
     return (
       <MiniTrace
-        letter={traceLetter(knownLetters)}
+        letter={traceLetter(knownLetters, spinIndex)}
         writing={writing}
         hinted={glow}
         settingsRef={settingsRef}
@@ -500,6 +500,7 @@ function Choices({
             data-choice={choice.id}
             data-answer={answer ? "true" : "false"}
             data-glow={glow && answer ? "true" : "false"}
+            data-swatch={choice.fill ? "true" : undefined}
             onClick={() => (answer ? onCorrect() : onMiss())}
           >
             {choice.fill ? <span className="spin-swatch" style={{ background: choice.fill }} aria-hidden="true" /> : null}
