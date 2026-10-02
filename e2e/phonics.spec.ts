@@ -147,7 +147,8 @@ test("the parent panel lists the sound units learned, and the calendar holds a f
   const created = new Date(new Date(createdThisWeek()).getTime() - 20 * 7 * 24 * 60 * 60 * 1000).toISOString();
   await install(page, child({ createdAt: created }), null);
   await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", /^a_ei_e/);
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  // Enter, not a held press: the page's date is pinned (see install), and a held press is timed.
+  await page.getByRole("button", { name: "Switch child" }).press("Enter");
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
   const letters = page.locator("[data-screen=parent] [data-section=letters]");
