@@ -384,9 +384,10 @@ export function colorChoices(target: string, options: readonly string[]): { targ
   return { target: hear, choices: [hear, ...rest, ...fallback].slice(0, 3) };
 }
 
-export function traceLetter(known: readonly string[]): string {
+/** The letter to trace on this spin. It moves through the letters the child knows, one per spin. */
+export function traceLetter(known: readonly string[], salt = 0): string {
   const letters = [...knownSet(known)];
-  return letters[0] ?? "m";
+  return letters[Math.abs(Math.floor(salt)) % Math.max(1, letters.length)] ?? "m";
 }
 
 export type SpinPrize =

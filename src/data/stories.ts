@@ -38,7 +38,7 @@ export const STORIES: Story[] = [
     title: "I Am {hero}",
     week: 1,
     pages: [
-      { text: "Hi! I am {hero}.", setting: "meadow", props: ["sun"], parent: "Point to the word 'am'. Say the two sounds slowly: mmm, aaa. Then say it fast: am." },
+      { text: "Hi! I am {hero}.", setting: "meadow", props: ["sun"], parent: "Point to the word 'am'. Say the two sounds slowly: aaa, mmm. Then say it fast: am." },
       { text: "I am a {hero-kind}.", setting: "meadow", props: [] },
       { text: "I am up! Look at me.", setting: "hill", props: ["balloon"] },
       { text: "Am I big? Yes, I am.", setting: "hill", props: [], parent: "Let your child tap 'am' and hear the sounds blend." },
@@ -52,7 +52,7 @@ export const STORIES: Story[] = [
     title: "Am I Big?",
     week: 1,
     pages: [
-      { text: "Am I big? I am!", setting: "meadow", props: ["balloon"], parent: "Point to 'am'. Say mmm, then aaa. Now say it fast: am." },
+      { text: "Am I big? I am!", setting: "meadow", props: ["balloon"], parent: "Point to 'am'. Say aaa, then mmm. Now say it fast: am." },
       { text: "Am I little? I am.", setting: "meadow", props: ["ant"] },
       { text: "I am up. I am down.", setting: "hill", props: [] },
       { text: "Am I {hero}? Yes, I am!", setting: "hill", props: [], parent: "Let your child tap 'am' on this page and hear it blend." },
