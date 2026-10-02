@@ -1,6 +1,6 @@
 import { starterDeck, type DeckWord } from "./deck";
 import { calendarWeeksBetween, deviceTimeZone, isFriday } from "./time";
-import { lettersOnly } from "./units";
+import { isUnit, lettersOnly, unitLabel } from "./units";
 
 export type WeekPlan = {
   week: number;
@@ -95,6 +95,21 @@ export function planForWeek(index: number): WeekPlan {
 /** Friday is review day on the device calendar, or in `timeZone` when one is passed. */
 export function isReviewDay(now = new Date(), timeZone = deviceTimeZone()): boolean {
   return isFriday(now, timeZone);
+}
+
+/**
+ * What the lesson is about, in words for the grown-up beside the child:
+ * "This week: M and A", or on the Friday review "Review day: S, T, M and A".
+ * A sound unit reads as it is written: "sh", "a-e".
+ *
+ * Shown on the Today path and above every lesson card. The first phone test
+ * asked for it to be plain that a week is about its two letters.
+ */
+export function weekFocus(letters: readonly string[], reviewDay = false): string {
+  const names = letters.map((id) => (isUnit(id) ? unitLabel(id) : id.toUpperCase()));
+  if (names.length === 0) return "";
+  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  return `${reviewDay ? "Review day" : "This week"}: ${list}`;
 }
 
 export function practiceLetters(plan: WeekPlan, reviewDay: boolean): string[] {

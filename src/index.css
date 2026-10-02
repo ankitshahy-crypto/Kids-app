@@ -538,19 +538,111 @@ button:focus-visible {
   opacity: 1;
 }
 
+/*
+ * A tile the slider has not reached yet: its letter is there to be read, pale,
+ * and takes its full color when the sound plays. (It used to be a blank dot,
+ * so a child had no letter to slide under.)
+ */
 .tile-wrap.is-dim .tile {
   background: #f3efe8;
-  color: transparent;
+  color: #9a8f80;
   border-color: transparent;
   box-shadow: none;
 }
 
-.tile-mark {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #eadfce;
-  display: block;
+/* What the lesson is about, for the grown-up: "This week: M and A". */
+.lesson-focus {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(232, 243, 236, 0.92);
+  color: var(--text-sage, #4f7a5e);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* The picture word under a letter card's drawing, its letter marked: moon, fox. */
+.letter-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  z-index: 1;
+  text-align: center;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(22px, 5.2vmin, 34px);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text-sage, #5f7a68);
+  pointer-events: none;
+}
+
+.letter-caption b {
+  color: #c2562f;
+  font-weight: 700;
+}
+
+/* A word with no drawing: the child's animal, and the word in its speech bubble once it is read. */
+.word-teller {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.word-teller .avatar-art,
+.word-teller .hero {
+  width: clamp(96px, 24vmin, 150px);
+  height: clamp(96px, 24vmin, 150px);
+}
+
+.word-teller .icon {
+  width: 96px;
+  height: 96px;
+  color: #e2a15a;
+}
+
+.word-bubble {
+  position: relative;
+  min-width: 96px;
+  padding: 8px 22px;
+  border-radius: 24px;
+  background: #fff6e4;
+  border: 3px solid #f0dcc0;
+  color: var(--sage-deep, #2f4a3c);
+  font-family: var(--font-display, inherit);
+  font-size: clamp(34px, 9vmin, 60px);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.word-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -11px;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  background: #fff6e4;
+  border-right: 3px solid #f0dcc0;
+  border-bottom: 3px solid #f0dcc0;
+  transform: rotate(45deg);
+}
+
+.word-teller[data-word-teller="waiting"] .word-bubble {
+  color: #c9b79c;
+}
+
+.word-teller[data-word-teller="said"] .word-bubble {
+  animation: blend-pop 0.7s ease;
 }
 
 .blend {
@@ -1893,6 +1985,13 @@ button:focus-visible {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-warm);
+}
+
+/* "This week: M and A". Not upper-cased: a sound unit is shown as it is written (sh, a-e). */
+.today-focus {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 .today-body {
@@ -4284,8 +4383,7 @@ button:focus-visible {
   flex: 0 0 auto;
 }
 
-.sheet-art .art,
-.sheet-art .pictogram {
+.sheet-art .art {
   width: 120px;
   height: 90px;
   max-height: 90px;
@@ -5770,10 +5868,12 @@ input.is-pressed,
   padding: 6px;
 }
 
-.food-bit svg,
-.rhyme-card svg {
-  width: 56px;
-  height: 56px;
+/* Real drawings on the Feed and Rhyme cards (they were plain colored circles and squares). */
+.food-bit .art,
+.rhyme-card .art {
+  width: min(100%, 112px);
+  height: auto;
+  max-height: 84px;
 }
 
 .letter-tile[data-glow="true"] {
@@ -5974,12 +6074,18 @@ input.is-pressed,
   background: #f6b07a;
 }
 
+/* A color choice: the swatch fills the button, so three colors sit in an even row. */
+.letter-tile[data-swatch="true"] {
+  display: flex;
+  padding: 10px;
+}
+
 .spin-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-  display: inline-block;
+  flex: 1;
+  min-height: 52px;
+  border-radius: 14px;
+  border: 2px solid rgba(36, 48, 86, 0.25);
+  display: block;
 }
 
 .spin-prize {

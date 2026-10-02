@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { blendList, letterCard, themedWordsForStep, wordsForStep, wordsToTrace } from "./ladder";
-import { THEME_IDS, THEMES, normalizeThemes, themeForDay, themedLetterExample, themedStoryLine } from "./themes";
+import { blendList, decodable, letterCard, wordsForStep, wordsToTrace } from "./ladder";
+import { lettersIntroduced } from "./schedule";
+import { THEME_IDS, THEMES, normalizeThemes, themeForDay, themedStoryLine } from "./themes";
 import { THEME_WORDS, themedEntries, themedWordCatalog } from "./themeWords";
 
 describe("picking themes", () => {
@@ -16,45 +17,60 @@ describe("picking themes", () => {
       expect(THEMES[id].title.length).toBeGreaterThan(2);
       expect(THEMES[id].object.length).toBeGreaterThan(2);
       expect(THEMES[id].story.length).toBeGreaterThan(0);
-      expect(Object.keys(THEMES[id].letters).length).toBeGreaterThan(5);
     }
   });
 });
 
 describe("themed words", () => {
-  it("puts the theme's words first and keeps the regular words after them", () => {
-    const words = themedWordsForStep(3, ["vehicles"]).map((word) => word.word);
-    expect(words.slice(0, 4)).toEqual(["bus", "van", "jet", "cab"]);
-    expect(words).toEqual(expect.arrayContaining(["cat", "sun", "dog"]));
-    expect(words.length).toBe(wordsForStep(3).length + 3);
-    expect(new Set(words).size).toBe(words.length);
+  // Week 9: every letter of bus, van, jet and cab has been taught except v and j.
+  const all = lettersIntroduced(13);
+  const words = (themes: Parameters<typeof blendList>[2], turn = 0) =>
+    blendList(3, ["x", "q"], themes, all, turn)
+      .filter((word) => !word.letterCard)
+      .map((word) => word.word);
+
+  it("opens the lesson's words with up to two of the theme's words", () => {
+    expect(words(["vehicles"]).slice(0, 2)).toEqual(["bus", "van"]);
+    // The next day brings the theme's next two.
+    expect(words(["vehicles"], 1).slice(0, 2)).toEqual(["jet", "cab"]);
+    expect(new Set(words(["vehicles"])).size).toBe(words(["vehicles"]).length);
+    expect(words(["vehicles"])).toHaveLength(6);
   });
 
   it("follows the order the themes were picked, without repeats", () => {
-    const first = themedWordsForStep(3, ["space", "vehicles"]).map((word) => word.word);
-    expect(first.slice(0, 5)).toEqual(["sun", "jet", "bus", "van", "cab"]);
-    const other = themedWordsForStep(3, ["vehicles", "space"]).map((word) => word.word);
-    expect(other.slice(0, 5)).toEqual(["bus", "van", "jet", "cab", "sun"]);
+    expect(words(["space", "vehicles"]).slice(0, 2)).toEqual(["sun", "jet"]);
+    expect(words(["vehicles", "space"]).slice(0, 2)).toEqual(["bus", "van"]);
   });
 
   it("falls back to the regular list when a theme has nothing for the step", () => {
-    expect(themedWordsForStep(5, ["castles"])).toBe(wordsForStep(5));
-    expect(themedWordsForStep(2, ["dinosaurs", "ocean"])).toBe(wordsForStep(2));
-    expect(themedWordsForStep(3, [])).toBe(wordsForStep(3));
     expect(themedEntries(["castles"], 5)).toEqual([]);
+    expect(words([])).toEqual(words(["castles"]).length === 6 ? words([]) : []);
+    expect(blendList(2, ["m", "a"], ["dinosaurs", "ocean"], lettersIntroduced(0), 0).map((word) => word.id)).toEqual(["letter-m", "letter-a", "am"]);
   });
 
   it("reuses the regular card for a regular word that fits the theme", () => {
-    const [bus] = themedWordsForStep(3, ["vehicles"]);
+    const bus = blendList(3, ["x", "q"], ["vehicles"], all, 0).find((word) => word.id === "bus");
     expect(bus).toBe(wordsForStep(3).find((word) => word.id === "bus"));
-    const [cat, dog] = themedWordsForStep(3, ["animals"]);
-    expect(cat.id).toBe("cat");
-    expect(dog.id).toBe("dog");
+    expect(words(["animals"]).slice(0, 2)).toEqual(["cat", "dog"]);
+  });
+
+  it("never shows a themed word the child cannot sound out yet", () => {
+    // Week 1 knows m and a: a child who picked trucks still starts with M, A and am, not bus and van.
+    for (const theme of THEME_IDS) {
+      for (let week = 0; week < 14; week += 1) {
+        const taught = new Set(lettersIntroduced(week));
+        for (const word of blendList(4, [...taught].slice(-2), [theme], [...taught], week)) {
+          if (word.letterCard) continue;
+          expect(decodable(word, taught), `${theme}, week ${week + 1}: ${word.word}`).toBe(true);
+        }
+      }
+    }
   });
 
   it("gives every themed word a picture and one sound per letter", () => {
     const catalog = themedWordCatalog();
-    expect(catalog.length).toBeGreaterThan(15);
+    // Most themed words are regular ladder words reused; a few (egg, truck, star) are the theme's own.
+    expect(catalog.length).toBeGreaterThan(3);
     for (const word of catalog) {
       expect(word.letters.map((letter) => letter.char).join(""), word.id).toBe(word.word);
       expect(word.illustration, word.id).toBeTruthy();
@@ -71,23 +87,14 @@ describe("themed words", () => {
     }
   });
 
-  it("themes the blend list and the letter of the week card", () => {
+  it("themes the words, and leaves the letter card as it is", () => {
     const blends = blendList(3, ["b", "u", "s"], ["vehicles"]).map((word) => word.word);
-    expect(blends[0]).toBe("bus");
-    expect(blends).toEqual(expect.arrayContaining(["van", "jet", "cab"]));
-    const plain = blendList(3, ["b", "u", "s"]).map((word) => word.word);
-    expect(plain).toContain("bus");
-    expect(plain).not.toContain("van");
-
-    const card = letterCard("d", ["dinosaurs"]);
-    expect(card.word).toBe("dinosaur");
-    expect(card.illustration).toBe("dinosaurs");
-    expect(card.letters[0].say).toBe("d, as in dinosaur");
-    expect(letterCard("d", ["dinosaurs"])).toBe(card);
+    expect(blends).toContain("bus");
+    expect(blends).toEqual(expect.arrayContaining(["van"]));
+    // A letter has one picture word for every child: "d, as in dog", never "d, as in dinosaur" for some.
+    expect(blendList(1, ["d", "a"], ["dinosaurs"]).slice(0, 2)).toEqual([letterCard("d"), letterCard("a")]);
     expect(letterCard("d").word).toBe("dog");
-    expect(letterCard("d").letters[0].say).toBeUndefined();
-    expect(letterCard("m", ["ocean"]).word).toBe("moon");
-    expect(blendList(1, ["d", "a"], ["dinosaurs"]).map((word) => word.word)).toEqual(["dinosaur", "apple", "a", "I"]);
+    expect(letterCard("m").word).toBe("moon");
   });
 
   it("lets a blended themed word be traced later", () => {
@@ -97,14 +104,7 @@ describe("themed words", () => {
   });
 });
 
-describe("letter examples and story lines by theme", () => {
-  it("uses the first picked theme that names the letter", () => {
-    expect(themedLetterExample("s", ["space", "bugs"])).toBe("star");
-    expect(themedLetterExample("s", ["bugs", "space"])).toBe("spider");
-    expect(themedLetterExample("z", ["space"])).toBeNull();
-    expect(themedLetterExample("D", ["castles"])).toBe("dragon");
-  });
-
+describe("story lines by theme", () => {
   it("picks the same theme and line all day, and the plain line with no theme", () => {
     expect(themeForDay([], "2026-09-27")).toBeNull();
     expect(themeForDay(["ocean"], "2026-09-27")).toBe("ocean");

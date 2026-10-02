@@ -57,6 +57,22 @@ export function phonemeOf(piece: string): PhonemeId {
 }
 
 /**
+ * One letter as a tile that stands for the letter itself: on a letter card,
+ * and in a game that says "find this letter".
+ *
+ * Why this exists: these tiles used to be built in two places from two copies
+ * of the letter-to-phoneme map, and the letter's phrase was looked up by
+ * phoneme. C and Q have the phoneme k, so the C card said "k, as in kite"
+ * under a cat, and a game asking for C or Q asked for K. `phraseId` names the
+ * letter, so each of the 26 letters says its own phrase.
+ */
+export function letterTile(char: string): LetterTile {
+  const lower = char.toLowerCase().slice(0, 1);
+  const phoneme = (PHONEME[lower] ?? "m") as PhonemeId;
+  return /^[a-z]$/.test(lower) ? { char: lower, phoneme, phraseId: lower } : { char: lower, phoneme };
+}
+
+/**
  * The tiles of a word spelled the way it sounds: a letter a tile, except that
  * a digraph or vowel team is one tile (sh-i-p) and the e of a magic-e word is
  * a silent tile (c-a-k-e).

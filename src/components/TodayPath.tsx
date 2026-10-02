@@ -35,6 +35,7 @@ const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
 export function TodayPath({
   profile,
   letters,
+  focus,
   placementSource,
   stageId,
   weekIndex,
@@ -72,6 +73,8 @@ export function TodayPath({
 }: {
   profile: ChildProfile;
   letters: string[];
+  /** "This week: M and A": what the reading lesson is about, in words for a grown-up. */
+  focus?: string;
   placementSource: PlacementSource;
   stageId: string;
   weekIndex: number;
@@ -176,7 +179,15 @@ export function TodayPath({
           </p>
         </div>
       </div>
-      {review && shown === "reading" ? <p className="today-review">Review</p> : null}
+      {/* The week's letters, in words. The path showed only the first one (a lone M), and "Review" on a
+          Friday said nothing about which letters; the first phone test asked for the two letters to be plain. */}
+      {shown === "reading" && focus ? (
+        <p className="today-review today-focus" data-week-focus>
+          {focus}
+        </p>
+      ) : review && shown === "reading" ? (
+        <p className="today-review">Review</p>
+      ) : null}
 
       <div className="today-body">
         <section className="lesson">

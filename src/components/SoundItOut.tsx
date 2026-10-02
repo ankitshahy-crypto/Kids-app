@@ -27,6 +27,7 @@ export function SoundItOut({
   outfit = emptyOutfit(),
   ladderStep = 1,
   saysSounds = false,
+  focus,
   onFinished,
 }: {
   settingsRef: { current: Settings };
@@ -43,13 +44,19 @@ export function SoundItOut({
    * and so is a sentence: its tiles are whole words, not letter sounds.
    */
   saysSounds?: boolean;
+  /**
+   * What this lesson is about, for the grown-up beside the child: "This week:
+   * M and A". Shown above every card, because the first phone test asked for
+   * it to be clear that a week is about its two letters.
+   */
+  focus?: string;
   onFinished?: (word: DeckWord) => void;
 }) {
   const deck = words.length > 0 ? words : starterDeck.words;
   const [index, setIndex] = useState(0);
   const word = deck[index % deck.length];
   const finish = () => onFinished?.(word);
-  const { revealed, active, replay, autoplay, soundLetter, soundWord, stop: stopPlayback } = usePlayback(word, settingsRef, paused, finish);
+  const { revealed, active, replay, autoplay, replayLetter, soundLetter, soundWord, stop: stopPlayback } = usePlayback(word, settingsRef, paused, finish);
   const quiet = saysSounds && !word.letterCard && !word.sentenceId;
   const speak = useSpeaker(settingsRef);
   const [lit, setLit] = useState<boolean[]>(() => word.letters.map(() => false));
@@ -361,7 +368,8 @@ export function SoundItOut({
     if (!lit[letterIndex] && letterIndex >= revealed && active !== "all") return;
     unlockAudio();
     resumeSpeech();
-    soundLetter(letterIndex);
+    // A tap wants this sound now, not after the ones a slide left waiting.
+    replayLetter(letterIndex);
   };
 
   return (
@@ -397,6 +405,11 @@ export function SoundItOut({
       }}
     >
       <PictureCard label={word.word}>
+        {focus ? (
+          <span className="lesson-focus" data-lesson-focus>
+            {focus}
+          </span>
+        ) : null}
         {word.photoSrc ? (
           <img className="photo" src={word.photoSrc} alt="" />
         ) : word.glyph ? (
@@ -404,9 +417,18 @@ export function SoundItOut({
             {word.glyph}
             <small>{word.word}</small>
           </span>
-        ) : (
+        ) : word.illustration ? (
           <Illustration name={word.illustration} />
+        ) : (
+          // A word with no drawing of its own ("am", "sat"). The card used to borrow another word's picture
+          // (a smiling child for "sad", an ant for "an"); now the child's animal waits, and says the word
+          // once it has been read.
+          <span className="word-teller" data-word-teller={blended ? "said" : "waiting"} aria-hidden="true">
+            <span className="word-bubble">{blended ? word.word : "?"}</span>
+            {animal ? <Hero animal={animal} outfit={outfit} /> : <StarIcon />}
+          </span>
         )}
+        {word.letterCard && !word.glyph ? <LetterCaption word={word} /> : null}
       </PictureCard>
       <SoundLabel />
       <div
@@ -457,7 +479,9 @@ export function SoundItOut({
                     tapLetter(letterIndex);
                   }}
                 >
-                  {shown ? label : <span className="tile-mark" />}
+                  {/* The letter is on its tile from the start, pale until the slider reaches it. It used to be
+                      a blank dot until then, so there was no letter to slide under. */}
+                  {label}
                 </button>
               </div>
             );
@@ -544,6 +568,40 @@ export function SoundItOut({
         </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * The picture word under a letter card's drawing, with the letter marked:
+ * "moon" with its m in color, "fox" with its x. A drawing alone left a
+ * grown-up guessing what word it stood for (a pin? a needle?).
+ */
+function LetterCaption({ word }: { word: DeckWord }) {
+  const unit = word.letters[0]?.char.toLowerCase() ?? "";
+  const text = word.word;
+  // A magic-e unit is written a-e: mark the vowel and the final e (c-a-k-e). Others are found as they are spelled.
+  const split = /^[aeiou]-e$/.test(unit) ? null : text.toLowerCase().indexOf(unit);
+  if (split === null) {
+    const vowel = text.toLowerCase().indexOf(unit[0]);
+    return (
+      <span className="letter-caption" data-letter-caption={text}>
+        {[...text].map((char, at) => (at === vowel || at === text.length - 1 ? <b key={at}>{char}</b> : <span key={at}>{char}</span>))}
+      </span>
+    );
+  }
+  if (split < 0) {
+    return (
+      <span className="letter-caption" data-letter-caption={text}>
+        {text}
+      </span>
+    );
+  }
+  return (
+    <span className="letter-caption" data-letter-caption={text}>
+      {text.slice(0, split)}
+      <b>{text.slice(split, split + unit.length)}</b>
+      {text.slice(split + unit.length)}
+    </span>
   );
 }
 

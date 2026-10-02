@@ -199,8 +199,11 @@ describe("upper and lower pairs", () => {
     expect(matchDistractor("a", ["a", "m"])).toBe("m");
   });
 
-  it("speaks big and little with the letter sound and a picture word", () => {
-    expect(pairLine("a")).toBe("Big A and little a both say /a/, like apple");
+  it("speaks big and little with the letter sound and the letter's picture word", () => {
+    expect(pairLine("a")).toBe("Big A and little a both say a, as in apple");
+    expect(pairLine("W")).toBe("Big W and little w both say w, as in web");
+    // No slashes: the voice read them aloud ("per meter slash").
+    for (const letter of "abcdefghijklmnopqrstuvwxyz") expect(pairLine(letter)).not.toContain("/");
     expect(pairPromptId("A")).toBe("pair-a");
     for (const letter of "abcdefghijklmnopqrstuvwxyz") {
       const cue = manifest.prompts[pairPromptId(letter) as keyof typeof manifest.prompts];

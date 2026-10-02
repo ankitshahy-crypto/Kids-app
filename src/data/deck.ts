@@ -13,9 +13,13 @@ export type LetterTile = {
   audioSrc?: string;
   /** When set, this tile is a word in a short sentence, not a letter sound. */
   wordId?: string;
-  /** A themed letter phrase: the manifest letter id to play, and what the device voice says without it. */
-  say?: string;
-  sayId?: string;
+  /**
+   * The letter whose phrase this tile says when it stands for a letter, not a
+   * sound in a word: "c" plays "c, as in cat". Without it the phrase is looked
+   * up by phoneme, and c and q both said "k, as in kite" (their phoneme is k),
+   * under a picture of a cat and when a game asked for the letter C.
+   */
+  phraseId?: string;
   /** The e of a magic-e word: shown on its tile, but it makes no sound of its own. */
   silent?: boolean;
 };

@@ -3,13 +3,8 @@ import manifest from "./audioManifest.json";
 import { starterDeck } from "./deck";
 import { ladderClips } from "./ladder";
 import { PHONEME_IDS } from "./phonemes";
-import { THEME_IDS, THEMES } from "./themes";
+import { LETTER_WORDS } from "./letterWords";
 import { themedWordCatalog } from "./themeWords";
-
-/** Manifest id of a themed letter phrase: "d-dinosaur" for "d, as in dinosaur". */
-export function themedLetterId(char: string, example: string): string {
-  return `${char}-${example.trim().toLowerCase().replace(/\s+/g, "-")}`;
-}
 
 export type AudioKind = "letters" | "sounds" | "words" | "sentences" | "numbers" | "prompts" | "colors" | "stories";
 
@@ -76,12 +71,14 @@ for (const word of themedWordCatalog()) {
   if (cue.say !== word.word) throw new Error(`Themed word clip "${word.id}" should say "${word.word}"`);
 }
 
-for (const theme of THEME_IDS) {
-  for (const [char, example] of Object.entries(THEMES[theme].letters)) {
-    const id = themedLetterId(char, example ?? "");
-    const cue = book.letters[id];
-    assertCue("letters", id, cue);
-    if (cue.say !== `${char}, as in ${example}`) throw new Error(`Themed letter "${id}" should say "${char}, as in ${example}"`);
+// A letter's clip names the same picture word as its card (letterWords.ts).
+// The first phone test found them apart: the card showed an igloo for i while
+// the clip said "i, as in pig", and t, o, u, b, e, j, y and z differed too.
+for (const { letter, word } of Object.values(LETTER_WORDS)) {
+  const cue = book.letters[letter];
+  assertCue("letters", letter, cue);
+  if (cue.say !== `${letter}, as in ${word}`) {
+    throw new Error(`Letter "${letter}" should say "${letter}, as in ${word}", the word on its card, not "${cue.say}"`);
   }
 }
 

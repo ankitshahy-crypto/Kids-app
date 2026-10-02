@@ -321,6 +321,58 @@ function started(onStart: ((durationMs: number) => void) | undefined, seconds: n
   }
 }
 
+/**
+ * Short clips that are ready to play at once: the letter sounds of the card on
+ * screen. Without this each sound was fetched and decoded when the slider
+ * reached its tile, and on a phone that took longer than a child takes to
+ * slide to the next letter, so the sounds came late or not at all.
+ */
+const READY_CLIPS = 32;
+const READY_CLIP_SECONDS = 3;
+const ready = new Map<string, AudioBuffer>();
+
+function keepReady(src: string, buffer: AudioBuffer): void {
+  if (buffer.duration > READY_CLIP_SECONDS) return;
+  ready.delete(src);
+  ready.set(src, buffer);
+  // The oldest goes first: a Map keeps the order its keys were set in.
+  while (ready.size > READY_CLIPS) ready.delete(ready.keys().next().value as string);
+}
+
+async function loadBuffer(ctx: AudioContext, src: string, signal?: AbortSignal): Promise<AudioBuffer> {
+  const kept = ready.get(src);
+  if (kept) return kept;
+  const response = await fetch(src, signal ? { signal } : undefined);
+  if (!response.ok) throw new Error(`Could not play ${src}`);
+  const type = response.headers?.get?.("content-type") ?? "";
+  if (type.includes("text/html")) throw new Error(`Could not play ${src}`);
+  const bytes = await response.arrayBuffer();
+  if (bytes.byteLength === 0) throw new Error(`Could not play ${src}`);
+  if (signal?.aborted) throw aborted();
+  let buffer: AudioBuffer;
+  try {
+    buffer = await ctx.decodeAudioData(bytes.slice(0));
+  } catch {
+    throw new Error(`Could not decode ${src}`);
+  }
+  keepReady(src, buffer);
+  return buffer;
+}
+
+/**
+ * Get these clips ready before they are asked for (the tiles of the card that
+ * has just appeared). Best effort: a clip that cannot be loaded now is loaded
+ * when it is played, as before.
+ */
+export function warmClips(sources: readonly (string | undefined)[]): void {
+  const ctx = ensure();
+  if (!ctx) return;
+  for (const src of sources) {
+    if (!src || ready.has(src)) continue;
+    void loadBuffer(ctx, src).catch(() => undefined);
+  }
+}
+
 async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal, onStart?: (durationMs: number) => void): Promise<void> {
   const ctx = ensure();
   if (!ctx) throw new Error("Audio is unavailable");
@@ -334,19 +386,7 @@ async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal, onSta
   if (ctx.state !== "running") throw new Error("Audio context is not running");
   refreshGains();
   if (signal.aborted) throw aborted();
-  const response = await fetch(src, { signal });
-  if (!response.ok) throw new Error(`Could not play ${src}`);
-  const type = response.headers?.get?.("content-type") ?? "";
-  if (type.includes("text/html")) throw new Error(`Could not play ${src}`);
-  const bytes = await response.arrayBuffer();
-  if (bytes.byteLength === 0) throw new Error(`Could not play ${src}`);
-  if (signal.aborted) throw aborted();
-  let buffer: AudioBuffer;
-  try {
-    buffer = await ctx.decodeAudioData(bytes.slice(0));
-  } catch {
-    throw new Error(`Could not decode ${src}`);
-  }
+  const buffer = await loadBuffer(ctx, src, signal);
   if (signal.aborted) throw aborted();
   const source = ctx.createBufferSource();
   source.buffer = buffer;

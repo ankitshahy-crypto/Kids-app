@@ -82,8 +82,8 @@ import { hasGrownupPin } from "./data/grownupPin";
 import { PIN_OFFERED_KEY } from "./storage";
 import { READING } from "./data/subject";
 import { lettersOnly, traceLetters } from "./data/units";
-import { blendList, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
-import { lettersIntroduced } from "./data/schedule";
+import { blendList, countsForLadder, ladderCap, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
+import { isReviewDay, lettersIntroduced, weekFocus } from "./data/schedule";
 import { nameToTrace } from "./data/tracePractice";
 import { usePlacement } from "./hooks/usePlacement";
 import { useDayKey } from "./hooks/useDayKey";
@@ -337,9 +337,17 @@ export default function App() {
   // A reader picked from the cover's shelf, for this visit. Today's story is the default.
   const [pickedStoryId, setPickedStoryId] = useState<string | null>(null);
   const openStory = storyShelf.find((story) => story.id === pickedStoryId) ?? todayStory;
+  // The day as a number, so the lesson's words move on each day instead of being the same six all week.
+  const lessonTurn = useMemo(() => Math.floor(Date.parse(`${dayKey}T00:00:00Z`) / 86_400_000) || 0, [dayKey]);
   const lessonWords = useMemo(
-    () => blendList(lessonLadderStep, lessonLetters, themes, introducedLetters),
-    [lessonLadderStep, lessonLetters, themes, introducedLetters],
+    () => blendList(lessonLadderStep, lessonLetters, themes, introducedLetters, lessonTurn),
+    [lessonLadderStep, lessonLetters, themes, introducedLetters, lessonTurn],
+  );
+  // "This week: M and A", shown on the path and above each lesson card.
+  const lessonFocus = useMemo(
+    () => weekFocus(lessonLetters, isReviewDay(new Date())),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lessonLetters, dayKey],
   );
   const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
   const phonicsReady = phonicsOpen(introducedLetters.length);
@@ -628,9 +636,14 @@ export default function App() {
       ...lessonLetters.map((label) => ({ kind: "letter" as const, label })),
       ...(word.letterCard ? [] : [{ kind: "word" as const, label: word.word }]),
     ];
-    if (active) noteLadder(active.id, phonicsReady, word.letterCard ? `letter:${word.letters[0]?.char ?? word.word}` : word.word);
+    // Only a blended word of the step's length moves the word ladder, and never past what the letters
+    // taught so far can spell. (A letter card used to count, so every first lesson was a step up.)
+    if (active && countsForLadder(word, active.ladder.step)) {
+      noteLadder(active.id, phonicsReady, word.word, ladderCap(introducedLetters));
+    }
     reward("letter", learned);
-    showTip("letter", "end", word.letters[0]?.char ?? word.word);
+    // The letter's own tip follows its letter card; a word gets the step's line.
+    showTip("letter", "end", word.letterCard ? (word.letters[0]?.phraseId ?? "") : undefined);
   };
 
   const inLesson = isChunkScreen(screen);
@@ -784,6 +797,7 @@ export default function App() {
                 <TodayPath
                   profile={active}
                   letters={lessonLetters}
+                  focus={lessonFocus}
                   placementSource={lessonPlace?.source ?? "calendar"}
                   stageId={lessonPlace?.stageId ?? "letters"}
                   weekIndex={lessonPlace?.weekIndex ?? 0}
@@ -921,6 +935,7 @@ export default function App() {
                   outfit={active.outfit}
                   ladderStep={lessonLadderStep}
                   saysSounds={active.saysSounds === true}
+                  focus={lessonFocus}
                   onFinished={finishLetter}
                 />
               ) : null}

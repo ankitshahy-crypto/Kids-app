@@ -3,6 +3,9 @@
  * the same lessons lean on words, pictures, and lines from those themes
  * wherever a themed item exists. Skills and their order never change; a theme
  * with nothing to offer falls back to the regular content.
+ *
+ * A theme does not change a letter's picture word (see letterCard in
+ * ladder.ts): "m, as in moon" is the same for every child.
  */
 export const THEME_IDS = ["dinosaurs", "vehicles", "space", "animals", "bugs", "ocean", "castles"] as const;
 
@@ -18,8 +21,6 @@ export type ThemeInfo = {
   /** What one counted object is called: "Tap each truck". */
   object: string;
   objects: string;
-  /** Letter phrases for letter cards: "d, as in dinosaur". */
-  letters: Partial<Record<string, string>>;
   /** Story lines. `{hero}` is the child's animal hero ("Mia's fox"). */
   story: string[];
 };
@@ -31,7 +32,6 @@ export const THEMES: Record<ThemeId, ThemeInfo> = {
     icon: "dinosaurs",
     object: "dinosaur",
     objects: "dinosaurs",
-    letters: { d: "dinosaur", e: "egg", b: "bone", f: "fossil", n: "nest", s: "stomp", t: "tail", v: "volcano" },
     story: ["{hero} finds a dinosaur egg in the tall grass.", "{hero} stomps along with a friendly dinosaur."],
   },
   vehicles: {
@@ -40,7 +40,6 @@ export const THEMES: Record<ThemeId, ThemeInfo> = {
     icon: "vehicles",
     object: "truck",
     objects: "trucks",
-    letters: { t: "truck", b: "bus", c: "car", v: "van", j: "jet", r: "road", w: "wheel", h: "horn" },
     story: ["{hero} drives the fire truck to the park.", "{hero} waves from the window of the big bus."],
   },
   space: {
@@ -49,7 +48,6 @@ export const THEMES: Record<ThemeId, ThemeInfo> = {
     icon: "space",
     object: "rocket",
     objects: "rockets",
-    letters: { r: "rocket", s: "star", m: "moon", p: "planet", a: "astronaut", c: "comet", j: "jet", o: "orbit" },
     story: ["{hero} rides a rocket past the moon.", "{hero} counts the stars from a little spaceship."],
   },
   animals: {
@@ -58,7 +56,6 @@ export const THEMES: Record<ThemeId, ThemeInfo> = {
     icon: "animals",
     object: "paw print",
     objects: "paw prints",
-    letters: { c: "cat", d: "dog", p: "pig", f: "fox", h: "hen", g: "goat", b: "bear", o: "owl" },
     story: ["{hero} visits the farm and says hello to every animal.", "{hero} follows paw prints to a sleepy bear."],
   },
   bugs: {
@@ -67,7 +64,6 @@ export const THEMES: Record<ThemeId, ThemeInfo> = {
     icon: "bugs",
     object: "ladybug",
     objects: "ladybugs",
-    letters: { b: "bug", a: "ant", w: "web", s: "spider", l: "ladybug", c: "caterpillar", m: "moth", g: "grasshopper" },
     story: ["{hero} follows a ladybug across a big green leaf.", "{hero} peeks at ants marching in a line."],
   },
   ocean: {
@@ -76,7 +72,6 @@ export const THEMES: Record<ThemeId, ThemeInfo> = {
     icon: "ocean",
     object: "fish",
     objects: "fish",
-    letters: { f: "fish", c: "crab", w: "wave", s: "sea", o: "octopus", d: "dolphin", t: "turtle", b: "boat" },
     story: ["{hero} sails a little boat over the waves.", "{hero} counts crabs on the sandy beach."],
   },
   castles: {
@@ -85,7 +80,6 @@ export const THEMES: Record<ThemeId, ThemeInfo> = {
     icon: "castles",
     object: "crown",
     objects: "crowns",
-    letters: { k: "king", q: "queen", c: "castle", p: "princess", d: "dragon", t: "tower", g: "gate", w: "wand" },
     story: ["{hero} wears a crown and walks up to the castle.", "{hero} waves a wand and the castle gate opens."],
   },
 };
@@ -104,16 +98,6 @@ export function normalizeThemes(value: unknown): ThemeId[] {
     if (themes.length >= MAX_THEMES) break;
   }
   return themes;
-}
-
-/** The first theme that names an example word for this letter, else null. */
-export function themedLetterExample(letter: string, themes: readonly ThemeId[]): string | null {
-  const char = letter.toLowerCase().slice(0, 1);
-  for (const theme of themes) {
-    const word = THEMES[theme]?.letters[char];
-    if (word) return word;
-  }
-  return null;
 }
 
 /** The theme that decides the counting object today: themes take turns by day. */

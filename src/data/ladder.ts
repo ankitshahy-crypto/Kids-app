@@ -1,11 +1,11 @@
 import type { IllustrationName } from "../illustrations";
 import { starterDeck, type DeckWord, type LetterTile } from "./deck";
 import { alphabetSize } from "./schedule";
-import { themedLetterExample, type ThemeId } from "./themes";
+import type { ThemeId } from "./themes";
 import { themedEntries, themedWordCatalog } from "./themeWords";
-import { isUnit, soundMet, soundUnit } from "./units";
+import { isUnit, lettersOnly, soundMet, soundUnit } from "./units";
 import { letterWord } from "./letterWords";
-import { made, phonemeOf } from "./wordBuild";
+import { letterTile, made, phonemeOf } from "./wordBuild";
 
 /** 1 is a one-letter word. 5 is phonics for ages 5 to 7. */
 export const LADDER_STEPS = [1, 2, 3, 4, 5] as const;
@@ -61,10 +61,15 @@ export function assignLadderStep(progress: LadderProgress | undefined, step: Lad
  * A word counts once per local day: replaying "cat" three times is one try,
  * and tomorrow it counts again. Step 5 stays reserved for phonics until that
  * level is open, or a teacher sets it.
+ *
+ * `cap` is the furthest step the letters taught so far can support
+ * (ladderCap). Without it a child was on "Four letters" within three days of
+ * starting, knowing only m and a: a step is a word length, and there is no
+ * four-letter word to read with two letters.
  */
 export function recordLadderSuccess(
   progress: LadderProgress | undefined,
-  options?: { phonicsOpen?: boolean; word?: string; day?: string },
+  options?: { phonicsOpen?: boolean; word?: string; day?: string; cap?: LadderStep },
 ): { ladder: LadderProgress; advanced: boolean } {
   const current = normalizeLadder(progress);
   const word = options?.word?.trim().toLowerCase() ?? "";
@@ -76,7 +81,7 @@ export function recordLadderSuccess(
     return { ladder: { step: 5, successes: Math.min(SUCCESSES_TO_ADVANCE, current.successes + 1), ...memo }, advanced: false };
   }
   const successes = current.successes + 1;
-  const blocked = current.step === 4 && !options?.phonicsOpen;
+  const blocked = (current.step === 4 && !options?.phonicsOpen) || (options?.cap !== undefined && current.step >= options.cap);
   if (successes >= SUCCESSES_TO_ADVANCE && !blocked) {
     return { ladder: { step: (current.step + 1) as LadderStep, successes: 0, ...memo }, advanced: true };
   }
@@ -452,6 +457,11 @@ export function pictureWordsForStep(step: LadderStep): DeckWord[] {
   return byStep[step].filter((word) => Boolean(word.illustration));
 }
 
+/** Every ladder word with a drawing of its own, shortest words first: the pool for picture games. */
+export function pictureWords(): DeckWord[] {
+  return LADDER_STEPS.flatMap((step) => pictureWordsForStep(step));
+}
+
 /** Words from step 1 through this step. */
 export function wordsThrough(step: LadderStep): DeckWord[] {
   const words: DeckWord[] = [];
@@ -499,92 +509,51 @@ export function letterExample(letter: string): string {
   return letterWord(letter).word;
 }
 
-/**
- * A letter-sound card for the letter of the week: one tile that plays the
- * sound, then says its example word, under a drawing of that word.
- */
 const letterCardCache = new Map<string, DeckWord>();
 
 /**
- * Themed example words that have a drawing of their own. A themed word with
- * no drawing is not used: the card falls back to the regular word and its
- * picture, so a letter card never shows a bare letter where a picture belongs
- * (the Bugs theme showed "M, moth" with no moth).
+ * A letter-sound card for the letter of the week: one tile that plays the
+ * letter's phrase ("m, as in moon") under a drawing of that word.
+ *
+ * A letter has one picture word, the same for every child. An interest theme
+ * used to swap it ("m, as in moth" for Bugs, "d, as in dinosaur"), and the
+ * first phone test showed why that does not work: the card said moth, the
+ * Draw step and the tip said moon, more than half the themed words had no
+ * drawing (the card showed a bare letter), and several were poor examples of
+ * the sound (truck, orbit, owl). The picture word is the child's hook for the
+ * sound, so it stays put; themes still choose the words to read, the things
+ * to count and the story lines.
  */
-const THEMED_PICTURES: Partial<Record<string, IllustrationName>> = {
-  dinosaur: "dinosaurs",
-  egg: "egg",
-  truck: "vehicles",
-  bus: "bus",
-  car: "cab",
-  van: "van",
-  jet: "jet",
-  rocket: "space",
-  star: "star",
-  moon: "moon",
-  cat: "cat",
-  dog: "dog",
-  pig: "pig",
-  fox: "fox",
-  hen: "hen",
-  goat: "goat",
-  bug: "bug",
-  ant: "ant",
-  web: "web",
-  moth: "moth",
-  fish: "fish",
-  crab: "crab",
-  wave: "wave",
-  boat: "boat",
-  crown: "castles",
-  gate: "gate",
-  nest: "nest",
-  bone: "bone",
-  wheel: "wheel",
-};
-
-export function letterCard(letter: string, themes: readonly ThemeId[] = []): DeckWord {
+export function letterCard(letter: string): DeckWord {
   const char = isUnit(letter) ? letter.toLowerCase() : letter.toLowerCase().slice(0, 1);
-  const unit = soundUnit(char);
-  const themedWord = unit ? null : themedLetterExample(char, themes);
-  // Only a themed word with its own drawing replaces the regular one.
-  const themed = themedWord && THEMED_PICTURES[themedWord] ? themedWord : undefined;
-  const key = themed ? `${char}:${themed}` : char;
-  // One object per letter (and themed example), like the fixed word lists, so
-  // a card keeps its state while the lesson list is recomputed around it.
-  const cached = letterCardCache.get(key);
+  // One object per letter, like the fixed word lists, so a card keeps its
+  // state while the lesson list is recomputed around it.
+  const cached = letterCardCache.get(char);
   if (cached) return cached;
-  const regular = letterWord(char);
-  const example = themed ?? unit?.example ?? regular.word;
-  const picture = themed ? THEMED_PICTURES[themed] : unit ? UNIT_PICTURES[unit.id] : regular.illustration;
+  const unit = soundUnit(char);
+  const picture = unit ? UNIT_PICTURES[unit.id] : letterWord(char).illustration;
   const card: DeckWord = {
     id: `letter-${char}`,
-    word: example,
+    word: unit ? unit.example : letterWord(char).word,
     letterCard: true,
     // A unit card shows its letters as they are written ("sh", "a-e") when its word has no drawing.
     ...(picture ? { illustration: picture } : { glyph: unit ? unit.label : char.toUpperCase() }),
-    letters: [
-      {
-        char: unit ? unit.label : char,
-        phoneme: phonemeOf(char),
-        // A themed card plays its own phrase, "d, as in dinosaur", not the regular one.
-        ...(themed ? { say: `${char}, as in ${themed}`, sayId: `${char}-${themed.replace(/\s+/g, "-")}` } : {}),
-      },
-    ],
+    // letterTile names the letter, so C says "c, as in cat" and not its phoneme's "k, as in kite".
+    letters: [unit ? { char: unit.label, phoneme: phonemeOf(char) } : letterTile(char)],
   };
-  letterCardCache.set(key, card);
+  letterCardCache.set(char, card);
   return card;
 }
 
 /** The week's letters and sound units as cards, in plan order. */
-export function letterCards(letters: readonly string[], themes: readonly ThemeId[] = []): DeckWord[] {
+export function letterCards(letters: readonly string[]): DeckWord[] {
   const seen = new Set<string>();
   const cards: DeckWord[] = [];
   for (const letter of letters) {
     const id = letter.toLowerCase();
     if (!(/^[a-z]$/.test(id) || isUnit(id)) || seen.has(id)) continue;
     seen.add(id);
-    cards.push(letterCard(id, themes));
+    cards.push(letterCard(id));
   }
   return cards;
 }
@@ -605,10 +574,43 @@ export function decodable(word: DeckWord, known: ReadonlySet<string>): boolean {
   });
 }
 
+/**
+ * The furthest step the letters taught so far can support: the longest word
+ * length (2, 3 or 4 letters) that has a word the child can sound out. Week 1
+ * (m, a) reaches step 2 with "am"; "mat" opens step 3 in week 2; "sand" opens
+ * step 4 in week 4. Step 5 opens with the whole alphabet (phonicsOpen).
+ */
+export function ladderCap(introduced: readonly string[]): LadderStep {
+  const known = new Set(introduced.map((id) => id.toLowerCase()));
+  let cap: LadderStep = 1;
+  for (const step of [2, 3, 4] as const) {
+    if (!byStep[step].some((word) => decodable(word, known))) break;
+    cap = step;
+  }
+  return cap === 4 && phonicsOpen(lettersOnly(introduced).length) ? 5 : cap;
+}
+
+/**
+ * Does finishing this card count toward the next step? Only a word the child
+ * blended, and only one at least as long as the step asks for.
+ *
+ * Letter cards used to count ("letter:m"), so the first lesson, two letter
+ * cards and one word, was three successes and a step up every day. A step up
+ * now means three words of that step's length, read on different tries.
+ */
+export function countsForLadder(word: DeckWord, step: LadderStep): boolean {
+  if (word.letterCard || word.sentenceId) return false;
+  const tiles = word.letters.filter((tile) => !tile.silent).length;
+  return tiles >= Math.max(2, Math.min(step, 4));
+}
+
 /** Does the word use one of these letters or units? */
 function usesAny(word: DeckWord, sounds: ReadonlySet<string>): boolean {
   return word.letters.some((tile) => !tile.silent && !tile.wordId && sounds.has(tileSound(tile)));
 }
+
+/** Words read whole in the short sentences, not sounded out. */
+const SIGHT_WORDS = new Set(["i", "a", "the", "is", "see"]);
 
 /** Words in a lesson, after the letter cards. Step 1 is mostly cards, with a first taste of blending. */
 export function lessonWordCount(step: LadderStep): number {
@@ -658,7 +660,7 @@ export function blendList(
   introduced?: readonly string[],
   turn = 0,
 ): DeckWord[] {
-  const cards = letterCards(letters, themes);
+  const cards = letterCards(letters);
   const today = new Set(letters.map((id) => id.toLowerCase()));
   const known = introduced ? new Set([...introduced, ...letters].map((id) => id.toLowerCase())) : null;
   const longest = lessonMaxLetters(step);
@@ -684,10 +686,12 @@ export function blendList(
   const total = lessonWordCount(step);
   const picked: DeckWord[] = turnTo(themed, turn, Math.min(2, total));
   const rest = regular.filter((word) => !picked.includes(word));
-  // This week's letters, shortest words first: "it" before "sit".
-  const fresh = rest.filter((word) => usesAny(word, today));
-  // Older words, longest first, so review is at the child's own word length ("mat", not "am", on step 3).
-  const older = rest.filter((word) => !fresh.includes(word)).sort((a, b) => (level.get(b) ?? 0) - (level.get(a) ?? 0));
+  // Longest first, so a child reads at their own word length: "sit" before "it" on step 3.
+  const longestFirst = (a: DeckWord, b: DeckWord) => (level.get(b) ?? 0) - (level.get(a) ?? 0);
+  // Words that use this week's letters.
+  const fresh = rest.filter((word) => usesAny(word, today)).sort(longestFirst);
+  // Older words, so earlier letters stay in practice ("mat", not "am", on step 3).
+  const older = rest.filter((word) => !fresh.includes(word)).sort(longestFirst);
   // Most of the list is this week's letters; a third is kept for older words when there are any.
   const olderShare = older.length > 0 ? Math.max(1, Math.floor(total / 3)) : 0;
   const freshPick = turnTo(fresh, turn, Math.max(0, total - picked.length - olderShare));
@@ -696,7 +700,16 @@ export function blendList(
   const top = older.filter((word) => level.get(word) === level.get(older[0]));
   const olderPick = turnTo(top.length >= olderWant * 2 ? top : older, turn, olderWant);
   const words = [...picked, ...freshPick, ...olderPick];
-  const lines = step === 5 ? turnTo(sentencesForStep(step), turn, 2) : [];
+  // A sentence is held to the same rule as a word: each of its words is one the child can sound out, or
+  // one of the few read whole (I, a, the, is, see). "A cat." waits for c and t.
+  const readable = (line: DeckWord) =>
+    !known ||
+    line.letters.every((piece) => {
+      const id = piece.wordId ?? "";
+      const word = ladderWord(id);
+      return SIGHT_WORDS.has(id) || (word ? decodable(word, known) : false);
+    });
+  const lines = step === 5 ? turnTo(sentencesForStep(step).filter(readable), turn, 2) : [];
   return [...cards, ...words, ...lines];
 }
 
