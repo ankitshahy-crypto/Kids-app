@@ -11,6 +11,7 @@ import {
   withClassPlace,
 } from "./placement";
 import { isReviewDay, planForWeek, practiceLetters, weekIndex } from "./schedule";
+import { letterCard } from "./ladder";
 import { blendingWords, pictureForLetter, scheduleLetters } from "./sheets";
 
 function memory() {
@@ -100,10 +101,14 @@ describe("printable sheets", () => {
     for (const letter of scheduleLetters()) {
       const picture = pictureForLetter(letter);
       expect(picture.word.length).toBeGreaterThan(1);
-      expect(picture.illustration || picture.pictogram).toBeTruthy();
+      // The sheet shows the same drawing as the letter's card.
+      expect(picture.illustration).toBe(letterCard(letter).illustration);
+      expect(picture.word).toBe(letterCard(letter).word);
     }
-    const blends = blendingWords(["c", "a", "t"]);
-    expect(blends.map((word) => word.word)).toContain("cat");
-    expect(blends.every((word) => word.word.length === 3)).toBe(true);
+    const blends = blendingWords(["c", "a", "t"], 3, ["c", "a", "t"]);
+    expect(blends.map((word) => word.word)).toEqual(["cat", "at"]);
+    expect(blendingWords(["c", "a", "t"]).every((word) => !word.letterCard && !word.sentenceId)).toBe(true);
+    // With the letters a child has been taught, the sheet holds only words they can sound out.
+    expect(blendingWords(["m", "a"], 3, ["m", "a"]).map((word) => word.word)).toEqual(["am"]);
   });
 });

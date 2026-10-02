@@ -10,13 +10,22 @@ name: Voice clips (Google)
 # sounding out a word) are made with SSML phonemes, which the Chirp 3 HD
 # voices take. With a Gemini model, those two kinds still come from the
 # Chirp 3 HD voice of the same name.
+#
+# With the defaults a run makes only what is missing or whose words have
+# changed, in the app's voice, and listens to every clip it makes
+# (scripts/check-clips.py): a clip that does not say its line is made again,
+# up to four times, and anything still doubtful is listed in the pull request
+# for a person to hear. "Listen: all" also goes through the clips already
+# there and remakes the ones that fail. The first phone test of the pilot
+# found clips that were cut off, silent, or read their punctuation aloud;
+# nothing had checked them.
 
 on:
   workflow_dispatch:
     inputs:
       voice:
-        description: "Voice: a Chirp 3 HD / Gemini name (Aoede, Kore, Leda, Zephyr, Sulafat...) or a full Google voice name"
-        default: Aoede
+        description: "Voice: a Chirp 3 HD / Gemini name (Achernar is the app's voice; Aoede, Kore, Leda...) or a full Google voice name"
+        default: Achernar
       model:
         description: "Model"
         type: choice
@@ -45,9 +54,20 @@ on:
       only:
         description: "Only these kinds, comma-separated (blank = all): letters,sounds,words,sentences,numbers,prompts,colors,stories"
         default: ""
+      match:
+        description: "Only clips whose kind/id matches this pattern (blank = all), for example ^prompts/pair- or ^words/(up|am)$"
+        default: ""
       force:
-        description: "Remake clips that already exist: true, false, or kinds to remake (letters,sounds)"
-        default: "true"
+        description: "Remake clips that already exist: true, false, or kinds to remake (letters,sounds). false makes what is missing or changed."
+        default: "false"
+      listen:
+        description: "Listen to clips and remake the ones that do not say their line: new (the ones made in this run), all (also the ones already there), off"
+        type: choice
+        default: new
+        options:
+          - new
+          - all
+          - "off"
 
 permissions:
   contents: write
@@ -73,6 +93,20 @@ jobs:
           ffmpeg -version | head -n 1
           pip install -q numpy
 
+      - name: Keep the listener's model between runs
+        if: inputs.listen != 'off'
+        uses: actions/cache@v4
+        with:
+          path: scripts/.whisper
+          key: clip-listener-small.en-v1
+
+      - name: Get the listener ready
+        if: inputs.listen != 'off'
+        run: |
+          pip install -q onnxruntime
+          python3 scripts/check-clips.py --fetch
+          ls scripts/.whisper
+
       - name: Check the key
         run: |
           if [ -z "${{ secrets.GOOGLE_TTS_API_KEY }}" ]; then
@@ -90,14 +124,22 @@ jobs:
           LETTER_VOICE: ${{ inputs.letter_voice }}
           SPEED: ${{ inputs.speed }}
           ONLY: ${{ inputs.only }}
+          MATCH: ${{ inputs.match }}
           FORCE: ${{ inputs.force }}
+          LISTEN: ${{ inputs.listen }}
+          CLIP_CHECK_THREADS: "4"
         shell: bash
         run: |
           set -o pipefail
-          args=(--voice "$VOICE" --model "$MODEL" --letter-style "$LETTER_STYLE" --speed "$SPEED")
+          args=(--voice "$VOICE" --model "$MODEL" --letter-style "$LETTER_STYLE" --speed "$SPEED" --report clip-report.md)
           [ -n "$PROMPT" ] && args+=(--prompt "$PROMPT")
           [ -n "$LETTER_VOICE" ] && args+=(--letter-voice "$LETTER_VOICE")
           [ -n "$ONLY" ] && args+=(--only "$ONLY")
+          [ -n "$MATCH" ] && args+=(--match "$MATCH")
+          case "$LISTEN" in
+            new) args+=(--verify) ;;
+            all) args+=(--verify --audit) ;;
+          esac
           case "$FORCE" in
             true) args+=(--force) ;;
             false|"") ;;
@@ -125,6 +167,16 @@ jobs:
             echo "HEARD"
           } >> "$GITHUB_OUTPUT"
 
+      - name: What was made, and what to listen to
+        id: made
+        run: |
+          touch clip-report.md
+          {
+            echo "report<<MADE"
+            cat clip-report.md
+            echo "MADE"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Summary
         run: |
           echo "### Voice clips (Google)" >> "$GITHUB_STEP_SUMMARY"
@@ -132,11 +184,15 @@ jobs:
           echo "- Voice: ${{ inputs.voice }} (${{ inputs.model }}), letters as ${{ inputs.letter_style }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Files: $(find public/audio -name '*.mp3' | wc -l)" >> "$GITHUB_STEP_SUMMARY"
           echo "- Size: $(du -sh public/audio | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          if [ -s clip-report.md ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            cat clip-report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
           if [ -s heard.md ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
             cat heard.md >> "$GITHUB_STEP_SUMMARY"
           fi
-          rm -f heard.md make.log
+          rm -f heard.md make.log clip-report.md
 
       - name: Open pull request
         uses: peter-evans/create-pull-request@v7
@@ -145,6 +201,7 @@ jobs:
           add-paths: |
             public/audio
             src/data/audioAvailable.json
+            src/data/audioRecorded.json
           title: "Voice clips: ${{ inputs.voice }} (${{ inputs.model }}), letters as ${{ inputs.letter_style }}"
           commit-message: |
             Add spoken clips made with Google Cloud Text-to-Speech (${{ inputs.voice }}, ${{ inputs.model }}).
@@ -158,8 +215,11 @@ jobs:
 
             - Voice: `${{ inputs.voice }}`, model `${{ inputs.model }}`, speed `${{ inputs.speed }}`, letter phrases as `${{ inputs.letter_style }}`${{ inputs.letter_voice != '' && format(' via `{0}`', inputs.letter_voice) || '' }}
             - The app plays these files offline. It never contacts a voice service.
-            - `src/data/audioAvailable.json` lists every file so the app knows what it has.
+            - `src/data/audioAvailable.json` lists every file so the app knows what it has, and `src/data/audioRecorded.json` the words each was recorded from.
+            - Listening: `${{ inputs.listen }}`. A listener checks that each clip says its line and has it made again when it does not.
 
-            Listen on a phone before merging: a few letter phrases, a sounded-out word, a story page.
+            ${{ steps.made.outputs.report }}
+
+            Listen on a phone before merging: a few letter phrases, a sounded-out word, a story page, and anything listed above.
           labels: audio
           delete-branch: true

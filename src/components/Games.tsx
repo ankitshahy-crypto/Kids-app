@@ -13,12 +13,13 @@ import {
   popRound,
   rhymeRound,
   type BabyAnimal,
-  type Food,
   type HatchRound,
   type MemoryCard,
+  type PictureItem,
   type RhymeCard,
 } from "../data/games";
-import { wordsForStep, type LadderStep } from "../data/ladder";
+import type { DeckWord } from "../data/deck";
+import { pictureWords, type LadderStep } from "../data/ladder";
 import { LockBadge } from "./LockBadge";
 import type { ChildProfile, StickerInput } from "../data/profiles";
 import { HearButton } from "./HearButton";
@@ -72,12 +73,16 @@ export function Games({
   onLocked?: (game: GameId) => void;
 }) {
   const [game, setGame] = useState<GameId | "home">("home");
+  // A number that is new each time a game is opened: it picks the round's word or letter and shuffles the
+  // answers, so no two plays are alike. (Every game used to open on the same round, answer first.)
+  const [plays, setPlays] = useState(() => Math.floor(Math.random() * 1000));
   const open = (next: GameId) => {
     if (locked?.(next)) {
       onLocked?.(next);
       return;
     }
     onEnter(next);
+    setPlays((count) => count + 1);
     setGame(next);
   };
   const tile = (id: GameId, label: string) => (
@@ -122,7 +127,8 @@ export function Games({
           knownLetters={knownLetters}
           level={profile.games.hatch}
           ladderStep={profile.ladder.step}
-          words={wordsForStep(profile.ladder.step)}
+          words={pictureWords()}
+          salt={plays}
           baby={nextBaby(profile.stickers.filter((sticker) => sticker.kind === "animal").map((sticker) => sticker.label))}
           settingsRef={settingsRef}
           onDone={(learned) => {
@@ -134,6 +140,7 @@ export function Games({
       {game === "pop" ? (
         <PopGame
           knownLetters={knownLetters}
+          salt={plays}
           settingsRef={settingsRef}
           onDone={() => {
             onDone("pop", []);
@@ -145,7 +152,7 @@ export function Games({
         <FeedGame
           profile={profile}
           knownLetters={knownLetters}
-          ladderStep={profile.ladder.step}
+          salt={plays}
           settingsRef={settingsRef}
           onDone={() => {
             onDone("feed", []);
@@ -155,8 +162,7 @@ export function Games({
       ) : null}
       {game === "rhyme" ? (
         <RhymeGame
-          knownLetters={knownLetters}
-          ladderStep={profile.ladder.step}
+          salt={plays}
           settingsRef={settingsRef}
           onDone={(learned) => {
             onDone("rhyme", learned, { ladder: true });
@@ -167,6 +173,7 @@ export function Games({
       {game === "memory" ? (
         <MemoryGame
           knownLetters={knownLetters}
+          salt={plays}
           settingsRef={settingsRef}
           onDone={() => {
             onDone("memory", []);
@@ -202,7 +209,6 @@ export function Games({
         <SpinSay
           knownLetters={knownLetters}
           hatchLevel={profile.games.hatch}
-          ladderStep={profile.ladder.step}
           spins={profile.games.spins}
           stars={profile.stars}
           writing={profile.writing}
@@ -237,6 +243,7 @@ function HatchGame({
   level,
   ladderStep,
   words,
+  salt,
   baby,
   settingsRef,
   onDone,
@@ -244,12 +251,13 @@ function HatchGame({
   knownLetters: string[];
   level: HatchRound["level"];
   ladderStep: LadderStep;
-  words: ReturnType<typeof wordsForStep>;
+  words: DeckWord[];
+  salt: number;
   baby: BabyAnimal;
   settingsRef: { current: Settings };
   onDone: (learned: StickerInput[]) => void;
 }) {
-  const round = hatchRound(knownLetters, level, words);
+  const round = hatchRound(knownLetters, level, words, salt);
   const [filled, setFilled] = useState<number[]>([]);
   const [misses, setMisses] = useState(0);
   const [wiggle, setWiggle] = useState<string | null>(null);
@@ -304,9 +312,7 @@ function HatchGame({
     >
       <h1>Hatch the Egg</h1>
       <div className="hatch-row">
-        <div className="hatch-picture">
-          <Illustration name={round.word.illustration} />
-        </div>
+        <div className="hatch-picture">{round.word.illustration ? <Illustration name={round.word.illustration} /> : null}</div>
         <EggArt cracks={filled.length} total={round.blanks.length} hatched={hatched} baby={baby} />
       </div>
       <p className="hatch-blanks" aria-label="Word">
@@ -393,14 +399,16 @@ function BabyArt({ name }: { name: BabyAnimal }) {
 
 function PopGame({
   knownLetters,
+  salt,
   settingsRef,
   onDone,
 }: {
   knownLetters: string[];
+  salt: number;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const round = popRound(knownLetters);
+  const round = popRound(knownLetters, salt);
   const [popped, setPopped] = useState<string[]>([]);
   const [wiggle, setWiggle] = useState<string | null>(null);
   const play = useCue();
@@ -465,26 +473,26 @@ function PopGame({
 function FeedGame({
   profile,
   knownLetters,
-  ladderStep,
+  salt,
   settingsRef,
   onDone,
 }: {
   profile: ChildProfile;
   knownLetters: string[];
-  ladderStep: LadderStep;
+  salt: number;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const round = feedRound(knownLetters, ladderStep);
+  const round = feedRound(knownLetters, salt);
   const [fed, setFed] = useState<string[]>([]);
   const [wiggle, setWiggle] = useState<string | null>(null);
   const play = useCue();
   const drag = useRef<{ id: string; x: number; y: number; moved: boolean } | null>(null);
-  const needed = round.foods.filter((food) => food.letter === round.target);
-  const done = needed.every((food) => fed.includes(food.id));
+  const needed = round.items.filter((item) => item.letter === round.target);
+  const done = needed.every((item) => fed.includes(item.id));
 
   const hearTarget = () =>
-    play((signal) => playLine([promptCue("game-feed", "Feed the foods that start with this letter."), letterCue(letterTile(round.target))], settingsRef.current, signal));
+    play((signal) => playLine([promptCue("game-feed", "Feed me the pictures that start with this letter."), letterCue(letterTile(round.target))], settingsRef.current, signal));
 
   useEffect(() => {
     hearTarget();
@@ -492,52 +500,53 @@ function FeedGame({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round.target]);
 
-  const attempt = (food: Food) => {
-    if (fed.includes(food.id) || done) return;
-    if (food.letter !== round.target) {
-      setWiggle(food.id);
-      play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
+  const attempt = (item: PictureItem) => {
+    if (fed.includes(item.id) || done) return;
+    // Every picture says its name when it is touched, so the child hears the first sound before deciding.
+    if (item.letter !== round.target) {
+      setWiggle(item.id);
+      play((signal) => playLine([wordCue(item.id, item.label), promptCue("game-again", "Try again.")], settingsRef.current, signal));
       return;
     }
-    setFed((current) => [...current, food.id]);
+    setFed((current) => [...current, item.id]);
     setWiggle(null);
     playEffect("boop", settingsRef.current);
-    play((signal) => playLetter(letterTile(food.letter), settingsRef.current, signal));
+    play((signal) => playLine([wordCue(item.id, item.label)], settingsRef.current, signal));
   };
 
   return (
     <div className="game-board" data-target={round.target} data-phase={done ? "done" : "play"}>
       <h1>Feed the Animal</h1>
       <p className="game-prompt">
-        Foods that start with <strong>{round.target.toUpperCase()}</strong>
+        Pictures that start with <strong>{round.target.toUpperCase()}</strong>
       </p>
       <HearButton className="game-hear" onHear={hearTarget} />
       <div className="feed-row">
         <div className="food-tray">
-          {round.foods.map((food) => (
+          {round.items.map((item) => (
             <button
-              key={food.id}
+              key={item.id}
               type="button"
               className="food-bit"
-              data-food={food.id}
-              data-letter={food.letter}
-              data-fed={fed.includes(food.id) ? "true" : "false"}
-              data-wiggle={wiggle === food.id ? "true" : "false"}
-              aria-label={food.label}
+              data-food={item.id}
+              data-letter={item.letter}
+              data-fed={fed.includes(item.id) ? "true" : "false"}
+              data-wiggle={wiggle === item.id ? "true" : "false"}
+              aria-label={item.label}
               onPointerDown={(event) => {
-                if (fed.includes(food.id)) return;
+                if (fed.includes(item.id)) return;
                 event.currentTarget.setPointerCapture(event.pointerId);
-                drag.current = { id: food.id, x: event.clientX, y: event.clientY, moved: false };
+                drag.current = { id: item.id, x: event.clientX, y: event.clientY, moved: false };
               }}
               onPointerMove={(event) => {
                 const info = drag.current;
-                if (!info || info.id !== food.id) return;
+                if (!info || info.id !== item.id) return;
                 if (Math.hypot(event.clientX - info.x, event.clientY - info.y) > 8) info.moved = true;
               }}
               onPointerUp={(event) => {
                 const info = drag.current;
                 drag.current = null;
-                if (!info || info.id !== food.id) return;
+                if (!info || info.id !== item.id) return;
                 const drop = event.currentTarget.closest(".game-board")?.querySelector("[data-drop=animal]");
                 const box = drop?.getBoundingClientRect();
                 const overBox = Boolean(
@@ -549,11 +558,11 @@ function FeedGame({
                 );
                 const hit = document.elementFromPoint(event.clientX, event.clientY);
                 const over = overBox || Boolean(hit?.closest("[data-drop=animal]"));
-                if (!info.moved || over) attempt(food);
+                if (!info.moved || over) attempt(item);
               }}
             >
-              <FoodArt id={food.id} />
-              <span>{food.label}</span>
+              <Illustration name={item.illustration} />
+              <span>{item.label}</span>
             </button>
           ))}
         </div>
@@ -571,17 +580,16 @@ function FeedGame({
 }
 
 function RhymeGame({
-  knownLetters,
-  ladderStep,
+  salt,
   settingsRef,
   onDone,
 }: {
-  knownLetters: string[];
-  ladderStep: LadderStep;
+  salt: number;
   settingsRef: { current: Settings };
   onDone: (learned: StickerInput[]) => void;
 }) {
-  const cards = rhymeRound(knownLetters, 0, ladderStep);
+  // Rhyming is done by ear and by picture, so it does not wait for letters to be taught.
+  const cards = rhymeRound(salt);
   const [picked, setPicked] = useState<string | null>(null);
   const [matched, setMatched] = useState<string[]>([]);
   const [wiggle, setWiggle] = useState<string | null>(null);
@@ -635,7 +643,7 @@ function RhymeGame({
             aria-label={card.word}
             onClick={() => choose(card)}
           >
-            <RhymeArt word={card.word} />
+            <Illustration name={card.illustration} />
             <span>{card.word}</span>
           </button>
         ))}
@@ -655,10 +663,12 @@ function RhymeGame({
 
 function MemoryGame({
   knownLetters,
+  salt,
   settingsRef,
   onDone,
 }: {
   knownLetters: string[];
+  salt: number;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
@@ -674,7 +684,7 @@ function MemoryGame({
           Numbers
         </button>
       </div>
-      <MemoryBoard key={mode} knownLetters={knownLetters} mode={mode} settingsRef={settingsRef} onDone={onDone} />
+      <MemoryBoard key={mode} knownLetters={knownLetters} mode={mode} salt={salt} settingsRef={settingsRef} onDone={onDone} />
     </div>
   );
 }
@@ -682,15 +692,17 @@ function MemoryGame({
 function MemoryBoard({
   knownLetters,
   mode,
+  salt,
   settingsRef,
   onDone,
 }: {
   knownLetters: string[];
   mode: "letters" | "numbers";
+  salt: number;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const cards = memoryRound(knownLetters, mode, 0);
+  const cards = memoryRound(knownLetters, mode, salt);
   const [up, setUp] = useState<string[]>([]);
   const [matched, setMatched] = useState<string[]>([]);
   const [lock, setLock] = useState(false);
@@ -874,20 +886,3 @@ function TileArt({ id }: { id: GameId }) {
   );
 }
 
-function FoodArt({ id }: { id: string }) {
-  const fill = id === "milk" ? "#F7F1E8" : id === "muffin" ? "#E4B07A" : id === "apple" ? "#E07A8A" : id === "sandwich" ? "#F6D56B" : id === "taco" ? "#F4A261" : id === "pear" ? "#C9E6D4" : id === "ice" ? "#B7D7F2" : id === "nuts" ? "#C9846A" : "#F6C3CB";
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <circle cx="32" cy="34" r="18" fill={fill} stroke="#E4C7A4" strokeWidth="3" />
-    </svg>
-  );
-}
-
-function RhymeArt({ word }: { word: string }) {
-  const fill = word.endsWith("ap") ? "#B7D7F2" : word.endsWith("in") ? "#F6D56B" : word.endsWith("an") ? "#C9E6D4" : word.endsWith("ad") ? "#F6C3CB" : "#E4B07A";
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <rect x="12" y="14" width="40" height="36" rx="8" fill={fill} />
-    </svg>
-  );
-}

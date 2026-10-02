@@ -11,6 +11,7 @@ import {
   letterTile,
   snapForward,
   soundChoices,
+  spinCount,
   SPIN_KINDS,
   spinTurn,
   traceLetter,
@@ -21,7 +22,7 @@ import {
   type SpinPrize,
 } from "../data/games";
 import { letterForm, type TracePoint } from "../data/handwriting";
-import { wordsForStep, type LadderStep } from "../data/ladder";
+import { pictureWords } from "../data/ladder";
 import type { StickerInput } from "../data/profiles";
 import { guideFor, letterItemId, writingLevel, type WritingMap } from "../data/scaffold";
 import { followStroke, stationsAttribute, strokeComplete, traceTolerance } from "../data/trace";
@@ -35,7 +36,6 @@ const labels = ["Sound", "Word", "Count", "Color", "Trace", "Bonus"];
 export function SpinSay({
   knownLetters,
   hatchLevel,
-  ladderStep,
   spins,
   stars,
   writing,
@@ -49,7 +49,6 @@ export function SpinSay({
 }: {
   knownLetters: string[];
   hatchLevel: HatchLevel;
-  ladderStep: LadderStep;
   spins: number;
   stars: number;
   writing?: WritingMap;
@@ -211,7 +210,6 @@ export function SpinSay({
           kind={kind || spinTurn(index)}
           knownLetters={knownLetters}
           hatchLevel={hatchLevel}
-          ladderStep={ladderStep}
           writing={writing}
           count={count}
           color={color}
@@ -265,7 +263,6 @@ function Challenge({
   kind,
   knownLetters,
   hatchLevel,
-  ladderStep,
   writing,
   count,
   color,
@@ -282,7 +279,6 @@ function Challenge({
   kind: SpinKind;
   knownLetters: string[];
   hatchLevel: HatchLevel;
-  ladderStep: LadderStep;
   writing?: WritingMap;
   count: number;
   color: string;
@@ -297,8 +293,12 @@ function Challenge({
   onDone: (stickers?: StickerInput[], gift?: string) => void;
 }) {
   const play = useCue();
+  // What changes a challenge from one spin to the next: the letter, the word, the number, the color, and
+  // where the right answer sits. The wheel comes back to a kind every sixth spin, so the lap is added in:
+  // with two letters taught, spins 0, 6 and 12 would otherwise all ask for the same one.
+  const salt = spinIndex + Math.floor(spinIndex / SPIN_KINDS.length);
   if (kind === "sound") {
-    const round = soundChoices(knownLetters, spinIndex);
+    const round = soundChoices(knownLetters, salt);
     return (
       <ChoiceChallenge
         prompt="Tap the letter you hear."
@@ -318,7 +318,7 @@ function Challenge({
     );
   }
   if (kind === "word") {
-    const round = wordBlank(knownLetters, hatchLevel, wordsForStep(ladderStep));
+    const round = wordBlank(knownLetters, hatchLevel, pictureWords(), salt);
     const answer = round.word.letters[round.blank]?.char.toLowerCase() ?? "a";
     return (
       <div className="spin-challenge" data-target={answer} data-word={round.word.word}>
@@ -327,9 +327,7 @@ function Challenge({
           id={`word:${round.word.id}:${round.blank}`}
           onHear={() => play((signal) => playLine([promptCue("game-spin-word", "Fill the missing letter."), deckWordCue(round.word)], settingsRef.current, signal))}
         />
-        <div className="hatch-picture">
-          <Illustration name={round.word.illustration} />
-        </div>
+        <div className="hatch-picture">{round.word.illustration ? <Illustration name={round.word.illustration} /> : null}</div>
         <p className="hatch-blanks" aria-label="Word">
           {round.word.letters.map((letter, letterIndex) => (
             <span key={`${letter.char}-${letterIndex}`} data-blank={letterIndex === round.blank ? "open" : "shown"}>
@@ -354,7 +352,7 @@ function Challenge({
     );
   }
   if (kind === "count") {
-    const round = countChoices(count);
+    const round = countChoices(spinCount(count, salt), salt);
     return (
       <div className="spin-challenge" data-target={String(round.total)}>
         <p className="game-prompt">How many?</p>
@@ -381,7 +379,7 @@ function Challenge({
     );
   }
   if (kind === "color") {
-    const round = colorChoices(color, colorOptions);
+    const round = colorChoices(color, colorOptions, salt);
     return (
       <ChoiceChallenge
         prompt="Find the color."
@@ -403,7 +401,7 @@ function Challenge({
   if (kind === "trace") {
     return (
       <MiniTrace
-        letter={traceLetter(knownLetters, spinIndex)}
+        letter={traceLetter(knownLetters, salt)}
         writing={writing}
         hinted={glow}
         settingsRef={settingsRef}
@@ -501,10 +499,13 @@ function Choices({
             data-answer={answer ? "true" : "false"}
             data-glow={glow && answer ? "true" : "false"}
             data-swatch={choice.fill ? "true" : undefined}
+            aria-label={choice.fill ? choice.label : undefined}
             onClick={() => (answer ? onCorrect() : onMiss())}
           >
-            {choice.fill ? <span className="spin-swatch" style={{ background: choice.fill }} aria-hidden="true" /> : null}
-            {choice.label}
+            {/* A color to find is shown as the color, filling the button. It used to be a small dot beside
+                the color's name in large type, which wrapped ("light orange") and pushed the row out of line,
+                and gave the answer away to anyone who could read it. */}
+            {choice.fill ? <span className="spin-swatch" style={{ background: choice.fill }} aria-hidden="true" /> : choice.label}
           </button>
         );
       })}

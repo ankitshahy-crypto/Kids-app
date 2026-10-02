@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { cancelSpeech, hasFreshPrimedSpeech, isAbortError, playTile, playWhole, sleep } from "../audio/player";
+import { cancelSpeech, hasFreshPrimedSpeech, isAbortError, playCardLine, playTile, playWhole, sleep, warmCard } from "../audio/player";
 import type { DeckWord } from "../data/deck";
 import type { Settings } from "../settings";
 
@@ -12,6 +12,16 @@ const PICTURE_BEAT_MS = 1000;
 const OPENING_BEAT_MS = 450;
 const BETWEEN_LETTERS_MS = 260;
 const BEFORE_WORD_MS = 320;
+/**
+ * Under the slider, each sound gets at least this long before the next one
+ * starts, and a short breath after it, so a quick slide is still heard as
+ * separate sounds: "mmm", "aaa", "t", then "mat".
+ */
+const SLIDE_SOUND_MS = 380;
+const SLIDE_GAP_MS = 70;
+
+/** What the slider has asked for: a tile it passed, or the whole word at the end of the track. */
+type SlideItem = { tile: number } | { word: true; celebrate: boolean };
 
 export function usePlayback(
   word: DeckWord,
@@ -28,10 +38,17 @@ export function usePlayback(
   const onFinishedRef = useRef(onFinished);
   onFinishedRef.current = onFinished;
 
+  // Sounds the slider has passed and not yet said, in order (see slide below).
+  const slideQueue = useRef<SlideItem[]>([]);
+  const sliding = useRef(false);
+
   const begin = useCallback((cancel = true) => {
     tokenRef.current += 1;
     const token = tokenRef.current;
     abortRef.current?.abort();
+    // Whatever starts now takes over from a slide that was still being said.
+    slideQueue.current = [];
+    sliding.current = false;
     // The first run must not cancel speech. Tap-to-start speaks in that
     // gesture, and iOS ignores later speech if that utterance is cancelled
     // before the synthesizer accepts it.
@@ -53,6 +70,23 @@ export function usePlayback(
       }
       try {
         await sleep(hasFreshPrimedSpeech() ? 280 : (options.beatMs ?? PICTURE_BEAT_MS), signal);
+        if (current.letterCard) {
+          // A letter card has one line, "m, as in moon", said while its tile is lit. It used to be followed
+          // by the word again ("m, as in moon. moon"); the word on its own is what the end of the slide says.
+          if (!live()) return;
+          setRevealed(current.letters.length);
+          setActive(0);
+          playEffect("pop", settingsRef.current);
+          try {
+            await playCardLine(current, settingsRef.current, signal);
+          } catch (error) {
+            if (isAbortError(error)) throw error;
+          }
+          if (!live()) return;
+          setActive(null);
+          if (options.finish !== false) onFinishedRef.current?.();
+          return;
+        }
         for (let index = 0; index < current.letters.length; index += 1) {
           if (!live()) return;
           setRevealed(index + 1);
@@ -92,12 +126,19 @@ export function usePlayback(
     setRevealed(0);
     setActive(null);
     abortRef.current?.abort();
+    slideQueue.current = [];
+    sliding.current = false;
+    // The new card's sounds are loaded now, so each starts the moment the slider reaches its tile.
+    warmCard(word);
   }, [word]);
 
   useEffect(() => {
     if (!paused) return;
     tokenRef.current += 1;
     abortRef.current?.abort();
+    // The slide that was being said is over; the next one starts fresh.
+    slideQueue.current = [];
+    sliding.current = false;
     cancelSpeech();
     setActive(null);
   }, [paused]);
@@ -106,6 +147,8 @@ export function usePlayback(
     return () => {
       tokenRef.current += 1;
       abortRef.current?.abort();
+      slideQueue.current = [];
+      sliding.current = false;
       cancelSpeech();
     };
   }, []);
@@ -130,42 +173,80 @@ export function usePlayback(
     void playThrough(run, { finish: false, beatMs: OPENING_BEAT_MS });
   }, [begin, playThrough]);
 
-  const soundLetter = useCallback(
-    (index: number) => {
-      const current = wordRef.current;
-      const letter = current.letters[index];
-      if (!letter) return;
+  /**
+   * Say what the slider passes, in order, each sound to its end.
+   *
+   * Why a queue: the first phone test found that sliding under a word made no
+   * letter sounds. Each tile's sound stopped the one before it, and each had
+   * to be loaded first, so at a child's sliding speed every sound was stopped
+   * before it began and only the whole word was heard at the end. Now the
+   * sounds wait their turn: a slow slide hears each sound as the animal
+   * reaches its letter, and a fast one hears them one after another, then the
+   * word. The tile whose sound is playing is the one that glows.
+   */
+  const slide = useCallback(
+    (item: SlideItem) => {
+      if (sliding.current) {
+        slideQueue.current.push(item);
+        return;
+      }
       const { controller, token } = begin();
-      setActive(index);
-      playEffect("pop", settingsRef.current);
+      const signal = controller.signal;
+      slideQueue.current = [item];
+      sliding.current = true;
+      const live = () => token === tokenRef.current && !signal.aborted;
       void (async () => {
         try {
-          await playTile(current, letter, settingsRef.current, controller.signal);
-          if (token === tokenRef.current && !controller.signal.aborted) setActive(null);
+          while (live()) {
+            const next = slideQueue.current.shift();
+            if (!next) break;
+            const current = wordRef.current;
+            if ("word" in next) {
+              setActive("all");
+              if (next.celebrate) playEffect("celebrate", settingsRef.current);
+              try {
+                await playWhole(current, settingsRef.current, signal);
+              } catch (error) {
+                if (isAbortError(error)) throw error;
+              }
+              continue;
+            }
+            const letter = current.letters[next.tile];
+            if (!letter) continue;
+            setActive(next.tile);
+            playEffect("pop", settingsRef.current);
+            const started = Date.now();
+            try {
+              await playTile(current, letter, settingsRef.current, signal);
+            } catch (error) {
+              if (isAbortError(error)) throw error;
+            }
+            const remain = SLIDE_SOUND_MS - (Date.now() - started);
+            if (remain > 0) await sleep(remain, signal);
+            await sleep(SLIDE_GAP_MS, signal);
+          }
+          if (live()) setActive(null);
         } catch (error) {
           if (!isAbortError(error) && token === tokenRef.current) setActive(null);
+        } finally {
+          // Only this run's own ending frees the slider; a newer line has already taken over otherwise.
+          if (token === tokenRef.current) {
+            sliding.current = false;
+            slideQueue.current = [];
+          }
         }
       })();
     },
     [begin, settingsRef],
   );
 
-  /** The whole word. `celebrate: false` says it again without the finishing chime. */
-  const soundWord = useCallback((celebrate = true) => {
-    const current = wordRef.current;
-    const { controller, token } = begin();
-    setActive("all");
-    if (celebrate) playEffect("celebrate", settingsRef.current);
-    void (async () => {
-      try {
-        await playWhole(current, settingsRef.current, controller.signal);
-        if (token === tokenRef.current && !controller.signal.aborted) setActive(null);
-      } catch (error) {
-        if (!isAbortError(error) && token === tokenRef.current) setActive(null);
-      }
-    })();
-  }, [begin, settingsRef]);
+  /** The slider reached this tile. */
+  const soundLetter = useCallback((index: number) => slide({ tile: index }), [slide]);
 
+  /** The end of the track: the whole word, after the sounds still waiting. `celebrate: false` leaves out the chime. */
+  const soundWord = useCallback((celebrate = true) => slide({ word: true, celebrate }), [slide]);
+
+  /** A tapped tile: its sound at once, in place of whatever was being said. */
   const replayLetter = useCallback(
     (index: number) => {
       const current = wordRef.current;
@@ -196,6 +277,8 @@ export function usePlayback(
   const stop = useCallback(() => {
     tokenRef.current += 1;
     abortRef.current?.abort();
+    slideQueue.current = [];
+    sliding.current = false;
     cancelSpeech();
     setActive(null);
     setRevealed(0);
