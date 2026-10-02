@@ -26,7 +26,12 @@ export type DeckWord = {
   letters: LetterTile[];
   /** Optional clip that overrides the word file in the audio manifest. */
   audioSrc?: string;
-  illustration: IllustrationName;
+  /**
+   * The drawing of this word. Left out when the word has no drawing of its own
+   * ("am", "sat"): its card then shows the child's animal, who says the word
+   * once it is blended. A picture of something else is never used in its place.
+   */
+  illustration?: IllustrationName;
   /** Optional parent photo. When set, shown instead of the built-in illustration. */
   photoSrc?: string;
   /** When set, blending this card speaks a short sentence instead of one word. */
