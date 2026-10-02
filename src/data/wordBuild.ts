@@ -71,9 +71,10 @@ export function tilesOf(text: string): LetterTile[] {
 }
 
 /** A word spelled the way it sounds, one tile per sound. */
-export function made(id: string, text: string, illustration: IllustrationName): DeckWord {
+export function made(id: string, text: string, illustration?: IllustrationName): DeckWord {
   const tiles = tilesOf(text);
   const spelled = tiles.map((tile) => tile.char).join("");
   if (spelled !== text.toLowerCase()) throw new Error(`"${id}" spells "${spelled}"`);
-  return { id, word: text, illustration, letters: tiles };
+  // No drawing: the key is left off, so "illustration" in word tells a picture word from a plain one.
+  return illustration ? { id, word: text, illustration, letters: tiles } : { id, word: text, letters: tiles };
 }
