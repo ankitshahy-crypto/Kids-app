@@ -11,7 +11,17 @@ export function traceTolerance(settings: { calm: boolean; easierTracing: boolean
   return settings.calm || settings.easierTracing ? EASY_TRACE_TOLERANCE : TRACE_TOLERANCE;
 }
 
-const STATION_SPACING = 4;
+/** Distance between stations along a stroke. Small, so the ink grows in short, even steps. */
+const STATION_SPACING = 2;
+
+/** How far ahead of the ink a finger may land and still pull it forward, in stations (20 units). */
+const LOOK_AHEAD = 10;
+
+/** A finger this close to the end of a stroke (8 units of path) finishes it. */
+const END_SNAP = 4;
+
+/** How much nearer the next station must be than the last inked one before the ink moves. */
+const PASSED_MARGIN = 0.5;
 
 function round(value: number): number {
   return Math.round(value * 10) / 10;
@@ -50,8 +60,12 @@ export function strokeStations(stroke: TracePoint[], spacing = STATION_SPACING):
 }
 
 /**
- * Advance along the stroke only while the finger stays near the next station.
- * A point that has not reached the start, or that jumps off the path, does not move coverage.
+ * Move the ink to the station nearest the finger, so the line ends under the fingertip.
+ * Only the next stretch of the stroke counts (LOOK_AHEAD), and only while it stays within
+ * `tolerance` of the finger: a finger at the middle of a round letter is near all of it,
+ * and must not fill it in one touch. A point that has not reached the start, or that jumps
+ * off the path, does not move coverage. A finger resting behind the ink, or the same
+ * distance from everything, leaves it where it is. Coverage never goes back.
  */
 export function followStroke(
   stroke: TracePoint[],
@@ -61,9 +75,24 @@ export function followStroke(
 ): number {
   const stations = strokeStations(stroke);
   if (covered >= stations.length) return covered;
-  let index = Math.max(0, covered);
-  while (index < stations.length && distance(point, stations[index]) <= tolerance) index += 1;
-  return index;
+  const from = Math.max(0, covered);
+  const limit = Math.min(stations.length, from + LOOK_AHEAD);
+  let nearest = -1;
+  // The finger has to be past the last inked station, not merely near the next one.
+  let best = from > 0 ? distance(point, stations[from - 1]) - PASSED_MARGIN : Infinity;
+  for (let index = from; index < limit; index += 1) {
+    const away = distance(point, stations[index]);
+    if (away > tolerance) break;
+    if (away < best) {
+      best = away;
+      nearest = index;
+    }
+  }
+  if (nearest < 0) return covered;
+  const next = nearest + 1;
+  const last = stations[stations.length - 1];
+  if (stations.length - next <= END_SNAP && distance(point, last) <= tolerance) return stations.length;
+  return next;
 }
 
 export function strokeComplete(stroke: TracePoint[], covered: number): boolean {

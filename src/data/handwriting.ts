@@ -57,9 +57,18 @@ export function join(parts: TracePoint[][]): TracePoint[] {
   return points;
 }
 
-/** Full circle. Increasing angle is clockwise on screen. Starts at the top. */
+/**
+ * Full circle, made the way children are taught: start near one o'clock and circle back
+ * (counterclockwise on screen, so the angle decreases).
+ */
 function ring(cx: number, cy: number, rx: number, ry: number): TracePoint[] {
-  return arc(cx, cy, rx, ry, -PI / 2, -PI / 2 + PI * 2);
+  const start = -PI / 3;
+  return arc(cx, cy, rx, ry, start, start - PI * 2);
+}
+
+/** A tiny dot, for i and j. Direction does not matter. */
+function dot(cx: number, cy: number): TracePoint[] {
+  return arc(cx, cy, 2.4, 2.4, -PI / 2, -PI / 2 + PI * 2);
 }
 
 /** Circle that begins on the left, where a stick meets the ball. */
@@ -77,9 +86,9 @@ function archDown(cx: number, cy: number, rx: number, ry: number, base: number):
   return join([arc(cx, cy, rx, ry, PI, PI * 2), line(cx + rx, cy, cx + rx, base, 8)]);
 }
 
-/** Under-curve for u: down from the left, across the bottom, up on the right. */
-function underCurve(cx: number, cy: number, rx: number, ry: number): TracePoint[] {
-  return arc(cx, cy, rx, ry, PI, 0);
+/** U shape: straight down from `top` on the left, around the bottom, and straight back up on the right. */
+function underCurve(cx: number, cy: number, rx: number, ry: number, top: number): TracePoint[] {
+  return join([line(cx - rx, top, cx - rx, cy, 6), arc(cx, cy, rx, ry, PI, 0), line(cx + rx, cy, cx + rx, top, 6)]);
 }
 
 function through(points: TracePoint[]): TracePoint[] {
@@ -112,10 +121,10 @@ const upper: Record<string, TracePoint[][]> = {
   d: [line(32, 18, 32, 84), arc(32, 51, 34, 32, -PI / 2, PI / 2)],
   e: [line(32, 18, 32, 84), line(32, 20, 68, 20), line(32, 50, 60, 50), line(32, 82, 68, 82)],
   f: [line(32, 18, 32, 84), line(32, 20, 68, 20), line(32, 50, 60, 50)],
-  g: [openCurve(50, 51, 22, 30), line(62, 51, 44, 51)],
+  g: [join([arc(50, 51, 22, 30, -0.75, -PI * 2), line(72, 51, 52, 51, 6)])],
   h: [line(30, 18, 30, 84), line(70, 18, 70, 84), line(30, 51, 70, 51)],
   i: [line(50, 22, 50, 80), line(36, 20, 64, 20), line(36, 82, 64, 82)],
-  j: [line(36, 20, 66, 20), join([line(56, 20, 56, 68, 8), arc(46, 68, 10, 14, 0, PI * 0.85)])],
+  j: [join([line(56, 20, 56, 68, 8), arc(46, 68, 10, 14, 0, PI * 0.85)]), line(36, 20, 66, 20)],
   k: [line(32, 18, 32, 84), line(66, 20, 32, 52), line(40, 46, 68, 84)],
   l: [line(34, 18, 34, 84), line(34, 82, 68, 82)],
   m: [line(22, 18, 22, 84), line(22, 18, 50, 84), line(50, 84, 78, 18), line(78, 18, 78, 84)],
@@ -134,7 +143,7 @@ const upper: Record<string, TracePoint[][]> = {
     { x: 34, y: 76 },
   ])],
   t: [line(28, 20, 72, 20), line(50, 20, 50, 84)],
-  u: [underCurve(50, 50, 20, 32)],
+  u: [underCurve(50, 62, 20, 22, 18)],
   v: [line(28, 18, 50, 84), line(50, 84, 72, 18)],
   w: [line(16, 18, 32, 84), line(32, 84, 50, 36), line(50, 36, 68, 84), line(68, 84, 84, 18)],
   x: [line(28, 18, 72, 84), line(72, 18, 28, 84)],
@@ -147,15 +156,12 @@ const lower: Record<string, TracePoint[][]> = {
   b: [line(36, 18, 36, 84), ringFromLeft(50, 69, 14, 14)],
   c: [openCurve(52, 69, 14, 14)],
   d: [ring(44, 69, 14, 14), line(58, 18, 58, 84)],
-  e: [join([line(64, 69, 40, 69, 6), arc(50, 69, 14, 14, PI - 0.15, PI - 0.15 - PI * 1.65)])],
-  f: [
-    join([arc(48, 30, 12, 12, -0.2, -PI), line(36, 30, 36, 96, 10), line(36, 96, 28, 100, 3)]),
-    line(26, 52, 54, 52),
-  ],
+  e: [join([line(36, 69, 64, 69, 6), arc(50, 69, 14, 14, 0, -PI * 1.72)])],
+  f: [join([arc(48, 30, 12, 12, -0.2, -PI), line(36, 30, 36, 84, 10)]), line(26, 52, 54, 52)],
   g: [ring(44, 69, 14, 14), join([line(58, 55, 58, 92, 8), arc(48, 92, 10, 8, 0, PI * 0.9)])],
   h: [line(36, 18, 36, 84), archDown(50, 62, 14, 12, 84)],
-  i: [line(50, 58, 50, 84), ring(50, 46, 2.4, 2.4)],
-  j: [join([line(54, 58, 54, 92, 8), arc(44, 92, 10, 8, 0, PI * 0.9)]), ring(54, 46, 2.4, 2.4)],
+  i: [line(50, 58, 50, 84), dot(50, 46)],
+  j: [join([line(54, 58, 54, 92, 8), arc(44, 92, 10, 8, 0, PI * 0.9)]), dot(54, 46)],
   k: [line(36, 18, 36, 84), line(58, 56, 36, 70), line(42, 66, 60, 84)],
   l: [line(50, 18, 50, 84)],
   m: [line(26, 54, 26, 84), archDown(40, 62, 14, 12, 84), archDown(68, 62, 14, 12, 84)],
@@ -163,7 +169,7 @@ const lower: Record<string, TracePoint[][]> = {
   o: [ring(50, 69, 14, 14)],
   p: [line(36, 56, 36, 100), ringFromLeft(50, 69, 14, 14)],
   q: [ring(44, 69, 14, 14), join([line(58, 55, 58, 98, 8), line(58, 98, 68, 92, 3)])],
-  r: [line(40, 56, 40, 84), arc(40, 62, 14, 10, PI * 0.85, PI * 2)],
+  r: [line(40, 56, 40, 84), arc(54, 68, 14, 12, PI, PI * 1.8)],
   s: [through([
     { x: 62, y: 58 },
     { x: 42, y: 54 },
@@ -174,7 +180,7 @@ const lower: Record<string, TracePoint[][]> = {
     { x: 38, y: 82 },
   ])],
   t: [line(50, 30, 50, 84), line(34, 52, 66, 52)],
-  u: [underCurve(46, 70, 14, 14), line(60, 56, 60, 84)],
+  u: [underCurve(46, 70, 14, 14, 54), line(60, 54, 60, 84)],
   v: [line(34, 54, 50, 84), line(50, 84, 66, 54)],
   w: [line(24, 54, 36, 84), line(36, 84, 50, 60), line(50, 60, 64, 84), line(64, 84, 76, 54)],
   x: [line(34, 54, 66, 84), line(66, 54, 34, 84)],
