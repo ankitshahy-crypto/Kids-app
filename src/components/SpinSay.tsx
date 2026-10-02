@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { playEffect } from "../audio/manager";
-import { colorCue, deckWordCue, letterCue, playColor, playLetter, playLine, playNumber, playOnDevice, playWord, promptCue } from "../audio/player";
+import { colorCue, deckWordCue, letterCue, playColor, playLetter, playLine, playNumber, playWord, promptCue } from "../audio/player";
 import { Illustration } from "../illustrations";
 import { colorFill } from "../data/colors";
 import {
@@ -311,7 +311,7 @@ function Challenge({
           onDone();
         }}
         onMiss={() => {
-          play((signal) => playOnDevice("Try again.", settingsRef.current, signal));
+          play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
           onMiss();
         }}
       />
@@ -346,7 +346,7 @@ function Challenge({
             onDone([{ kind: "word", label: round.word.word }]);
           }}
           onMiss={() => {
-            play((signal) => playOnDevice("Try again.", settingsRef.current, signal));
+            play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
             onMiss();
           }}
         />
@@ -373,7 +373,7 @@ function Challenge({
             onDone();
           }}
           onMiss={() => {
-            play((signal) => playOnDevice("Try again.", settingsRef.current, signal));
+            play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
             onMiss();
           }}
         />
@@ -394,7 +394,7 @@ function Challenge({
           onDone();
         }}
         onMiss={() => {
-          play((signal) => playOnDevice("Try again.", settingsRef.current, signal));
+          play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
           onMiss();
         }}
       />
@@ -408,7 +408,7 @@ function Challenge({
         hinted={glow}
         settingsRef={settingsRef}
         onMiss={() => {
-          play((signal) => playOnDevice("Try again.", settingsRef.current, signal));
+          play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
           onMiss();
         }}
         onDone={() => onDone()}

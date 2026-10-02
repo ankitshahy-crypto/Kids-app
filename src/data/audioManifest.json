@@ -1092,6 +1092,7 @@
     "code-garden-rain": { "file": "prompts/code-garden-rain.mp3", "say": "If it rains, the flower grows.", "source": "neural" },
     "code-garden-sun": { "file": "prompts/code-garden-sun.mp3", "say": "If the sun comes out, the ice melts.", "source": "neural" },
     "code-again": { "file": "prompts/code-again.mp3", "say": "Try again.", "source": "neural" },
+    "game-again": { "file": "prompts/code-again.mp3", "say": "Try again.", "source": "neural" },
     "build-move": { "file": "prompts/build-move.mp3", "say": "Stack the blocks, then press play.", "source": "neural" },
     "build-music": { "file": "prompts/build-music.mp3", "say": "Make a song. Press play.", "source": "neural" },
     "build-scene": { "file": "prompts/build-scene.mp3", "say": "What happens next?", "source": "neural" },
