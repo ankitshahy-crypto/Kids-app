@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { deckWordCue, letterCue, letterSoundCue, playLetter, playLine, playNumber, playOnDevice, promptCue } from "../audio/player";
+import { deckWordCue, letterCue, letterSoundCue, playLetter, playLine, playNumber, promptCue, wordCue } from "../audio/player";
 import type { Settings } from "../settings";
 import { Illustration } from "../illustrations";
 import {
@@ -277,7 +277,7 @@ function HatchGame({
       if (already) return;
       setMisses((count) => count + 1);
       setWiggle(letter);
-      play((signal) => playOnDevice("Try again.", settingsRef.current, signal));
+      play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
       return;
     }
     const next = [...filled, ...open];
@@ -420,7 +420,7 @@ function PopGame({
     if (popped.includes(id) || done) return;
     if (!target) {
       setWiggle(id);
-      play((signal) => playOnDevice("Try again.", settingsRef.current, signal));
+      play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
       return;
     }
     setPopped((current) => [...current, id]);
@@ -496,7 +496,7 @@ function FeedGame({
     if (fed.includes(food.id) || done) return;
     if (food.letter !== round.target) {
       setWiggle(food.id);
-      play((signal) => playOnDevice("Try again.", settingsRef.current, signal));
+      play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
       return;
     }
     setFed((current) => [...current, food.id]);
@@ -597,7 +597,7 @@ function RhymeGame({
 
   const choose = (card: RhymeCard) => {
     if (done || matched.includes(card.pair)) return;
-    play((signal) => playOnDevice(card.word, settingsRef.current, signal));
+    play((signal) => playLine([wordCue(card.word, card.word)], settingsRef.current, signal));
     if (!picked) {
       setPicked(card.id);
       setWiggle(null);
@@ -613,7 +613,7 @@ function RhymeGame({
       return;
     }
     setWiggle(card.id);
-    play((signal) => playOnDevice("Try again.", settingsRef.current, signal));
+    play((signal) => playLine([promptCue("game-again", "Try again.")], settingsRef.current, signal));
   };
 
   return (
