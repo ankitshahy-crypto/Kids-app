@@ -67,6 +67,14 @@ function drop(file: string, list: string[] = stale): void {
   if (!list.includes(file)) list.push(file);
 }
 
+// A story page whose words changed, or whose story is gone, loses its recording too. Before, a
+// rewritten page kept its old clip, so the narrator read the old sentence under the new one.
+for (const [id, before] of Object.entries(manifest.stories ?? {})) {
+  const now = stories[id];
+  if (!now) drop(before.file, retired);
+  else if (now.say !== before.say) drop(before.file);
+}
+
 // Each letter says its picture word. The vowels and x are also listed under
 // their phoneme id (ae, eh, ih, aw, uh, ks), which shares the letter's clip.
 const PHONEME_ALIAS: Record<string, string> = { a: "ae", e: "eh", i: "ih", o: "aw", u: "uh", x: "ks" };

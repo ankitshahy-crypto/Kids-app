@@ -1,5 +1,6 @@
 import { themeArt } from "./themeArt";
 import { letterScenes } from "./letterScenes";
+import { storyScenes } from "./storyScenes";
 import { unitScenes } from "./unitScenes";
 import { ladderScenes } from "./wordScenes";
 
@@ -293,6 +294,7 @@ export const illustrations = {
   ...themeArt,
   ...unitScenes,
   ...letterScenes,
+  ...storyScenes,
 };
 
 export type IllustrationName = keyof typeof illustrations;
