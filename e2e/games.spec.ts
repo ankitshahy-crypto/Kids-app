@@ -118,11 +118,10 @@ test("hatch the egg wiggles a miss, glows the right letter, and hatches a baby a
     words.push((await board.getAttribute("data-word")) ?? "");
     // Each word finished cracks the egg a little more.
     await expect(board).toHaveAttribute("data-eggs", String(round));
-    while ((await board.getAttribute("data-solved")) === "false" && (await board.getAttribute("data-round")) === String(round)) {
-      const next = board.locator('.pick[data-letter][data-needed="true"]').first();
-      if ((await next.count()) === 0) break;
-      await next.click();
-    }
+    // On level 1 one letter, the word's first sound, finishes the word. One tap and no look back
+    // at the board: after the last word the game is gone within a fifth of a second, and reading
+    // an attribute of a board that has left waits for it until the test runs out of time.
+    await board.locator('.pick[data-letter][data-needed="true"]').click();
   }
   // No word twice.
   expect(new Set(words).size).toBe(words.length);
