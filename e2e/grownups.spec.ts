@@ -110,6 +110,11 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
   // Refunds are Apple's: Help says where to ask, and promises nothing it cannot keep.
   await expect(page.locator("[data-faq=refund] + dd")).toContainText("reportaproblem.apple.com");
   await expect(page.getByRole("heading", { name: "How the daily lesson works" })).toBeVisible();
+  // That paragraph is written from the sections in this build (src/content/about.ts): every tile on
+  // the home screen is named, Coding's too, and nothing that has left the app is described.
+  const help = page.locator("[data-section='help']");
+  await expect(help).toContainText("Explore adds LittleNest Numbers, LittleNest Colors, LittleNest Time & Money, LittleNest Build, LittleNest Science, and LittleNest Coding.");
+  await expect(help).not.toContainText(/fizz/i);
   await expect(page.getByRole("heading", { name: "Drag to blend" })).toBeVisible();
   await expect(page.locator("[data-section='help']").getByText("switch on the side")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Contact us" })).toHaveCount(0);
@@ -137,6 +142,10 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
   await expect(about.getByText("Version 0.1.0")).toBeVisible();
   await expect(about.getByText("not a medical product")).toBeVisible();
   await expect(about.getByRole("heading", { name: "Calm by design" })).toBeVisible();
+  // Nothing is held back in this build, so About counts and lists every section.
+  await expect(about).toContainText("LittleNest Learning has seven sections.");
+  await expect(about.locator("[data-teach-subject]")).toHaveCount(5);
+  await expect(about.locator(".about-modules .module-mark")).toHaveCount(6);
   await expect(about).not.toContainText(/therap|diagnos|ADHD|autis|dyslex|delay/i);
   await expect(about.getByText(/\$\d|per month/)).toHaveCount(0);
   await page.getByRole("button", { name: "Back", exact: true }).click();

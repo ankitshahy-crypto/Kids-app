@@ -1,7 +1,8 @@
+import { Fragment } from "react";
 import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME, MODULE_WORDS } from "../brand";
-import { aboutContent, type AboutFeatureId } from "../content/about";
+import { aboutFor, aboutSubjects, type AboutFeatureId, type AboutSubject } from "../content/about";
 import { tint } from "../palette";
-import { ModuleMark } from "./ModuleMark";
+import { ModuleMark, type ModuleMarkName } from "./ModuleMark";
 import { colorStages } from "../data/colors";
 import { mathStages } from "../data/math";
 import { timeStages } from "../data/timeMoney";
@@ -29,19 +30,30 @@ const tints: Record<AboutFeatureId, string> = {
   grownups: tint.mintCard,
 };
 
+/** Each Explore subject's mark, name and path of weeks, as About shows them. */
+const SUBJECTS: Record<AboutSubject, { mark: ModuleMarkName; title: string; stages: readonly { id: string; title: string; detail: string }[] }> = {
+  math: { mark: "numbers", title: MODULE_NUMBERS, stages: mathStages },
+  colors: { mark: "colors", title: MODULE_COLORS, stages: colorStages },
+  time: { mark: "time", title: MODULE_TIME, stages: timeStages },
+  build: { mark: "build", title: MODULE_BUILD, stages: buildStages },
+  science: { mark: "science", title: MODULE_SCIENCE, stages: scienceStages },
+};
+
 export function AboutWordNest() {
-  const about = aboutContent;
+  // The copy and the subjects for this build: a section that is held back (HELD_BACK in
+  // src/explore/flags.ts) is not described here, as it is not on the home screen. This page
+  // used to name every section whatever the build held. See src/content/about.ts.
+  const about = aboutFor();
+  const subjects = aboutSubjects();
   return (
     <section className="about-page" data-section="about">
       <h2>{about.screenTitle}</h2>
       <p className="about-name">{about.name}</p>
       <div className="about-modules">
         <ModuleMark name="words" />
-        <ModuleMark name="numbers" />
-        <ModuleMark name="colors" />
-        <ModuleMark name="time" />
-        <ModuleMark name="build" />
-        <ModuleMark name="science" />
+        {subjects.map((subject) => (
+          <ModuleMark key={subject} name={SUBJECTS[subject].mark} />
+        ))}
       </div>
       <p className="about-subtitle">{about.subtitle}</p>
       <p className="about-promo">{about.promo}</p>
@@ -82,67 +94,22 @@ export function AboutWordNest() {
           <span>{laterPath.detail}</span>
         </li>
       </ol>
-      <h3 className="module-heading">
-        <ModuleMark name="numbers" />
-        <span>{MODULE_NUMBERS}</span>
-      </h3>
-      <ol className="about-path" data-teach-subject="math">
-        {mathStages.map((stage) => (
-          <li key={stage.id} data-teach={stage.id}>
-            <strong>{stage.title}</strong>
-            <span>{stage.detail}</span>
-          </li>
-        ))}
-      </ol>
-      <h3 className="module-heading">
-        <ModuleMark name="colors" />
-        <span>{MODULE_COLORS}</span>
-      </h3>
-      <ol className="about-path" data-teach-subject="colors">
-        {colorStages.map((stage) => (
-          <li key={stage.id} data-teach={stage.id}>
-            <strong>{stage.title}</strong>
-            <span>{stage.detail}</span>
-          </li>
-        ))}
-      </ol>
-      <h3 className="module-heading">
-        <ModuleMark name="time" />
-        <span>{MODULE_TIME}</span>
-      </h3>
-      <ol className="about-path" data-teach-subject="time">
-        {timeStages.map((stage) => (
-          <li key={stage.id} data-teach={stage.id}>
-            <strong>{stage.title}</strong>
-            <span>{stage.detail}</span>
-          </li>
-        ))}
-      </ol>
-
-      <h3 className="module-heading">
-        <ModuleMark name="build" />
-        <span>{MODULE_BUILD}</span>
-      </h3>
-      <ol className="about-path" data-teach-subject="build">
-        {buildStages.map((stage) => (
-          <li key={stage.id} data-teach={stage.id}>
-            <strong>{stage.title}</strong>
-            <span>{stage.detail}</span>
-          </li>
-        ))}
-      </ol>
-      <h3 className="module-heading">
-        <ModuleMark name="science" />
-        <span>{MODULE_SCIENCE}</span>
-      </h3>
-      <ol className="about-path" data-teach-subject="science">
-        {scienceStages.map((stage) => (
-          <li key={stage.id} data-teach={stage.id}>
-            <strong>{stage.title}</strong>
-            <span>{stage.detail}</span>
-          </li>
-        ))}
-      </ol>
+      {subjects.map((subject) => (
+        <Fragment key={subject}>
+          <h3 className="module-heading">
+            <ModuleMark name={SUBJECTS[subject].mark} />
+            <span>{SUBJECTS[subject].title}</span>
+          </h3>
+          <ol className="about-path" data-teach-subject={subject}>
+            {SUBJECTS[subject].stages.map((stage) => (
+              <li key={stage.id} data-teach={stage.id}>
+                <strong>{stage.title}</strong>
+                <span>{stage.detail}</span>
+              </li>
+            ))}
+          </ol>
+        </Fragment>
+      ))}
 
       <h3>{about.safetyHeading}</h3>
       <p className="about-lead">{about.safety}</p>
