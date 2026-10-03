@@ -339,10 +339,25 @@ function keepReady(src: string, buffer: AudioBuffer): void {
   while (ready.size > READY_CLIPS) ready.delete(ready.keys().next().value as string);
 }
 
-async function loadBuffer(ctx: AudioContext, src: string, signal?: AbortSignal): Promise<AudioBuffer> {
+/**
+ * A clip has started playing. Nothing in the app listens: this is how the
+ * end-to-end tests know what was said. They used to count a clip when its
+ * bytes were read, which is no longer the moment it plays, now that a card's
+ * sounds are loaded ahead of the slide.
+ */
+function announce(src: string): void {
+  try {
+    window.dispatchEvent(new CustomEvent("littlenest:clip", { detail: src }));
+  } catch {
+    // No window, or no CustomEvent: nothing to tell.
+  }
+}
+
+async function loadBuffer(ctx: AudioContext, src: string, signal?: AbortSignal, ahead = false): Promise<AudioBuffer> {
   const kept = ready.get(src);
   if (kept) return kept;
-  const response = await fetch(src, signal ? { signal } : undefined);
+  // Loading ahead is marked low priority, like the offline download, so it never delays a clip being played now.
+  const response = await fetch(src, ahead ? ({ priority: "low" } as RequestInit) : signal ? { signal } : undefined);
   if (!response.ok) throw new Error(`Could not play ${src}`);
   const type = response.headers?.get?.("content-type") ?? "";
   if (type.includes("text/html")) throw new Error(`Could not play ${src}`);
@@ -369,7 +384,7 @@ export function warmClips(sources: readonly (string | undefined)[]): void {
   if (!ctx) return;
   for (const src of sources) {
     if (!src || ready.has(src)) continue;
-    void loadBuffer(ctx, src).catch(() => undefined);
+    void loadBuffer(ctx, src, undefined, true).catch(() => undefined);
   }
 }
 
@@ -415,6 +430,7 @@ async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal, onSta
     source.onended = () => finish();
     try {
       source.start();
+      announce(src);
       started(onStart, buffer.duration);
     } catch (error) {
       finish(error instanceof Error ? error : new Error("Could not play audio"));
@@ -464,6 +480,7 @@ function playElement(src: string, bus: AudioBus, signal: AbortSignal, onStart?: 
     void playing.then(
       () => {
         if (settled) return;
+        announce(src);
         started(onStart, audio.duration);
         timer = setTimeout(() => done(), 15000);
       },

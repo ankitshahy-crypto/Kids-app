@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { createdThisWeek } from "./clock";
+import { createdWeeksAgo } from "./clock";
+import { showWordCard } from "./lesson";
 
 const profile = {
   activeId: "mia",
@@ -9,7 +10,8 @@ const profile = {
       name: "Mia",
       ageRange: "4",
       animal: "fox",
-      createdAt: createdThisWeek(),
+      // The week of s and t, when the first three-letter words (mat, sat) can be sounded out.
+      createdAt: createdWeeksAgo(1),
       stars: 1,
       days: {},
       ladder: { step: 3, successes: 0 },
@@ -74,10 +76,9 @@ async function playCount(page: Page): Promise<number> {
 
 /**
  * A child's drag: about a second from one end to the other. Each letter's
- * sound starts when the finger reaches it, and the next letter's stops it,
- * so a drag faster than a clip can load would skip letters (as it would on a
- * phone). A near-instant drag made the letter count here depend on how fast
- * the machine fetched the clips.
+ * sound is said in turn, to its end, however fast the finger moves, and the
+ * whole word follows. (The next letter used to stop the one before it, so a
+ * drag faster than a clip could load skipped letters, on a phone as here.)
  */
 async function dragAcross(page: Page, track: Locator) {
   const box = await track.boundingBox();
@@ -101,12 +102,16 @@ test("dragging the track lights each letter in order and plays the word", async 
   await page.getByRole("button", { name: "Mia" }).click();
   await page.getByRole("button", { name: "Letters" }).click();
 
+  // The lesson opens on the week's letter cards; the first word after them is three letters.
+  await showWordCard(page, 3);
   const tiles = page.locator(".letters .tile-wrap");
   const track = page.locator(".blend-track");
   await expect(track).toBeVisible();
   await expect(tiles.nth(2)).toBeVisible();
   await expect(tiles.nth(0)).toHaveAttribute("data-lit", "false");
   await expect(tiles.nth(0).locator("button")).toBeDisabled();
+  // The letter is on its tile before the slide reaches it, in a small letter.
+  await expect(tiles.nth(0).locator("button")).toHaveText(/^[a-z]$/);
 
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
@@ -146,6 +151,7 @@ test("blending slides the tiles together as the word plays, by transform alone, 
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
 
+  await showWordCard(page, 3);
   const blend = page.locator(".blend");
   const tiles = page.locator(".letters .tile-wrap");
   const track = page.locator(".blend-track");

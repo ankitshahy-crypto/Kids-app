@@ -79,7 +79,8 @@ export function useProfiles() {
     // Read the award from this render. The updater repeats the same step, so a
     // second pass in development cannot add another star or hide the cheer.
     const result = applyEffort(profile, step, learned, new Date(), undefined, subject);
-    if (result.awarded) {
+    // Saved for a new star, and also for a word read after today's star was already given.
+    if (result.awarded || result.stickersAdded > 0) {
       setStore((current) => ({
         ...current,
         profiles: current.profiles.map((item) =>

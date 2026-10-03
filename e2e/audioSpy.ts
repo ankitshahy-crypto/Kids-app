@@ -13,10 +13,14 @@ export function clipShipped(file: string): boolean {
 }
 
 /**
- * Records what the app tried to say: device speech, a bundled clip played
- * through Web Audio (fetched from /audio/), or a clip played by an <audio>
- * element. `spokenLines` turns a clip's file back into its manifest line, so
+ * Records what the app said: device speech, or a bundled clip at the moment
+ * it starts to play (the app announces each one with a "littlenest:clip"
+ * event). `spokenLines` turns a clip's file back into its manifest line, so
  * a test can check "orange" whether it was spoken or played from a file.
+ *
+ * A clip used to be counted when its bytes were read. A lesson card now loads
+ * its letter sounds before the slide reaches them, so reading a clip is no
+ * longer playing it.
  */
 export async function installAudioSpy(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -30,30 +34,20 @@ export async function installAudioSpy(page: Page): Promise<void> {
         return speak.call(this, utterance);
       };
     }
-    const play = HTMLAudioElement.prototype.play;
-    HTMLAudioElement.prototype.play = function (this: HTMLAudioElement) {
-      target.__audioAttempts?.push({ kind: "clip", detail: this.currentSrc || this.src || "" });
-      return play.apply(this);
-    };
-    // A clip counts when its bytes are read to play, not when the offline
-    // download caches it in the background. The moment the page asks for it
-    // is noted too, as a request, for checks on how soon a screen speaks.
+    window.addEventListener("littlenest:clip", (event) => {
+      const src = String((event as CustomEvent<string>).detail ?? "");
+      target.__audioAttempts?.push({ kind: "clip", detail: new URL(src, location.href).href });
+    });
+    // The moment the page asks for a clip to play is noted too, as a request, for checks on how soon a
+    // screen speaks. The offline download and a card loading its sounds ahead fetch at low priority; a
+    // clip being played now does not.
     const fetchWas = window.fetch.bind(window);
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-      // The offline download fetches at low priority; a lesson's own clip does not.
       if (url.includes("/audio/") && url.endsWith(".mp3") && init?.priority !== "low") {
         target.__audioAttempts?.push({ kind: "request", detail: url });
       }
-      const response = await fetchWas(input, init);
-      if (url.includes("/audio/") && url.endsWith(".mp3")) {
-        const read = response.arrayBuffer.bind(response);
-        response.arrayBuffer = () => {
-          target.__audioAttempts?.push({ kind: "clip", detail: url });
-          return read();
-        };
-      }
-      return response;
+      return fetchWas(input, init);
     };
   });
 }

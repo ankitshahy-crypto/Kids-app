@@ -100,7 +100,12 @@ export function applyEffort(
   let next = awardStar(profile, step, now, timeZone, subject);
   const awarded = next.stars !== before;
   const beforeStickers = next.stickers.length;
-  if (awarded && learned.length > 0) next = addStickers(next, learned, subject);
+  // A letter or a word the child has read is always kept, star or no star. Stickers used to be saved only
+  // with a new star, and a step gives one star a day: the first card finished took it, so every word
+  // read after that left no sticker, and "Trace a word" (which lists the words read) never filled up.
+  // Prizes (a baby animal from the wheel) still come with a star only, so a game cannot be farmed for them.
+  const kept = awarded ? learned : learned.filter((sticker) => sticker.kind === "letter" || sticker.kind === "word");
+  if (kept.length > 0) next = addStickers(next, kept, subject);
   const stickersAdded = next.stickers.length - beforeStickers;
   const steps = next.days[todayKey(now, timeZone)]?.[subject] ?? {};
   const lessonComplete = definition.steps.every((item) => steps[item] === true);
