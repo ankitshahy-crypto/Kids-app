@@ -49,6 +49,15 @@ jobs:
       - name: Playwright Chromium
         run: npx playwright test --project=chromium
 
+      # A timed-out test says only that it ran out of time, and how close the others came is
+      # one line each among hundreds in the log. This lists the slowest tests on the run's
+      # summary, and warns about any that passed close to the limit, so a test creeping toward
+      # 30 s is seen before it fails. It runs after a failure too, and cannot fail the build.
+      - name: Slowest browser tests
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: node scripts/slowest-tests.mjs
+
       # The public demo's build: locked like the app, with the App Store as the way in.
       - name: Build the locked web demo
         run: npm run build
