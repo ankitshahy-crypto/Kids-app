@@ -65,7 +65,7 @@ export const aboutContent = {
     {
       id: "games",
       title: "Games to play",
-      body: "Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. Coding starts with hello world: one block, and their animal says hello. Thinking games guide their animal home, continue a picture pattern, put pictures in order, and try an if-then rule. Building stacks picture blocks that play as a dance or a song, with the program shown in words. Reading the code turns it round: a short program is read aloud, and they build it. Ages 5 to 7 use longer arrow paths, a repeat, a bug fix, a pond splash, and can save a program on this device. A grown-up can turn on a Python view of that same program. A miss just means try again.",
+      body: "Fill in the missing letters of three words to hatch an egg, pop the balloons with the letter they hear, feed their animal the pictures that start with a letter, find the pictures that rhyme, flip memory cards, and spin a wheel of six small challenges. Each game plays a few rounds in a scene with their animal. Coding starts with hello world: one block, and their animal says hello. Thinking games guide their animal home, continue a picture pattern, put pictures in order, and try an if-then rule. Building stacks picture blocks that play as a dance or a song, with the program shown in words. Reading the code turns it round: a short program is read aloud, and they build it. Ages 5 to 7 use longer arrow paths, a repeat, a bug fix, a pond splash, and can save a program on this device. A grown-up can turn on a Python view of that same program. A miss just means try again.",
     },
     {
       id: "time",

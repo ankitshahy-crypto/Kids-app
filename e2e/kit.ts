@@ -96,3 +96,27 @@ export async function meetClock(frame: Locator) {
   await expect(frame).toHaveAttribute("data-round", "3");
   await expect(frame).toHaveAttribute("data-task", "set");
 }
+
+/** Find every pair on a matching board (Rhyme Match, Memory Flip) and tap its two cards. */
+export async function matchPairs(root: Locator, cardSelector: string) {
+  const cards = await root.locator(cardSelector).evaluateAll((nodes) =>
+    nodes.map((node) => ({
+      id: node.getAttribute("data-card") ?? node.getAttribute("data-rhyme") ?? "",
+      pair: node.getAttribute("data-pair") ?? "",
+    })),
+  );
+  const groups = new Map<string, string[]>();
+  for (const card of cards) {
+    const list = groups.get(card.pair) ?? [];
+    list.push(card.id);
+    groups.set(card.pair, list);
+  }
+  let found = 0;
+  for (const ids of groups.values()) {
+    await root.locator(`${cardSelector}[data-card="${ids[0]}"], ${cardSelector}[data-rhyme="${ids[0]}"]`).click();
+    await root.locator(`${cardSelector}[data-card="${ids[1]}"], ${cardSelector}[data-rhyme="${ids[1]}"]`).click();
+    found += 1;
+    // The last pair ends the round, and the next round's count starts again.
+    if (found < groups.size) await expect(root).toHaveAttribute("data-matched", String(found));
+  }
+}

@@ -1252,7 +1252,11 @@
     "color-make-light-blue": { "file": "prompts/color-make-light-blue.mp3", "say": "Blue and white make light blue.", "source": "neural" },
     "color-want-orange": { "file": "prompts/color-want-orange.mp3", "say": "Make orange. Which two paints?", "source": "neural" },
     "color-want-green": { "file": "prompts/color-want-green.mp3", "say": "Make green. Which two paints?", "source": "neural" },
-    "color-want-purple": { "file": "prompts/color-want-purple.mp3", "say": "Make purple. Which two paints?", "source": "neural" }
+    "color-want-purple": { "file": "prompts/color-want-purple.mp3", "say": "Make purple. Which two paints?", "source": "neural" },
+    "play-rhyme-yes": { "file": "prompts/play-rhyme-yes.mp3", "say": "They rhyme!", "source": "neural" },
+    "play-rhyme-no": { "file": "prompts/play-rhyme-no.mp3", "say": "They do not rhyme.", "source": "neural" },
+    "play-bonus": { "file": "prompts/play-bonus.mp3", "say": "A present for you! Tap the check.", "source": "neural" },
+    "play-trace": { "file": "prompts/play-trace.mp3", "say": "Trace the letter.", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },

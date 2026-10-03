@@ -1,3 +1,4 @@
+import manifest from "./audioManifest.json";
 import { describe, expect, it } from "vitest";
 import { lettersIntroduced } from "./schedule";
 import { isSubjectKey, readingSteps } from "./subject";
@@ -7,16 +8,26 @@ import {
   colorChoices,
   countChoices,
   feedRound,
+  feedRounds,
+  GAME_ROUNDS,
   glowLetter,
+  HATCH_LEVELS,
   hatchRound,
+  hatchRounds,
+  isBabyAnimal,
   kindAtRotation,
   memoryRound,
+  memoryRounds,
   nextBaby,
   pictureItems,
+  playLine,
+  playManifestEntries,
   popRound,
+  popRounds,
   recordHatch,
   RHYME_FAMILIES,
   rhymeRound,
+  rhymeRounds,
   soundChoices,
   spinCount,
   spinTurn,
@@ -228,5 +239,76 @@ describe("the other games", () => {
   it("picks the next baby animal that is not in the sticker book", () => {
     expect(nextBaby([])).toBe("kitten");
     expect(nextBaby(["kitten", "puppy"])).toBe("fawn");
+  });
+});
+
+describe("a play of several rounds", () => {
+  const salts = Array.from({ length: 30 }, (_, index) => index * 11 + 3);
+  const known = ["m", "a", "s", "t", "p"];
+
+  it("hatches three different words", () => {
+    for (const salt of salts) {
+      for (const level of HATCH_LEVELS) {
+        const rounds = hatchRounds(known, level, pictureWords(), salt);
+        expect(rounds).toHaveLength(GAME_ROUNDS);
+        expect(new Set(rounds.map((round) => round.word.id)).size).toBe(rounds.length);
+        expect(rounds[0]).toEqual(hatchRound(known, level, pictureWords(), salt));
+      }
+    }
+  });
+
+  it("pops and feeds three different letters", () => {
+    for (const salt of salts) {
+      const pops = popRounds(known, salt);
+      expect(pops).toHaveLength(GAME_ROUNDS);
+      expect(new Set(pops.map((round) => round.target)).size).toBe(pops.length);
+      const feeds = feedRounds(known, salt);
+      expect(feeds).toHaveLength(GAME_ROUNDS);
+      expect(new Set(feeds.map((round) => round.target)).size).toBe(feeds.length);
+    }
+  });
+
+  it("plays fewer rounds, never the same one twice, when few letters are taught", () => {
+    expect(popRounds(["m"], 4)).toHaveLength(1);
+    expect(popRounds(["m", "a"], 4).map((round) => round.target).sort()).toEqual(["a", "m"]);
+    // With nothing taught there is still a game to play.
+    expect(popRounds([], 4).length).toBeGreaterThanOrEqual(1);
+    expect(hatchRounds([], 1, pictureWords(), 4).length).toBeGreaterThanOrEqual(1);
+    expect(feedRounds([], 4).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("deals two boards of rhymes with no word on both", () => {
+    for (const salt of salts) {
+      const boards = rhymeRounds(salt);
+      expect(boards).toHaveLength(2);
+      const words = boards.flatMap((board) => board.map((card) => card.word));
+      expect(new Set(words).size).toBe(words.length);
+      for (const board of boards) expect(board).toHaveLength(4);
+    }
+  });
+
+  it("plays memory with letters, then with numbers", () => {
+    const rounds = memoryRounds(known, 5);
+    expect(rounds.map((round) => round.mode)).toEqual(["letters", "numbers"]);
+    expect(rounds[0].cards).toEqual(memoryRound(known, "letters", 5));
+    expect(rounds[1].cards).toEqual(memoryRound(known, "numbers", 5));
+    for (const round of rounds) expect(round.cards).toHaveLength(6);
+  });
+
+  it("has a clip in the list for every new line", () => {
+    const prompts = manifest.prompts as Record<string, { say: string }>;
+    for (const entry of playManifestEntries()) {
+      expect(prompts[entry.id]?.say, entry.id).toBe(entry.say);
+      expect(playLine(entry.id)).toBe(entry.say);
+    }
+    // The lines the games already had are still said.
+    for (const id of ["game-hatch", "game-pop", "game-feed", "game-rhyme", "game-memory", "game-spin", "game-spin-sound", "game-spin-word", "game-spin-count", "game-spin-color"]) {
+      expect(prompts[id], id).toBeTruthy();
+    }
+  });
+
+  it("knows a baby animal by name", () => {
+    expect(isBabyAnimal("kitten")).toBe(true);
+    expect(isBabyAnimal("scarf-stripe")).toBe(false);
   });
 });

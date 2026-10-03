@@ -23,6 +23,10 @@ export type GameProgress = {
 export const BABY_ANIMALS = ["kitten", "puppy", "fawn", "owlet", "duckling", "cub"] as const;
 export type BabyAnimal = (typeof BABY_ANIMALS)[number];
 
+export function isBabyAnimal(name: string): name is BabyAnimal {
+  return (BABY_ANIMALS as readonly string[]).includes(name);
+}
+
 // One letter as a tile that names itself ("c, as in cat"). Shared with the letter cards (wordBuild.ts).
 export { letterTile };
 
@@ -364,6 +368,92 @@ export function memoryRound(known: readonly string[], mode: "letters" | "numbers
     { id: `lower-${letter}`, pair: letter, face: "lower" as const, value: letter },
   ]);
   return mix(cards, salt + 1);
+}
+
+/*
+ * A play of several rounds.
+ *
+ * Each of these games was one round: one word, one letter, one board, then a button that said Done. A
+ * game now plays a few rounds on the game kit (src/game/kit.tsx). The rounds are the round for this
+ * play's salt and for the salts after it, and any that would ask for the same word or letter again is
+ * passed over. When too few words or letters fit (a first week, one letter taught), the game is that
+ * many rounds shorter, never the same question twice.
+ */
+
+/** How many rounds a reading game plays. */
+export const GAME_ROUNDS = 3;
+
+function gather<T>(make: (salt: number) => T, same: (a: T, b: T) => boolean, salt: number, count: number): T[] {
+  const rounds: T[] = [];
+  for (let step = 0; rounds.length < count && step < count * 6; step += 1) {
+    const next = make(salt + step);
+    if (!rounds.some((round) => same(round, next))) rounds.push(next);
+  }
+  return rounds;
+}
+
+/** Three eggs' worth of words, none twice. */
+export function hatchRounds(known: readonly string[], level: HatchLevel, words: readonly DeckWord[] = starterDeck.words, salt = 0, count = GAME_ROUNDS): HatchRound[] {
+  return gather(
+    (at) => hatchRound(known, level, words, at),
+    (a, b) => a.word.id === b.word.id,
+    salt,
+    count,
+  );
+}
+
+/** Three letters to pop, none twice. */
+export function popRounds(known: readonly string[], salt = 0, count = GAME_ROUNDS): { target: string; balloons: Balloon[] }[] {
+  return gather(
+    (at) => popRound(known, at),
+    (a, b) => a.target === b.target,
+    salt,
+    count,
+  );
+}
+
+/** Three letters to feed, none twice. */
+export function feedRounds(known: readonly string[], salt = 0, count = GAME_ROUNDS): { target: string; items: PictureItem[] }[] {
+  return gather(
+    (at) => feedRound(known, at),
+    (a, b) => a.target === b.target,
+    salt,
+    count,
+  );
+}
+
+/** Two boards of rhymes. No word is on both. */
+export function rhymeRounds(salt = 0, count = 2): RhymeCard[][] {
+  return gather(
+    (at) => rhymeRound(at),
+    (a, b) => a.some((card) => b.some((other) => other.word === card.word)),
+    salt,
+    count,
+  );
+}
+
+/** Memory is played twice: big and little letters, then numbers and dots. (They were two tabs with their names in writing.) */
+export function memoryRounds(known: readonly string[], salt = 0): { mode: "letters" | "numbers"; cards: MemoryCard[] }[] {
+  return (["letters", "numbers"] as const).map((mode) => ({ mode, cards: memoryRound(known, mode, salt) }));
+}
+
+/** The lines these games say that they did not say before. */
+const PLAY_LINES: Record<string, string> = {
+  // What the rhyme game says of two pictures.
+  "play-rhyme-yes": "They rhyme!",
+  "play-rhyme-no": "They do not rhyme.",
+  // Spin & Say: the bonus was three words on the screen, and the tracing challenge said nothing at all.
+  "play-bonus": "A present for you! Tap the check.",
+  "play-trace": "Trace the letter.",
+};
+
+export function playLine(id: string): string {
+  return PLAY_LINES[id] ?? "";
+}
+
+/** The reading games' new spoken lines. scripts/sync-manifest.ts writes these into the clip list. */
+export function playManifestEntries(): { id: string; say: string }[] {
+  return Object.entries(PLAY_LINES).map(([id, say]) => ({ id, say }));
 }
 
 /** Challenges on the wheel, in tap order. Bonus is a prize, never a loss. */

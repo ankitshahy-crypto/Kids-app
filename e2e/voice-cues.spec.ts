@@ -226,6 +226,7 @@ test("each game says what to do as it opens, and Again says it back", async ({ p
   ];
   for (const game of games) {
     await expectOpeningLine(page, () => openGame(page, game.id), "games", game.parts);
-    if (game.id !== "spin") await expect(page.locator(`[data-game=${game.id}] .game-hear .hear-icon`).first()).toBeVisible();
+    // The game's own speaker, in its scene, is a picture and not a word.
+    if (game.id !== "spin") await expect(page.locator(`[data-game=${game.id}] .game-scene > .game-hear svg`)).toBeVisible();
   }
 });
