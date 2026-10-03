@@ -7798,6 +7798,12 @@ input.is-pressed,
   animation: job-bucket 1.1s ease forwards;
 }
 
+/* The same time and easing as the bucket, so the rope's end stays on the handle. */
+.job-rope {
+  transform-origin: 150px 36px;
+  animation: job-rope 1.1s ease forwards;
+}
+
 .job-cart {
   animation: job-cart 1.2s ease forwards;
 }
@@ -7818,6 +7824,15 @@ input.is-pressed,
   }
   to {
     transform: translateY(-74px);
+  }
+}
+
+@keyframes job-rope {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(0.1);
   }
 }
 
@@ -7855,6 +7870,7 @@ input.is-pressed,
   .ramp-ball.is-rolling,
   .job-lever,
   .job-bucket,
+  .job-rope,
   .job-cart {
     animation-duration: 0.01s !important;
   }

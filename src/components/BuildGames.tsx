@@ -452,8 +452,9 @@ function JobScene({ job, done }: { job: "rock" | "bucket" | "box"; done: boolean
               <circle cx="150" cy="24" r="3" fill="#8a94a3" />
             </>
           ) : null}
+          {/* The rope is wound in as the bucket comes up, so it never pokes out above the frame. */}
+          {done ? <rect className="job-rope" x="148.5" y="36" width="3" height="82" fill="#8a6a4a" /> : null}
           <g className={done ? "job-bucket" : undefined}>
-            {done ? <path d="M150 36v82" stroke="#8a6a4a" strokeWidth="3" /> : null}
             <path d="M132 118h36l-5 30h-26Z" fill="#7fb8de" />
             <path d="M134 126h32" stroke="#5e9cc8" strokeWidth="3" />
             <path d="M132 118c0-16 36-16 36 0" fill="none" stroke="#5e9cc8" strokeWidth="4" />
