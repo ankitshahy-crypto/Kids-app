@@ -384,3 +384,28 @@ test("flicking the wheel starts a challenge", async ({ page }) => {
   await expect(board).toHaveAttribute("data-flick", "true");
   await expect(board).toHaveAttribute("data-kind", /sound|word|count|color|trace|bonus/);
 });
+
+test("each game's Hear it button sits in the game, under its name, clear of the buttons at the top", async ({ page }) => {
+  // The game kit's speaker has the same class name. Its rule once reached these buttons too, and set
+  // each one over the Back button at the top left of the screen.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await install(page);
+  await openGames(page);
+  for (const id of ["hatch", "pop", "feed", "rhyme", "memory"]) {
+    await page.locator(`[data-game-tile=${id}]`).click();
+    const game = page.locator(`[data-game=${id}]`);
+    const hear = game.locator(".game-hear").first();
+    await expect(hear).toBeVisible();
+    const box = (await hear.boundingBox())!;
+    const title = (await game.locator("h1").first().boundingBox())!;
+    expect(box.y, `${id}: under the game's name`).toBeGreaterThanOrEqual(title.y + title.height - 1);
+    for (const other of await page.locator(".top-bar button, .game-back").all()) {
+      const at = await other.boundingBox();
+      if (!at) continue;
+      const apart = box.x >= at.x + at.width || at.x >= box.x + box.width || box.y >= at.y + at.height || at.y >= box.y + box.height;
+      expect(apart, `${id}: Hear it is clear of ${await other.getAttribute("aria-label")}`).toBe(true);
+    }
+    await page.getByRole("button", { name: "All games" }).click();
+    await expect(page.locator("[data-game=home]")).toBeVisible();
+  }
+});
