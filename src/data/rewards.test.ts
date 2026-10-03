@@ -33,6 +33,20 @@ describe("effort rewards", () => {
     expect(second.profile.stickers).toHaveLength(2);
   });
 
+  it("keeps a word read after the day's star was given, but not a prize", () => {
+    // The lesson opens on a letter card, which takes the step's one star for the day.
+    const first = applyEffort(child(), "letter", [{ kind: "letter" as const, label: "m" }], now, zone);
+    expect(first.awarded).toBe(true);
+    const word = applyEffort(first.profile, "letter", [{ kind: "word" as const, label: "am" }], now, zone);
+    expect(word.awarded).toBe(false);
+    expect(word.profile.stars).toBe(first.profile.stars);
+    expect(word.stickersAdded).toBe(1);
+    expect(word.profile.stickers.map((sticker) => sticker.label)).toEqual(["m", "am"]);
+    // A prize still needs a star.
+    const prize = applyEffort(word.profile, "letter", [{ kind: "animal" as const, label: "kitten" }], now, zone);
+    expect(prize.stickersAdded).toBe(0);
+  });
+
   it("adds one nest piece when the day is finished and keeps it", () => {
     let profile = child();
     for (const step of ["letter", "draw", "story"] as const) {

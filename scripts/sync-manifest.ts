@@ -2,8 +2,11 @@
  * Keeps src/data/audioManifest.json in step with the app's content, so the
  * voice workflow can make every clip the app can ask for:
  *
- *  - `letters` and `sounds` get an entry for every sound unit in
- *    src/data/units.ts ("sh, as in ship", and the bare "sh" sound);
+ *  - `letters` and `sounds` say each letter's picture word from
+ *    src/data/letterWords.ts ("t, as in tent"), and get an entry for every
+ *    sound unit in src/data/units.ts ("sh, as in ship", and the bare "sh");
+ *  - `prompts` gets the big-and-little line for each letter
+ *    (src/data/letterPairs.ts);
  *  - `words` gets an entry for every ladder word, unit example word, story
  *    word and animal name that has none;
  *  - `stories` is rewritten from src/data/stories.ts. A line that names the
@@ -13,14 +16,19 @@
  *
  *   npx tsx scripts/sync-manifest.ts
  *
- * Clips already on disk are kept; the workflow makes the missing ones.
+ * Clips already on disk are kept; the workflow makes the missing ones. When a
+ * line's words change, its old clip is deleted here, so the workflow records
+ * the new words and the app can never play a clip that says something else
+ * (the letter card for i showed an igloo while its clip said "as in pig").
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { animals } from "../src/data/animals";
 import { ladderClips } from "../src/data/ladder";
+import { pairLine, pairPromptId } from "../src/data/letterPairs";
+import { LETTER_WORDS } from "../src/data/letterWords";
 import { STORIES, storyLineId, storyText, storyTitleId, storyWordList } from "../src/data/stories";
 import { SOUND_UNITS } from "../src/data/units";
 
@@ -49,6 +57,45 @@ for (const story of STORIES) {
   });
 }
 
+/** Clips whose words changed. The old recording is removed so it is made again. */
+const stale: string[] = [];
+/** Clips the app no longer asks for. */
+const retired: string[] = [];
+function drop(file: string, list: string[] = stale): void {
+  const path = join(root, "public/audio", file);
+  if (existsSync(path)) rmSync(path);
+  if (!list.includes(file)) list.push(file);
+}
+
+// Each letter says its picture word. The vowels and x are also listed under
+// their phoneme id (ae, eh, ih, aw, uh, ks), which shares the letter's clip.
+const PHONEME_ALIAS: Record<string, string> = { a: "ae", e: "eh", i: "ih", o: "aw", u: "uh", x: "ks" };
+for (const { letter, word } of Object.values(LETTER_WORDS)) {
+  const say = `${letter}, as in ${word}`;
+  const ids = PHONEME_ALIAS[letter] ? [letter, PHONEME_ALIAS[letter]] : [letter];
+  for (const id of ids) {
+    const before = manifest.letters[id];
+    if (before && before.say !== say) drop(before.file);
+    manifest.letters[id] = { file: `letters/${letter}.mp3`, say, source: "neural" };
+    // The bare sound keeps its clip: the sound of t is the same whether the word is top or tent.
+    manifest.sounds[id] = { file: `sounds/${letter}.mp3`, say, source: "neural" };
+  }
+  const pair = pairPromptId(letter);
+  const line = pairLine(letter);
+  const had = manifest.prompts[pair];
+  if (had && had.say !== line) drop(had.file);
+  manifest.prompts[pair] = { file: `prompts/${pair}.mp3`, say: line, source: "neural" };
+}
+
+// Themed letter phrases ("d, as in dinosaur") are gone: a letter has one
+// picture word (see letterCard in src/data/ladder.ts). Their ids are a letter,
+// a dash and a word; a unit id uses an underscore (a_e).
+for (const id of Object.keys(manifest.letters)) {
+  if (!/^[a-z]-[a-z-]+$/.test(id)) continue;
+  drop(manifest.letters[id].file, retired);
+  delete manifest.letters[id];
+}
+
 // A letter phrase and a bare sound for every unit, in the schedule's order after the letters.
 let units = 0;
 for (const unit of SOUND_UNITS) {
@@ -73,6 +120,8 @@ for (const clip of ladderClips()) {
   if (clip.kind === "words") addWord(clip.id, clip.say);
 }
 for (const unit of SOUND_UNITS) addWord(unit.example);
+// A letter card ends by saying its picture word on its own ("igloo").
+for (const { word } of Object.values(LETTER_WORDS)) addWord(word.toLowerCase().replace(/\s+/g, "-"), word);
 for (const word of storyWordList()) addWord(word);
 for (const animal of animals) addWord(animal.id);
 
@@ -91,3 +140,8 @@ const out = `{\n${order
 JSON.parse(out);
 writeFileSync(manifestPath, out);
 console.log(`${Object.keys(stories).length} story lines, ${units} units added, ${added} words added.`);
+if (retired.length > 0) console.log(`${retired.length} clips removed: the app no longer uses them.`);
+if (stale.length > 0) {
+  console.log(`${stale.length} clips removed because their words changed. Run "Voice clips (Google)" with force=false to record them:`);
+  for (const file of stale) console.log(`  ${file}`);
+}

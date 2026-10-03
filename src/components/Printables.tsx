@@ -5,7 +5,7 @@ import { Illustration } from "../illustrations";
 import type { AnimalId } from "../data/animals";
 import { resolvePlacement, type PlacementDocument } from "../data/placement";
 import { lessonName, type ChildProfile } from "../data/profiles";
-import { isReviewDay, planForWeek, practiceLetters } from "../data/schedule";
+import { isReviewDay, lettersIntroduced, planForWeek, practiceLetters } from "../data/schedule";
 import { COLORS, colorIds, colorPattern, colorPatternLabel, colorTitle } from "../data/colors";
 import { MATH, shapeIds, shapeTitles } from "../data/math";
 import { READING } from "../data/subject";
@@ -14,7 +14,6 @@ import { TIME } from "../data/timeMoney";
 import { shapeStrokes } from "../data/shapeStrokes";
 import { blendingWords, pictureForLetter, scheduleLetters, sheetsFor } from "../data/sheets";
 import { nameGlyphs, nameToTrace, wordGlyphs } from "../data/tracePractice";
-import { Pictogram } from "./Pictogram";
 import { StrokeFigure } from "./StrokeFigure";
 
 function weekLettersFor(placement: PlacementDocument, child: ChildProfile | null): string[] {
@@ -78,8 +77,7 @@ function LetterSheet({ letter, animal }: { letter: string; animal: AnimalId }) {
       </div>
       <div className="sheet-picture" data-picture={picture.word}>
         <div className="sheet-art">
-          {picture.illustration ? <Illustration name={picture.illustration} /> : null}
-          {picture.pictogram ? <Pictogram kind={picture.pictogram} /> : null}
+          <Illustration name={picture.illustration} />
         </div>
         <p className="sheet-word">{picture.word}</p>
       </div>
@@ -149,7 +147,12 @@ export function Printables({
   const tracedName = nameToTrace(child?.name ?? "");
   const showShapes = sheetsFor(MATH).some((sheet) => sheet.id === "shape");
   const letters = showLetters ? scheduleLetters().filter((letter) => picked.includes(letter)) : [];
-  const blends = showBlending ? blendingWords(letters.length > 0 ? letters : picked, child?.ladder.step ?? 1) : [];
+  // The blending and word sheets hold only words the child can sound out: the letters taught up to their
+  // week, and the ones picked here. (They used to list the step's first words whatever letters were known.)
+  const taught = child
+    ? lettersIntroduced(resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange).weekIndex)
+    : [];
+  const blends = showBlending ? blendingWords(letters.length > 0 ? letters : picked, child?.ladder.step ?? 1, [...taught, ...picked]) : [];
 
   const chooseChild = (id: string) => {
     setChildId(id);
@@ -489,7 +492,7 @@ export function Printables({
             </div>
           </article>
         ) : null}
-        {sheetCourse === "reading" && showBlending ? (
+        {sheetCourse === "reading" && showBlending && blends.length > 0 ? (
         <article className="print-sheet" data-sheet="blend">
           <header className="sheet-head">
             <div>

@@ -165,6 +165,24 @@ def duration_of(path: Path) -> float:
         return 0.0
 
 
+def samples_of(path: Path):
+    """The clip as plain samples, read with ffmpeg.
+
+    The recognizer is handed the samples, not the file. Given a file it opens it with its own
+    reader (PyAV), and a new release of that reader broke it overnight: every part of a timing
+    run failed in a second with "open() got an unexpected keyword argument".
+    """
+    import subprocess
+
+    import numpy as np
+
+    raw = subprocess.run(
+        ["ffmpeg", "-v", "quiet", "-i", str(path), "-f", "f32le", "-ac", "1", "-ar", "16000", "-"],
+        capture_output=True,
+    ).stdout
+    return np.frombuffer(raw, dtype=np.float32)
+
+
 def option(name: str, fallback: str = "") -> str:
     if name not in sys.argv:
         return fallback
@@ -214,7 +232,7 @@ def main() -> int:
             continue
         expected = words_of(cue["say"])
         segments, _ = model.transcribe(
-            str(path),
+            samples_of(path),
             language="en",
             word_timestamps=True,
             # One beam: the page's text is already known, the recognizer only has to place it.

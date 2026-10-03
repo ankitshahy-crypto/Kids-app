@@ -1,6 +1,6 @@
 import { recordedSrc, spokenLine } from "../data/audioCatalog";
 import type { DeckWord, LetterTile } from "../data/deck";
-import { beginVoice, endVoice, playOnBus, unlockAudio } from "./manager";
+import { beginVoice, endVoice, playOnBus, unlockAudio, warmClips } from "./manager";
 import { deviceSpeechFollowsSlider } from "./platform";
 import { pickVoice } from "./voices";
 import { SPEECH_RATES, type Settings } from "../settings";
@@ -367,16 +367,20 @@ export function wordCue(id: string, fallback: string): Cue {
   return { src: recordedSrc("words", id), text: spokenLine("words", id, fallback) };
 }
 
-/** A letter's phrase ("m, as in moon"): names the letter, for games that ask to find it. */
+/**
+ * A letter's phrase ("m, as in moon"): names the letter, for letter cards and
+ * for games that ask to find it. A tile that stands for a letter carries the
+ * letter in `phraseId`, so C says "c, as in cat" and not its phoneme's phrase.
+ */
 export function letterCue(letter: LetterTile): Cue {
-  if (letter.say) return { src: letter.sayId ? recordedSrc("letters", letter.sayId) : undefined, text: letter.say };
-  return { src: letter.audioSrc ?? recordedSrc("letters", letter.phoneme), text: spokenLine("letters", letter.phoneme, letter.char) };
+  const id = letter.phraseId ?? letter.phoneme;
+  return { src: letter.audioSrc ?? recordedSrc("letters", id), text: spokenLine("letters", id, letter.char) };
 }
 
 /** A letter's bare sound ("mmm"), or its phrase when no sound clip is on the device. */
 export function letterSoundCue(letter: LetterTile): Cue {
   const src = recordedSrc("sounds", letter.phoneme);
-  return src ? { src, text: letter.say ?? spokenLine("letters", letter.phoneme, letter.char) } : letterCue(letter);
+  return src ? { src, text: spokenLine("letters", letter.phraseId ?? letter.phoneme, letter.char) } : letterCue(letter);
 }
 
 /** A whole word from the deck. */
@@ -396,16 +400,7 @@ export function playLetter(
 ): Promise<void> {
   // The silent e of cake: a short beat while its tile lights, and no sound.
   if (letter.silent) return sleep(SILENT_LETTER_MS, signal);
-  return playCue(
-    letter.say
-      ? { src: letter.sayId ? recordedSrc("letters", letter.sayId) : undefined, text: letter.say }
-      : {
-          src: letter.audioSrc ?? recordedSrc("letters", letter.phoneme),
-          text: spokenLine("letters", letter.phoneme, letter.char),
-        },
-    settings,
-    signal,
-  );
+  return playCue(letterCue(letter), settings, signal);
 }
 
 /**
@@ -417,16 +412,40 @@ export function playLetterSound(letter: LetterTile, settings: Settings, signal: 
   if (letter.silent) return sleep(SILENT_LETTER_MS, signal);
   const src = recordedSrc("sounds", letter.phoneme);
   if (!src) return playLetter(letter, settings, signal);
-  return playCue({ src, text: letter.say ?? spokenLine("letters", letter.phoneme, letter.char) }, settings, signal);
+  return playCue(letterSoundCue(letter), settings, signal);
 }
 
 /**
- * One tile of a card: a whole word inside a sentence, the phrase on a letter
- * card ("m, as in moon"), or the bare sound while a word is sounded out.
+ * One tile under the slider: a whole word inside a sentence, else the
+ * letter's bare sound ("mmm").
+ *
+ * A letter card's tile used to say the card's whole phrase ("m, as in moon")
+ * here. Sliding under it then started a 1.5 second line that the end of the
+ * track cut off to say "moon", so the one thing the slide is for, hearing the
+ * sound of the letter above the finger, did not happen. The phrase is the
+ * card's opening line now (playCardLine); the slide says the sound.
  */
-export function playTile(card: DeckWord, letter: LetterTile, settings: Settings, signal: AbortSignal): Promise<void> {
+export function playTile(_card: DeckWord, letter: LetterTile, settings: Settings, signal: AbortSignal): Promise<void> {
   if (letter.wordId) return playWordId(letter.wordId, letter.char, settings, signal);
-  return card.letterCard ? playLetter(letter, settings, signal) : playLetterSound(letter, settings, signal);
+  return playLetterSound(letter, settings, signal);
+}
+
+/** A letter card's own line, said when it opens and on Play sound: "m, as in moon". */
+export function playCardLine(card: DeckWord, settings: Settings, signal: AbortSignal): Promise<void> {
+  const letter = card.letters[0];
+  if (!letter) return Promise.resolve();
+  return playLetter(letter, settings, signal);
+}
+
+/** Get a card's sounds ready so each one starts the moment the slider reaches its tile. */
+export function warmCard(card: DeckWord): void {
+  const sources = card.letters.map((letter) =>
+    letter.wordId ? recordedSrc("words", letter.wordId) : letter.silent ? undefined : recordedSrc("sounds", letter.phoneme),
+  );
+  const whole = card.sentenceId
+    ? recordedSrc("sentences", card.sentenceId)
+    : recordedSrc("words", card.letterCard ? card.word.trim().toLowerCase().replace(/\s+/g, "-") : card.id);
+  warmClips([...sources, whole]);
 }
 
 /** The whole card: its sentence, its word, or a letter card's example word ("moon"). */

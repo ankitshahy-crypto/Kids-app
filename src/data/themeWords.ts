@@ -14,64 +14,51 @@ const use = (id: string): ThemedEntry => ({ use: id });
 
 // One object per word, like the regular lists, so a card keeps its state
 // while the lesson list is recomputed around it.
+//
+// Most themed words are regular ladder words now (`use`): bug, ant, web, van,
+// jet, cab, hen, cub, sub, gem, dig, crab, flag and wasp have real drawings, so
+// every child gets them, and a theme only moves them to the front. The words
+// that borrowed another picture were dropped after the phone test: "stomp" and
+// "honk" (a dinosaur and a truck), "fin" (a whole fish) and "king" (a crown).
 const egg = made("egg", "egg", "egg");
-const dig = made("dig", "dig", "dig");
-const stomp = made("stomp", "stomp", "dinosaurs");
-const van = made("van", "van", "van");
-const jet = made("jet", "jet", "jet");
-const cab = made("cab", "cab", "cab");
-const honk = made("honk", "honk", "vehicles");
 const truck = made("truck", "truck", "vehicles");
 const star = made("star", "star", "star");
 const rocket = made("rocket", "rocket", "space");
-const hen = made("hen", "hen", "hen");
-const cub = made("cub", "cub", "cub");
 const kitten = made("kitten", "kitten", "cat");
-const bug = made("bug", "bug", "bug");
-const ant = made("ant", "ant", "ant");
-const web = made("web", "web", "web");
-const wasp = made("wasp", "wasp", "wasp");
 const insect = made("insect", "insect", "bug");
-const sub = made("sub", "sub", "sub");
-const fin = made("fin", "fin", "fish");
-const crab = made("crab", "crab", "crab");
-const gem = made("gem", "gem", "gem");
-const king = made("king", "king", "castles");
-const flag = made("flag", "flag", "flag");
 
 export const THEME_WORDS: Record<ThemeId, Partial<Record<1 | 2 | 3 | 4 | 5, ThemedEntry[]>>> = {
   dinosaurs: {
-    3: [egg, dig],
+    3: [egg, use("dig")],
     4: [use("nest")],
-    5: [stomp],
   },
   vehicles: {
-    3: [use("bus"), van, jet, cab],
-    4: [use("stop"), honk],
+    3: [use("bus"), use("van"), use("jet"), use("cab")],
+    4: [use("stop")],
     5: [truck],
   },
   space: {
-    3: [use("sun"), jet],
+    3: [use("sun"), use("jet")],
     4: [star],
     5: [rocket],
   },
   animals: {
-    3: [use("cat"), use("dog"), use("pig"), use("fox"), hen, cub],
+    3: [use("cat"), use("dog"), use("pig"), use("fox"), use("hen"), use("cub")],
     4: [use("frog"), use("fish"), use("nest")],
     5: [kitten],
   },
   bugs: {
-    3: [bug, ant, web],
-    4: [wasp],
+    3: [use("bug"), use("ant"), use("web")],
+    4: [use("wasp")],
     5: [insect],
   },
   ocean: {
-    3: [sub, fin],
-    4: [use("fish"), crab, use("sand")],
+    3: [use("sub")],
+    4: [use("fish"), use("crab"), use("sand")],
   },
   castles: {
-    3: [gem],
-    4: [king, flag],
+    3: [use("gem")],
+    4: [use("flag")],
   },
 };
 

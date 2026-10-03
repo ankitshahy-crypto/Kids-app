@@ -13,9 +13,13 @@ export type LetterTile = {
   audioSrc?: string;
   /** When set, this tile is a word in a short sentence, not a letter sound. */
   wordId?: string;
-  /** A themed letter phrase: the manifest letter id to play, and what the device voice says without it. */
-  say?: string;
-  sayId?: string;
+  /**
+   * The letter whose phrase this tile says when it stands for a letter, not a
+   * sound in a word: "c" plays "c, as in cat". Without it the phrase is looked
+   * up by phoneme, and c and q both said "k, as in kite" (their phoneme is k),
+   * under a picture of a cat and when a game asked for the letter C.
+   */
+  phraseId?: string;
   /** The e of a magic-e word: shown on its tile, but it makes no sound of its own. */
   silent?: boolean;
 };
@@ -26,7 +30,12 @@ export type DeckWord = {
   letters: LetterTile[];
   /** Optional clip that overrides the word file in the audio manifest. */
   audioSrc?: string;
-  illustration: IllustrationName;
+  /**
+   * The drawing of this word. Left out when the word has no drawing of its own
+   * ("am", "sat"): its card then shows the child's animal, who says the word
+   * once it is blended. A picture of something else is never used in its place.
+   */
+  illustration?: IllustrationName;
   /** Optional parent photo. When set, shown instead of the built-in illustration. */
   photoSrc?: string;
   /** When set, blending this card speaks a short sentence instead of one word. */

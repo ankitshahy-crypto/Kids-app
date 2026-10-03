@@ -79,7 +79,8 @@ export function useProfiles() {
     // Read the award from this render. The updater repeats the same step, so a
     // second pass in development cannot add another star or hide the cheer.
     const result = applyEffort(profile, step, learned, new Date(), undefined, subject);
-    if (result.awarded) {
+    // Saved for a new star, and also for a word read after today's star was already given.
+    if (result.awarded || result.stickersAdded > 0) {
       setStore((current) => ({
         ...current,
         profiles: current.profiles.map((item) =>
@@ -165,12 +166,13 @@ export function useProfiles() {
   };
 
   /** One finished word try. The same word counts once per local day. */
-  const noteLadder = (id: string, phonics: boolean, word: string) => {
+  /** `cap`: the furthest step the letters taught so far can support (ladderCap). */
+  const noteLadder = (id: string, phonics: boolean, word: string, cap?: LadderStep) => {
     const day = todayKey();
     setStore((current) => ({
       ...current,
       profiles: current.profiles.map((item) =>
-        item.id === id ? { ...item, ladder: recordLadderSuccess(item.ladder, { phonicsOpen: phonics, word, day }).ladder } : item,
+        item.id === id ? { ...item, ladder: recordLadderSuccess(item.ladder, { phonicsOpen: phonics, word, day, cap }).ladder } : item,
       ),
     }));
   };

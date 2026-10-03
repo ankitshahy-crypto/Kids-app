@@ -1,39 +1,28 @@
 import type { LessonStep } from "../data/profiles";
+import { LETTER_WORDS } from "../data/letterWords";
 
-/** Short prompts for a grown-up sitting beside the child. Keyed by letter and by lesson step. */
-const letterTips: Record<string, string> = {
-  m: "Ask: what other words start with /m/?",
-  a: "Ask: can you hear /a/ in apple?",
-  s: "Ask: what other words start with /s/?",
-  t: "Ask: what other words start with /t/?",
-  p: "Ask: what other words start with /p/?",
-  i: "Ask: can you hear /i/ in igloo?",
-  n: "Ask: what other words start with /n/?",
-  d: "Ask: what other words start with /d/?",
-  o: "Ask: can you hear /o/ in octopus?",
-  c: "Ask: what other words start with /c/?",
-  u: "Ask: can you hear /u/ in umbrella?",
-  b: "Ask: what other words start with /b/?",
-  g: "Ask: what other words start with /g/?",
-  h: "Ask: what other words start with /h/?",
-  e: "Ask: can you hear /e/ in egg?",
-  r: "Ask: what other words start with /r/?",
-  f: "Ask: what other words start with /f/?",
-  l: "Ask: what other words start with /l/?",
-  k: "Ask: what other words start with /k/?",
-  j: "Ask: what other words start with /j/?",
-  w: "Ask: what other words start with /w/?",
-  v: "Ask: what other words start with /v/?",
-  y: "Ask: what other words start with /y/?",
-  z: "Ask: what other words start with /z/?",
-  x: "Ask: can you hear /ks/ at the end of fox?",
-  q: "Ask: what other words start with /kw/?",
-};
+/**
+ * The prompt after a letter card, for the grown-up beside the child. It names
+ * the letter's picture word from the one list (letterWords.ts), so the tip
+ * can never ask about a different word from the card.
+ *
+ * The old tips were typed by hand with the sound between slashes ("start with
+ * /m/"). Most parents do not read that notation, and the list had drifted
+ * from the cards (it asked about igloo while the card showed a pig).
+ */
+function letterTip(letter: string): string | null {
+  const entry = LETTER_WORDS[letter];
+  if (!entry) return null;
+  // x ends its picture word (fox); every other letter starts its word.
+  return entry.word.toLowerCase().startsWith(letter)
+    ? `Ask: what else starts like ${entry.word}?`
+    : `Ask: can you hear the last sound in ${entry.word}?`;
+}
 
 const stepTips: Record<LessonStep, { start: string; end: string }> = {
   letter: {
-    start: "Sit close. Your child drags across the word and hears each sound.",
-    end: "Ask: what other words start with this sound?",
+    start: "Sit close. Your child slides under each letter to hear its sound, then the whole word.",
+    end: "Ask your child to read the word once more, without sliding.",
   },
   draw: {
     start: "Trace the big letter, then the little one. A finger or a pencil is fine.",
@@ -108,9 +97,11 @@ const gameTips: Record<string, { start: string; end: string }> = {
     start: "Pop the balloons with the sound you hear. The others stay up.",
     end: "Ask: what else starts with that sound?",
   },
+  // Feed shows pictures of all kinds now (a moon, a mat, a map), so the tip says "pictures" and
+  // the question at the end asks about things at home, not only food.
   feed: {
-    start: "Drag or tap foods that start with the letter. Their animal is happy either way.",
-    end: "Ask: what food at home starts with that letter?",
+    start: "Drag or tap the pictures that start with the letter. Their animal is happy either way.",
+    end: "Ask: what at home starts with that letter?",
   },
   rhyme: {
     start: "Listen for words that end the same. Tap one, then its rhyme.",
@@ -285,11 +276,15 @@ export function colorTip(step: string, when: "start" | "end"): ReadTip {
   return { id: `colors-${step}-${when}`, text: tip[when] };
 }
 
-/** A letter end-tip wins when we have one. Otherwise the lesson step supplies the line. */
+/**
+ * A letter's own tip after its letter card. After a word, and everywhere
+ * else, the lesson step supplies the line. Pass `letter` only for a letter
+ * card: the tip used to be keyed to the first letter of whatever card was
+ * finished, so reading "sat" brought up the tip for S.
+ */
 export function readTip(step: LessonStep, when: "start" | "end", letter?: string): ReadTip {
   const key = letter?.trim().toLowerCase() ?? "";
-  if (when === "end" && step === "letter" && letterTips[key]) {
-    return { id: `letter-${key}-end`, text: letterTips[key] };
-  }
+  const tip = when === "end" && step === "letter" ? letterTip(key) : null;
+  if (tip) return { id: `letter-${key}-end`, text: tip };
   return { id: `${step}-${when}`, text: stepTips[step][when] };
 }

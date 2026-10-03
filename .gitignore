@@ -19,3 +19,5 @@ ios/DerivedData
 ios/capacitor-cordova-ios-plugins
 **/xcuserdata
 *.xcuserstate
+scripts/.whisper/
+__pycache__/

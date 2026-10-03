@@ -1,7 +1,8 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { installAudioSpy, requestedCues } from "./audioSpy";
-import { createdThisWeek } from "./clock";
+import { createdWeeksAgo } from "./clock";
 import { openTeacherChild, passGate } from "./gate";
+import { showWordCard } from "./lesson";
 
 /**
  * Sounding out on their own. A grown-up can decide a child says the letter
@@ -19,10 +20,10 @@ function mia(patch: Record<string, unknown> = {}) {
     name: "Mia",
     ageRange: "4",
     animal: "fox",
-    createdAt: createdThisWeek(),
+    // The week of s and t, when the first three-letter words (mat, sat) can be sounded out.
+    createdAt: createdWeeksAgo(1),
     stars: 1,
     days: {},
-    // Step 3 opens the deck on a word, not the week's letter card.
     ladder: { step: 3, successes: 0 },
     ...patch,
   };
@@ -39,13 +40,15 @@ async function install(page: Page, child: Record<string, unknown>) {
   );
 }
 
-async function openLetters(page: Page) {
+async function openLetters(page: Page, card: "word" | "letter" = "word") {
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
   await page.getByRole("button", { name: "Letters" }).click();
   await expect(page.locator(".blend-track")).toBeVisible();
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
+  // The lesson opens on the week's letter cards. Most of these tests are about sliding under a word.
+  if (card === "word") await showWordCard(page, 3);
 }
 
 async function dragAcross(page: Page, track: Locator) {
@@ -580,9 +583,9 @@ test("a step back with nothing to step back stops Play sound on a word, in the m
 });
 
 test("a swipe down with nothing to step back leaves a new letter's card saying its letter, with the letter showing", async ({ page }) => {
-  // Step 1 opens on the week's letter card, which says its letter on its own ("m, as in moon", then "moon").
+  // The lesson opens on the week's letter card, which says its line on its own ("s, as in sun").
   await install(page, mia({ ladder: { step: 1, successes: 0 } }));
-  await openLetters(page);
+  await openLetters(page, "letter");
   const activity = page.locator(".activity");
   await expect(activity).toHaveAttribute("data-letter-card", "true");
   const tile = page.locator(".letters .tile-wrap").first();
@@ -590,12 +593,13 @@ test("a swipe down with nothing to step back leaves a new letter's card saying i
   await track.focus();
   await expect(activity).toHaveAttribute("data-active", "0", { timeout: 8000 });
   await page.keyboard.press("ArrowLeft");
-  // Still showing, read straight off the page for a second, and the line goes on to its picture word.
+  // Still showing, read straight off the page for a second, and the line is said to its end.
   for (let waited = 0; waited < 1000; waited += 50) {
     expect(await tile.getAttribute("data-lit")).toBe("true");
     await page.waitForTimeout(50);
   }
-  await expect(activity).toHaveAttribute("data-active", "all", { timeout: 8000 });
+  await expect(activity).toHaveAttribute("data-active", "", { timeout: 8000 });
+  expect(await tile.getAttribute("data-lit")).toBe("true");
   await expect(track).toHaveAttribute("aria-valuenow", "0");
 });
 
@@ -711,12 +715,12 @@ test("a sentence is still read by the app, even when the child says the sounds",
 });
 
 test("a new letter is still said by the app, even when the child says the sounds", async ({ page }) => {
-  // Step 1 opens on the week's letter card.
+  // The lesson opens on the week's letter card.
   await install(page, mia({ saysSounds: true, ladder: { step: 1, successes: 0 } }));
-  await openLetters(page);
+  await openLetters(page, "letter");
   await expect(page.locator(".activity")).toHaveAttribute("data-letter-card", "true");
   await expect(page.locator(".activity")).toHaveAttribute("data-says-sounds", "app");
-  // Its one step is the letter; the step after it is the card's picture word ("m, as in moon", then "moon").
+  // Its one step is the letter's sound; the step after it is the card's picture word ("sss", then "sun").
   const example = (await page.locator(".activity .picture-card").getAttribute("aria-label")) ?? "";
   expect(example).toBeTruthy();
   const track = page.getByRole("slider", { name: "Slide across the letters" });

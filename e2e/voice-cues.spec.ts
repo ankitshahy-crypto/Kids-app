@@ -215,7 +215,8 @@ test("each game says what to do as it opens, and Again says it back", async ({ p
   const games: { id: string; parts: RegExp[] }[] = [
     { id: "hatch", parts: [/^tap the missing letters\.$/] },
     { id: "pop", parts: [/^pop the balloons with this letter\.$/, /, as in /] },
-    { id: "feed", parts: [/^feed the foods that start with this letter\.$/, /, as in /] },
+    // Feed shows pictures of all kinds (a moon, a mat, a map), so the line says "pictures", not "foods".
+    { id: "feed", parts: [/^feed me the pictures that start with this letter\.$/, /, as in /] },
     { id: "rhyme", parts: [/^find two pictures that rhyme\.$/] },
     { id: "memory", parts: [/^flip two cards\. find a match\.$/] },
     { id: "spin", parts: [/^spin the wheel\.$/] },

@@ -1,6 +1,8 @@
-import { starterDeck, type DeckWord, type LetterTile } from "./deck";
-import { ladderMaxLetters, type LadderStep } from "./ladder";
-import type { PhonemeId } from "./phonemes";
+import type { IllustrationName } from "../illustrations";
+import { starterDeck, type DeckWord } from "./deck";
+import { pictureWords } from "./ladder";
+import { LETTER_WORDS } from "./letterWords";
+import { letterTile } from "./wordBuild";
 import { isWardrobeId, wardrobe, wardrobeItem } from "./wardrobe";
 
 /** 1 is the first sound. 2 is a short word. 3 is a longer word. */
@@ -21,39 +23,8 @@ export type GameProgress = {
 export const BABY_ANIMALS = ["kitten", "puppy", "fawn", "owlet", "duckling", "cub"] as const;
 export type BabyAnimal = (typeof BABY_ANIMALS)[number];
 
-const LETTER_PHONEME: Record<string, string> = {
-  a: "ae",
-  b: "b",
-  c: "k",
-  d: "d",
-  e: "eh",
-  f: "f",
-  g: "g",
-  h: "h",
-  i: "ih",
-  j: "j",
-  k: "k",
-  l: "l",
-  m: "m",
-  n: "n",
-  o: "aw",
-  p: "p",
-  q: "k",
-  r: "r",
-  s: "s",
-  t: "t",
-  u: "uh",
-  v: "v",
-  w: "w",
-  x: "ks",
-  y: "y",
-  z: "z",
-};
-
-export function letterTile(char: string): LetterTile {
-  const lower = char.toLowerCase();
-  return { char: lower, phoneme: (LETTER_PHONEME[lower] ?? "m") as PhonemeId };
-}
+// One letter as a tile that names itself ("c, as in cat"). Shared with the letter cards (wordBuild.ts).
+export { letterTile };
 
 export function isHatchLevel(value: number): value is HatchLevel {
   return HATCH_LEVELS.includes(value as HatchLevel);
@@ -111,12 +82,44 @@ export function nextBaby(collected: readonly string[]): BabyAnimal {
   return BABY_ANIMALS.find((name) => !have.has(name)) ?? BABY_ANIMALS[collected.length % BABY_ANIMALS.length];
 }
 
+/*
+ * Every round below takes a `salt`: a number that is different on each play
+ * (the spin count, or a count kept by the game screen). It picks the word or
+ * the letter, and shuffles the answers.
+ *
+ * Why: the first phone test found every game the same on every play. The
+ * rounds were built from the first match in each list, so Hatch always showed
+ * one word, Pop always asked for the first letter of the week, and the right
+ * answer was always the first button. A child learned "tap the left one".
+ * The same salt always gives the same round, so tests stay exact.
+ */
+
+/** A steady shuffle: the same items and salt always come out in the same order. */
+function mix<T>(items: readonly T[], salt: number): T[] {
+  const copy = [...items];
+  let state = (Math.floor(Math.abs(salt)) + 1) >>> 0;
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    const swap = state % (index + 1);
+    const held = copy[index];
+    copy[index] = copy[swap];
+    copy[swap] = held;
+  }
+  return copy;
+}
+
+/** The item `salt` places along, going round. */
+function turn<T>(items: readonly T[], salt: number): T | undefined {
+  if (items.length === 0) return undefined;
+  return items[Math.floor(Math.abs(salt)) % items.length];
+}
+
 export type HatchRound = {
   word: DeckWord;
   level: HatchLevel;
   /** Indexes the child fills. Other letters are already showing. */
   blanks: number[];
-  /** Lowercase letters on the big tiles, needed ones first. */
+  /** Lowercase letters on the big tiles, in a shuffled order. */
   choices: string[];
 };
 
@@ -124,25 +127,47 @@ function knownSet(known: readonly string[]): Set<string> {
   return new Set(known.map((letter) => letter.toLowerCase()).filter((letter) => /^[a-z]$/.test(letter)));
 }
 
-function pickWord(words: readonly DeckWord[], level: HatchLevel, known: Set<string>): DeckWord {
-  const pool = words.length > 0 ? words : starterDeck.words;
-  const chars = (word: DeckWord) => word.letters.map((letter) => letter.char.toLowerCase());
-  const match = pool.find((word) => {
-    const letters = chars(word);
-    if (level === 1) return known.size === 0 || known.has(letters[0] ?? "");
-    if (level === 2) return letters.length === 3 && (known.size === 0 || letters.some((letter) => known.has(letter)));
-    return letters.length > 3 && (known.size === 0 || letters.some((letter) => known.has(letter)));
-  });
-  if (match) return match;
-  if (level === 3) return pool.find((word) => word.letters.length > 3) ?? pool[pool.length - 1];
-  if (level === 2) return pool.find((word) => word.letters.length === 3) ?? pool[0];
-  return pool[0];
+/** One letter to a tile, and none silent: a word whose blanks can be filled from letter tiles. */
+function spellable(word: DeckWord): boolean {
+  return !word.sentenceId && !word.letterCard && word.letters.every((tile) => tile.char.length === 1 && !tile.silent && !tile.wordId);
+}
+
+const tileChars = (word: DeckWord) => word.letters.map((letter) => letter.char.toLowerCase());
+
+/**
+ * A picture word for this egg. The picture is the question, so only words
+ * with a drawing of their own are used (the old pool included "a" under an
+ * apple, and words with another word's picture).
+ *
+ * Level 1 asks for a first sound, so the word starts with a taught letter.
+ * Levels 2 and 3 ask for the taught letters of a three-letter or a longer
+ * word; a word the child can spell in full is preferred. `salt` moves through
+ * the words that fit.
+ */
+function pickWord(words: readonly DeckWord[], level: HatchLevel, known: Set<string>, salt: number): DeckWord {
+  const drawn = words.filter((word) => Boolean(word.illustration) && spellable(word));
+  const pool = drawn.length > 0 ? drawn : starterDeck.words;
+  const sized = pool.filter((word) => (level === 1 ? word.letters.length <= 4 : level === 2 ? word.letters.length === 3 : word.letters.length > 3));
+  const fits = sized.length > 0 ? sized : pool;
+  if (known.size === 0) return turn(fits, salt) ?? pool[0];
+  if (level === 1) {
+    const starts = fits.filter((word) => known.has(tileChars(word)[0] ?? ""));
+    return turn(starts.length > 0 ? starts : fits, salt) ?? pool[0];
+  }
+  const whole = fits.filter((word) => tileChars(word).every((char) => known.has(char)));
+  const partly = fits.filter((word) => tileChars(word).some((char) => known.has(char)));
+  return turn(whole.length >= 2 ? whole : partly.length > 0 ? partly : fits, salt) ?? pool[0];
 }
 
 /** One egg. Level 1 blanks the first sound. Later levels blank every taught letter. */
-export function hatchRound(known: readonly string[], level: HatchLevel, words: readonly DeckWord[] = starterDeck.words): HatchRound {
+export function hatchRound(
+  known: readonly string[],
+  level: HatchLevel,
+  words: readonly DeckWord[] = starterDeck.words,
+  salt = 0,
+): HatchRound {
   const taught = knownSet(known);
-  const word = pickWord(words, level, taught);
+  const word = pickWord(words, level, taught, salt);
   const blanks: number[] = [];
   word.letters.forEach((letter, index) => {
     const char = letter.char.toLowerCase();
@@ -154,9 +179,13 @@ export function hatchRound(known: readonly string[], level: HatchLevel, words: r
   });
   if (blanks.length === 0) blanks.push(0);
   const needed = [...new Set(blanks.map((index) => word.letters[index].char.toLowerCase()))];
-  const rest = [...taught].filter((letter) => !needed.includes(letter));
-  const alphabet = "abcdefghijklmnopqrstuvwxyz".split("").filter((letter) => !needed.includes(letter) && !rest.includes(letter));
-  const choices = [...needed, ...rest, ...alphabet].slice(0, 6);
+  const rest = mix([...taught].filter((letter) => !needed.includes(letter)), salt);
+  // Other letters come from the ones taught; when those run out, from letters that look nothing like them.
+  const spare = [...SPARE_LETTERS, ..."abcdefghijklmnopqrstuvwxyz"].filter((letter) => !needed.includes(letter) && !rest.includes(letter));
+  // One first sound is found among three letters; the letters of a whole word among six.
+  const size = Math.max(level === 1 ? 3 : 6, needed.length);
+  // The needed letters are always there; where they sit changes with every egg.
+  const choices = mix([...new Set([...needed, ...rest, ...spare])].slice(0, size), salt + 7);
   return { word, level, blanks, choices };
 }
 
@@ -173,97 +202,140 @@ export type Balloon = {
   target: boolean;
 };
 
-/** Balloons for one sound. Odd slots are the target so a round always has some to pop. */
-export function popRound(known: readonly string[]): { target: string; balloons: Balloon[] } {
+/** Letters that look nothing alike, to fill a round when few letters are taught yet. */
+const SPARE_LETTERS = ["s", "t", "o", "b", "x", "e"];
+
+/**
+ * Six balloons: three with the letter to pop and three with other letters,
+ * in a shuffled order. The letter moves through the ones taught, one per
+ * play (it was always the week's first letter, in the same three places).
+ */
+export function popRound(known: readonly string[], salt = 0): { target: string; balloons: Balloon[] } {
   const letters = [...knownSet(known)];
-  const target = letters[0] ?? "m";
-  const distract = letters.filter((letter) => letter !== target);
-  const extras = distract.length > 0 ? distract : ["a", "s", "t"];
-  const balloons = [0, 1, 2, 3, 4, 5].map((index) => {
-    const letter = index % 2 === 0 ? target : extras[Math.floor(index / 2) % extras.length];
-    return { id: String(index), letter, target: letter === target };
-  });
-  return { target, balloons };
+  const target = turn(letters, salt) ?? "m";
+  const others = mix(letters.filter((letter) => letter !== target), salt);
+  const spare = SPARE_LETTERS.filter((letter) => letter !== target && !others.includes(letter));
+  const distract = [...others, ...spare].slice(0, 3);
+  const faces = mix([target, target, target, ...distract], salt + 3);
+  return { target, balloons: faces.map((letter, index) => ({ id: String(index), letter, target: letter === target })) };
 }
 
-export type Food = {
+/** Something a child can name from its drawing, and the letter its name starts with. */
+export type PictureItem = {
   id: string;
   letter: string;
   label: string;
+  illustration: IllustrationName;
 };
 
-export const FOODS: readonly Food[] = [
-  { id: "milk", letter: "m", label: "milk" },
-  { id: "muffin", letter: "m", label: "muffin" },
-  { id: "apple", letter: "a", label: "apple" },
-  { id: "sandwich", letter: "s", label: "sandwich" },
-  { id: "taco", letter: "t", label: "taco" },
-  { id: "pear", letter: "p", label: "pear" },
-  { id: "ice", letter: "i", label: "ice" },
-  { id: "nuts", letter: "n", label: "nuts" },
-  { id: "donut", letter: "d", label: "donut" },
-];
+/** Words whose first letter does not make its usual sound: the g of gem says j. */
+const ODD_FIRST_SOUND = new Set(["gem"]);
+/** Letters that start words with the same sound: a cat and a kite both start with the k sound. */
+const SAME_SOUND: Record<string, string[]> = { c: ["k", "q"], k: ["c", "q"], q: ["c", "k"] };
 
-export function feedRound(known: readonly string[], step?: LadderStep): { target: string; foods: Food[] } {
-  const taught = knownSet(known);
-  const max = step ? ladderMaxLetters(step) : 24;
-  const pool = FOODS.filter((food) => food.label.length <= max);
-  const foods = pool.length >= 2 ? pool : FOODS;
-  const target = foods.find((food) => taught.size === 0 || taught.has(food.letter))?.letter ?? "m";
-  const matching = foods.filter((food) => food.letter === target);
-  const others = foods.filter((food) => food.letter !== target && (taught.size === 0 || taught.has(food.letter)));
-  const round = [...matching, ...others].slice(0, 4);
-  return { target, foods: round.length > 0 ? round : foods.slice(0, 4) };
+let pictureItemCache: PictureItem[] | null = null;
+
+/**
+ * Every drawing with a name that starts with one plain letter sound: the
+ * letters' picture words, then the ladder's picture words. A word that starts
+ * with a sound unit (ship, chick, whale) is left out, since its first letter
+ * does not say its own sound there.
+ */
+export function pictureItems(): PictureItem[] {
+  if (pictureItemCache) return pictureItemCache;
+  const items: PictureItem[] = [];
+  const add = (id: string, letter: string, label: string, illustration: IllustrationName) => {
+    if (ODD_FIRST_SOUND.has(id) || items.some((item) => item.illustration === illustration || item.id === id)) return;
+    items.push({ id, letter, label, illustration });
+  };
+  for (const entry of Object.values(LETTER_WORDS)) {
+    // The id is the word's clip id ("yo-yo"), so a tapped picture can say its name.
+    if (entry.word.toLowerCase().startsWith(entry.letter)) add(entry.word.toLowerCase().replace(/\s+/g, "-"), entry.letter, entry.word, entry.illustration);
+  }
+  for (const word of pictureWords()) {
+    const first = word.letters[0];
+    if (!first || first.char.length !== 1 || first.silent || !word.illustration) continue;
+    add(word.id, first.char.toLowerCase(), word.word, word.illustration);
+  }
+  pictureItemCache = items;
+  return items;
 }
 
-export type RhymePair = { a: string; b: string; step: 3 | 4 };
+/**
+ * Feed the Animal: four pictures, one or two of which start with the letter.
+ *
+ * It used to be nine "foods" drawn as plain colored circles (milk was a white
+ * dot) for eight letters only, always asking for m with the same three dots.
+ * Now any letter taught can be asked for, with real drawings: the animal eats
+ * whatever starts with the sound, which is the game children know as feeding
+ * a hungry monster.
+ */
+export function feedRound(known: readonly string[], salt = 0): { target: string; items: PictureItem[] } {
+  const taught = knownSet(known);
+  const all = pictureItems();
+  const has = (letter: string) => all.some((item) => item.letter === letter);
+  const askable = [...taught].filter(has);
+  const target = turn(askable.length > 0 ? askable : ["m"], salt) ?? "m";
+  const matching = mix(all.filter((item) => item.letter === target), salt).slice(0, 2);
+  const apart = (item: PictureItem) => item.letter !== target && !(SAME_SOUND[target] ?? []).includes(item.letter);
+  // Other pictures come from letters already taught when there are enough, so every name is a sound the child has met.
+  const familiar = all.filter((item) => apart(item) && taught.has(item.letter));
+  const others = mix(familiar.length >= 2 ? familiar : all.filter(apart), salt + 5).slice(0, 4 - matching.length);
+  return { target, items: mix([...matching, ...others], salt + 11) };
+}
 
-export const RHYME_PAIRS: readonly RhymePair[] = [
-  { a: "map", b: "tap", step: 3 },
-  { a: "pin", b: "tin", step: 3 },
-  { a: "man", b: "pan", step: 3 },
-  { a: "mad", b: "sad", step: 3 },
-  { a: "net", b: "pet", step: 3 },
-  { a: "nest", b: "tent", step: 4 },
-  { a: "jump", b: "bump", step: 4 },
-  { a: "fish", b: "wish", step: 4 },
+/**
+ * Words that rhyme, by the sound they end with. Every word has a drawing, so
+ * a child who cannot read yet plays by picture and by ear.
+ *
+ * The old list was eight pairs shown as words over colored squares, and one
+ * pair did not rhyme (nest and tent). Only the first two pairs were ever
+ * used.
+ */
+export const RHYME_FAMILIES: readonly { ending: string; words: readonly string[] }[] = [
+  { ending: "at", words: ["cat", "hat", "bat", "mat"] },
+  { ending: "og", words: ["dog", "log", "frog"] },
+  { ending: "ug", words: ["bug", "rug", "jug"] },
+  { ending: "an", words: ["pan", "can", "van"] },
+  { ending: "ig", words: ["pig", "dig"] },
+  { ending: "et", words: ["net", "jet"] },
+  { ending: "op", words: ["top", "mop"] },
+  { ending: "un", words: ["sun", "bun"] },
+  { ending: "ap", words: ["cap", "map", "tap"] },
+  { ending: "ox", words: ["fox", "box"] },
+  { ending: "ub", words: ["cub", "sub"] },
+  { ending: "and", words: ["sand", "hand"] },
+  { ending: "oat", words: ["boat", "goat"] },
+  { ending: "ight", words: ["light", "night"] },
+  { ending: "ar", words: ["star", "car", "jar"] },
+  { ending: "ay", words: ["day", "hay"] },
+  { ending: "ing", words: ["ring", "swing"] },
 ];
 
 export type RhymeCard = {
   id: string;
   word: string;
   pair: string;
+  illustration: IllustrationName;
 };
 
-function mix<T>(items: readonly T[], salt: number): T[] {
-  const copy = [...items];
-  let state = (salt + 1) >>> 0;
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-    const swap = state % (index + 1);
-    const held = copy[index];
-    copy[index] = copy[swap];
-    copy[swap] = held;
-  }
-  return copy;
-}
-
-/** Two rhyming pairs at this ladder step whose first sounds are already taught. */
-export function rhymeRound(known: readonly string[], salt = 0, step: LadderStep = 3): RhymeCard[] {
-  const taught = knownSet(known);
-  const startsKnown = (word: string) => taught.size === 0 || taught.has(word[0] ?? "");
-  const knownPair = (pair: RhymePair) => startsKnown(pair.a) && startsKnown(pair.b);
-  const eligible = RHYME_PAIRS.filter((pair) => pair.step <= step && knownPair(pair));
-  const top = eligible.reduce((best, pair) => Math.max(best, pair.step), 0);
-  const atTop = eligible.filter((pair) => pair.step === top);
-  const early = RHYME_PAIRS.filter((pair) => pair.step <= 3);
-  const source = atTop.length >= 2 ? atTop : eligible.length >= 2 ? eligible : early.length > 0 ? early : RHYME_PAIRS;
-  const chosen = source.slice(0, 2);
-  const cards = chosen.flatMap((pair, index) => [
-    { id: `${pair.a}-${index}`, word: pair.a, pair: String(index) },
-    { id: `${pair.b}-${index}`, word: pair.b, pair: String(index) },
-  ]);
-  return mix(cards, salt);
+/**
+ * Two rhyming pairs, as four shuffled picture cards. The two families never
+ * share a vowel sound, so cat and hat are not set beside map and tap.
+ */
+export function rhymeRound(salt = 0): RhymeCard[] {
+  const drawings = new Map(pictureWords().map((word) => [word.id, word.illustration as IllustrationName]));
+  const families = RHYME_FAMILIES.map((family) => ({ ...family, words: family.words.filter((word) => drawings.has(word)) })).filter(
+    (family) => family.words.length >= 2,
+  );
+  const first = turn(families, salt) ?? families[0];
+  const vowel = (ending: string) => ending.match(/[aeiou]+/)?.[0] ?? "";
+  const apart = families.filter((family) => family !== first && vowel(family.ending) !== vowel(first.ending));
+  const second = turn(apart, salt * 3 + 1) ?? apart[0];
+  const cards = [first, second].flatMap((family, index) =>
+    mix(family.words, salt + index).slice(0, 2).map((word) => ({ id: `${word}-${index}`, word, pair: String(index), illustration: drawings.get(word) as IllustrationName })),
+  );
+  return mix(cards, salt + 13);
 }
 
 export type MemoryFace = "upper" | "lower" | "numeral" | "dots";
@@ -275,21 +347,23 @@ export type MemoryCard = {
   value: string;
 };
 
+/** Three pairs: a big letter and its little letter, or a number and its dots. The three change with each board. */
 export function memoryRound(known: readonly string[], mode: "letters" | "numbers", salt = 0): MemoryCard[] {
   if (mode === "numbers") {
-    const cards = [1, 2, 3].flatMap((value) => [
+    const values = mix([1, 2, 3, 4, 5, 6], salt).slice(0, 3);
+    const cards = values.flatMap((value) => [
       { id: `num-${value}`, pair: String(value), face: "numeral" as const, value: String(value) },
       { id: `dots-${value}`, pair: String(value), face: "dots" as const, value: String(value) },
     ]);
-    return mix(cards, salt);
+    return mix(cards, salt + 1);
   }
   const taught = [...knownSet(known)];
-  const letters = (taught.length >= 3 ? taught : ["m", "a", "s"]).slice(0, 3);
+  const letters = mix(taught.length >= 3 ? taught : ["m", "a", "s"], salt).slice(0, 3);
   const cards = letters.flatMap((letter) => [
     { id: `upper-${letter}`, pair: letter, face: "upper" as const, value: letter.toUpperCase() },
     { id: `lower-${letter}`, pair: letter, face: "lower" as const, value: letter },
   ]);
-  return mix(cards, salt);
+  return mix(cards, salt + 1);
 }
 
 /** Challenges on the wheel, in tap order. Bonus is a prize, never a loss. */
@@ -340,13 +414,14 @@ export function snapForward(raw: number, from: number): number {
   return target;
 }
 
+/** A letter to listen for, and three letters to choose from, shuffled. */
 export function soundChoices(known: readonly string[], salt = 0): { target: string; choices: string[] } {
   const pool = [...knownSet(known)];
   const letters = pool.length > 0 ? pool : ["m", "a", "s"];
-  const target = letters[Math.abs(Math.floor(salt)) % letters.length] ?? "m";
-  const others = letters.filter((letter) => letter !== target);
-  const alphabet = "abcdefghijklmnopqrstuvwxyz".split("").filter((letter) => letter !== target && !others.includes(letter));
-  return { target, choices: [target, ...others, ...alphabet].slice(0, 3) };
+  const target = turn(letters, salt) ?? "m";
+  const others = mix(letters.filter((letter) => letter !== target), salt);
+  const spare = SPARE_LETTERS.filter((letter) => letter !== target && !others.includes(letter));
+  return { target, choices: mix([target, ...[...others, ...spare].slice(0, 2)], salt + 5) };
 }
 
 export type WordBlank = {
@@ -356,15 +431,30 @@ export type WordBlank = {
 };
 
 /** One missing letter in a picture word. Level 1 hides the first sound, like “_ a t”. */
-export function wordBlank(known: readonly string[], level: HatchLevel, words: readonly DeckWord[] = starterDeck.words): WordBlank {
-  const round = hatchRound(known, level, words);
-  const blank = level === 2 && round.blanks.includes(1) ? 1 : (round.blanks[0] ?? 0);
+export function wordBlank(
+  known: readonly string[],
+  level: HatchLevel,
+  words: readonly DeckWord[] = starterDeck.words,
+  salt = 0,
+): WordBlank {
+  const round = hatchRound(known, level, words, salt);
+  // Past level 1 the missing letter moves through the word's taught letters.
+  const blank = level === 1 ? (round.blanks[0] ?? 0) : (turn(round.blanks, salt) ?? 0);
   const answer = round.word.letters[blank]?.char.toLowerCase() ?? "a";
   const rest = round.choices.filter((letter) => letter !== answer);
-  return { word: round.word, blank, choices: [answer, ...rest].slice(0, 3) };
+  return { word: round.word, blank, choices: mix([answer, ...rest.slice(0, 2)], salt + 5) };
 }
 
-export function countChoices(total: number): { total: number; choices: number[] } {
+/**
+ * How many things to count on this spin. It was the day's lesson number on
+ * every spin; now it moves from 1 up to a little past that number.
+ */
+export function spinCount(lesson: number, salt = 0): number {
+  const top = Math.max(3, Math.min(10, (Math.floor(lesson) || 1) + 2));
+  return 1 + (Math.floor(Math.abs(salt)) * 7 + (Math.floor(lesson) || 1)) % top;
+}
+
+export function countChoices(total: number, salt = 0): { total: number; choices: number[] } {
   const count = Math.max(1, Math.min(10, Math.floor(total) || 1));
   const choices = [count];
   if (count > 1) choices.push(count - 1);
@@ -374,19 +464,24 @@ export function countChoices(total: number): { total: number; choices: number[] 
     if (!choices.includes(next)) choices.push(next);
     else break;
   }
-  return { total: count, choices: choices.slice(0, 3) };
+  return { total: count, choices: mix(choices.slice(0, 3), salt + 5) };
 }
 
-export function colorChoices(target: string, options: readonly string[]): { target: string; choices: string[] } {
-  const hear = target.trim().toLowerCase() || "red";
-  const rest = options.map((color) => color.toLowerCase()).filter((color) => color !== hear);
+/** A color to find among three swatches. The color moves through the lesson's colors, one per spin. */
+export function colorChoices(target: string, options: readonly string[], salt = 0): { target: string; choices: string[] } {
+  const named = options.map((color) => color.toLowerCase());
+  const lesson = target.trim().toLowerCase() || "red";
+  const pool = named.includes(lesson) ? named : [lesson, ...named];
+  const hear = turn(pool, salt) ?? lesson;
+  const rest = mix(pool.filter((color) => color !== hear), salt);
   const fallback = ["red", "blue", "yellow", "green"].filter((color) => color !== hear && !rest.includes(color));
-  return { target: hear, choices: [hear, ...rest, ...fallback].slice(0, 3) };
+  return { target: hear, choices: mix([hear, ...[...rest, ...fallback].slice(0, 2)], salt + 5) };
 }
 
-export function traceLetter(known: readonly string[]): string {
+/** The letter to trace on this spin. It moves through the letters the child knows, one per spin. */
+export function traceLetter(known: readonly string[], salt = 0): string {
   const letters = [...knownSet(known)];
-  return letters[0] ?? "m";
+  return letters[Math.abs(Math.floor(salt)) % Math.max(1, letters.length)] ?? "m";
 }
 
 export type SpinPrize =

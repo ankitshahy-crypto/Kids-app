@@ -6,6 +6,11 @@
  * src/data/audioAvailable.json so the app knows which files exist. The app
  * itself never calls Google.
  *
+ * A clip is made when its file is missing, or when the words it was recorded
+ * from (src/data/audioRecorded.json) are no longer the words in the manifest.
+ * So a changed line is recorded again on the next run, and the app cannot go
+ * on playing the old words.
+ *
  *   GOOGLE_TTS_API_KEY=... node scripts/generate-audio.mjs             # an API key restricted to the Text-to-Speech API
  *   GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json node scripts/generate-audio.mjs   # or a service-account key
  *   node scripts/generate-audio.mjs --index-only        # rewrite the index, no network
@@ -14,6 +19,11 @@
  *   node scripts/generate-audio.mjs --force letters,sounds --only letters,sounds,words
  *                                                       # remake those two kinds, add missing words
  *   node scripts/generate-audio.mjs --only words,stories
+ *   node scripts/generate-audio.mjs --match '^prompts/pair-'   # only clips whose kind/id matches
+ *   node scripts/generate-audio.mjs --verify            # listen to each new clip (scripts/check-clips.py) and
+ *                                                       # make it again, up to four times, if it does not say its line
+ *   node scripts/generate-audio.mjs --verify --audit    # also listen to the clips already there, and remake the ones that fail
+ *   node scripts/generate-audio.mjs --report report.md  # what was made, and what a person should listen to
  *   node scripts/generate-audio.mjs --sample chirp3:Aoede,gemini-2.5-pro-tts:Kore --sample-dir samples
  *                                                       # a short comparison clip per voice, nothing in public/audio
  *   node scripts/generate-audio.mjs --voice Achernar --try tries.txt --sample-dir samples
@@ -39,7 +49,8 @@
  *                                       ffmpeg and python3 with numpy either way.
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { createInterface } from "node:readline";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
@@ -48,6 +59,7 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const manifestPath = join(root, "src/data/audioManifest.json");
 const indexPath = join(root, "src/data/audioAvailable.json");
+const recordedPath = join(root, "src/data/audioRecorded.json");
 const audioRoot = resolve(root, "public/audio");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const argv = process.argv.slice(2);
@@ -103,6 +115,23 @@ function writeIndex(files) {
 if (flags.has("--index-only")) {
   const files = scan();
   writeIndex(files);
+  // Keep the record of what each clip was recorded from in step: a clip with no entry yet is
+  // taken to say its line, and an entry for a clip that is gone is dropped.
+  let recorded = {};
+  try {
+    recorded = JSON.parse(readFileSync(recordedPath, "utf8"));
+  } catch {
+    // No record yet.
+  }
+  const onDisk = new Set(files);
+  const kept = {};
+  for (const entries of Object.values(manifest)) {
+    for (const entry of Object.values(entries)) {
+      if (!onDisk.has(entry.file) || kept[entry.file] !== undefined) continue;
+      kept[entry.file] = recorded[entry.file] ?? entry.say;
+    }
+  }
+  writeFileSync(recordedPath, `${JSON.stringify(Object.fromEntries(Object.entries(kept).sort(([a], [b]) => (a < b ? -1 : 1))), null, 1)}\n`);
   console.log(`Indexed ${files.length} audio file${files.length === 1 ? "" : "s"}.`);
   process.exit(0);
 }
@@ -239,10 +268,67 @@ function syllable(voice, token, ipa, rest = "") {
 }
 
 /**
+ * A short line is said after a lead-in sentence, and the lead-in is then cut
+ * away: "Say it with me. Up."
+ *
+ * Why: asked for one word on its own, the voice stops early about one time in
+ * four. The first phone test had "up" that ended at "uh", "am" cut in the
+ * middle of the m, and "of" that was 0.4 seconds of silence; 89 of the 640
+ * word clips were the same clipped length. With a sentence before it the
+ * word comes out whole. Each try uses a different lead-in, so a second try
+ * is a different reading.
+ */
+const LEAD_INS = ["Say it with me.", "Here is the word.", "Now you say it.", "Listen to this one."];
+/** Lines this short get a lead-in: single words, numbers, colors, clock times, a two-word title. */
+const SHORT_LINE = 22;
+
+function isShortLine(text) {
+  return text.replace(/[^A-Za-z0-9]/g, "").length <= SHORT_LINE && text.trim().split(/\s+/).length <= 4;
+}
+
+/**
+ * The big-and-little line of the Draw step: "Big B and little b both say buh,
+ * as in bus." The manifest writes the letter where the sound goes; here the
+ * sound is put in the way a letter phrase makes it (SOUND_PLAN).
+ *
+ * Why: the line used to be sent as written, with the sound between slashes
+ * ("both say /b/, like bus"), and the voice read the slashes: "slash b slash",
+ * "per meter slash". Both letters are sent as capitals, because a lone small
+ * letter is read as a word ("a" as the article, "v" as "versus").
+ */
+function pairPlan(say, main, letters) {
+  const match = say.match(/^Big ([A-Z]) and little ([a-z]) both say \2, as in (.+)$/);
+  if (!match) return null;
+  const [, upper, char, example] = match;
+  const plan = SOUND_PLAN[char];
+  if (!plan) return null;
+  const lead = `Big ${upper} and little ${upper} both say`;
+  const tail = `, as in ${example}.`;
+  if (plan.text) return { say: [{ text: `${lead} ${plan.text}${tail}`, voice: letters }] };
+  if (plan.pron) {
+    const [token, ipa] = plan.pron;
+    const step = syllable(letters, token, ipa, tail);
+    // The same custom pronunciation, with the lead-in in front of the syllable.
+    if (step.text) return { say: [{ ...step, text: `${lead} ${step.text}` }] };
+    return { say: [{ ssml: step.ssml.replace("<speak>", `<speak>${escapeXml(lead)} `), voice: letters }] };
+  }
+  // s, f, n and x are held sounds cut from a carrier syllable: lead-in, the sound, then the word.
+  const [token, ipa, mode] = plan.carve;
+  const carrier = { ...syllable(letters, token, ipa, "."), carve: mode, fallback: syllable(letters, plan.fallback[0], plan.fallback[1], ".") };
+  return { say: [{ text: `${lead}:`, voice: letters }, { gap: 0.18 }, carrier, { gap: 0.25 }, { text: `as in ${example}.`, voice: letters }], level: false };
+}
+
+/**
  * Steps for one clip. Most clips are a single request in the main voice;
  * a letter sound or phrase may be a carrier to carve, or two parts to join.
+ * `attempt` counts tries of the same clip from 0: a short line takes a
+ * different lead-in each time.
  */
-function planFor(kind, id, say, main, letters, style) {
+function planFor(kind, id, say, main, letters, style, attempt = 0) {
+  if (kind === "prompts" && /^pair-[a-z]$/.test(id)) {
+    const plan = pairPlan(say.trim(), main, letters);
+    if (plan) return plan;
+  }
   const letter = letterOf(kind, id, say);
   if (letter) {
     const { char, example } = letter;
@@ -262,6 +348,12 @@ function planFor(kind, id, say, main, letters, style) {
   let text = say.trim();
   if (kind === "words" && text === "I") text = "I.";
   else if (text && !/[.!?]$/.test(text)) text = `${text}.`;
+  if (isShortLine(text) && hasFfmpeg) {
+    const lead = LEAD_INS[attempt % LEAD_INS.length];
+    // A capital starts the word's own sentence, so it is said as one: "Say it with me. Up."
+    const line = `${text[0].toUpperCase()}${text.slice(1)}`;
+    return { say: [{ text: `${lead} ${line}`, voice: main, after: "lead-in" }] };
+  }
   return { say: [{ text, voice: main }] };
 }
 
@@ -271,7 +363,7 @@ function describe(plan) {
       if (step.gap) return `(${step.gap}s)`;
       const what = step.ssml ?? step.text;
       const pron = step.pron ? ` {${Object.entries(step.pron).map(([k, v]) => `${k}=${v}`).join(",")}}` : "";
-      return `${JSON.stringify(what)}${pron}${step.carve ? ` carve:${step.carve}` : ""} [${step.voice.label}]`;
+      return `${JSON.stringify(what)}${pron}${step.carve ? ` carve:${step.carve}` : ""}${step.after ? " cut:after-lead-in" : ""} [${step.voice.label}]`;
     })
     .join(" + ");
 }
@@ -293,6 +385,13 @@ const forceKinds = new Set(forceValue.split(",").map((kind) => kind.trim()).filt
 const force = forceAll;
 const shouldForce = (kind) => forceAll || forceKinds.has(kind);
 const dryRun = flags.has("--dry-run");
+const matchValue = option("--match", "");
+const match = matchValue ? new RegExp(matchValue) : null;
+const verify = flags.has("--verify");
+const audit = flags.has("--audit");
+const reportPath = option("--report", "");
+/** Tries for one clip before the best of them is kept and listed for a person to hear. */
+const ATTEMPTS = 4;
 const sampleSpecs = option("--sample", "")
   .split(",")
   .map((spec) => spec.trim())
@@ -414,6 +513,89 @@ function levelWav(wav, targetRms = 0.1) {
   return out;
 }
 
+/** How loud each 10 ms of a WAV is, in dB, with the samples and their rate. */
+function loudness(wav) {
+  const { start, end } = pcmOf(wav);
+  const rate = wav.readUInt32LE(24) || 24000;
+  const samples = new Int16Array(wav.buffer.slice(wav.byteOffset + start, wav.byteOffset + end - ((end - start) % 2)));
+  const hop = Math.max(1, Math.round(rate / 100));
+  const frames = Math.floor(samples.length / hop);
+  const db = new Float64Array(frames);
+  let peak = -120;
+  for (let frame = 0; frame < frames; frame += 1) {
+    let sum = 0;
+    for (let at = frame * hop; at < (frame + 1) * hop; at += 1) sum += (samples[at] / 32768) ** 2;
+    db[frame] = 20 * Math.log10(Math.max(Math.sqrt(sum / hop), 1e-6));
+    if (db[frame] > peak) peak = db[frame];
+  }
+  return { samples, rate, hop, frames, db, peak };
+}
+
+/** A 16-bit mono WAV from samples. */
+function wavFrom(samples, rate) {
+  const data = Buffer.from(samples.buffer, samples.byteOffset, samples.length * 2);
+  const head = Buffer.alloc(44);
+  head.write("RIFF", 0, "ascii");
+  head.writeUInt32LE(36 + data.length, 4);
+  head.write("WAVEfmt ", 8, "ascii");
+  head.writeUInt32LE(16, 16);
+  head.writeUInt16LE(1, 20);
+  head.writeUInt16LE(1, 22);
+  head.writeUInt32LE(rate, 24);
+  head.writeUInt32LE(rate * 2, 28);
+  head.writeUInt16LE(2, 32);
+  head.writeUInt16LE(16, 34);
+  head.write("data", 36, "ascii");
+  head.writeUInt32LE(data.length, 40);
+  return Buffer.concat([head, data]);
+}
+
+/**
+ * Did the voice stop in the middle of a sound? A whole reply dies away into
+ * a little silence; a cut one ends at full voice on its last sample. This is
+ * how "am" lost half its m and "Pop the balloons with this letter" stopped
+ * after "Pop".
+ */
+function stopsWhileLoud(wav) {
+  const { frames, db, peak } = loudness(wav);
+  if (frames < 8 || peak < -50) return false;
+  const tail = (db[frames - 1] + db[frames - 2] + db[frames - 3]) / 3;
+  return tail > peak - 9;
+}
+
+/**
+ * The line after its lead-in sentence ("Say it with me. Up."): everything
+ * from the middle of the first pause on. The pause between two sentences is
+ * 0.15 s or more; the gaps inside the lead-in are shorter, and a later gap
+ * inside the word itself (the hold before the p of "up") is never reached,
+ * because the first one wins. Quiet here means 25 dB under the loudest
+ * moment, so a breath in the pause still counts as the pause. The cut keeps
+ * the last 0.14 s of the pause, which is where a soft first sound (the f of
+ * "fun", the h of "hat") sits; in a long pause the breath before that is left
+ * behind.
+ */
+function cutAfterLeadIn(wav, label) {
+  const { samples, rate, hop, frames, db, peak } = loudness(wav);
+  const floor = peak - 25;
+  let speech = 0;
+  while (speech < frames && db[speech] < floor) speech += 1;
+  // The lead-in itself takes at least 0.4 s; a pause is looked for after that.
+  for (let at = speech + 40; at < frames; at += 1) {
+    if (db[at] >= floor) continue;
+    let until = at;
+    while (until < frames && db[until] < floor) until += 1;
+    if (until - at >= 14 && until < frames) {
+      const lead = (at - speech) / 100;
+      const rest = (frames - until) / 100;
+      if (lead < 0.45 || lead > 2.2) throw new Error(`${label}: the lead-in took ${lead.toFixed(2)} s, which is not a lead-in`);
+      if (rest < 0.12) throw new Error(`${label}: nothing was said after the lead-in`);
+      return wavFrom(samples.subarray(Math.max(Math.floor((at + until) / 2), until - 14) * hop), rate);
+    }
+    at = until;
+  }
+  throw new Error(`${label}: no pause was found after the lead-in`);
+}
+
 /** Cut a clip that runs on (a vowel the voice held for a second) with a short fade. */
 function capWav(wav, seconds) {
   const { start, end } = pcmOf(wav);
@@ -481,8 +663,12 @@ async function request({ text, ssml, voice, pron, encoding }) {
   return Buffer.isBuffer(audio) ? audio : Buffer.from(audio);
 }
 
-/** Make one clip from its plan: request each part, carve or trim it, join, encode. */
-async function makeClip(plan, label) {
+/**
+ * Make one clip from its plan: request each part, carve or trim it, join, encode.
+ * `strict` refuses a reply that stops in the middle of a sound, so the caller
+ * can ask again; the last try is not strict, and takes what it is given.
+ */
+async function makeClip(plan, label, strict = true) {
   if (!hasFfmpeg) {
     if (plan.say.length > 1 || plan.say[0].carve) throw new Error(`${label} needs ffmpeg (and python3 with numpy) to make a letter sound.`);
     return request(plan.say[0]);
@@ -495,6 +681,15 @@ async function makeClip(plan, label) {
     }
     if (!step.carve) {
       const wav = await request(step);
+      if (strict && stopsWhileLoud(wav)) throw new Error(`${label}: the voice stopped in the middle of a sound`);
+      if (step.after === "lead-in") {
+        const line = trimWav(cutAfterLeadIn(wav, label));
+        const seconds = (pcmOf(line).end - pcmOf(line).start) / 2 / (line.readUInt32LE(24) || 24000);
+        // A short line is a second or two at most: longer means the lead-in is still in it.
+        if (seconds < 0.15 || seconds > 3.2) throw new Error(`${label}: the line came out ${seconds.toFixed(2)} s long`);
+        parts.push(line);
+        continue;
+      }
       parts.push(trim ? trimWav(wav, plan.level ? "-40dB" : "-45dB") : wav);
       continue;
     }
@@ -645,11 +840,74 @@ if (sampleSpecs.length > 0) {
   process.exit(0);
 }
 
+/**
+ * The words each clip on disk was recorded from. A line whose words have
+ * changed since is made again; without this the app went on playing the old
+ * recording (a letter card that showed an igloo and said "as in pig").
+ */
+function readRecorded() {
+  try {
+    return JSON.parse(readFileSync(recordedPath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function writeRecorded(recorded, files) {
+  const kept = {};
+  for (const file of [...files].sort()) if (recorded[file] !== undefined) kept[file] = recorded[file];
+  writeFileSync(recordedPath, `${JSON.stringify(kept, null, 1)}\n`);
+}
+
+/**
+ * The listener (scripts/check-clips.py --serve): one question per clip, "does
+ * this file say this line?". Started once, since loading its model takes a
+ * few seconds.
+ */
+let listener = null;
+async function startListener() {
+  const child = spawn("python3", [join(root, "scripts/check-clips.py"), "--serve"], { stdio: ["pipe", "pipe", "inherit"] });
+  const lines = createInterface({ input: child.stdout });
+  const waiting = [];
+  let failed = null;
+  lines.on("line", (line) => {
+    const next = waiting.shift();
+    if (!next) return;
+    try {
+      next.resolve(JSON.parse(line));
+    } catch {
+      next.resolve({ ok: false, why: `could not read the listener's answer: ${line.slice(0, 120)}`, heard: "" });
+    }
+  });
+  child.on("exit", (code) => {
+    failed = new Error(`The clip listener stopped (exit ${code}). Run "python3 scripts/check-clips.py --fetch" and check that numpy and onnxruntime are installed.`);
+    for (const next of waiting.splice(0)) next.reject(failed);
+  });
+  const ask = (message) =>
+    new Promise((resolve, reject) => {
+      if (failed) return reject(failed);
+      waiting.push({ resolve, reject });
+      if (message) child.stdin.write(`${JSON.stringify(message)}\n`);
+    });
+  // Its first line says it is ready.
+  await ask(null);
+  listener = { ask: (file, text) => ask({ file, text }), stop: () => child.stdin.end() };
+}
+
+/** Letter phrases and bare sounds are not words a recognizer knows; scripts/hear-clips.py reports on those. */
+const canHear = (kind) => kind !== "letters" && kind !== "sounds";
+
+async function hear(file, job) {
+  if (!listener || !canHear(job.kind)) return { ok: true, heard: "", why: "" };
+  return listener.ask(file, job.say);
+}
+
 const jobs = new Map();
 for (const [kind, entries] of Object.entries(manifest)) {
   if (only.length > 0 && !only.includes(kind)) continue;
   for (const [id, entry] of Object.entries(entries)) {
     if (entry.source !== "neural") continue;
+    if (match && !match.test(`${kind}/${id}`)) continue;
     if (typeof entry.file !== "string" || entry.file.includes("..") || entry.file.startsWith("/") || !entry.file.endsWith(".mp3")) {
       throw new Error(`Refusing unsafe audio path "${entry.file}"`);
     }
@@ -657,43 +915,123 @@ for (const [kind, entries] of Object.entries(manifest)) {
     if (!jobs.has(entry.file)) jobs.set(entry.file, { kind, id, say: entry.say });
   }
 }
-const todo = [...jobs.entries()].filter(([file, job]) => shouldForce(job.kind) || !existsSync(resolve(audioRoot, file)));
+
+const recorded = readRecorded();
+if (verify && !dryRun) await startListener();
+
+/** Why each clip is being made: missing, forced, its words changed, or it failed the listen. */
+const todo = [];
+let listened = 0;
+for (const [file, job] of jobs) {
+  const dest = resolve(audioRoot, file);
+  if (!existsSync(dest)) {
+    todo.push([file, job, "missing"]);
+  } else if (shouldForce(job.kind)) {
+    todo.push([file, job, "forced"]);
+  } else if (recorded[file] !== undefined && recorded[file] !== job.say) {
+    todo.push([file, job, `the line changed from ${JSON.stringify(recorded[file])}`]);
+  } else if (audit && listener && canHear(job.kind)) {
+    const verdict = await hear(dest, job);
+    listened += 1;
+    if (listened % 200 === 0) console.log(`Listened to ${listened} clips.`);
+    if (verdict.ok) recorded[file] = job.say;
+    else todo.push([file, job, `${verdict.why || "does not say its line"}${verdict.heard ? `: heard ${JSON.stringify(verdict.heard)}` : ""}`]);
+  } else if (recorded[file] === undefined) {
+    // A clip from before this record was kept: taken to say its line unless a listen says otherwise.
+    recorded[file] = job.say;
+  }
+}
 console.log(
-  `${jobs.size} clips in the manifest, ${todo.length} to make. Voice ${mainVoice.label}; letters ${letterStyle === "name" ? "as names" : `as sounds via ${letterVoice.label}`}.`,
+  `${jobs.size} clips in the manifest, ${todo.length} to make. Voice ${mainVoice.label}; letters ${letterStyle === "name" ? "as names" : `as sounds via ${letterVoice.label}`}.${verify ? " Each new clip is listened to." : ""}`,
 );
+
+const report = { made: [], retried: [], unsure: [] };
+function writeReport() {
+  if (!reportPath) return;
+  const lines = [`${report.made.length} clips made.`];
+  if (report.unsure.length > 0) {
+    lines.push("", `**Listen to these ${report.unsure.length}.** The listener did not hear the line in any of ${ATTEMPTS} tries; the closest try was kept.`, "", "| clip | line | heard | why |", "| --- | --- | --- | --- |");
+    for (const item of report.unsure) lines.push(`| ${item.file} | ${item.say} | ${item.heard || ""} | ${item.why} |`);
+  }
+  if (report.retried.length > 0) {
+    lines.push("", `${report.retried.length} clips needed more than one try (the first reading was cut off or said something else):`, "", report.retried.map((item) => `${item.file} (${item.tries})`).join(", "));
+  }
+  writeFileSync(resolve(root, reportPath), `${lines.join("\n")}\n`);
+}
+
 if (todo.length === 0) {
   const files = scan();
   writeIndex(files);
+  if (!dryRun) writeRecorded(recorded, files);
+  writeReport();
+  listener?.stop();
   console.log(`Indexed ${files.length} audio files.`);
   process.exit(0);
 }
 
+/** Which of two failed tries came closer: the one whose line the listener found more likely. */
+const closer = (a, b) => (a.verdict.score ?? a.verdict.share ?? -99) > (b.verdict.score ?? b.verdict.share ?? -99);
+
 let made = 0;
-for (const [file, job] of todo) {
+for (const [file, job, why] of todo) {
   const dest = resolve(audioRoot, file);
   if (!dest.startsWith(`${audioRoot}${sep}`)) throw new Error(`Refusing unsafe audio path "${file}"`);
-  const plan = planFor(job.kind, job.id, job.say, mainVoice, letterVoice, letterStyle);
   if (dryRun) {
-    console.log(`${file}  ${describe(plan)}`);
+    console.log(`${file}  (${why})  ${describe(planFor(job.kind, job.id, job.say, mainVoice, letterVoice, letterStyle))}`);
     continue;
   }
-  try {
-    const audio = await makeClip(plan, `${job.kind} ${job.id}`);
-    writeClip(dest, audio, `${job.kind} ${job.id}`);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+  const label = `${job.kind} ${job.id}`;
+  let best = null;
+  let problem = null;
+  let tries = 0;
+  for (let attempt = 0; attempt < ATTEMPTS && !(best && best.verdict.ok); attempt += 1) {
+    tries = attempt + 1;
+    const plan = planFor(job.kind, job.id, job.say, mainVoice, letterVoice, letterStyle, attempt);
+    try {
+      const audio = await makeClip(plan, label, attempt < ATTEMPTS - 1);
+      if (!audio || audio.length === 0) throw new Error(`Google returned empty audio for ${label}`);
+      let verdict = { ok: true, heard: "", why: "" };
+      if (listener && canHear(job.kind)) {
+        const probe = join(workDir, "probe.mp3");
+        writeFileSync(probe, audio);
+        verdict = await hear(probe, job);
+      }
+      const candidate = { audio, verdict };
+      if (!best || verdict.ok || closer(candidate, best)) best = candidate;
+    } catch (error) {
+      problem = error;
+      const message = error instanceof Error ? error.message : String(error);
+      // A reply that was cut off, or a lead-in with no pause after it, is asked for again. Anything else is a real failure.
+      if (!/stopped in the middle|lead-in|came out/.test(message)) break;
+    }
+  }
+  if (!best) {
+    const message = problem instanceof Error ? problem.message : String(problem);
+    const plan = planFor(job.kind, job.id, job.say, mainVoice, letterVoice, letterStyle);
     // On GitHub this line becomes an annotation, readable without the log.
-    if (process.env.GITHUB_ACTIONS) console.log(`::error::${job.kind} ${job.id} (${describe(plan)}): ${message.replace(/\n/g, " ")}`);
-    throw error;
+    if (process.env.GITHUB_ACTIONS) console.log(`::error::${label} (${describe(plan)}): ${message.replace(/\n/g, " ")}`);
+    throw problem;
+  }
+  writeClip(dest, best.audio, label);
+  recorded[file] = job.say;
+  report.made.push({ file, why });
+  if (tries > 1 && best.verdict.ok) report.retried.push({ file, tries });
+  if (!best.verdict.ok) {
+    report.unsure.push({ file, say: job.say, heard: best.verdict.heard, why: best.verdict.why || "not heard" });
+    const note = `${label} (${file}): after ${ATTEMPTS} tries the listener still hears ${JSON.stringify(best.verdict.heard ?? "")} for ${JSON.stringify(job.say)}. Listen to it.`;
+    console.log(process.env.GITHUB_ACTIONS && report.unsure.length <= 40 ? `::warning::${note}` : note);
   }
   made += 1;
   if (made % 50 === 0 || made === todo.length) console.log(`${made}/${todo.length}  public/audio/${file}`);
 }
 
+listener?.stop();
 if (dryRun) {
   console.log(`Dry run: ${todo.length} clips would be made.`);
   process.exit(0);
 }
 const files = scan();
 writeIndex(files);
-console.log(`Made ${made} clips. Indexed ${files.length} audio files.`);
+writeRecorded(recorded, files);
+writeReport();
+console.log(`Made ${made} clips (${report.retried.length} took more than one try, ${report.unsure.length} to listen to). Indexed ${files.length} audio files.`);

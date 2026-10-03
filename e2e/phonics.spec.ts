@@ -76,10 +76,12 @@ test("week 15 leads with the sh card, and its story sounds out sh as one sound",
   await expect(activity.locator(".picture-card")).toHaveAttribute("aria-label", "ship");
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
-  // The card says "sh, as in ship", then "ship": the bundled clip when it is shipped, the device voice until then.
+  // The card's line is "sh, as in ship": the bundled clip when it is shipped, the device voice until then.
   await page.getByRole("button", { name: "Play sound" }).click();
-  await expect.poll(() => spokenLines(page), { timeout: 20000 }).toEqual(expect.arrayContaining(["sh, as in ship", "ship"]));
+  await expect.poll(() => spokenLines(page), { timeout: 20000 }).toContain("sh, as in ship");
   if (clipShipped("letters/sh.mp3")) expect(await playedClips(page)).toContain("letters/sh.mp3");
+  // The unit's caption marks both of its letters in the picture word.
+  await expect(activity.locator("[data-letter-caption] b")).toHaveText("sh");
   await page.getByRole("button", { name: "Next word" }).click();
   await expect(activity).toHaveAttribute("data-word", "letter-ch");
 
@@ -107,7 +109,7 @@ test("week 15 leads with the sh card, and its story sounds out sh as one sound",
   await expect(ship.locator("span").first()).toHaveText("sh");
   await expect
     .poll(async () => (await spokenLines(page)).slice(lines), { timeout: 20000 })
-    .toEqual(expect.arrayContaining(["sh, as in ship", "i, as in pig", "p, as in pig", "ship"]));
+    .toEqual(expect.arrayContaining(["sh, as in ship", "i, as in igloo", "p, as in pig", "ship"]));
   if (clipShipped("sounds/sh.mp3")) {
     expect((await playedClips(page)).slice(heard)).toEqual(expect.arrayContaining(["sounds/sh.mp3", "sounds/i.mp3", "sounds/p.mp3"]));
   }
@@ -127,16 +129,19 @@ test("a magic-e word keeps its quiet e on the tiles, and phonics words wait for 
   await expect(activity).toHaveAttribute("data-word", "letter-a_e");
   await expect(activity.locator(".tile")).toHaveAttribute("aria-label", /^a-e sound$/i);
   await expect(activity.locator(".picture-card")).toHaveAttribute("aria-label", "cake");
-  for (let tries = 0; tries < 8; tries += 1) {
-    if ((await activity.getAttribute("data-word")) === "cake") break;
+  // The words change from day to day, so the test takes the first magic-e word of today's list
+  // (cake, gate, kite, bike, grape or smile), whichever it is.
+  const tiles = activity.locator(".tile-wrap");
+  for (let tries = 0; tries < 12; tries += 1) {
+    if ((await activity.getAttribute("data-letter-card")) === "false" && (await activity.locator(".tile-wrap.is-silent").count()) > 0) break;
     await page.getByRole("button", { name: "Next word" }).click();
   }
-  await expect(activity).toHaveAttribute("data-word", "cake");
-  const tiles = activity.locator(".tile-wrap");
-  await expect(tiles).toHaveCount(4);
-  await expect(tiles.nth(1)).toHaveAttribute("data-sound", "a_e");
-  await expect(tiles.nth(3)).toHaveAttribute("data-sound", "silent");
-  await expect(tiles.nth(3)).toHaveClass(/is-silent/);
+  await expect(activity).toHaveAttribute("data-letter-card", "false");
+  const count = await tiles.count();
+  expect(count).toBeGreaterThanOrEqual(4);
+  await expect(tiles.nth(count - 3)).toHaveAttribute("data-sound", /^[ai]_e$/);
+  await expect(tiles.nth(count - 1)).toHaveAttribute("data-sound", "silent");
+  await expect(tiles.nth(count - 1)).toHaveClass(/is-silent/);
   // No word with an untaught team (ee, oo) is on this week's list.
   const words = await activity.evaluate((node) => Number(node.querySelector(".chunk-strip-word")?.getAttribute("data-word-count")));
   expect(words).toBeGreaterThan(2);

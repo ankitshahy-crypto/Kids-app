@@ -57,6 +57,22 @@ export function phonemeOf(piece: string): PhonemeId {
 }
 
 /**
+ * One letter as a tile that stands for the letter itself: on a letter card,
+ * and in a game that says "find this letter".
+ *
+ * Why this exists: these tiles used to be built in two places from two copies
+ * of the letter-to-phoneme map, and the letter's phrase was looked up by
+ * phoneme. C and Q have the phoneme k, so the C card said "k, as in kite"
+ * under a cat, and a game asking for C or Q asked for K. `phraseId` names the
+ * letter, so each of the 26 letters says its own phrase.
+ */
+export function letterTile(char: string): LetterTile {
+  const lower = char.toLowerCase().slice(0, 1);
+  const phoneme = (PHONEME[lower] ?? "m") as PhonemeId;
+  return /^[a-z]$/.test(lower) ? { char: lower, phoneme, phraseId: lower } : { char: lower, phoneme };
+}
+
+/**
  * The tiles of a word spelled the way it sounds: a letter a tile, except that
  * a digraph or vowel team is one tile (sh-i-p) and the e of a magic-e word is
  * a silent tile (c-a-k-e).
@@ -71,9 +87,10 @@ export function tilesOf(text: string): LetterTile[] {
 }
 
 /** A word spelled the way it sounds, one tile per sound. */
-export function made(id: string, text: string, illustration: IllustrationName): DeckWord {
+export function made(id: string, text: string, illustration?: IllustrationName): DeckWord {
   const tiles = tilesOf(text);
   const spelled = tiles.map((tile) => tile.char).join("");
   if (spelled !== text.toLowerCase()) throw new Error(`"${id}" spells "${spelled}"`);
-  return { id, word: text, illustration, letters: tiles };
+  // No drawing: the key is left off, so "illustration" in word tells a picture word from a plain one.
+  return illustration ? { id, word: text, illustration, letters: tiles } : { id, word: text, letters: tiles };
 }
