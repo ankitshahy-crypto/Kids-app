@@ -19,7 +19,7 @@ import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
 import { Chevron, StarIcon } from "./icons";
 import { EngineerBoard } from "./NestBuild";
-import { ScienceBoard } from "./SciencePlay";
+import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
 import { ModuleMark } from "./ModuleMark";
 import { BookMark, EggNest, Hills, PaintMark, PencilMark, ToyBox } from "./sceneArt";

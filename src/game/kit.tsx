@@ -142,6 +142,29 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
       arm();
     },
     /**
+     * Something to find out, neither right nor wrong: the answer is said and the game moves on. (Sink or
+     * float: a guess that was wrong is still a child finding out what happens.)
+     */
+    tell(said: Cue[], then: () => void) {
+      quiet.current = true;
+      stopIdle();
+      setNudge(false);
+      if (quick()) {
+        speak.line(said);
+        after.current = window.setTimeout(then, 150);
+        return;
+      }
+      let ran = false;
+      const go = () => {
+        if (ran) return;
+        ran = true;
+        if (after.current !== null) window.clearTimeout(after.current);
+        after.current = window.setTimeout(then, SOLVED_MIN_MS);
+      };
+      after.current = window.setTimeout(go, SOLVED_MAX_MS);
+      speak.line(said, go);
+    },
+    /**
      * A wrong tap. It names what was tapped, so the miss still teaches. From the second miss it
      * also says the instruction again.
      */
@@ -276,7 +299,7 @@ export function Hand() {
 }
 
 /** A drawn place for a game to happen in. Each is a wide picture that fills the top of the game. */
-export type SceneKind = "shop" | "room" | "garden" | "stand" | "morning" | "afternoon" | "night" | "pond" | "table" | "field";
+export type SceneKind = "shop" | "room" | "garden" | "stand" | "morning" | "afternoon" | "night" | "pond" | "table" | "field" | "rainy" | "snowy" | "windy";
 
 export function Backdrop({ kind }: { kind: SceneKind }) {
   return (
@@ -358,6 +381,59 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
           <circle cx="262" cy="44" r="24" fill="#2f3f73" />
           <path d="M60 40l3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1ZM140 70l2 5 5 1-4 4 1 5-4-3-4 3 1-5-4-4 5-1ZM320 110l2 5 5 1-4 4 1 5-4-3-4 3 1-5-4-4 5-1Z" fill="#fbf1c8" />
           <path d="M0 150c80-20 200-20 360 0v50H0Z" fill="#4f7a6b" />
+        </>
+      ) : null}
+      {kind === "rainy" ? (
+        <>
+          <rect width="360" height="200" fill="#c9d6e3" />
+          <ellipse cx="90" cy="44" rx="64" ry="24" fill="#9fb1c4" />
+          <ellipse cx="150" cy="36" rx="50" ry="22" fill="#aebdcd" />
+          <ellipse cx="270" cy="48" rx="66" ry="24" fill="#9fb1c4" />
+          <path
+            className="scene-rain"
+            d="M40 80l-8 22M80 96l-8 22M124 78l-8 22M166 98l-8 22M210 80l-8 22M252 100l-8 22M296 82l-8 22M336 98l-8 22M60 130l-8 22M146 136l-8 22M230 132l-8 22M316 134l-8 22"
+            stroke="#6f95bd"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+          <path d="M0 150c80-14 200-14 360 0v50H0Z" fill="#8fbf95" />
+          <ellipse cx="250" cy="182" rx="40" ry="8" fill="#9ccbe8" />
+        </>
+      ) : null}
+      {kind === "snowy" ? (
+        <>
+          <rect width="360" height="200" fill="#dfeaf4" />
+          <ellipse cx="100" cy="40" rx="60" ry="20" fill="#f7fafc" />
+          <ellipse cx="260" cy="46" rx="64" ry="22" fill="#f7fafc" />
+          <g className="scene-snow" fill="#fffdfb">
+            <circle cx="40" cy="80" r="5" />
+            <circle cx="92" cy="104" r="4" />
+            <circle cx="140" cy="76" r="5" />
+            <circle cx="186" cy="110" r="4" />
+            <circle cx="230" cy="84" r="5" />
+            <circle cx="276" cy="112" r="4" />
+            <circle cx="322" cy="86" r="5" />
+            <circle cx="66" cy="136" r="4" />
+            <circle cx="160" cy="140" r="5" />
+            <circle cx="250" cy="138" r="4" />
+            <circle cx="336" cy="134" r="5" />
+          </g>
+          <path d="M0 148c80-18 200-18 360 0v52H0Z" fill="#f7fafc" />
+          <path d="M0 168c90-10 210-10 360 0v32H0Z" fill="#e9f1f8" />
+        </>
+      ) : null}
+      {kind === "windy" ? (
+        <>
+          <rect width="360" height="200" fill="#dcedf9" />
+          <ellipse cx="290" cy="40" rx="44" ry="15" fill="#fffdfb" />
+          <g className="scene-wind" fill="none" stroke="#9db9d3" strokeWidth="5" strokeLinecap="round">
+            <path d="M30 60h90c18 0 18-22 2-22" />
+            <path d="M120 100h110c20 0 20-24 2-24" />
+            <path d="M40 126h70c14 0 14-18 2-18" />
+            <path d="M230 132h90c16 0 16-20 2-20" />
+          </g>
+          <path d="M0 150c80-14 200-14 360 0v50H0Z" fill="#9bd1a0" />
+          <path d="M300 150c-6-22 8-34 16-40M316 150c-2-18 10-28 20-30" fill="none" stroke="#6e9a74" strokeWidth="5" strokeLinecap="round" />
         </>
       ) : null}
       {kind === "pond" ? (
