@@ -6472,11 +6472,21 @@ input.is-pressed,
   height: auto;
 }
 
-.game-host[data-mood="cheer"] {
+.game-host-body {
+  display: block;
+  transform-origin: 50% 90%;
+}
+
+/* A game that walks the animal somewhere (across a bridge) moves it smoothly. */
+.game-host[data-walks="true"] {
+  transition: left 1.1s ease-in-out, bottom 0.4s ease;
+}
+
+.game-host[data-mood="cheer"] .game-host-body {
   animation: game-cheer 0.5s ease 2;
 }
 
-.game-host[data-mood="think"] {
+.game-host[data-mood="think"] .game-host-body {
   animation: game-think 0.7s ease;
 }
 
@@ -6709,6 +6719,7 @@ input.is-pressed,
 
 @media (prefers-reduced-motion: reduce) {
   .game-host,
+  .game-host-body,
   .game-sparkles svg,
   .game-tray .pick,
   .pick,
@@ -7514,6 +7525,341 @@ input.is-pressed,
   }
 }
 
+/* ---- Build (src/components/BuildGames.tsx) ---- */
+
+/* The bridge and the ramp draw their own ground, so their stage is the whole scene. */
+.game-frame[data-engineer="bridge"] .game-stage,
+.game-frame[data-engineer="ramp"] .game-stage {
+  inset: 0;
+  display: block;
+}
+
+.bridge-scene,
+.ramp-scene {
+  position: absolute;
+  inset: 0;
+}
+
+.bridge-water {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22%;
+  background: linear-gradient(#bfe0f4 0 14%, #9ccbe8 14% 100%);
+}
+
+.bridge-bank {
+  position: absolute;
+  bottom: 0;
+  height: 30%;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(#b8dfb4 0 18%, #9bd1a0 18% 100%);
+}
+
+.bridge-plank {
+  position: absolute;
+  bottom: 29%;
+  height: 13px;
+  border-radius: 6px;
+  background: #c48f5c;
+  box-shadow: inset 0 -3px 0 #a8743f;
+  transform-origin: 0 50%;
+}
+
+.bridge-plank[data-fit="fits"] {
+  animation: plank-lay 0.3s ease;
+}
+
+/* Too short: it does not reach, tips at the far end and slides into the water. */
+.bridge-plank[data-fit="short"] {
+  animation: plank-fall 1.2s ease-in forwards;
+}
+
+/* Too long: it sticks out over the far bank, shakes, and is taken away. */
+.bridge-plank[data-fit="long"] {
+  animation: plank-long 1.2s ease forwards;
+}
+
+@keyframes plank-lay {
+  from {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes plank-fall {
+  0%,
+  30% {
+    transform: rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(34deg) translate(10px, 22px);
+    opacity: 0.25;
+  }
+}
+
+@keyframes plank-long {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(5px);
+  }
+  40%,
+  80% {
+    transform: translateX(-5px);
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+
+.plank-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.block-art,
+.ramp-art,
+.machine-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pile-art {
+  width: 56px;
+}
+
+/* The tower goes up from the grass, widest at the bottom. */
+.tower-stack {
+  height: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  padding-bottom: 14%;
+}
+
+/* A board for the tower to stand on, so the first block is not lost in the grass. */
+.tower-base {
+  flex: 0 0 auto;
+  width: 172px;
+  max-width: 100%;
+  height: 9px;
+  margin-top: 2px;
+  border-radius: 5px;
+  background: #c48f5c;
+  box-shadow: inset 0 -3px 0 #a8743f;
+}
+
+.tower-block {
+  flex: 0 0 auto;
+  height: 26px;
+  margin-top: 2px;
+  border-radius: 7px;
+  box-shadow: inset 0 6px 0 rgba(255, 253, 251, 0.4), inset 0 -4px 0 rgba(36, 48, 86, 0.12);
+  animation: plank-lay 0.25s ease;
+}
+
+/* A block put on too soon wobbles on top and comes off. */
+.tower-block.is-wobbling {
+  animation: tower-wobble 0.9s ease forwards;
+}
+
+@keyframes tower-wobble {
+  0% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-9deg);
+  }
+  40% {
+    transform: rotate(9deg);
+  }
+  60% {
+    transform: rotate(-7deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(46px, 30px) rotate(40deg);
+    opacity: 0;
+  }
+}
+
+/* The ramp: a slope on the left, a track along the grass, and three places the ball can stop. */
+.ramp-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 20%;
+  background: linear-gradient(#b8dfb4 0 22%, #9bd1a0 22% 100%);
+}
+
+.ramp-slope {
+  position: absolute;
+  left: 30%;
+  bottom: 20%;
+  width: 22%;
+  height: 45%;
+}
+
+.ramp-spot {
+  position: absolute;
+  bottom: 20%;
+  width: 30px;
+  height: 50px;
+  transform: translateX(-50%);
+}
+
+.ramp-spot::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 26px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(36, 48, 86, 0.16);
+  transform: translateX(-50%);
+}
+
+/* The flag stands just past its spot, so the ball stops in front of the pole and not on it. */
+.ramp-spot svg {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 30px;
+}
+
+.ramp-ball {
+  position: absolute;
+  left: 31%;
+  bottom: var(--top);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f2a08a, #e07a5f 60%);
+  transform: translateX(-30%);
+}
+
+.ramp-ball.is-rolling {
+  animation: ramp-roll 1.1s ease-in forwards;
+}
+
+@keyframes ramp-roll {
+  0% {
+    left: 31%;
+    bottom: var(--top);
+  }
+  38% {
+    left: 52%;
+    bottom: 20%;
+  }
+  100% {
+    left: var(--stop);
+    bottom: 20%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Machines: the load in the scene, then the machine doing the job. */
+.job-art,
+.beam-art {
+  display: block;
+  width: 100%;
+  max-width: 250px;
+  height: auto;
+  max-height: 100%;
+  overflow: visible;
+}
+
+/* The load and the beam stand on the near grass, level with the animal. */
+.game-frame[data-engineer="machines"] .game-stage,
+.game-frame[data-engineer="balance"] .game-stage {
+  align-items: flex-end;
+}
+
+.job-lever {
+  transform-origin: 122px 145px;
+  animation: job-lever 1s ease forwards;
+}
+
+.job-bucket {
+  animation: job-bucket 1.1s ease forwards;
+}
+
+.job-cart {
+  animation: job-cart 1.2s ease forwards;
+}
+
+/* The far end starts down on the grass under the rock and comes up with the rock on it. */
+@keyframes job-lever {
+  from {
+    transform: rotate(13deg);
+  }
+  to {
+    transform: rotate(-11deg);
+  }
+}
+
+@keyframes job-bucket {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-74px);
+  }
+}
+
+@keyframes job-cart {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(76px);
+  }
+}
+
+/* Balance: the beam leans to the heavier side and is level when the piles match. */
+.beam-arm {
+  transform-origin: 120px 101px;
+  transition: transform 0.5s ease;
+}
+
+.beam-arm[data-tilt="left"] {
+  transform: rotate(-9deg);
+}
+
+.beam-arm[data-tilt="right"] {
+  transform: rotate(9deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-host[data-walks="true"],
+  .beam-arm {
+    transition: none;
+  }
+
+  .bridge-plank,
+  .tower-block,
+  .ramp-ball.is-rolling,
+  .job-lever,
+  .job-bucket,
+  .job-cart {
+    animation-duration: 0.01s !important;
+  }
+}
+
 /* The Time & Money page: its games under two headings, each tile a picture. */
 .time-boards {
   display: flex;
@@ -8188,291 +8534,6 @@ input.is-pressed,
   .build-note,
   .build-instrument[data-on="true"] .build-art {
     animation: none !important;
-  }
-}
-
-.eng-stage {
-  width: min(100%, 420px);
-  min-height: 120px;
-  border-radius: 24px;
-  background: #e7f4fb;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  position: relative;
-}
-
-.eng-stage[data-wobble="true"] {
-  animation: eng-wobble 0.45s ease;
-}
-
-@keyframes eng-wobble {
-  0%,
-  100% { transform: rotate(0deg); }
-  30% { transform: rotate(-4deg); }
-  70% { transform: rotate(4deg); }
-}
-
-.eng-bank {
-  width: 36px;
-  height: 28px;
-  border-radius: 8px 8px 4px 4px;
-  background: #c9e6d4;
-  align-self: flex-end;
-}
-
-.eng-gap {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: #d7eef8;
-  display: grid;
-  place-items: center;
-  padding: 4px;
-}
-
-.eng-gap[data-picked="true"] {
-  outline: 4px solid #f6d56b;
-}
-
-.eng-water,
-.eng-float {
-  width: 40px;
-  height: 16px;
-  border-radius: 0 0 20px 20px;
-  background: #8eb4d6;
-}
-
-.eng-block,
-.eng-rock {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: #f6d56b;
-}
-
-.eng-plank {
-  width: 44px;
-  height: 12px;
-  border-radius: 6px;
-  background: #e4b08a;
-}
-
-.eng-heavy {
-  width: 36px;
-  height: 36px;
-  background: #8a6b4a;
-}
-
-.eng-tray {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-}
-
-.eng-piece {
-  width: 72px;
-  height: 72px;
-  border-radius: 18px;
-  background: var(--paper);
-  box-shadow: var(--shadow);
-  display: grid;
-  place-items: center;
-  touch-action: none;
-}
-
-.eng-hero {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  width: 56px;
-  height: 56px;
-}
-
-.eng-hero .avatar-art {
-  width: 56px;
-  height: 56px;
-}
-
-.eng-stage[data-crossed="true"] .eng-hero {
-  left: auto;
-  right: 8px;
-}
-
-.eng-tower {
-  align-items: flex-end;
-  background: #e7f6ee;
-}
-
-.eng-nest {
-  position: absolute;
-  top: 10px;
-  width: 54px;
-  height: 28px;
-  border-radius: 0 0 27px 27px;
-  background: #e4c7a4;
-  box-shadow: inset 0 -8px 0 #c9845a;
-}
-
-.eng-stack {
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
-  gap: 4px;
-  min-height: 80px;
-}
-
-.eng-layer {
-  display: block;
-  height: 16px;
-  border-radius: 6px;
-  background: #7ea3c9;
-}
-
-.eng-wide { width: 72px; }
-.eng-medium { width: 48px; }
-.eng-narrow { width: 28px; }
-
-.eng-ramp {
-  align-items: flex-end;
-  overflow: hidden;
-}
-
-.eng-slope {
-  width: 70px;
-  border-radius: 8px 8px 0 0;
-  background: #e4c7a4;
-  align-self: flex-end;
-}
-
-.eng-ball {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #e07a5f;
-  transition: transform 0.35s ease;
-}
-
-.eng-ball[data-roll="2"] { transform: translateX(36px); }
-.eng-ball[data-roll="4"] { transform: translateX(84px); }
-.eng-ball[data-roll="6"] { transform: translateX(132px); }
-
-.eng-flag {
-  width: 8px;
-  height: 36px;
-  background: #6e9a74;
-  margin-left: auto;
-}
-
-.eng-steps {
-  display: flex;
-  gap: 8px;
-}
-
-.eng-steps span {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #d7eef8;
-}
-
-.eng-steps span[data-on="true"] {
-  background: #6e9a74;
-}
-
-.eng-seat,
-.eng-bucket,
-.eng-basket {
-  width: 32px;
-  height: 24px;
-  border-radius: 8px;
-  background: #f4a4b4;
-}
-
-.eng-beam,
-.eng-beam-row {
-  height: 10px;
-  background: #6d5b86;
-  border-radius: 6px;
-}
-
-.eng-beam-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  height: auto;
-  background: transparent;
-}
-
-.eng-fulcrum {
-  width: 0;
-  height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-bottom: 22px solid #6d5b86;
-  position: absolute;
-  bottom: 18px;
-}
-
-.eng-rope {
-  min-height: 88px;
-}
-
-.eng-wheel {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 6px solid #6d8f78;
-  background: #fff6e4;
-}
-
-.eng-pond {
-  background: #d7eef8;
-  align-items: center;
-}
-
-.eng-object {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: #c9e6d4;
-}
-
-.eng-leaf { background: #6e9a74; border-radius: 40px 8px; }
-.eng-rock { background: #8a6b4a; }
-.eng-boat { background: #e4b08a; border-radius: 0 0 20px 20px; }
-.eng-spoon { background: #d7dee8; }
-.eng-object.is-sunk { transform: translateY(18px); }
-
-.eng-sink {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #8eb4d6;
-  box-shadow: inset 0 -10px 0 #5f86a8;
-}
-
-.eng-wrong {
-  margin: 0;
-  max-width: 420px;
-  font-size: 18px;
-  font-weight: 800;
-  text-align: center;
-  color: var(--ink);
-}
-
-.eng-balance[data-tilt="true"] .eng-beam-row {
-  transform: rotate(-6deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .eng-stage[data-wobble="true"],
-  .eng-ball {
-    animation: none;
-    transition: none;
   }
 }
 

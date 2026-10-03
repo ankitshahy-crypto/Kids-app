@@ -14,7 +14,7 @@ export const PaintActivity = lazy(() => import("../components/ColorPlay").then((
 export const ClockActivity = lazy(() => import("../components/TimeGames").then((mod) => ({ default: mod.ClockActivity })));
 export const CoinsActivity = lazy(() => import("../components/MoneyGames").then((mod) => ({ default: mod.CoinsActivity })));
 export const DayActivity = lazy(() => import("../components/TimeGames").then((mod) => ({ default: mod.DayActivity })));
-export const EngineerActivity = lazy(() => import("../components/NestBuild").then((mod) => ({ default: mod.EngineerActivity })));
+export const EngineerActivity = lazy(() => import("../components/BuildGames").then((mod) => ({ default: mod.EngineerActivity })));
 export const ScienceActivity = lazy(() => import("../components/ScienceGames").then((mod) => ({ default: mod.ScienceActivity })));
 export const RoutineActivity = lazy(() => import("../components/TimeGames").then((mod) => ({ default: mod.RoutineActivity })));
 export const ShopActivity = lazy(() => import("../components/MoneyGames").then((mod) => ({ default: mod.ShopActivity })));

@@ -28,14 +28,14 @@ LittleNest Learning helps young children take their first steps into letters, nu
 - **LittleNest Colors:** Hear a color and tap it, mix paints, and color their animal with colors they made. Every swatch shows the color word.
 - **Games to play:** Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. Coding starts with hello world: one block, and their animal says hello. Thinking games guide their animal home, continue a picture pattern, put pictures in order, and try an if-then rule. Building stacks picture blocks that play as a dance or a song, with the program shown in words. Reading the code turns it round: a short program is read aloud, and they build it. Ages 5 to 7 use longer arrow paths, a repeat, a bug fix, a pond splash, and can save a program on this device. A grown-up can turn on a Python view of that same program. A miss just means try again.
 - **LittleNest Time & Money:** Morning, afternoon, and night, then the daily routine and o'clock. Ages 5 to 7 set half hours, quarter hours, and five-minute steps, match a digital time, and ask how long until. Name a penny, nickel, dime, quarter, and one- and five-dollar bills drawn for this app, sort coins, and buy things at a shop that says out loud what each one costs and asks for the money. Later they count mixed coins, pay dollars and cents, make change, and compare prices. Pretend chores fill Save, Spend, and Share jars, a lemonade stand earns coins, and a shop says let's save for it when the price is too big. Needs and wants are sorted. Pretend debit and credit cards come later, with no interest and no real payments.
-- **LittleNest Build:** Build a bridge, stack a tower, roll a ball down a ramp, and try a lever, a pulley, and a wheel. A wobbly bridge or a narrow tower just means try again. Ages 5 to 7 balance weights, use fewer pieces, and hear what went wrong.
+- **LittleNest Build:** Pick the plank that fits the river and their animal walks across. Stack a tower with the widest block at the bottom, find the ramp that rolls a ball to the flag, and choose a lever, a pulley, or wheels to move something heavy. Each try is shown: a short plank falls in, a low ramp stops short. Ages 5 to 7 also balance a beam.
 - **LittleNest Science:** Plant a seed, then give it water and sun when it asks, and watch it grow into a flower. Put an egg, a chick, and a hen in order. Find where a bee or a fish lives, tap the beak or the wing on a bird, pick what to take for rain or snow, and say which part of you hears a drum. Guess whether something sinks or floats, then drop it in the pond and see. Every question is said aloud, and every choice is a picture.
 - **Made for classrooms too:** Teachers can follow a class and share goals with parents.
 - **Grown-up tools:** They sit behind a simple check.
 
 ## How LittleNest Learning teaches
 
-LittleNest Learning has seven sections. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Phonics for ages 5 to 7 follows: two letters that make one sound, like sh and ee, the magic e in cake, and longer words and short sentences. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. Games start with hatching, popping, feeding, rhymes, memory, and a spin. LittleNest Coding starts with hello world, then a path home, a picture pattern, pictures in order, and an if-then rule, then picture blocks that play, then a short program to read and build. Ages 5 to 7 add longer paths, a repeat, and a bug fix. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7. LittleNest Build starts with a bridge, a tower, a ramp, and simple machines. Ages 5 to 7 balance weights and test a design again. LittleNest Science starts with growing a plant, then animal homes, the parts of a bird, weather, the five senses, and sink or float. Ages 5 to 7 play more rounds of each.
+LittleNest Learning has seven sections. LittleNest Words starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Phonics for ages 5 to 7 follows: two letters that make one sound, like sh and ee, the magic e in cake, and longer words and short sentences. LittleNest Numbers starts with counting, then numerals, then shapes, then adding small groups. LittleNest Colors starts with color names, then mixing paints. Games start with hatching, popping, feeding, rhymes, memory, and a spin. LittleNest Coding starts with hello world, then a path home, a picture pattern, pictures in order, and an if-then rule, then picture blocks that play, then a short program to read and build. Ages 5 to 7 add longer paths, a repeat, and a bug fix. LittleNest Time & Money starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7. LittleNest Build starts with a bridge, a tower, a ramp, and simple machines. Ages 5 to 7 play more rounds and balance a beam. LittleNest Science starts with growing a plant, then animal homes, the parts of a bird, weather, the five senses, and sink or float. Ages 5 to 7 play more rounds of each.
 
 LittleNest Words:
 
@@ -85,11 +85,11 @@ LittleNest Time & Money:
 
 LittleNest Build:
 
-1. **Build a bridge:** Blocks and planks carry their animal across the river.
-2. **Tall tower:** A wide base stays up. A narrow base topples softly.
+1. **Build a bridge:** The plank that fits the river lets their animal walk across.
+2. **Tall tower:** The widest block goes on the bottom, and the tower stands.
 3. **Ramps and rolling:** A higher ramp rolls the ball farther.
-4. **Simple machines:** A lever, a pulley, and a wheel and axle.
-5. **Balance:** Ages 5 to 7 balance weights, then test and fix.
+4. **Simple machines:** A lever lifts, a pulley pulls up, and wheels roll along.
+5. **Balance:** Ages 5 to 7 pick the pile of blocks that makes the beam level.
 
 LittleNest Science:
 

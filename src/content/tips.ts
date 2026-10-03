@@ -144,26 +144,27 @@ const gameTips: Record<string, { start: string; end: string }> = {
   },
 };
 
+// Two lines at most on a phone. The game says the rest to the child out loud.
 const engineerTips: Record<string, { start: string; end: string }> = {
   bridge: {
-    start: "They choose blocks and planks so their animal can cross. A long plank sags, then they try again.",
-    end: "Ask: where did the bridge need a block?",
+    start: "They pick the plank that fits the river. A short one falls in, then they try another.",
+    end: "Ask: which plank was too short? Try it with blocks and a ruler.",
   },
   tower: {
-    start: "A wide base stays up. A narrow base topples softly, then they stack again.",
-    end: "Ask: which shape should be on the bottom?",
+    start: "The widest block goes on the bottom, then the next widest. A wrong one wobbles off.",
+    end: "Ask: why does the big block go at the bottom? Build one with cups.",
   },
   ramp: {
-    start: "A higher ramp rolls the ball farther. They can tap a height or drag the ramp.",
+    start: "A higher ramp rolls the ball farther. They try ramps until it reaches the flag.",
     end: "Ask: what happened when the ramp got higher?",
   },
   machines: {
-    start: "A lever, a pulley, and a wheel each lift or move something. The other choice just means try again.",
-    end: "Ask: which machine lifted the basket?",
+    start: "Something is too heavy. They pick the lever, the pulley, or the wheels to move it.",
+    end: "Ask: where have you seen wheels today?",
   },
   balance: {
-    start: "Ages 5 to 7 put weights on the beam. If it tips, they hear what went wrong and try again.",
-    end: "Ask: which side was heavier?",
+    start: "Blocks sit on one side of the beam. They pick the pile that makes it level.",
+    end: "Ask: which side was heavier? Try it on a seesaw.",
   },
 };
 

@@ -1,9 +1,32 @@
 import { MODULE_BUILD } from "../brand";
 import { logicLevel, type LogicLevel } from "./logic";
 import type { AgeRange } from "./profiles";
+import { among, shuffle, take } from "./seed";
 import { defineSubject } from "./subject";
 
-/** LittleNest Build. Coding stays in Games. Reading stays `reading`. */
+/**
+ * LittleNest Build: five things to make work.
+ *
+ * Rebuilt after the first phone test. Each of these was a sandbox of colored
+ * bars: a "bridge" was two tan rectangles and a button that said TEST, a
+ * "machine" was two pink squares. Nothing said what to do, and nothing showed
+ * what had happened.
+ *
+ * Now each is a small problem in a drawn scene, asked aloud, with something
+ * to see when it is solved:
+ *
+ *  - Bridge. A river, and three planks. The one that fits lets the child's
+ *    animal walk across. A short one falls in.
+ *  - Tower. Blocks of different widths. The widest goes on the bottom, then
+ *    the next widest: the tower stands.
+ *  - Ramp. A ball, a flag, and three ramps. A higher ramp rolls it farther.
+ *  - Machines. Something too heavy to lift, pull up or carry, and a lever, a
+ *    pulley or wheels to do it.
+ *  - Balance (ages 5 to 7). A beam with blocks on one side: which pile makes
+ *    it level?
+ *
+ * The ids are the ones the first version used, so stars already earned are kept.
+ */
 export const BUILD = "build";
 
 export const buildSteps = ["bridge", "tower", "ramp", "machines"] as const;
@@ -13,11 +36,11 @@ export const buildActivities = ["bridge", "tower", "ramp", "machines", "balance"
 export type BuildActivity = (typeof buildActivities)[number];
 
 export const buildStages = [
-  { id: "bridge", title: "Build a bridge", detail: "Blocks and planks carry their animal across the river.", size: 1 },
-  { id: "tower", title: "Tall tower", detail: "A wide base stays up. A narrow base topples softly.", size: 1 },
+  { id: "bridge", title: "Build a bridge", detail: "Pick the plank that fits the river, and their animal walks across.", size: 1 },
+  { id: "tower", title: "Tall tower", detail: "The widest block goes on the bottom, and the tower stands.", size: 1 },
   { id: "ramp", title: "Ramps and rolling", detail: "A higher ramp rolls the ball farther.", size: 1 },
-  { id: "machines", title: "Simple machines", detail: "A lever, a pulley, and a wheel and axle.", size: 1 },
-  { id: "balance", title: "Balance", detail: "Ages 5 to 7 balance weights, then test and fix.", size: 1 },
+  { id: "machines", title: "Simple machines", detail: "A lever lifts, a pulley pulls up, and wheels roll along.", size: 1 },
+  { id: "balance", title: "Balance", detail: "Ages 5 to 7 pick the pile of blocks that makes the beam level.", size: 1 },
 ] as const;
 
 defineSubject({
@@ -27,7 +50,7 @@ defineSubject({
   steps: buildSteps,
 });
 
-/** Ages 3–4 build freely. Ages 5–7 get limited pieces, balance, and a fix prompt. */
+/** Ages 3–4 get shorter games. Ages 5–7 get more to choose between, and Balance. */
 export function engineerLevel(ageRange: AgeRange | string): LogicLevel {
   return logicLevel(ageRange);
 }
@@ -38,191 +61,160 @@ export function activitiesFor(level: LogicLevel): BuildActivity[] {
   return activities;
 }
 
-export type SpanPiece = "block" | "plank";
+// ---------------------------------------------------------------- bridge
 
-export type BridgePlan = { gaps: number; blocks: number; planks: number };
+/** A river some planks wide, and planks of different lengths to try. */
+export type BridgeRound = { gap: number; planks: number[] };
 
-/** Banks hold the ends. Each gap is one block or one plank. */
-export function bridgePlan(level: LogicLevel): BridgePlan {
-  if (level === "later") return { gaps: 3, blocks: 1, planks: 2 };
-  return { gaps: 2, blocks: 4, planks: 4 };
+export type PlankFit = "short" | "fits" | "long";
+
+export function plankFit(gap: number, plank: number): PlankFit {
+  if (plank < gap) return "short";
+  return plank > gap ? "long" : "fits";
 }
 
-export function emptySpans(plan: BridgePlan): (SpanPiece | null)[] {
-  return Array.from({ length: plan.gaps }, () => null);
+/** Rivers of each width, in a new order each play. The planks stay in size order, so they can be compared. */
+export function bridgeRounds(level: LogicLevel, salt = 0): BridgeRound[] {
+  const widths = level === "later" ? [2, 3, 4, 5] : [2, 3, 4];
+  return shuffle(widths, salt).map((gap) => ({ gap, planks: widths.length > 3 ? among(gap, widths, 3, salt + gap).sort((a, b) => a - b) : [...widths] }));
 }
 
-function pieceCount(slots: readonly (SpanPiece | null)[], piece: SpanPiece): number {
-  return slots.filter((slot) => slot === piece).length;
+// ---------------------------------------------------------------- tower
+
+/** Blocks by width (a bigger number is wider), dealt out of order. */
+export type TowerRound = { blocks: number[] };
+
+/** The block that goes on next: the widest one not yet on the tower. */
+export function towerNext(blocks: readonly number[], placed: readonly number[]): number {
+  const left = blocks.filter((block) => !placed.includes(block));
+  return left.length > 0 ? Math.max(...left) : 0;
 }
 
-/** Put a piece in one gap. A full kit leaves the bridge unchanged. */
-export function placeSpan(slots: readonly (SpanPiece | null)[], index: number, piece: SpanPiece, plan: BridgePlan): (SpanPiece | null)[] {
-  if (index < 0 || index >= slots.length) return [...slots];
-  const next = slots.slice();
-  next[index] = null;
-  const cap = piece === "block" ? plan.blocks : plan.planks;
-  if (pieceCount(next, piece) >= cap) return [...slots];
-  next[index] = piece;
-  return next;
+export function towerRounds(level: LogicLevel, salt = 0): TowerRound[] {
+  const sizes = level === "later" ? [4, 5] : [3, 4];
+  return sizes.map((count, index) => {
+    const widths = take([1, 2, 3, 4, 5], count, salt + index);
+    const sorted = [...widths].sort((a, b) => b - a);
+    let blocks = shuffle(widths, salt + index + 31);
+    // Never handed over already in the order they go on.
+    if (blocks.every((block, at) => block === sorted[at])) blocks = [...sorted].reverse();
+    return { blocks };
+  });
 }
 
-export function clearSpan(slots: readonly (SpanPiece | null)[], index: number): (SpanPiece | null)[] {
-  if (!slots[index]) return [...slots];
-  const next = slots.slice();
-  next[index] = null;
-  return next;
-}
-
-export function firstOpenSpan(slots: readonly (SpanPiece | null)[]): number {
-  return slots.findIndex((slot) => slot === null);
-}
-
-export type BridgeVerdict = "wait" | "cross" | "sag";
-
-/**
- * A plank run longer than one sags. A block is a pier, and the banks are piers too.
- * Two planks in a row between piers sag. A block in the middle holds them.
- */
-export function bridgeVerdict(slots: readonly (SpanPiece | null)[]): { verdict: BridgeVerdict; hint: string } {
-  if (slots.length === 0 || slots.some((slot) => slot === null)) return { verdict: "wait", hint: "" };
-  let run = 0;
-  const cells = ["support", ...slots.map((slot) => (slot === "block" ? "support" : "plank")), "support"];
-  for (const cell of cells) {
-    if (cell === "plank") {
-      run += 1;
-      if (run > 1) return { verdict: "sag", hint: "A long plank sags. Put a block in the middle." };
-    } else run = 0;
-  }
-  return { verdict: "cross", hint: "" };
-}
-
-export type BlockWidth = "wide" | "medium" | "narrow";
-
-const WIDTH_RANK: Record<BlockWidth, number> = { wide: 3, medium: 2, narrow: 1 };
-
-export type TowerPlan = { goal: number; wide: number; medium: number; narrow: number };
-
-export function towerPlan(level: LogicLevel): TowerPlan {
-  if (level === "later") return { goal: 4, wide: 2, medium: 1, narrow: 1 };
-  return { goal: 3, wide: 4, medium: 4, narrow: 4 };
-}
-
-export function placeTower(stack: readonly BlockWidth[], piece: BlockWidth, plan: TowerPlan): BlockWidth[] {
-  if (stack.filter((item) => item === piece).length >= plan[piece]) return [...stack];
-  if (stack.length >= 6) return [...stack];
-  return [...stack, piece];
-}
-
-export function popTower(stack: readonly BlockWidth[]): BlockWidth[] {
-  return stack.slice(0, -1);
-}
-
-export type TowerVerdict = "wait" | "reach" | "topple" | "short";
-
-/** A wide base stands. Anything wider than the block under it topples. */
-export function towerVerdict(stack: readonly BlockWidth[], goal: number): { verdict: TowerVerdict; hint: string } {
-  if (stack.length === 0) return { verdict: "wait", hint: "" };
-  if (stack[0] !== "wide") return { verdict: "topple", hint: "A wide base keeps the tower up." };
-  for (let index = 1; index < stack.length; index += 1) {
-    if (WIDTH_RANK[stack[index]] > WIDTH_RANK[stack[index - 1]]) {
-      return { verdict: "topple", hint: "A wide block is sitting on a narrow one." };
-    }
-  }
-  if (stack.length < goal) return { verdict: "short", hint: "The tower is not tall enough yet." };
-  return { verdict: "reach", hint: "" };
-}
+// ---------------------------------------------------------------- ramp
 
 export type RampHeight = 1 | 2 | 3;
 
-/** Higher ramps roll farther. Height 1, 2, and 3 roll 2, 4, and 6 steps. */
+/** The flag stands one, two or three places along the track. */
+export type RampRound = { flag: RampHeight };
+
+/** A higher ramp rolls farther: one, two or three places. */
 export function rollDistance(height: RampHeight): number {
-  return height * 2;
+  return height;
 }
 
-export function rampGoal(level: LogicLevel): number {
-  return level === "later" ? 6 : 4;
-}
+export type RampTry = "short" | "reach" | "far";
 
-export function rampVerdict(height: RampHeight, goal: number): { verdict: "reach" | "short"; distance: number; hint: string } {
+export function rampTry(height: RampHeight, flag: RampHeight): RampTry {
   const distance = rollDistance(height);
-  if (distance >= goal) return { verdict: "reach", distance, hint: "" };
-  return { verdict: "short", distance, hint: "The ramp is too low." };
+  if (distance < flag) return "short";
+  return distance > flag ? "far" : "reach";
 }
 
-export function stepHeight(height: RampHeight, direction: 1 | -1): RampHeight {
-  const next = height + direction;
-  if (next <= 1) return 1;
-  if (next >= 3) return 3;
-  return next as RampHeight;
+export function rampRounds(level: LogicLevel, salt = 0): RampRound[] {
+  const flags = shuffle<RampHeight>([1, 2, 3], salt).map((flag) => ({ flag }));
+  if (level !== "later") return flags;
+  // One more, and not the same as the one just before it.
+  const again = shuffle<RampHeight>([1, 2, 3], salt + 5).find((flag) => flag !== flags[2].flag) ?? 1;
+  return [...flags, { flag: again }];
 }
+
+// ---------------------------------------------------------------- machines
 
 export type MachineId = "lever" | "pulley" | "wheel";
 
-/** The basket sits on the right. Pressing the left seat lifts it. */
-export function leverLifts(press: "left" | "right"): boolean {
-  return press === "left";
+export type MachineJob = { id: "rock" | "bucket" | "box"; machine: MachineId; ask: string; answer: string };
+
+export const MACHINE_JOBS: (MachineJob & { say: string; done: string })[] = [
+  { id: "rock", machine: "lever", ask: "engineer-lift-rock", answer: "engineer-lever", say: "The rock is too heavy to lift. What can lift it?", done: "A lever lifts it." },
+  { id: "bucket", machine: "pulley", ask: "engineer-lift-bucket", answer: "engineer-pulley", say: "The bucket is down in the well. What can pull it up?", done: "A pulley pulls it up." },
+  { id: "box", machine: "wheel", ask: "engineer-move-box", answer: "engineer-wheels", say: "The box is too heavy to carry. What can move it?", done: "Wheels roll it along." },
+];
+
+export const MACHINE_NAMES: Record<MachineId, string> = { lever: "lever", pulley: "pulley", wheel: "wheels" };
+
+export type MachineRound = MachineJob & { choices: MachineId[] };
+
+/** The three jobs in a new order, each with the three machines to choose from. */
+export function machineRounds(salt = 0): MachineRound[] {
+  return shuffle(MACHINE_JOBS, salt).map((job, index) => ({
+    id: job.id,
+    machine: job.machine,
+    ask: job.ask,
+    answer: job.answer,
+    choices: shuffle<MachineId>(["lever", "pulley", "wheel"], salt + index + 3),
+  }));
 }
 
-/** A heavy rock on the left lifts the basket. A light rock stays down. */
-export function leverWeight(weight: "heavy" | "light"): { lifts: boolean; hint: string } {
-  if (weight === "heavy") return { lifts: true, hint: "" };
-  return { lifts: false, hint: "The heavy rock lifts the basket." };
+// ---------------------------------------------------------------- balance
+
+/** Some blocks on the left of a beam, and three piles to try on the right. */
+export type BalanceRound = { left: number; choices: number[] };
+
+export type Tilt = "left" | "level" | "right";
+
+/** Which way the beam leans with these many blocks on each side. */
+export function balanceTilt(left: number, right: number): Tilt {
+  if (left === right) return "level";
+  return left > right ? "left" : "right";
 }
 
-export function pulleyLifts(pulledDown: boolean): boolean {
-  return pulledDown;
+export function balanceRounds(salt = 0): BalanceRound[] {
+  return take([1, 2, 3, 4], 3, salt).map((left, index) => ({
+    left,
+    choices: among(left, [1, 2, 3, 4], 3, salt + index + 1).sort((a, b) => a - b),
+  }));
 }
 
-export function wheelNeed(level: LogicLevel): number {
-  return level === "later" ? 3 : 1;
+// ---------------------------------------------------------------- spoken lines
+
+const LINES: Record<string, string> = {
+  "engineer-bridge": "Help your animal cross the river. Which plank fits?",
+  "engineer-short": "Too short. It fell in.",
+  "engineer-long": "Too long. It sticks out.",
+  "engineer-fits": "It fits!",
+  "engineer-tower": "Build a tower. The widest block goes on the bottom.",
+  "engineer-tower-next": "Which block goes next?",
+  "engineer-tower-wide": "A wider one goes first.",
+  "engineer-tower-done": "The tower stands!",
+  "engineer-ramp": "Roll the ball to the flag. Which ramp?",
+  "engineer-ramp-short": "Not far enough. Try a higher ramp.",
+  "engineer-ramp-far": "Too far. Try a lower ramp.",
+  "engineer-ramp-done": "It reached the flag!",
+  "engineer-balance": "Make it balance. Which pile is the same?",
+  "engineer-balance-few": "Not enough. The other side is heavier.",
+  "engineer-balance-many": "Too many. This side is heavier.",
+  "engineer-balance-done": "It balances!",
+};
+
+/** A line of these games, by id. */
+export function engineerLine(id: string): string {
+  return LINES[id] ?? MACHINE_JOBS.find((job) => job.ask === id)?.say ?? MACHINE_JOBS.find((job) => job.answer === id)?.done ?? "";
 }
 
-export function wheelMoves(turns: number, need: number): boolean {
-  return turns >= need;
-}
-
-export function machinesReady(done: Record<MachineId, boolean>): boolean {
-  return done.lever && done.pulley && done.wheel;
-}
-
-export type BeamPos = -2 | -1 | 1 | 2;
-export type BeamWeight = 1 | 2;
-
-export const BEAM_SPOTS: BeamPos[] = [-2, -1, 1, 2];
-
-export function beamTorque(spots: Partial<Record<BeamPos, BeamWeight>>): number {
-  return BEAM_SPOTS.reduce((sum, pos) => sum + (spots[pos] ?? 0) * pos, 0);
-}
-
-export type BeamVerdict = "wait" | "balance" | "tilt";
-
-/** One weight of 1 and one of 2. Distance times weight has to match. */
-export function placeBeam(spots: Partial<Record<BeamPos, BeamWeight>>, pos: BeamPos, weight: BeamWeight): Partial<Record<BeamPos, BeamWeight>> {
-  const next: Partial<Record<BeamPos, BeamWeight>> = { ...spots };
-  for (const spot of BEAM_SPOTS) {
-    if (next[spot] === weight) delete next[spot];
-  }
-  next[pos] = weight;
-  return next;
-}
-
-export function beamVerdict(spots: Partial<Record<BeamPos, BeamWeight>>): { verdict: BeamVerdict; hint: string } {
-  const used = BEAM_SPOTS.some((pos) => spots[pos]);
-  if (!used) return { verdict: "wait", hint: "" };
-  const torque = beamTorque(spots);
-  if (torque === 0) return { verdict: "balance", hint: "" };
-  return { verdict: "tilt", hint: torque < 0 ? "The left side is heavier." : "The right side is heavier." };
-}
-
+/** Build's spoken lines. scripts/sync-manifest.ts writes these into the clip list. */
 export function engineerManifestEntries(): { id: string; say: string }[] {
   return [
-    { id: "engineer-bridge", say: "Build a bridge so your animal can cross." },
-    { id: "engineer-tower", say: "Stack a tower up to the nest." },
-    { id: "engineer-ramp", say: "Make the ball roll to the flag." },
-    { id: "engineer-machines", say: "Lift it with a simple machine." },
-    { id: "engineer-balance", say: "Balance the beam." },
-    { id: "engineer-again", say: "Try again." },
-    { id: "engineer-wrong", say: "What went wrong?" },
+    ...Object.entries(LINES).map(([id, say]) => ({ id, say })),
+    ...MACHINE_JOBS.flatMap((job) => [
+      { id: job.ask, say: job.say },
+      { id: job.answer, say: job.done },
+    ]),
   ];
+}
+
+/** The words these games say when a machine is tapped: each needs a recorded word clip. */
+export function engineerWords(): string[] {
+  return Object.values(MACHINE_NAMES);
 }

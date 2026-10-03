@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { answerGate } from "./gate";
 import { finishPathTrace, scribbleCorner } from "./traceFlow";
 import { createdThisWeek } from "./clock";
+import { sentAddresses } from "./requests";
 
 const profile = {
   activeId: "mia",
@@ -45,7 +46,7 @@ test("tracing a blended word plays the word and keeps the name on this device", 
   }
   await finishPathTrace(page, "word");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
-  expect(requested.join(" ")).not.toMatch(/mia/i);
+  expect(sentAddresses(requested)).not.toMatch(/mia/i);
 });
 
 test("tracing the child's name uses the profile and does not send the name", async ({ page }, testInfo) => {
@@ -65,7 +66,7 @@ test("tracing the child's name uses the profile and does not send the name", asy
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "Stickers" }).click();
   await expect(page.locator("[data-sticker=mia][data-kind=word]")).toBeVisible();
-  expect(requested.join(" ")).not.toMatch(/mia/i);
+  expect(sentAddresses(requested)).not.toMatch(/mia/i);
 });
 
 test("printables include shape, word, and name stroke sheets", async ({ page }) => {
