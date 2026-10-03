@@ -845,39 +845,17 @@ function Dots({ count }: { count: number }) {
 }
 
 function TileArt({ id }: { id: GameId }) {
-  if (id === "hatch") {
-    return (
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <ellipse cx="40" cy="46" rx="22" ry="26" fill="#FFF6E4" stroke="#E4C7A4" strokeWidth="3" />
-        <path d="M30 40 L40 48 L32 56" fill="none" stroke="#C9846A" strokeWidth="2" />
-      </svg>
-    );
-  }
-  if (id === "pop") {
-    return (
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <ellipse cx="28" cy="36" rx="12" ry="16" fill="#F6C3CB" />
-        <ellipse cx="50" cy="32" rx="12" ry="16" fill="#B7D7F2" />
-        <ellipse cx="40" cy="52" rx="12" ry="16" fill="#F6D56B" />
-      </svg>
-    );
-  }
-  if (id === "feed") {
-    return (
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <circle cx="40" cy="40" r="18" fill="#F6B07A" />
-        <circle cx="33" cy="36" r="2" fill="#2C3A4F" />
-        <circle cx="47" cy="36" r="2" fill="#2C3A4F" />
-        <ellipse cx="58" cy="58" rx="10" ry="7" fill="#E07A8A" />
-      </svg>
-    );
-  }
+  // The reading games' tiles show a drawing of what is in the game: an egg, a balloon, an apple, a cat
+  // and a hat (they rhyme). They were colored blobs: two rectangles for Rhyme Match, a circle for Feed.
+  if (id === "hatch") return <span className="code-tile-art" aria-hidden="true"><span className="code-pic is-wide"><Illustration name="egg" /></span></span>;
+  if (id === "pop") return <span className="code-tile-art" aria-hidden="true"><span className="code-pic is-wide"><Illustration name="balloon" /></span></span>;
+  if (id === "feed") return <span className="code-tile-art" aria-hidden="true"><span className="code-pic is-wide"><Illustration name="apple" /></span></span>;
   if (id === "rhyme") {
     return (
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <rect x="14" y="22" width="22" height="28" rx="4" fill="#C9E6D4" />
-        <rect x="44" y="22" width="22" height="28" rx="4" fill="#F6E3B4" />
-      </svg>
+      <span className="code-tile-art" aria-hidden="true">
+        <span className="code-pic"><Illustration name="cat" /></span>
+        <span className="code-pic"><Illustration name="hat" /></span>
+      </span>
     );
   }
   // The coding tiles show what the game is made of: an arrow and the nest, a row of animals, an egg that

@@ -15,6 +15,7 @@ import { shapeStrokes } from "../data/shapeStrokes";
 import { blendingWords, pictureForLetter, scheduleLetters, sheetsFor } from "../data/sheets";
 import { nameGlyphs, nameToTrace, wordGlyphs } from "../data/tracePractice";
 import { StrokeFigure } from "./StrokeFigure";
+import { heldBack } from "../explore/flags";
 
 function weekLettersFor(placement: PlacementDocument, child: ChildProfile | null): string[] {
   if (!child) return traceLetters(practiceLetters(planForWeek(0), isReviewDay()));
@@ -196,14 +197,17 @@ export function Printables({
           >
             Coloring page
           </button>
-          <button
-            type="button"
-            aria-pressed={sheetCourse === "time"}
-            className={sheetCourse === "time" ? "is-selected" : ""}
-            onClick={() => setSheetCourse("time")}
-          >
-            Time sheets
-          </button>
+          {/* Time & Money is being rebuilt and is left out of the installed app for now (src/explore/flags.ts), so the grown-up pages do not describe it either. */}
+          {heldBack("time") ? null : (
+            <button
+              type="button"
+              aria-pressed={sheetCourse === "time"}
+              className={sheetCourse === "time" ? "is-selected" : ""}
+              onClick={() => setSheetCourse("time")}
+            >
+              Time sheets
+            </button>
+          )}
         </div>
         <p className="adult-copy">
           Pick letters, or use the letters from this week. The page fits A4 and US Letter. Printing stays in this

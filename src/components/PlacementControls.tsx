@@ -19,6 +19,7 @@ import {
 import { READING, type SubjectId } from "../data/subject";
 import { unitLabel } from "../data/units";
 import { lessonName, type ChildProfile } from "../data/profiles";
+import { heldBack } from "../explore/flags";
 
 function PlaceEditor({
   label,
@@ -187,7 +188,10 @@ export function PlacementControls({
       })}
       <MathPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} showClass={showClass} />
       <ColorPlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} showClass={showClass} />
-      <TimePlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} showClass={showClass} />
+      {/* Time & Money is being rebuilt and is left out of the installed app for now (src/explore/flags.ts), so the grown-up pages do not describe it either. */}
+      {heldBack("time") ? null : (
+        <TimePlacement placement={placement} profiles={profiles} onClassPlace={onClassPlace} onChildPlace={onChildPlace} showClass={showClass} />
+      )}
     </section>
   );
 }

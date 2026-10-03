@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { playOnDevice } from "../audio/player";
+import { playLine, promptCue } from "../audio/player";
 import { Avatar } from "../avatars";
 import { Illustration } from "../illustrations";
 import { dailySurprise } from "../data/surprise";
@@ -25,7 +25,12 @@ export function SurpriseView({
     playRef.current?.abort();
     const controller = new AbortController();
     playRef.current = controller;
-    void playOnDevice(surprise.line, settingsRef.current, controller.signal).catch(() => undefined);
+    // Two recorded clips, one after the other: "Fox came to say hi!" "And brought a rocket!"
+    void playLine(
+      surprise.clips.map((clip) => promptCue(clip.id, clip.say)),
+      settingsRef.current,
+      controller.signal,
+    ).catch(() => undefined);
   };
   useEffect(() => {
     say();

@@ -223,8 +223,12 @@ test("Hear it again repeats the last line as often as a child likes", async ({ p
   await page.getByRole("button", { name: "Mia" }).click();
   await page.locator("[data-dock=surprise]").click();
   await expect(page.locator("[data-screen=surprise]")).toBeVisible();
+  // The line is said in two recorded parts: who came, then what they brought.
   const line = (await page.locator(".surprise-line").innerText()).toLowerCase();
-  await expect.poll(() => spokenLines(page)).toContain(line);
+  expect(line).toContain("came to say hi, and brought a dinosaur!");
+  const visitor = line.split(" came ")[0];
+  await expect.poll(() => spokenLines(page)).toContain(`${visitor} came to say hi!`);
+  await expect.poll(() => spokenLines(page)).toContain("and brought a dinosaur!");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Story" }).click();
   // The cover reads the title. Hear it again says that title, not the surprise line.
