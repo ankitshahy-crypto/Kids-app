@@ -444,7 +444,10 @@ export function SoundItOut({
             const chunk = Boolean(letter.wordId);
             // A sound unit (sh, a-e) is one tile with two or three letters on it.
             const unit = !chunk && letter.char.length > 1;
-            const label = chunk ? letter.char : letter.char.toUpperCase();
+            // A word is shown the way a child will meet it in a book: in small letters ("mat", not "MAT").
+            // A letter card shows the big and the little letter together ("Mm"); a sound unit is small (sh).
+            const single = letter.char.length === 1;
+            const label = chunk ? letter.char : word.letterCard && single ? `${letter.char.toUpperCase()}${letter.char.toLowerCase()}` : letter.char.toLowerCase();
             // How many gaps this tile crosses toward the middle when the word joins: +1.5, +0.5, -0.5, -1.5 for four tiles.
             const joinSteps = (word.letters.length - 1) / 2 - letterIndex;
             return (

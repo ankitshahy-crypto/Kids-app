@@ -83,7 +83,7 @@ import { PIN_OFFERED_KEY } from "./storage";
 import { READING } from "./data/subject";
 import { lettersOnly, traceLetters } from "./data/units";
 import { blendList, countsForLadder, ladderCap, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
-import { isReviewDay, lettersIntroduced, weekFocus } from "./data/schedule";
+import { isReviewDay, lettersIntroduced, planForWeek, weekFocus } from "./data/schedule";
 import { nameToTrace } from "./data/tracePractice";
 import { usePlacement } from "./hooks/usePlacement";
 import { useDayKey } from "./hooks/useDayKey";
@@ -343,11 +343,15 @@ export default function App() {
     () => blendList(lessonLadderStep, lessonLetters, themes, introducedLetters, lessonTurn),
     [lessonLadderStep, lessonLetters, themes, introducedLetters, lessonTurn],
   );
-  // "This week: M and A", shown on the path and above each lesson card.
+  // "This week: M and A", shown on the path and above each lesson card. A Friday is a review day only
+  // when there are earlier letters to review: in the first week it is still "This week".
   const lessonFocus = useMemo(
-    () => weekFocus(lessonLetters, isReviewDay(new Date())),
+    () => {
+      const fresh = planForWeek(lessonPlace?.weekIndex ?? 0).newLetters;
+      return weekFocus(lessonLetters, isReviewDay(new Date()) && lessonLetters.some((letter) => !fresh.includes(letter)));
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lessonLetters, dayKey],
+    [lessonLetters, lessonPlace, dayKey],
   );
   const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
   const phonicsReady = phonicsOpen(introducedLetters.length);

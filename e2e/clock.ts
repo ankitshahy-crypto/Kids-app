@@ -21,3 +21,14 @@ export function midweek(): Date {
   day.setUTCDate(day.getUTCDate() + 2);
   return day;
 }
+
+/**
+ * A profile created this many calendar weeks ago, so a test sees that lesson
+ * week: 1 is the week of s and t, when the first three-letter words (mat,
+ * sat) can be sounded out.
+ */
+export function createdWeeksAgo(weeks: number): string {
+  const day = new Date(createdThisWeek());
+  day.setUTCDate(day.getUTCDate() - 7 * weeks);
+  return day.toISOString();
+}

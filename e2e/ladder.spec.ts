@@ -55,9 +55,13 @@ test("a teacher places the word ladder and the egg uses that step", async ({ pag
   await page.locator("[data-game-tile=hatch]").click();
   const board = page.locator("[data-game=hatch] .game-board");
   await expect(board).toHaveAttribute("data-ladder-step", "2");
+  // The egg's picture is the question, so its word is one with a drawing. (A two-letter word has none:
+  // "at" cannot be drawn.) The first egg asks for the first sound, a letter this child has been taught.
   const word = (await board.getAttribute("data-word")) ?? "";
-  expect(["at", "in", "it", "up", "on", "am", "is", "an"]).toContain(word);
-  expect(word.length).toBe(2);
+  expect(["m", "a"]).toContain(word[0]);
+  await expect(board.locator(".hatch-picture svg")).toBeVisible();
+  await expect(board.locator('[data-letter][data-needed="true"]')).toHaveCount(1);
+  await expect(board.locator("[data-letter]")).toHaveCount(3);
   if (testInfo.project.name === "chromium") {
     await board.screenshot({ path: "test-results/screenshots/word_ladder_hatch.png" });
   }
