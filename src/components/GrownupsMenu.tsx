@@ -5,7 +5,7 @@ import type { TeacherLink } from "../data/profileExtras";
 import { Avatar } from "../avatars";
 import { RemoveChildSheet } from "./RemoveChildSheet";
 import { shareMessage, shareUrl, showHelpContact } from "../config";
-import { aboutContent } from "../content/about";
+import { aboutContent, dailyLessonHelp } from "../content/about";
 import { resolvePlacement } from "../data/placement";
 import { READING } from "../data/subject";
 import { deviceLine, feedbackMailto } from "../feedback";
@@ -321,13 +321,10 @@ export function GrownupsMenu({
           </ol>
           <h3>How the daily lesson works</h3>
           <p className="adult-copy">
-            Each day starts with the reading lesson, Pilot focus. Explore adds LittleNest Numbers, LittleNest Colors, LittleNest Time & Money, LittleNest Build, and LittleNest Science. LittleNest Words
-            has four stops: Letters, Draw, Story, and Colors. LittleNest Numbers has counting, numerals, tracing, shapes,
-            comparing, and adding. LittleNest Colors has color names, then mixing paints, and coloring their animal. LittleNest Time & Money
-            has the parts of the day, a routine, a clock, coins, a pretend shop, save jars, and a lemonade stand. Cards stay pretend. LittleNest Build
-            is bridges, towers, ramps, and simple machines. Ages 5 to 7 also balance weights. LittleNest Science is life cycles, homes, weather, senses, and sink or float. A fizz stays on the screen and says to do it with a grown-up. A
-            star is for trying. The daily goal counts time on all of them. On Friday the letters from that week come
-            back for a short review.
+            {/* What Explore adds and what is in each section, for this build: a section that is held
+                back is left out. It was typed in here, named every section whatever the build held,
+                and had drifted from the app. See dailyLessonHelp in src/content/about.ts. */}
+            {dailyLessonHelp()}
           </p>
           <h3>Drag to blend</h3>
           <p className="adult-copy">
