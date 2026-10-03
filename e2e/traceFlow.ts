@@ -1,17 +1,38 @@
 import { expect, type Page } from "@playwright/test";
+import { fingerPath, QUICK_STRIDE } from "./fingerPath";
 
-async function signature(page: Page, screen: string): Promise<string> {
-  const root = page.locator(`[data-screen=${screen}]`);
-  const phase = await root.getAttribute("data-phase");
-  const casing = await root.getAttribute("data-casing");
-  const stroke = await root.getAttribute("data-stroke");
-  const letter = await root.getAttribute("data-letter");
-  const glyph = await root.getAttribute("data-glyph");
-  return `${letter}:${casing}:${glyph}:${phase}:${stroke}`;
+/**
+ * How closely the test finger follows a stroke. "quick" is the default, and what the
+ * finish-the-lesson helpers below use: most tests only need the tracing done on the way to
+ * what they check. "careful" touches every station. fingerPath.ts says why there are two.
+ */
+export type Finger = "quick" | "careful";
+
+/**
+ * Look every 50 ms. Playwright's own steps grow to a second between looks, so a change that
+ * lands just after a look is not seen for up to a second. That is paid on every stroke.
+ *
+ * A new list for every poll, on purpose. Playwright uses up the list it is given (1.56 pops
+ * and shifts it), so one shared list works for the first poll and leaves every later poll
+ * at a second between looks: measured, it made these tests slower than before.
+ */
+const lookOften = () => ({ intervals: [50] });
+
+/**
+ * What the board is asking for, read in one page call. It was one call per attribute, five
+ * to the browser for each look. "gone" once the screen has left: a locator's getAttribute
+ * would wait for the screen to come back.
+ */
+function signature(page: Page, screen: string): Promise<string> {
+  return page.evaluate((name) => {
+    const root = document.querySelector(`[data-screen=${name}]`);
+    if (!root) return "gone";
+    return ["letter", "casing", "glyph", "phase", "stroke"].map((key) => root.getAttribute(`data-${key}`)).join(":");
+  }, screen);
 }
 
-/** Draw the stations of the stroke that is on the board. */
-export async function traceCurrentStroke(page: Page, screen = "draw") {
+/** Draw the stroke that is on the board, then wait for the board to move on. */
+export async function traceCurrentStroke(page: Page, screen = "draw", finger: Finger = "quick") {
   const root = page.locator(`[data-screen=${screen}]`);
   const board = root.locator(".letter-board");
   await board.scrollIntoViewIfNeeded();
@@ -27,14 +48,16 @@ export async function traceCurrentStroke(page: Page, screen = "draw") {
       return { x: box.x + (x / 100) * box.width, y: box.y + (y / 100) * box.height };
     });
   if (points.length < 2) throw new Error("The stroke has no stations");
+  const path = fingerPath(points, finger === "careful" ? 1 : QUICK_STRIDE);
   const before = await signature(page, screen);
-  await page.mouse.move(points[0].x, points[0].y);
+  // Pressing down on the first station inks it, so the moves start from the second.
+  await page.mouse.move(path[0].x, path[0].y);
   await page.mouse.down();
-  for (const point of points) {
+  for (const point of path.slice(1)) {
     await page.mouse.move(point.x, point.y);
   }
   await page.mouse.up();
-  await expect.poll(async () => signature(page, screen)).not.toBe(before);
+  await expect.poll(() => signature(page, screen), lookOften()).not.toBe(before);
 }
 
 /** A short stroke in the corner of the board. It must not count as tracing. */
@@ -99,7 +122,7 @@ async function pairOne(page: Page) {
   if ((await waiting.count()) === 0) {
     // The last pair ends the letter a moment later, and the last letter ends the screen.
     // CI's dev server can take a few seconds over that last hand-off, so this waits longer.
-    await expect.poll(() => leftPhase(page, "match"), { timeout: 15000 }).toBe(true);
+    await expect.poll(() => leftPhase(page, "match"), { timeout: 15000, ...lookOften() }).toBe(true);
     return;
   }
   const tile = waiting.first();

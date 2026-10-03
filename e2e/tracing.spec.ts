@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { finishLetterTracing } from "./traceFlow";
+import { finishLetterTracing, traceCurrentStroke } from "./traceFlow";
 import { createdThisWeek } from "./clock";
 
 const profile = {
@@ -56,6 +56,23 @@ test("tracing the letter path completes and a far stroke does not", async ({ pag
   if (testInfo.project.name === "iphone") {
     await page.screenshot({ path: "test-results/screenshots/letter_trace_iphone.png" });
   }
+  // A slow, careful finger first: one stroke, touching every station on the way. The ink
+  // has to grow under it in many short steps and never go back. (The quick finger the rest
+  // of the lesson uses makes a quarter as many, so a third of the stations tells them apart.)
+  const stations = ((await board.getAttribute("data-stations")) ?? "").split(" ").length;
+  await root.evaluate((screen) => {
+    const steps: number[] = [];
+    (window as Window & { __inkSteps?: number[] }).__inkSteps = steps;
+    const note = () => steps.push(Number(screen.getAttribute("data-covered")));
+    new MutationObserver(note).observe(screen, { attributes: true, attributeFilter: ["data-covered"] });
+  });
+  await traceCurrentStroke(page, "draw", "careful");
+  // The board clears to 0 for the next stroke; only this stroke's ink counts.
+  const ink = await page.evaluate(() => ((window as Window & { __inkSteps?: number[] }).__inkSteps ?? []).filter((covered) => covered > 0));
+  expect(ink.length).toBeGreaterThan(stations / 3);
+  expect(ink).toEqual([...ink].sort((a, b) => a - b));
+  // The rest of the lesson with the quick finger the other tests use. Every station of all
+  // twelve strokes took this test most of the way to the 30 s it gets in CI.
   await finishLetterTracing(page);
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
@@ -70,7 +87,6 @@ test("upper and lower letters can be matched by tap or drag", async ({ page }, t
     if (phase === "demo") {
       await root.getByRole("button", { name: "Your turn" }).click();
     } else if (phase === "trace") {
-      const { traceCurrentStroke } = await import("./traceFlow");
       await traceCurrentStroke(page);
     } else if (phase === "cheer") {
       await root.getByRole("button", { name: "Match" }).click();
