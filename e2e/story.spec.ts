@@ -61,8 +61,8 @@ async function openReader(page: Page, id: string) {
 test("week one's reader stars the child's animal, blends the words it can, and earns the story star", async ({ page }) => {
   await install(page, child(), 0);
   const story = await openReader(page, "w01-i-am");
-  // The cover offers the week's other readers.
-  await expect(page.locator(".story-shelf-book")).toHaveCount(2);
+  // The cover offers the week's other readers: week one has four in all.
+  await expect(page.locator(".story-shelf-book")).toHaveCount(3);
   await expect(page.getByRole("heading", { name: "I Am Fox" })).toBeVisible();
   await expect(page.locator(".story-parent")).toContainText("who is this");
   await page.getByRole("button", { name: "Read", exact: true }).click();
