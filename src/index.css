@@ -8086,12 +8086,15 @@ input.is-pressed,
   filter: url(#paint-tint);
 }
 
-/* A splash of the paint behind the animal, so the color chosen shows even where a browser cannot tint the drawing. */
+/* A puddle of the paint under the animal, so the color chosen shows even where a browser cannot tint the drawing. */
 .paint-splash {
   position: absolute;
-  inset: -4% -8%;
-  border-radius: 46% 54% 52% 48% / 55% 48% 52% 45%;
-  opacity: 0.3;
+  left: 8%;
+  right: 8%;
+  bottom: -5%;
+  height: 22%;
+  border-radius: 50%;
+  opacity: 0.6;
   animation: bowl-pour 0.3s ease;
 }
 
