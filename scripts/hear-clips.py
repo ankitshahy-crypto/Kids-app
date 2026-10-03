@@ -93,7 +93,8 @@ def main() -> int:
     print(columns)
     print("| --- | --- | --- |" if not (phonemes and phonemes.ready) else "| --- | --- | --- | --- |")
     for path in files:
-        segments, info = words.transcribe(str(path), beam_size=5, language="en", condition_on_previous_text=False)
+        # Samples, not the file: a new release of the recognizer's own file reader (PyAV) broke it.
+        segments, info = words.transcribe(samples(path), beam_size=5, language="en", condition_on_previous_text=False)
         text = " ".join(segment.text.strip() for segment in segments).strip() or "(nothing)"
         row = f"| {path.as_posix()} | {info.duration:.1f}s | {text.replace('|', '/')} |"
         if phonemes and phonemes.ready:
