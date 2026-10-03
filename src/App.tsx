@@ -632,6 +632,19 @@ export default function App() {
     else setTip(null);
   };
 
+  /**
+   * The one place ladder progress is credited, so the cap can never be left off.
+   *
+   * Review of #124 found that only the lesson passed `ladderCap`: a game or a traced word called
+   * `noteLadder` without it. A week-1 child (m and a) could reach "Short words" by hatching eggs,
+   * which is the very thing the cap was added to stop. The cap is now a required argument, and the
+   * lesson, the games and tracing all come through this function.
+   */
+  const creditLadder = (word: string) => {
+    if (!active) return;
+    noteLadder(active.id, phonicsReady, word, ladderCap(introducedLetters));
+  };
+
   const finishLetter = (word: DeckWord) => {
     // A letter card earns the letter sticker; a blended word also earns its word sticker.
     const learned: StickerInput[] = [
@@ -640,9 +653,7 @@ export default function App() {
     ];
     // Only a blended word of the step's length moves the word ladder, and never past what the letters
     // taught so far can spell. (A letter card used to count, so every first lesson was a step up.)
-    if (active && countsForLadder(word, active.ladder.step)) {
-      noteLadder(active.id, phonicsReady, word.word, ladderCap(introducedLetters));
-    }
+    if (active && countsForLadder(word, active.ladder.step)) creditLadder(word.word);
     reward("letter", learned);
     // The letter's own tip follows its letter card; a word gets the step's line.
     showTip("letter", "end", word.letterCard ? (word.letters[0]?.phraseId ?? "") : undefined);
@@ -660,7 +671,7 @@ export default function App() {
     const words = learned.filter((sticker) => sticker.kind === "word").map((sticker) => sticker.label);
     const countsLadder = game === "hatch" || game === "rhyme" || Boolean(extra?.ladder);
     if (result.awarded && countsLadder) {
-      for (const word of words.length > 0 ? words : [`game:${game}`]) noteLadder(active.id, phonicsReady, word);
+      for (const word of words.length > 0 ? words : [`game:${game}`]) creditLadder(word);
     }
     if (result.awarded) {
       if (!calm) setFlying(true);
@@ -691,7 +702,7 @@ export default function App() {
     if (!active) return;
     if (step === "word") {
       const label = learned.find((sticker) => sticker.kind === "word")?.label;
-      if (label) noteLadder(active.id, phonicsReady, `trace:${label}`);
+      if (label) creditLadder(`trace:${label}`);
     }
     const result = giveStar(active.id, step, learned);
     if (result.awarded) {
