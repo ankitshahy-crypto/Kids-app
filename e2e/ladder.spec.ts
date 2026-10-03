@@ -53,7 +53,7 @@ test("a teacher places the word ladder and the egg uses that step", async ({ pag
   await page.getByRole("button", { name: "Mia" }).click();
   await page.locator("[data-dock=games]").click();
   await page.locator("[data-game-tile=hatch]").click();
-  const board = page.locator("[data-game=hatch] .game-board");
+  const board = page.locator("[data-game=hatch] .game-frame");
   await expect(board).toHaveAttribute("data-ladder-step", "2");
   // The egg's picture is the question, so its word is one with a drawing. (A two-letter word has none:
   // "at" cannot be drawn.) The first egg asks for the first sound, a letter this child has been taught.

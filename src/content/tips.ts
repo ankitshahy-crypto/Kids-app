@@ -92,29 +92,29 @@ const colorTips: Record<string, { start: string; end: string }> = {
 
 const gameTips: Record<string, { start: string; end: string }> = {
   hatch: {
-    start: "The word is spoken slowly. A wrong letter just wiggles. After two tries the right letter glows.",
+    start: "Three words, each spoken slowly. A wrong letter wiggles; after two tries the right one glows.",
     end: "Ask: what sound did we hear at the start?",
   },
   pop: {
-    start: "Pop the balloons with the sound you hear. The others stay up.",
+    start: "They pop the balloons with the letter they hear. The others stay up and say their sound.",
     end: "Ask: what else starts with that sound?",
   },
   // Feed shows pictures of all kinds now (a moon, a mat, a map), so the tip says "pictures" and
   // the question at the end asks about things at home, not only food.
   feed: {
-    start: "Drag or tap the pictures that start with the letter. Their animal is happy either way.",
+    start: "They tap the pictures that start with the letter. Each picture says its name when tapped.",
     end: "Ask: what at home starts with that letter?",
   },
   rhyme: {
-    start: "Listen for words that end the same. Tap one, then its rhyme.",
+    start: "They tap one picture, then the one it rhymes with. The voice says whether the two rhyme.",
     end: "Ask: can you think of another word that rhymes?",
   },
   memory: {
-    start: "Flip two cards. A big letter matches its little letter, or a number matches its dots.",
+    start: "Flip two cards. First a big letter and its little letter, then a number and its dots.",
     end: "Ask: which pair did you find first?",
   },
   spin: {
-    start: "Flick the wheel or tap it. Each slice is something they already know. A miss only shows a hint.",
+    start: "They flick the wheel or tap it. Each slice is something they know. A miss never costs the star.",
     end: "Ask: which slice do you want to spin next?",
   },
   // The coding tips are one short line each. The Build It tip was eleven lines on a phone and pushed the

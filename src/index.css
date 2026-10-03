@@ -5421,6 +5421,7 @@ input.is-pressed,
 }
 
 .games {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -5466,8 +5467,7 @@ input.is-pressed,
   height: 72px;
 }
 
-.game-back,
-.hear-button {
+.game-back {
   min-height: 44px;
   align-self: center;
   padding: 8px 16px;
@@ -5475,6 +5475,38 @@ input.is-pressed,
   background: var(--paper);
   color: var(--ink);
   font-weight: 700;
+}
+
+/* Back to the list of games: four tiles, at the left of the line the game's name is on. */
+.games-back {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--text-sage);
+  box-shadow: var(--shadow);
+}
+
+.games-back svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+/* A game's name is on the same line as the way back, and at least as tall, so nothing under it is covered. */
+.games .game-board > h1 {
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  /* Clear of the button on a narrow phone, where a long name would otherwise run under it. */
+  max-width: calc(100% - 108px);
 }
 
 .game-board {
@@ -5824,15 +5856,6 @@ input.is-pressed,
   height: auto;
 }
 
-.hatch-row,
-.feed-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-}
-
 .hatch-picture {
   width: min(42vw, 180px);
 }
@@ -5864,139 +5887,11 @@ input.is-pressed,
   text-transform: uppercase;
 }
 
-.letter-tiles,
-.balloon-grid,
-.rhyme-grid,
-.memory-grid,
-.food-tray {
-  display: grid;
-  gap: 10px;
-  width: 100%;
-}
-
-.letter-tiles,
-.balloon-grid,
-.memory-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.rhyme-grid,
-.food-tray {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.letter-tile,
-.balloon,
-.memory-card,
-.rhyme-card,
-.food-bit {
-  min-height: 72px;
-  border-radius: 20px;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 28px;
-  font-weight: 800;
-  box-shadow: var(--shadow);
-  touch-action: manipulation;
-}
-
-.food-bit {
-  touch-action: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 15px;
-  padding: 6px;
-}
-
-/* Real drawings on the Feed and Rhyme cards (they were plain colored circles and squares). */
-.food-bit .art,
-.rhyme-card .art {
-  width: min(100%, 112px);
-  height: auto;
-  max-height: 84px;
-}
-
-.letter-tile[data-glow="true"] {
-  box-shadow: 0 0 0 5px #f6d56b;
-}
-
-.letter-tile[data-wiggle="true"],
-.balloon[data-wiggle="true"],
-.food-bit[data-wiggle="true"],
-.rhyme-card[data-wiggle="true"],
 .code-arrow[data-wiggle="true"],
 .pattern-choice[data-wiggle="true"],
 .order-card[data-wiggle="true"],
 .start-button[data-wiggle="true"] {
   animation: game-wiggle 0.45s ease;
-}
-
-.balloon-0,
-.balloon-3 {
-  background: #f6c3cb;
-}
-
-.balloon-1,
-.balloon-4 {
-  background: #b7d7f2;
-}
-
-.balloon-2,
-.balloon-5 {
-  background: #f6d56b;
-}
-
-.balloon[data-popped="true"],
-.food-bit[data-fed="true"] {
-  opacity: 0.35;
-}
-
-.feed-animal {
-  min-width: 120px;
-  min-height: 140px;
-  border-radius: 28px;
-  background: #e7f6ee;
-  display: grid;
-  place-items: center;
-}
-
-.rhyme-card,
-.memory-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.rhyme-card[data-picked="true"],
-.memory-card[data-up="true"] {
-  outline: 4px solid #7aa2d6;
-}
-
-.rhyme-card[data-matched="true"],
-.memory-card[data-matched="true"] {
-  background: #f6e3b4;
-}
-
-.memory-switch {
-  display: flex;
-  gap: 8px;
-}
-
-.memory-switch button {
-  min-height: 44px;
-  min-width: 88px;
-  border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink);
-  font-weight: 800;
-}
-
-.memory-switch button[aria-pressed="true"] {
-  background: var(--sage-soft);
 }
 
 .dot-group {
@@ -6031,19 +5926,11 @@ input.is-pressed,
     min-height: 150px;
   }
 
-  .letter-tile,
-  .balloon,
-  .memory-card {
-    min-height: 96px;
-    font-size: 36px;
-  }
+  
+
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .letter-tile[data-wiggle="true"],
-  .balloon[data-wiggle="true"],
-  .food-bit[data-wiggle="true"],
-  .rhyme-card[data-wiggle="true"],
   .code-arrow[data-wiggle="true"],
   .pattern-choice[data-wiggle="true"],
   .order-card[data-wiggle="true"],
@@ -6075,8 +5962,8 @@ input.is-pressed,
 }
 
 .spin-wheel {
-  width: min(78vw, 300px);
-  height: min(78vw, 300px);
+  width: min(86vw, 340px);
+  height: min(86vw, 340px);
   border-radius: 50%;
   padding: 0;
   background: transparent;
@@ -6097,41 +5984,52 @@ input.is-pressed,
   width: 100%;
 }
 
+/* Apples to count, up to ten, five to a row at most. */
 .spin-objects {
+  --gap: 6px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
-  max-width: 280px;
+  gap: var(--gap);
+  width: 100%;
 }
 
 .spin-object {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #f6b07a;
+  flex: 0 0 auto;
+  width: min(64px, calc((100% - (var(--cols, 3) - 1) * var(--gap)) / var(--cols, 3)));
 }
 
-/* A color choice: the swatch fills the button, so three colors sit in an even row. */
-.letter-tile[data-swatch="true"] {
-  display: flex;
-  padding: 10px;
-}
-
-.spin-swatch {
-  flex: 1;
-  min-height: 52px;
-  border-radius: 14px;
-  border: 2px solid rgba(36, 48, 86, 0.25);
+.spin-object .art {
   display: block;
+  width: 100%;
+  height: auto;
+  transform: scale(1.3);
 }
 
+/* The bonus: the present itself, big. */
 .spin-prize {
-  margin: 0;
-  color: var(--ink);
-  font-size: 28px;
-  font-weight: 800;
-  text-transform: capitalize;
+  display: grid;
+  place-items: center;
+  width: min(150px, 100%);
+  aspect-ratio: 1;
+  animation: egg-hatch 0.5s ease;
+}
+
+.spin-prize svg,
+.spin-prize .hero,
+.spin-prize .avatar-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* A dress-up present is shown on the animal, so the animal is not also standing beside itself. */
+.game-frame[data-challenge="bonus"][data-prize-kind="outfit"] .game-host {
+  display: none;
+}
+
+.game-frame[data-challenge="bonus"][data-prize-kind="outfit"] .game-stage {
+  inset: 8px 10px;
 }
 
 .spin-trace {
@@ -8143,6 +8041,325 @@ input.is-pressed,
   }
 }
 
+/* ---- The reading games on the kit (src/components/ReadingGames.tsx) ---- */
+
+/* A letter to tap: as big as the picture in any other choice. */
+.pick-letter {
+  font-size: 50px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.pick.is-mid .pick-letter {
+  font-size: 42px;
+}
+
+.pick.is-small .pick-letter {
+  font-size: 34px;
+}
+
+/* The letter the animal is asking for, on a card held up over its head. It is set against the stage's
+   left edge, which is where the animal stands, so the stage itself is left for the balloons or the plate. */
+.letter-sign {
+  position: absolute;
+  left: -86px;
+  bottom: 92px;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #fffdfb;
+  box-shadow: inset 0 0 0 3px #e6dccf, var(--shadow);
+  color: var(--ink);
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Hatch: the picture of the word, and the egg in its nest. */
+.hatch-stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+}
+
+.hatch-stage .hatch-picture {
+  flex: 0 1 54%;
+  width: auto;
+  align-self: center;
+  padding: 4px;
+  border-radius: 20px;
+  background: rgba(255, 253, 251, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.hatch-stage .egg-art {
+  flex: 0 1 40%;
+  width: auto;
+  min-width: 0;
+  max-height: 100%;
+}
+
+/* The word with its missing letters sits over the letters to tap, across the whole tray. */
+.game-tray .hatch-blanks {
+  flex: 0 0 100%;
+  justify-content: center;
+}
+
+/* A little shorter than on a page of its own: with six letters under it, the last row must still fit a phone. */
+.game-tray .hatch-blanks span {
+  min-height: 38px;
+  font-size: 28px;
+}
+
+.egg-rock {
+  transform-origin: 60px 130px;
+  animation: egg-rock 0.5s ease;
+}
+
+.egg-baby {
+  transform-origin: 60px 120px;
+  animation: egg-hatch 0.5s ease;
+}
+
+@keyframes egg-rock {
+  25% {
+    transform: rotate(-7deg);
+  }
+  75% {
+    transform: rotate(7deg);
+  }
+}
+
+@keyframes egg-hatch {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* Pop: the letter asked for, and six balloons in the sky. */
+.pop-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.pop-sky {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 72px));
+  gap: 2px 8px;
+}
+
+/* The balloons keep still: a thing to be tapped by a small finger should not move about. */
+.pop-balloon {
+  position: relative;
+  padding: 0;
+  background: transparent;
+  touch-action: manipulation;
+}
+
+.pop-balloon svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pop-letter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 17%;
+  text-align: center;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+/* A popped balloon bursts and is gone, and leaves its place empty so the others do not move. */
+.pop-balloon[data-popped="true"] {
+  animation: pop-burst 0.25s ease forwards;
+  pointer-events: none;
+}
+
+.pop-balloon[data-wiggle="a"] {
+  animation: game-wiggle-a 0.4s ease;
+}
+
+.pop-balloon[data-wiggle="b"] {
+  animation: game-wiggle-b 0.4s ease;
+}
+
+.pop-balloon[data-reveal="true"] svg {
+  filter: drop-shadow(0 0 0 #f0c55b) drop-shadow(0 0 6px #f0c55b);
+}
+
+.pop-balloon .game-hand {
+  right: -6px;
+  bottom: 8px;
+}
+
+@keyframes pop-burst {
+  40% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Feed: the letter asked for, and the animal's plate. */
+.game-frame[data-screen="feed"] .game-stage {
+  align-items: flex-end;
+  padding-bottom: 22px;
+}
+
+/* Spin & Say's apples stand on the grass too. */
+.game-frame[data-challenge="count"] .game-stage {
+  align-items: flex-end;
+  padding-bottom: 14px;
+}
+
+.feed-stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.feed-plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 156px;
+  min-height: 78px;
+  padding: 6px 10px;
+  border-radius: 50% / 46%;
+  background: #fffdfb;
+  box-shadow: inset 0 0 0 3px #e6dccf, inset 0 -8px 0 #f1e8dc;
+}
+
+.feed-bite {
+  flex: 0 1 64px;
+  min-width: 0;
+  animation: plank-lay 0.3s ease;
+}
+
+.feed-bite .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Rhyme and Memory: the pairs found so far are set out in the scene. */
+.rhyme-found,
+.memory-found {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.rhyme-pair,
+.memory-pair {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 18px;
+  background: #fffdfb;
+  box-shadow: var(--shadow);
+  animation: plank-lay 0.3s ease;
+}
+
+.rhyme-pair.is-empty,
+.memory-pair.is-empty {
+  width: 150px;
+  height: 70px;
+  background: rgba(255, 253, 251, 0.5);
+  box-shadow: none;
+  border: 3px dashed #c9b8a6;
+  animation: none;
+}
+
+.rhyme-half {
+  width: 84px;
+}
+
+.rhyme-half .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.memory-pair {
+  gap: 6px;
+  padding: 4px 8px;
+}
+
+.memory-half {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 46px;
+}
+
+.memory-half .pick-letter {
+  font-size: 34px;
+}
+
+.memory-found .dot-group,
+.pick .dot-group {
+  flex-wrap: wrap;
+  max-width: 44px;
+}
+
+/* Six cards, or six letters, sit three to a row: four and two looked like a mistake. */
+.game-frame[data-screen="memory"] .game-tray,
+.game-frame[data-screen="hatch"]:not([data-level="1"]) .game-tray {
+  max-width: 290px;
+}
+
+.card-back {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* A card face up, waiting for its match. */
+.pick[data-card][data-up="true"] {
+  background: #fff6e4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .egg-rock,
+  .egg-baby,
+  .pop-balloon,
+  .feed-bite,
+  .rhyme-pair,
+  .memory-pair {
+    animation: none !important;
+  }
+
+  .pop-balloon[data-popped="true"] {
+    opacity: 0;
+  }
+}
+
 /* The Time & Money page: its games under two headings, each tile a picture. */
 .time-boards {
   display: flex;
@@ -8911,36 +9128,6 @@ input.is-pressed,
   display: inline-flex;
   width: 26px;
   height: 26px;
-}
-
-/* "Hear it" on an activity: a speaker mark, then the word or the shape. */
-.hear-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.hear-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #f3d7c4;
-  flex: 0 0 auto;
-}
-
-.hear-icon .icon {
-  width: 20px;
-  height: 20px;
-}
-
-/* A shape shown on the button, next to its name. */
-.hear-button > svg {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 auto;
 }
 
 .break-button {
