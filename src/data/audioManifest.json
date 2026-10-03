@@ -1167,7 +1167,13 @@
     "cents-12": { "file": "prompts/cents-12.mp3", "say": "twelve cents", "source": "neural" },
     "cents-16": { "file": "prompts/cents-16.mp3", "say": "sixteen cents", "source": "neural" },
     "cents-20": { "file": "prompts/cents-20.mp3", "say": "twenty cents", "source": "neural" },
-    "cents-30": { "file": "prompts/cents-30.mp3", "say": "thirty cents", "source": "neural" }
+    "cents-30": { "file": "prompts/cents-30.mp3", "say": "thirty cents", "source": "neural" },
+    "clock-find-short": { "file": "prompts/clock-find-short.mp3", "say": "Find the short hand. It tells the hour.", "source": "neural" },
+    "clock-find-long": { "file": "prompts/clock-find-long.mp3", "say": "Find the long hand. It tells the minutes.", "source": "neural" },
+    "clock-is-short": { "file": "prompts/clock-is-short.mp3", "say": "That is the short hand.", "source": "neural" },
+    "clock-is-long": { "file": "prompts/clock-is-long.mp3", "say": "That is the long hand.", "source": "neural" },
+    "clock-dots": { "file": "prompts/clock-dots.mp3", "say": "The little dots are minutes. Tap to move the long hand one dot.", "source": "neural" },
+    "clock-dots-done": { "file": "prompts/clock-dots-done.mp3", "say": "Five dots. That is five minutes.", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },

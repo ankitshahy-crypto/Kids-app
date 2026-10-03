@@ -9,6 +9,7 @@ import {
   coinsRounds,
   DAY_SCENES,
   dayRounds,
+  DOTS_TO_NEXT,
   lemonadeRounds,
   needsRounds,
   routineRounds,
@@ -191,21 +192,32 @@ describe("time", () => {
     }
   });
 
-  it("sets three different times, each one the voice can say", () => {
+  it("teaches the clock before it asks for a time: each hand, then the dots, then three times to set", () => {
     for (const week of [0, 2, 5, 6, 8]) {
       const lesson = lessonForWeek(week);
       for (const salt of salts) {
         const rounds = clockRounds(lesson, salt);
-        expect(rounds).toHaveLength(3);
-        expect(rounds[0]).toEqual({ hour: lesson.targetHour, minute: lesson.targetMinute });
-        expect(new Set(rounds.map((round) => round.hour)).size).toBe(3);
-        for (const round of rounds) {
+        expect(rounds.map((round) => round.kind)).toEqual(["hand", "hand", "dots", "set", "set", "set"]);
+        // Both hands are asked for, one each.
+        const asked = rounds.flatMap((round) => (round.kind === "hand" ? [round.hand] : []));
+        expect([...asked].sort()).toEqual(["hour", "minute"]);
+        // The clock that shows them has its short hand well away from the long hand on the 12.
+        for (const round of rounds) if (round.kind !== "set") expect([3, 4, 8, 9]).toContain(round.hour);
+        const sets = rounds.flatMap((round) => (round.kind === "set" ? [round] : []));
+        expect(sets[0]).toMatchObject({ hour: lesson.targetHour, minute: lesson.targetMinute });
+        expect(new Set(sets.map((round) => round.hour)).size).toBe(3);
+        for (const round of sets) {
           const cue = clockCue(round.hour, round.minute);
           expect(prompts[cue.id]?.say, cue.id).toBe(cue.say);
           if (lesson.clockMode === "hour") expect(round.minute).toBe(0);
         }
       }
     }
+    // Which hand comes first changes from play to play.
+    const firsts = new Set(salts.map((salt) => { const first = clockRounds(lessonForWeek(0), salt)[0]; return first.kind === "hand" ? first.hand : ""; }));
+    expect(firsts.size).toBe(2);
+    expect(DOTS_TO_NEXT).toBe(5);
+    for (const id of ["clock-find-short", "clock-find-long", "clock-is-short", "clock-is-long", "clock-dots", "clock-dots-done"]) expect(TIME_LINES[id], id).toBeTruthy();
   });
 });
 

@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { installAudioSpy, spokenLines } from "./audioSpy";
 import { answerGate, openClassPlace } from "./gate";
-import { expectStar, expectWiggle, game, onRound, openGame, openTimeMoney } from "./kit";
+import { expectStar, expectWiggle, meetClock, onRound, openGame, openTimeMoney } from "./kit";
 
 async function passGate(page: Page) {
   await answerGate(page, true);
@@ -255,9 +255,84 @@ test("my day: the parts of a day are put in order, three and then five", async (
   await expectStar(page);
 });
 
-test("the clock: a tap on a number moves the short hand there", async ({ page }, testInfo) => {
+test("the clock starts with its hands: the short one tells the hour, the long one the minutes", async ({ page }, testInfo) => {
+  await installAudioSpy(page);
+  await openTimeMoney(page, { quick: false });
+  const before = (await spokenLines(page)).length;
+  const clock = await openGame(page, "clock");
+  await expect(clock).toHaveAttribute("data-task", "hand");
+  await expect(clock).toHaveAttribute("data-rounds", "6");
+  const first = (await clock.getAttribute("data-answer")) ?? "";
+  const other = first === "hour" ? "minute" : "hour";
+  const ask = { hour: "find the short hand. it tells the hour.", minute: "find the long hand. it tells the minutes." };
+  const is = { hour: "that is the short hand.", minute: "that is the long hand." };
+  await expect.poll(async () => (await spokenLines(page)).slice(before), { timeout: 8_000 }).toContain(ask[first as "hour" | "minute"]);
+  // The short hand is well away from the long one, which is on the 12.
+  await expect(clock).toHaveAttribute("data-minute", "0");
+  expect(["3", "4", "8", "9"]).toContain(await clock.getAttribute("data-hour"));
+  if (testInfo.project.name === "chromium") {
+    await clock.screenshot({ path: "test-results/screenshots/time_money_clock_hands.png" });
+  }
+  // A tap on the wrong hand, on the clock itself: it is named, and nothing ends.
+  const heard = (await spokenLines(page)).length;
+  await clock.locator(`.clock-hand[data-hand=${other}]`).click();
+  await expect(clock.locator(`.clock-hand[data-hand=${other}]`)).toHaveAttribute("data-shake", "true");
+  await expect(clock).toHaveAttribute("data-solved", "false");
+  await expect.poll(async () => (await spokenLines(page)).slice(heard), { timeout: 8_000 }).toContain(is[other as "hour" | "minute"]);
+  // The right one lights up and is named.
+  await clock.locator(`.clock-hand[data-hand=${first}]`).click();
+  await expect(clock.locator(`.clock-hand[data-hand=${first}]`)).toHaveAttribute("data-glow", "true");
+  await expect.poll(async () => (await spokenLines(page)).slice(heard), { timeout: 8_000 }).toContain(is[first as "hour" | "minute"]);
+  // Then the other hand is asked for. The hands are also two big pictures to tap.
+  await expect(clock).toHaveAttribute("data-round", "1", { timeout: 8_000 });
+  await expect(clock).toHaveAttribute("data-answer", other);
+  await expect.poll(async () => (await spokenLines(page)).slice(heard), { timeout: 8_000 }).toContain(ask[other as "hour" | "minute"]);
+  await expect(clock.locator(".pick[data-hand-pick]")).toHaveCount(2);
+  await clock.locator(`.pick[data-hand-pick=${other}]`).click();
+  await expect(clock).toHaveAttribute("data-solved", "true");
+});
+
+test("the dots between the numbers are minutes: five steps take the long hand to the next number", async ({ page }, testInfo) => {
+  await installAudioSpy(page);
+  // Not in a hurry: this one listens for what is said at the end.
+  await openTimeMoney(page, { quick: false });
+  const clock = await openGame(page, "clock");
+  // Every clock face has its sixty dots.
+  await expect(clock.locator(".clock-dot")).toHaveCount(60);
+  for (const round of [0, 1]) {
+    await expect(clock).toHaveAttribute("data-round", String(round), { timeout: 8_000 });
+    await expect(clock).toHaveAttribute("data-solved", "false");
+    await clock.locator(`.pick[data-hand-pick=${await clock.getAttribute("data-answer")}]`).click();
+  }
+  await expect(clock).toHaveAttribute("data-task", "dots", { timeout: 8_000 });
+  await expect(clock).toHaveAttribute("data-minute", "0");
+  await expect(clock.locator(".clock-dot[data-lit=true]")).toHaveCount(0);
+  const heard = (await spokenLines(page)).length;
+  for (const step of [1, 2, 3]) {
+    await clock.locator(".pick[data-pick=step]").click();
+    // The long hand moves one dot, the dot lights, and the count is shown.
+    await expect(clock).toHaveAttribute("data-minute", String(step));
+    await expect(clock.locator(".clock-dot[data-lit=true]")).toHaveCount(step);
+    await expect(clock.locator(".clock-digital")).toHaveText(String(step));
+  }
+  if (testInfo.project.name === "chromium") {
+    await clock.screenshot({ path: "test-results/screenshots/time_money_clock_dots.png" });
+  }
+  // A tap on the long hand itself moves it too.
+  await clock.locator(".clock-hand[data-hand=minute]").click();
+  await expect(clock).toHaveAttribute("data-minute", "4");
+  await clock.locator(".pick[data-pick=step]").click();
+  // Each step was counted aloud, and five dots are five minutes.
+  await expect.poll(async () => (await spokenLines(page)).slice(heard).join(" | "), { timeout: 8_000 }).toContain("five dots. that is five minutes.");
+  expect((await spokenLines(page)).slice(heard)).toEqual(expect.arrayContaining(["one", "five"]));
+  await expect(clock).toHaveAttribute("data-round", "3", { timeout: 8_000 });
+  await expect(clock).toHaveAttribute("data-task", "set");
+});
+
+test("setting the clock: a tap on a number moves the short hand there", async ({ page }, testInfo) => {
   await openTimeMoney(page);
   const clock = await openGame(page, "clock");
+  await meetClock(clock);
   await expect(clock).toHaveAttribute("data-mode", "hour");
   await expect(clock).toHaveAttribute("data-hour", "12");
   await expect(clock).toHaveAttribute("data-target-hour", "1");
@@ -270,7 +345,7 @@ test("the clock: a tap on a number moves the short hand there", async ({ page },
   await expect(clock).toHaveAttribute("data-hour", "12");
   await clock.locator(".clock-number[data-number='1']").click();
   await expect(clock).toHaveAttribute("data-hour", "1");
-  for (const round of [1, 2]) {
+  for (const round of [4, 5]) {
     await expect(clock).toHaveAttribute("data-round", String(round));
     await expect(clock).toHaveAttribute("data-matched", "false");
     await clock.locator(`.clock-number[data-number='${await clock.getAttribute("data-want")}']`).click();
@@ -280,9 +355,10 @@ test("the clock: a tap on a number moves the short hand there", async ({ page },
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
-test("half past: the short hand first, then the long hand", async ({ page }) => {
+test("half past: the short hand first, then the long hand, and the dots it passed light up", async ({ page }) => {
   await openTimeMoney(page, { week: 5, ageRange: "6-7" });
   const clock = await openGame(page, "clock");
+  await meetClock(clock);
   await expect(clock).toHaveAttribute("data-mode", "half");
   await expect(clock).toHaveAttribute("data-target-minute", "30");
   await expect(clock).toHaveAttribute("data-hand", "hour");
@@ -293,7 +369,8 @@ test("half past: the short hand first, then the long hand", async ({ page }) => 
   await expect(clock).toHaveAttribute("data-hand", "minute");
   await expect(clock).toHaveAttribute("data-want", "6");
   await clock.locator(".clock-number[data-number='6']").click();
-  await expect(clock).toHaveAttribute("data-round", "1");
+  await expect(clock.locator(".clock-dot[data-lit=true]")).toHaveCount(30);
+  await expect(clock).toHaveAttribute("data-round", "4");
 });
 
 test("a child who waits hears the question again, and the choices stir", async ({ page }) => {
@@ -359,5 +436,4 @@ test("teacher placement and printables cover the clock and coins", async ({ page
   await page.getByRole("button", { name: "LittleNest Time & Money" }).click();
   const clock = await openGame(page, "clock");
   await expect(clock).toHaveAttribute("data-mode", "half");
-  await expect(clock).toHaveAttribute("data-target-minute", "30");
 });

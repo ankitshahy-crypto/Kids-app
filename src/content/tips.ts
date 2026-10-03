@@ -239,8 +239,8 @@ const timeTips: Record<string, { start: string; end: string }> = {
     end: "Ask: what do we do after school?",
   },
   clock: {
-    start: "The voice says a time. A tap on a number moves the hand to it.",
-    end: "Ask: where is the short hand now?",
+    start: "First the two hands and the minute dots. Then a tap on a number sets a time.",
+    end: "Ask: which hand tells the hour? Find the dots on a clock at home.",
   },
   coins: {
     start: "Each coin says its name and what it is worth. The pictures are our own drawings.",

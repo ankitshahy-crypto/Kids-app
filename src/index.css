@@ -7106,6 +7106,44 @@ input.is-pressed,
 
 .clock-hand {
   transition: transform 0.3s ease;
+  outline: none;
+}
+
+.clock-hand[role="button"] {
+  cursor: pointer;
+}
+
+/* A soft light round a hand: the one just found, or the answer after three misses. */
+.clock-hand-glow {
+  stroke: transparent;
+}
+
+.clock-hand[data-glow="true"] .clock-hand-glow {
+  stroke: var(--gold);
+  opacity: 0.75;
+}
+
+.clock-hand[data-shake="true"] .clock-hand-glow {
+  stroke: #f6d9d2;
+}
+
+.clock-hand:focus-visible .clock-hand-glow {
+  stroke: var(--ink);
+  opacity: 0.4;
+}
+
+.clock-dot {
+  transition: fill 0.2s ease;
+}
+
+.hand-art {
+  width: 70px;
+}
+
+.clock-digital[data-counting="true"] {
+  min-width: 64px;
+  text-align: center;
+  align-self: center;
 }
 
 .clock-number {

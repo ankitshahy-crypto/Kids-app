@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { numberCue, promptCue, type Cue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
-import { clockRounds, dayRounds, ROUTINE_ART, routineRounds } from "../data/timeGames";
+import { clockRounds, dayRounds, DOTS_TO_NEXT, ROUTINE_ART, routineRounds } from "../data/timeGames";
 import { clockCue, type DayPartId, type MoneyGame, type RoutineId, type TimeLesson, type TimeStep } from "../data/timeMoney";
 import type { Outfit } from "../data/wardrobe";
 import { Backdrop, GameFrame, Hand, newSalt, Pick, useCoach, useFinish, useRounds, useRoundState, useWiggle } from "../game/kit";
@@ -30,38 +30,99 @@ type GameProps = {
 
 const title = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 
-/** A clock face. With `onNumber`, each number is something to tap. */
+type Hand = "hour" | "minute";
+
+/**
+ * A clock face: twelve numbers, the minute dots between them, a short hand and a long hand.
+ *
+ * With `onNumber`, each number is something to tap. With `onHand`, each hand is. `lit` lights the
+ * minute dots the long hand has passed, so minutes can be seen being counted.
+ */
 function ClockFace({
   hour,
   minute,
   onNumber,
+  onHand,
   wiggle,
   turn,
   reveal,
   active,
+  glow,
+  shake,
+  lit = false,
 }: {
   hour: number;
   minute: number;
   onNumber?: (value: number) => void;
+  onHand?: (hand: Hand) => void;
   /** The number that was just tapped wrongly, and how many wrong taps there have been. */
   wiggle?: number;
   turn?: number;
   /** The number to show after three misses. */
   reveal?: number;
-  /** Which hand a tap will move. */
-  active?: "hour" | "minute";
+  /** Which hand a tap on a number will move. */
+  active?: Hand;
+  /** The hand to show: the answer after three misses, or the one just found. */
+  glow?: Hand;
+  /** The hand that was just tapped wrongly. */
+  shake?: Hand;
+  lit?: boolean;
 }) {
   const hourAngle = ((hour % 12) + minute / 60) * 30;
   const minuteAngle = minute * 6;
+  const hand = (id: Hand, angle: number, tip: number, color: string, width: number) => (
+    <g
+      className="clock-hand"
+      data-hand={id}
+      data-active={active === id ? "true" : "false"}
+      data-glow={glow === id ? "true" : "false"}
+      data-shake={shake === id ? "true" : "false"}
+      transform={`rotate(${angle} 50 50)`}
+      role={onHand ? "button" : undefined}
+      aria-label={onHand ? (id === "hour" ? "short hand" : "long hand") : undefined}
+      tabIndex={onHand ? 0 : undefined}
+      onClick={onHand ? () => onHand(id) : undefined}
+      onKeyDown={
+        onHand
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") onHand(id);
+            }
+          : undefined
+      }
+    >
+      <line className="clock-hand-glow" x1="50" y1="50" x2="50" y2={tip} strokeWidth={width + 5} strokeLinecap="round" />
+      <line x1="50" y1="50" x2="50" y2={tip} stroke={color} strokeWidth={width} strokeLinecap="round" />
+      {/* A wide strip over the hand: a small finger does not have to land on a thin line. */}
+      {onHand ? <rect x="43.5" y={tip - 3} width="13" height={50 - tip + 3} rx="6" fill="transparent" /> : null}
+    </g>
+  );
   return (
     <svg className="clock-face" viewBox="0 0 100 100" role="img" aria-label="Clock" data-hour={hour} data-minute={minute}>
       <circle cx="50" cy="50" r="48" fill="#6d5b86" />
       <circle cx="50" cy="50" r="44" fill="#fffaf3" />
+      {/* The minute dots: sixty round the edge, a bigger one at each number. */}
+      {Array.from({ length: 60 }, (_, index) => {
+        const angle = (index * 6 - 90) * (Math.PI / 180);
+        const five = index % 5 === 0;
+        const on = lit && index > 0 && index <= minute;
+        return (
+          <circle
+            key={index}
+            className="clock-dot"
+            data-dot={index}
+            data-lit={on ? "true" : "false"}
+            cx={50 + Math.cos(angle) * 41}
+            cy={50 + Math.sin(angle) * 41}
+            r={on ? 1.5 : five ? 1.3 : 0.95}
+            fill={on ? "#5f8f86" : five ? "#6d5b86" : "#b9aecb"}
+          />
+        );
+      })}
       {Array.from({ length: 12 }, (_, index) => {
         const value = index + 1;
         const angle = ((value % 12) * 30 - 90) * (Math.PI / 180);
-        const x = 50 + Math.cos(angle) * 34;
-        const y = 50 + Math.sin(angle) * 34;
+        const x = 50 + Math.cos(angle) * 31.5;
+        const y = 50 + Math.sin(angle) * 31.5;
         return (
           <g
             key={value}
@@ -83,16 +144,40 @@ function ClockFace({
             }
           >
             {/* A wide circle to tap, bigger than the number it holds. */}
-            <circle cx={x} cy={y} r="8.5" className="clock-spot" />
-            <text x={x} y={y + 3.4} textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#243056">
+            <circle cx={x} cy={y} r="7.6" className="clock-spot" />
+            <text x={x} y={y + 3.3} textAnchor="middle" fontSize="9.2" fontWeight="800" fill="#243056">
               {value}
             </text>
           </g>
         );
       })}
-      <line className="clock-hand clock-hour" data-active={active === "hour" ? "true" : "false"} x1="50" y1="50" x2="50" y2="30" stroke="#e07a8a" strokeWidth="4.5" strokeLinecap="round" transform={`rotate(${hourAngle} 50 50)`} />
-      <line className="clock-hand clock-minute" data-active={active === "minute" ? "true" : "false"} x1="50" y1="50" x2="50" y2="19" stroke="#5f8f86" strokeWidth="3" strokeLinecap="round" transform={`rotate(${minuteAngle} 50 50)`} />
+      {/* The short hand is drawn first, so the long one can be tapped where they cross. */}
+      {/* Both stop short of the numbers, so a hand never hides the number it points at. */}
+      {hand("hour", hourAngle, 35, "#e07a8a", 4.6)}
+      {hand("minute", minuteAngle, 25.5, "#5f8f86", 3)}
       <circle cx="50" cy="50" r="3.2" fill="#6d5b86" />
+    </svg>
+  );
+}
+
+/** One hand on its own, for a button: the short pink one or the long green one. */
+function HandArt({ hand }: { hand: Hand }) {
+  return (
+    <svg className="hand-art" viewBox="0 0 60 70" aria-hidden="true" focusable="false">
+      <line x1="30" y1="60" x2="30" y2={hand === "hour" ? 34 : 10} stroke={hand === "hour" ? "#e07a8a" : "#5f8f86"} strokeWidth={hand === "hour" ? 9 : 6} strokeLinecap="round" />
+      <circle cx="30" cy="60" r="6" fill="#6d5b86" />
+    </svg>
+  );
+}
+
+/** "One dot on": the long hand, a dot, and an arrow to it. */
+function StepArt() {
+  return (
+    <svg className="hand-art" viewBox="0 0 60 70" aria-hidden="true" focusable="false">
+      <line x1="22" y1="60" x2="22" y2="14" stroke="#5f8f86" strokeWidth="6" strokeLinecap="round" />
+      <circle cx="22" cy="60" r="6" fill="#6d5b86" />
+      <circle cx="46" cy="14" r="5" fill="#5f8f86" />
+      <path d="M28 14h10M34 9l5 5-5 5" fill="none" stroke="#243056" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -268,30 +353,74 @@ export function RoutineActivity({ animal, outfit, settingsRef, onDone }: Omit<Ga
 // ------------------------------------------------------------------ clock
 
 /**
- * The clock. The voice says a time; a tap on a number moves the hand to it. On the hour that is one
- * tap. With minutes, the short hand goes first, then the voice asks for the long hand.
+ * The clock, from the beginning.
+ *
+ *  1. The hands. "Find the short hand. It tells the hour." Then the long hand, which tells the minutes.
+ *  2. The dots. The long hand steps from the 12 to the next number, one dot at a time, and each step
+ *     is counted: five dots, five minutes.
+ *  3. Setting a time. The voice says a time; a tap on a number moves the hand to it. On the hour that
+ *     is one tap. With minutes, the short hand goes first, then the voice asks for the long hand.
+ *
+ * (It began at step 3, as if a child already knew which hand was which and what the marks were for.)
  */
 export function ClockActivity({ lesson, animal, outfit, settingsRef, onDone }: GameProps) {
   const [salt] = useState(newSalt);
   const list = useMemo(() => clockRounds(lesson, salt), [lesson, salt]);
   const rounds = useRounds(list);
-  const target = rounds.round;
-  const [hands, setHands] = useRoundState(rounds.index, { hour: 12, minute: 0 });
-  const [hand, setHand] = useRoundState<"hour" | "minute">(rounds.index, "hour");
+  const round = rounds.round;
+  const start = round.kind === "set" ? { hour: 12, minute: 0 } : { hour: round.hour, minute: 0 };
+  const [hands, setHands] = useRoundState(rounds.index, start);
+  const [hand, setHand] = useRoundState<Hand>(rounds.index, "hour");
   const [solved, setSolved] = useRoundState(rounds.index, false);
   const wiggle = useWiggle();
-  const cue = clockCue(target.hour, target.minute);
-  const said = promptCue(cue.id, cue.say);
-  const line = hand === "minute" && !solved ? [sayLine("clock-long"), said] : [sayLine("clock-make"), said];
+  const target = round.kind === "set" ? clockCue(round.hour, round.minute) : clockCue(round.hour, 0);
+  const said = promptCue(target.id, target.say);
+  const line: Cue[] =
+    round.kind === "hand"
+      ? [sayLine(round.hand === "hour" ? "clock-find-short" : "clock-find-long")]
+      : round.kind === "dots"
+        ? [sayLine("clock-dots")]
+        : hand === "minute" && !solved
+          ? [sayLine("clock-long"), said]
+          : [sayLine("clock-make"), said];
   const coach = useCoach(settingsRef, line, `${rounds.index}-${hand}`);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(cue.say));
+  useFinish(rounds.finished, settingsRef, coach, () => onDone(target.say));
 
   // The number the long hand points at for these minutes: 12 on the hour, 6 at half past.
-  const minuteNumber = target.minute === 0 ? 12 : target.minute / 5;
-  const wanted = hand === "hour" ? target.hour : minuteNumber;
+  const minuteNumber = round.kind === "set" ? (round.minute === 0 ? 12 : round.minute / 5) : 12;
+  const wanted = round.kind === "set" ? (hand === "hour" ? round.hour : minuteNumber) : 0;
+
+  const tapHand = (which: Hand) => {
+    if (solved) return;
+    if (round.kind === "dots") {
+      // The long hand is also the thing that moves it.
+      if (which === "minute") stepDot();
+      return;
+    }
+    if (round.kind !== "hand") return;
+    const name = sayLine(which === "hour" ? "clock-is-short" : "clock-is-long");
+    if (which !== round.hand) {
+      wiggle.shake(which);
+      coach.miss([name]);
+      return;
+    }
+    wiggle.still();
+    setSolved(true);
+    coach.right([name], rounds.next);
+  };
+
+  const stepDot = () => {
+    if (solved || round.kind !== "dots") return;
+    const minute = hands.minute + 1;
+    setHands({ hour: hands.hour, minute });
+    if (minute >= DOTS_TO_NEXT) {
+      setSolved(true);
+      coach.right([numberCue(minute), sayLine("clock-dots-done")], rounds.next);
+    } else coach.touch([numberCue(minute)]);
+  };
 
   const tapNumber = (value: number) => {
-    if (solved) return;
+    if (solved || round.kind !== "set") return;
     if (value !== wanted) {
       wiggle.shake(String(value));
       coach.miss([numberCue(value)]);
@@ -299,9 +428,8 @@ export function ClockActivity({ lesson, animal, outfit, settingsRef, onDone }: G
     }
     wiggle.still();
     if (hand === "hour") {
-      const next = { hour: value, minute: hands.minute };
-      setHands(next);
-      if (target.minute === 0) {
+      setHands({ hour: value, minute: hands.minute });
+      if (round.minute === 0) {
         setSolved(true);
         coach.right([said], rounds.next);
         return;
@@ -310,12 +438,16 @@ export function ClockActivity({ lesson, animal, outfit, settingsRef, onDone }: G
       coach.right([numberCue(value)], () => setHand("minute"));
       return;
     }
-    setHands({ hour: hands.hour, minute: target.minute });
+    setHands({ hour: hands.hour, minute: round.minute });
     setSolved(true);
     coach.right([said], rounds.next);
   };
 
-  const digital = `${target.hour}:${String(target.minute).padStart(2, "0")}`;
+  const shown = `${hands.hour}:${String(hands.minute).padStart(2, "0")}`;
+  const digital = round.kind === "set" ? `${round.hour}:${String(round.minute).padStart(2, "0")}` : shown;
+  // The hand to light up: the answer after three misses, or the one just found.
+  const glow = round.kind === "hand" && (coach.reveal || solved) ? round.hand : round.kind === "dots" ? "minute" : undefined;
+  const hint = round.kind === "set" && coach.reveal ? wanted : 0;
   return (
     <GameFrame
       screen="clock"
@@ -326,26 +458,41 @@ export function ClockActivity({ lesson, animal, outfit, settingsRef, onDone }: G
       rounds={rounds}
       scene="room"
       attrs={{
+        "data-task": round.kind,
         "data-mode": lesson.clockMode,
         "data-hour": hands.hour,
         "data-minute": hands.minute,
-        "data-target-hour": target.hour,
-        "data-target-minute": target.minute,
+        "data-target-hour": round.kind === "set" ? round.hour : undefined,
+        "data-target-minute": round.kind === "set" ? round.minute : undefined,
         "data-hand": hand,
-        "data-want": wanted,
+        "data-answer": round.kind === "hand" ? round.hand : round.kind === "dots" ? "minute" : String(wanted),
+        "data-want": round.kind === "set" ? wanted : undefined,
         "data-matched": solved ? "true" : "false",
+        "data-solved": solved ? "true" : "false",
       }}
       stage={
         <div className="clock-stage">
-          <ClockFace hour={hands.hour} minute={hands.minute} onNumber={tapNumber} wiggle={Number(wiggle.id) || undefined} turn={wiggle.count} reveal={coach.reveal ? wanted : undefined} active={hand} />
-          {coach.reveal ? (
+          <ClockFace
+            hour={hands.hour}
+            minute={hands.minute}
+            onNumber={round.kind === "set" ? tapNumber : undefined}
+            onHand={round.kind === "set" ? undefined : tapHand}
+            wiggle={round.kind === "set" ? Number(wiggle.id) || undefined : undefined}
+            turn={wiggle.count}
+            reveal={hint || undefined}
+            active={round.kind === "set" ? hand : undefined}
+            glow={glow}
+            shake={round.kind === "hand" && (wiggle.id === "hour" || wiggle.id === "minute") ? wiggle.id : undefined}
+            lit={round.kind !== "hand"}
+          />
+          {hint ? (
             // The hand points at the number to tap.
             <span
               className="clock-hint"
-              data-point={wanted}
+              data-point={hint}
               style={{
-                left: `${50 + Math.cos((((wanted % 12) * 30 - 90) * Math.PI) / 180) * 34}%`,
-                top: `${50 + Math.sin((((wanted % 12) * 30 - 90) * Math.PI) / 180) * 34}%`,
+                left: `${50 + Math.cos((((hint % 12) * 30 - 90) * Math.PI) / 180) * 31.5}%`,
+                top: `${50 + Math.sin((((hint % 12) * 30 - 90) * Math.PI) / 180) * 31.5}%`,
               }}
             >
               <Hand />
@@ -354,10 +501,35 @@ export function ClockActivity({ lesson, animal, outfit, settingsRef, onDone }: G
         </div>
       }
     >
-      {/* The time in numbers, for a child who is learning to read a digital clock. The voice says it for everyone. */}
-      <span className="clock-digital" data-digital={digital}>
-        {digital}
-      </span>
+      {round.kind === "hand"
+        ? // The two hands again as big pictures, for a finger that finds the ones on the clock too thin.
+          (["hour", "minute"] as const).map((which) => (
+            <Pick
+              key={which}
+              id={which}
+              name={which === "hour" ? "short hand" : "long hand"}
+              art={<HandArt hand={which} />}
+              wiggle={wiggle.id === which ? wiggle.count : 0}
+              reveal={coach.reveal && which === round.hand}
+              onPick={() => tapHand(which)}
+              attrs={{ "data-hand-pick": which }}
+            />
+          ))
+        : null}
+      {round.kind === "dots" ? (
+        <>
+          <Pick id="step" name="move the long hand one dot" art={<StepArt />} demo={hands.minute === 0} used={solved} onPick={stepDot} attrs={{ "data-step": hands.minute }} />
+          <span className="clock-digital" data-digital={shown} data-counting="true">
+            {hands.minute}
+          </span>
+        </>
+      ) : null}
+      {round.kind === "set" ? (
+        // The time in numbers, for a child who is learning to read a digital clock. The voice says it for everyone.
+        <span className="clock-digital" data-digital={digital}>
+          {digital}
+        </span>
+      ) : null}
     </GameFrame>
   );
 }

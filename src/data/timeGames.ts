@@ -280,9 +280,25 @@ export function routineRounds(salt = 0): RoutineRound[] {
 
 // ---------------------------------------------------------------- clock
 
-export type ClockRound = { hour: number; minute: number };
+export type ClockHand = "hour" | "minute";
 
-/** Three times to set: the week's own, then two more with the same kind of minutes. */
+export type ClockRound =
+  /** "Find the short hand. It tells the hour." The clock shows a time with the two hands well apart. */
+  | { kind: "hand"; hand: ClockHand; hour: number }
+  /** The long hand steps from the 12 to the next number, one dot at a time: five dots, five minutes. */
+  | { kind: "dots"; hour: number }
+  /** "Make the clock say three o'clock." */
+  | { kind: "set"; hour: number; minute: number };
+
+/** How many dots the long hand steps over to reach the next number. */
+export const DOTS_TO_NEXT = 5;
+
+/**
+ * The clock, from the beginning: what each hand is, what the dots between the numbers are, and then
+ * three times to set (the week's own, then two more with the same kind of minutes).
+ *
+ * The first version went straight to "set the clock", as if a child already knew which hand was which.
+ */
 export function clockRounds(lesson: Pick<TimeLesson, "targetHour" | "targetMinute" | "clockMode">, salt = 0): ClockRound[] {
   const minutes: number[] =
     lesson.clockMode === "hour" ? [0] : lesson.clockMode === "half" ? [30, 0] : lesson.clockMode === "quarter" ? [15, 45, 30] : [5, 10, 20, 25, 35, 40, 50, 55];
@@ -290,10 +306,17 @@ export function clockRounds(lesson: Pick<TimeLesson, "targetHour" | "targetMinut
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter((hour) => hour !== lesson.targetHour),
     salt,
   );
+  // A time for meeting the hands: the short one far from the long one, which is on the 12.
+  const shown = [3, 4, 8, 9][mix(salt, 3) % 4];
+  // Which hand is asked for first changes from play to play, so it is listened for, not remembered.
+  const first: ClockHand = mix(salt, 4) % 2 === 0 ? "hour" : "minute";
   return [
-    { hour: lesson.targetHour, minute: lesson.targetMinute },
-    { hour: hours[0], minute: minutes[mix(salt, 1) % minutes.length] },
-    { hour: hours[1], minute: minutes[mix(salt, 2) % minutes.length] },
+    { kind: "hand", hand: first, hour: shown },
+    { kind: "hand", hand: first === "hour" ? "minute" : "hour", hour: shown },
+    { kind: "dots", hour: shown },
+    { kind: "set", hour: lesson.targetHour, minute: lesson.targetMinute },
+    { kind: "set", hour: hours[0], minute: minutes[mix(salt, 1) % minutes.length] },
+    { kind: "set", hour: hours[1], minute: minutes[mix(salt, 2) % minutes.length] },
   ];
 }
 
@@ -379,6 +402,12 @@ export const TIME_LINES: Record<string, string> = {
   "day-until": "until",
   "day-hours": "How many hours is that?",
   "routine-first": "What do we do first?",
+  "clock-find-short": "Find the short hand. It tells the hour.",
+  "clock-find-long": "Find the long hand. It tells the minutes.",
+  "clock-is-short": "That is the short hand.",
+  "clock-is-long": "That is the long hand.",
+  "clock-dots": "The little dots are minutes. Tap to move the long hand one dot.",
+  "clock-dots-done": "Five dots. That is five minutes.",
   "clock-make": "Make the clock say",
   "clock-long": "Now the long hand.",
   "lemon-1": "One cup, please.",

@@ -78,3 +78,21 @@ export async function expectStar(page: Page, stars = 1) {
 export async function expectWiggle(pick: Locator) {
   await expect(pick).toHaveAttribute("data-wiggle", /^(a|b|true)$/);
 }
+
+/**
+ * The clock opens by teaching its parts: each hand, then the minute dots. This plays those three
+ * rounds, using the big pictures of the hands, and leaves the game on its first time to set.
+ */
+export async function meetClock(frame: Locator) {
+  for (const round of [0, 1]) {
+    await expect(frame).toHaveAttribute("data-round", String(round));
+    await expect(frame).toHaveAttribute("data-task", "hand");
+    await expect(frame).toHaveAttribute("data-solved", "false");
+    await frame.locator(`.pick[data-hand-pick=${await frame.getAttribute("data-answer")}]`).click();
+  }
+  await expect(frame).toHaveAttribute("data-round", "2");
+  await expect(frame).toHaveAttribute("data-task", "dots");
+  for (let step = 0; step < 5; step += 1) await frame.locator(".pick[data-pick=step]").click();
+  await expect(frame).toHaveAttribute("data-round", "3");
+  await expect(frame).toHaveAttribute("data-task", "set");
+}

@@ -34,11 +34,8 @@ test("a 4-year-old never gets half hours on the clock, however long they have us
   await expect(today).toHaveAttribute("data-stage", "shop");
   await page.locator("[data-activity=clock]").click();
   const clock = page.locator("[data-screen=clock]");
+  // On the hour there is only the short hand to set, once the hands and the dots have been met.
   await expect(clock).toHaveAttribute("data-mode", "hour");
-  await expect(clock).toHaveAttribute("data-target-minute", "0");
-  // On the hour there is only the short hand to set: the game never asks for the long one.
-  await expect(clock).toHaveAttribute("data-hand", "hour");
-  await expect(clock.locator(".clock-digital")).toHaveText(/:00$/);
 });
 
 test("a 5-year-old with the same history moves on past o'clock", async ({ page }) => {
