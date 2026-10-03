@@ -110,6 +110,8 @@ def sound_alike(wanted: list[str], heard: list[str]) -> bool:
     def ways(words: list[str]) -> set[str]:
         options = {""}
         for word in words:
+            # A number is compared by its sound too ("ate" was written down as "eight", and so as 8).
+            word = DIGIT_WORDS.get(word, word)
             spoken = SOUNDS.get(word) or SOUNDS.get(word.replace("'", ""))
             if not spoken:
                 return set()
@@ -311,11 +313,27 @@ NUMBER_WORDS = {
 }
 
 
+DIGIT_WORDS = {digits: word for word, digits in NUMBER_WORDS.items()}
+
+
 def words_of(text: str) -> list[str]:
     """A line as plain words: lower case, no punctuation, numbers as digits, repeats of the whole line dropped."""
     text = text.lower().replace("’", "'").replace("o'clock", "oclock")
     words = [NUMBER_WORDS.get(word, word) for word in re.sub(r"[^a-z0-9' ]+", " ", text).split()]
     return words
+
+
+def once(words: list[str]) -> list[str]:
+    """A clip is often written down two or three times over ("C C", "440 440", a whole page twice): keep one."""
+    for size in range(1, len(words) // 2 + 1):
+        if len(words) % size == 0 and words == words[:size] * (len(words) // size):
+            return words[:size]
+    return words
+
+
+def letters_of(words: list[str]) -> str:
+    """A line as its letters alone, with the spellings a recognizer swaps made one ("okay" for "ok")."""
+    return "".join(words).replace("'", "").replace("okay", "ok")
 
 
 def digits_of(words: list[str]) -> str:
@@ -369,22 +387,27 @@ def check(listener: Listener, path: str, text: str) -> dict:
         return verdict
     cross = listener.encode(audio)
     heard, sure = listener.heard(cross)
-    wanted, got = words_of(text), words_of(heard)
+    wanted, got = words_of(text), once(words_of(heard))
     share = same_words(wanted, got)
     verdict.update({"heard": heard, "share": round(share, 2)})
     if facts["cut"]:
         verdict["why"] = "stops while still loud"
         return verdict
-    # Times and money: the same digits are the same line, however they were written.
-    if digits_of(wanted) and digits_of(wanted) == digits_of(got) and [w for w in wanted if not w.isdigit()] == [w for w in got[: len(wanted) + 2] if not w.isdigit()][: len([w for w in wanted if not w.isdigit()])]:
+    # Times and money: the same digits are the same line, however they were written. A recognizer
+    # writes "one dollar and ten cents" as "$1.10", with no words left to compare.
+    if digits_of(wanted) and digits_of(wanted) == digits_of(got):
+        words = [w for w in wanted if not w.isdigit()]
+        if "$" in heard or words == [w for w in got[: len(wanted) + 2] if not w.isdigit()][: len(words)]:
+            verdict["ok"] = True
+            return verdict
+    # The same letters in the same order are the same line, wherever the spaces fell: "can not" and
+    # "cannot", "sand man" and "Sandman", "ta-da" and "tada". The first full listen through every clip
+    # sent 30 good story pages to be made again for this alone.
+    if letters_of(wanted) == letters_of(got):
         verdict["ok"] = True
         return verdict
     short = len(wanted) <= 3
     if short:
-        # A short clip is often written down twice over ("C C", "cat cat"): once is what was heard.
-        unit = got[: len(wanted)]
-        if unit and len(got) % len(unit) == 0 and got == unit * (len(got) // len(unit)):
-            got = unit
         # A short line has to be the whole of what was heard: "up" is not "up there".
         if got == wanted:
             verdict["ok"] = True
@@ -404,6 +427,15 @@ def check(listener: Listener, path: str, text: str) -> dict:
         return verdict
     if share >= WORDS_NEEDED:
         verdict["ok"] = True
+        return verdict
+    # A page of names and short words ("Sam and Owl sat and sat") is easy to say right and hard to
+    # write down right ("salmon owl"). Ask the other way round, as for a short line: how well do the
+    # page's own words fit the sound, against what the recognizer chose to write?
+    line = listener.likely(cross, text)
+    verdict.update({"score": round(line, 2), "sure": round(sure, 2)})
+    if line >= sure - NEAR and line >= FLOOR:
+        verdict["ok"] = True
+        verdict["why"] = "as likely as what was heard"
         return verdict
     verdict["why"] = "says something else"
     return verdict
