@@ -92,12 +92,9 @@
     "prompts/add.mp3",
     "prompts/blend-say.mp3",
     "prompts/build-again.mp3",
-    "prompts/build-chef.mp3",
     "prompts/build-move.mp3",
     "prompts/build-music.mp3",
     "prompts/build-save.mp3",
-    "prompts/build-scene.mp3",
-    "prompts/build-splash.mp3",
     "prompts/cents-1.mp3",
     "prompts/cents-10.mp3",
     "prompts/cents-110.mp3",
@@ -117,10 +114,7 @@
     "prompts/code-again.mp3",
     "prompts/code-bird.mp3",
     "prompts/code-bug.mp3",
-    "prompts/code-garden-rain.mp3",
-    "prompts/code-garden-sun.mp3",
     "prompts/code-loop.mp3",
-    "prompts/code-morning.mp3",
     "prompts/code-pattern.mp3",
     "prompts/code-plan.mp3",
     "prompts/count.mp3",
@@ -3403,7 +3397,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 14539545,
+    "shared": 14450571,
     "byAnimal": {
       "bear": 4881909,
       "bunny": 4851573,
