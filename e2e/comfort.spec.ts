@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { answerGate } from "./gate";
 import { installAudioSpy, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
+import { showWordCard } from "./lesson";
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -19,18 +20,28 @@ function child(extra: Record<string, unknown> = {}) {
   };
 }
 
-/** Week 0 of the letter plan: m and a. */
-const placement = {
-  version: 1,
-  origin: "device",
-  classId: "device-class",
-  updatedAt: "2026-09-26T00:00:00.000Z",
-  subjects: {
-    reading: { classDefault: { subject: "reading", stageId: "letters", weekIndex: 0 }, byChildId: {} },
-  },
-};
+/**
+ * The class's place in the letter plan. Week 0 is m and a; week 5 is u and b,
+ * the first week a child can sound out a vehicle word (bus, cab).
+ */
+function placementAt(week: number) {
+  return {
+    version: 1,
+    origin: "device",
+    classId: "device-class",
+    updatedAt: "2026-09-26T00:00:00.000Z",
+    subjects: {
+      reading: { classDefault: { subject: "reading", stageId: "letters", weekIndex: week }, byChildId: {} },
+    },
+  };
+}
 
-async function install(page: Page, profile: Record<string, unknown>, settings: Record<string, unknown> = {}) {
+async function install(
+  page: Page,
+  profile: Record<string, unknown>,
+  settings: Record<string, unknown> = {},
+  week = 0,
+) {
   await page.addInitScript(
     ({ saved, placed, prefs }) => {
       localStorage.setItem("littlenest-profiles-v1", JSON.stringify({ activeId: "mia", profiles: [saved] }));
@@ -38,7 +49,7 @@ async function install(page: Page, profile: Record<string, unknown>, settings: R
       localStorage.setItem("littlenest-silent-hint-v1", "1");
       if (Object.keys(prefs).length > 0) localStorage.setItem("littlenest-settings-v1", JSON.stringify(prefs));
     },
-    { saved: profile, placed: placement, prefs: settings },
+    { saved: profile, placed: placementAt(week), prefs: settings },
   );
   await page.goto("./");
 }
@@ -78,7 +89,8 @@ async function saveChild(page: Page) {
 }
 
 test("calm mode and a theme change the lesson, and one lesson still plays through", async ({ page }) => {
-  await install(page, child({ themes: ["vehicles"] }), { calm: true });
+  // Week 5 (u and b): the first week the vehicles theme has words this child can sound out.
+  await install(page, child({ themes: ["vehicles"] }), { calm: true }, 5);
   await page.getByRole("button", { name: "Mia" }).click();
   const app = page.locator(".app");
   await expect(app).toHaveAttribute("data-calm", "true");
@@ -87,14 +99,21 @@ test("calm mode and a theme change the lesson, and one lesson still plays throug
   await page.getByRole("button", { name: "Letters" }).click();
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
-  // Step 3 with the vehicles theme leads with the bus card, then van, jet, cab.
-  await expect(page.locator(".activity")).toHaveAttribute("data-word", "bus");
-  await expect(page.locator(".chunk-strip-word")).toHaveText("Word 1 of 6");
+  // The week's letter cards lead every lesson, whatever the theme. The theme's
+  // words come straight after them: bus and cab, the two vehicle words a child
+  // who knows up to u and b can read. (Van and jet wait for v, j and e. Which
+  // of the two is first changes with the day.)
+  const activity = page.locator(".activity");
+  await expect(activity).toHaveAttribute("data-letter-card", "true");
+  await showWordCard(page, 3);
+  await expect(activity).toHaveAttribute("data-word", /^(bus|cab)$/);
+  const first = (await activity.getAttribute("data-word")) ?? "";
+  const second = first === "bus" ? "cab" : "bus";
+  await expect(page.locator(".chunk-strip-word")).toHaveText(/^Word \d+ of \d+$/);
   await page.getByRole("button", { name: "Next word" }).click();
-  await expect(page.locator(".activity")).toHaveAttribute("data-word", "van");
-  await expect(page.locator(".chunk-strip-word")).toHaveText("Word 2 of 6");
+  await expect(activity).toHaveAttribute("data-word", second);
   await page.getByRole("button", { name: "Previous word" }).click();
-  await expect(page.locator(".activity")).toHaveAttribute("data-word", "bus");
+  await expect(activity).toHaveAttribute("data-word", first);
 
   // Hear again and Break are in the top bar, big enough for a small finger.
   for (const control of [page.locator("[data-hear-again]"), page.locator("[data-break]")]) {
@@ -106,31 +125,29 @@ test("calm mode and a theme change the lesson, and one lesson still plays throug
   await page.locator("[data-hear-again]").click();
 
   await dragAcross(page, page.locator(".blend-track"));
-  await expect(page.locator(".activity")).toHaveAttribute("data-blended", "true");
+  await expect(activity).toHaveAttribute("data-blended", "true");
   // Calm mode: no star burst.
   await expect(page.locator(".star-flight")).toHaveCount(0);
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator(".chunk-strip")).toHaveText("1 of 4 · 3 more!");
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-profiles-v1") ?? "{}"));
-  expect(saved.profiles[0].stickers.some((sticker: { label: string }) => sticker.label === "bus")).toBe(true);
+  expect(saved.profiles[0].stickers.some((sticker: { label: string }) => sticker.label === first)).toBe(true);
 });
 
-test("without a theme the lesson keeps its regular words, and the letter card follows the theme", async ({ page }) => {
-  await install(page, child({ ladder: { step: 1, successes: 0 } }));
-  await page.getByRole("button", { name: "Mia" }).click();
-  await page.getByRole("button", { name: "Letters" }).click();
-  await expect(page.locator(".activity")).toHaveAttribute("data-word", "letter-m");
-  await expect(page.locator(".picture-card")).toHaveAttribute("aria-label", "moon");
-  await page.goto("./");
-
-  await install(page, child({ ladder: { step: 1, successes: 0 }, themes: ["space"] }));
-  await page.getByRole("button", { name: "Mia" }).click();
-  await page.getByRole("button", { name: "Letters" }).click();
-  await expect(page.locator(".activity")).toHaveAttribute("data-word", "letter-m");
-  await expect(page.locator(".picture-card")).toHaveAttribute("aria-label", "moon");
-  await page.getByRole("button", { name: "Next word" }).click();
-  await expect(page.locator(".activity")).toHaveAttribute("data-word", "letter-a");
-  await expect(page.locator(".picture-card")).toHaveAttribute("aria-label", "astronaut");
+test("a theme never changes a letter card: A is for apple with or without one", async ({ page }) => {
+  // A space theme used to turn the A card into "astronaut" while the clip, the
+  // Draw step and the tip still said apple. One letter, one picture word.
+  for (const themes of [[], ["space"]]) {
+    await install(page, child({ ladder: { step: 1, successes: 0 }, themes }));
+    await page.getByRole("button", { name: "Mia" }).click();
+    await page.getByRole("button", { name: "Letters" }).click();
+    await expect(page.locator(".activity")).toHaveAttribute("data-word", "letter-m");
+    await expect(page.locator(".picture-card")).toHaveAttribute("aria-label", "moon");
+    await page.getByRole("button", { name: "Next word" }).click();
+    await expect(page.locator(".activity")).toHaveAttribute("data-word", "letter-a");
+    await expect(page.locator(".picture-card")).toHaveAttribute("aria-label", "apple");
+    await page.goto("./");
+  }
 });
 
 test("favorites are picked in Grown-ups, up to three, and can be changed later", async ({ page }) => {

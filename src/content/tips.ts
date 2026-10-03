@@ -97,9 +97,11 @@ const gameTips: Record<string, { start: string; end: string }> = {
     start: "Pop the balloons with the sound you hear. The others stay up.",
     end: "Ask: what else starts with that sound?",
   },
+  // Feed shows pictures of all kinds now (a moon, a mat, a map), so the tip says "pictures" and
+  // the question at the end asks about things at home, not only food.
   feed: {
-    start: "Drag or tap foods that start with the letter. Their animal is happy either way.",
-    end: "Ask: what food at home starts with that letter?",
+    start: "Drag or tap the pictures that start with the letter. Their animal is happy either way.",
+    end: "Ask: what at home starts with that letter?",
   },
   rhyme: {
     start: "Listen for words that end the same. Tap one, then its rhyme.",
