@@ -30,7 +30,12 @@ async function install(page: Page, saved: unknown = profile) {
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
   await page.getByRole("button", { name: "Mia" }).click();
-  await page.locator("[data-dock=games]").click();
+}
+
+/** Coding has its own tile on the home screen, and its own list. */
+async function openCoding(page: Page) {
+  await page.locator("[data-course=code]").click();
+  await expect(page.locator("[data-screen=games]")).toHaveAttribute("data-lobby", "code");
   await expect(page.locator("[data-game=home]")).toBeVisible();
 }
 
@@ -44,113 +49,196 @@ async function runPath(board: Locator) {
   await expect(board).toHaveAttribute("data-home", "true");
 }
 
-test("arrows take the animal home, then a plan can be tried again", async ({ page }, testInfo) => {
+/** A way that leads off the board from the start: the opposite of the path's first step. */
+function wrongWay(first: string): string {
+  return { right: "left", left: "right", up: "down", down: "up" }[first] ?? "left";
+}
+
+test("Coding is on the home screen, and its page goes start, think, build, code", async ({ page }) => {
   await install(page);
+  const tile = page.locator("[data-area=explore] [data-course=code]");
+  await expect(tile).toBeVisible();
+  await expect(tile).toHaveAttribute("aria-label", "LittleNest Coding");
+  await openCoding(page);
+  await expect(page.getByRole("heading", { name: "Coding" })).toBeVisible();
+  // The plan's three parts, after a first program: hello world.
+  await expect(page.locator("[data-code-section] h2")).toHaveText(["Start here", "Think", "Build", "Code"]);
+  await expect(page.locator("[data-code-section=start] .game-tile > span:not([aria-hidden])")).toHaveText(["Say hello"]);
+  await expect(page.locator("[data-code-section=think] .game-tile > span:not([aria-hidden])")).toHaveText([
+    "Take me home",
+    "What comes next?",
+    "First, then",
+    "If, then",
+  ]);
+  await expect(page.locator("[data-code-section=build] .game-tile > span:not([aria-hidden])")).toHaveText(["Make a dance", "Make a song"]);
+  await expect(page.locator("[data-code-section=code] .game-tile > span:not([aria-hidden])")).toHaveText(["Read the code"]);
+  // The Games list keeps the reading games only.
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.locator("[data-dock=games]").click();
+  await expect(page.locator("[data-screen=games]")).toHaveAttribute("data-lobby", "games");
+  await expect(page.locator("[data-game-tile=bird]")).toHaveCount(0);
+  await expect(page.locator("[data-game-tile=hatch]")).toBeVisible();
+});
+
+test("arrows take the animal home, then a plan is laid out and walked step by step", async ({ page }, testInfo) => {
+  await install(page);
+  await openCoding(page);
   await page.locator("[data-game-tile=bird]").click();
   const board = page.locator("[data-game=bird] .game-board");
   await expect(board).toHaveAttribute("data-level", "early");
   await expect(board).toHaveAttribute("data-mode", "tap");
+  await expect(page.getByRole("heading", { name: "Take me home" })).toBeVisible();
   await expect(page.locator("[data-tip=game-bird-start]")).toBeVisible();
   if (testInfo.project.name === "chromium") {
     await board.screenshot({ path: "test-results/screenshots/code_bird.png" });
   }
-  await board.locator("[data-arrow=left]").click();
-  await expect(board.locator("[data-arrow=left]")).toHaveAttribute("data-wiggle", "true");
-  await expect(board).toHaveAttribute("data-x", "0");
+  const first = ((await board.getAttribute("data-path")) ?? "").split(",")[0];
+  const wrong = wrongWay(first);
+  const startX = await board.getAttribute("data-x");
+  await board.locator(`[data-arrow=${wrong}]`).click();
+  await expect(board.locator(`[data-arrow=${wrong}]`)).toHaveAttribute("data-wiggle", "true");
+  await expect(board).toHaveAttribute("data-x", startX ?? "0");
   await expect(board).toHaveAttribute("data-home", "false");
+  await runPath(board);
+  // The cells the animal walked through are marked.
+  await expect(board.locator("[data-walked=true]").first()).toBeVisible();
+  await board.locator("[data-next=round]").click();
+  await expect(board).toHaveAttribute("data-mode", "tap");
   await runPath(board);
   await board.locator("[data-next=round]").click();
   await expect(board).toHaveAttribute("data-mode", "plan");
   const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
   expect(steps.length).toBeGreaterThanOrEqual(4);
   expect(steps.length).toBeLessThanOrEqual(5);
-  await board.locator("[data-arrow=down]").click();
+  // One numbered place for each step of the plan.
+  await expect(board.locator(".code-place")).toHaveCount(steps.length);
+  await board.locator(`[data-arrow=${wrongWay(steps[0])}]`).click();
+  await expect(board.locator(".code-place")).toHaveCount(steps.length - 1);
   await board.locator("[data-go=run]").click();
   await expect(board).toHaveAttribute("data-again", "true");
   await expect(board).toHaveAttribute("data-home", "false");
   await board.locator('[data-queued="0"]').click();
-  await runPath(board);
+  for (const dir of steps) await board.locator(`[data-arrow=${dir}]`).click();
+  await board.locator("[data-go=run]").click();
+  // The arrow being walked is lit while the animal takes that step.
+  await expect(board.locator(".code-chip[data-on=true]")).toHaveCount(1);
+  await expect(board).toHaveAttribute("data-home", "true");
   await board.locator("[data-finish=bird]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "Reading", exact: true }).click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
-test("picture patterns continue AB, then ABB, then ABC", async ({ page }, testInfo) => {
+test("picture patterns continue AB, then ABB, then ABC, with real pictures", async ({ page }, testInfo) => {
   await install(page);
+  await openCoding(page);
   await page.locator("[data-game-tile=pattern]").click();
   const board = page.locator("[data-game=pattern] .game-board");
   await expect(board).toHaveAttribute("data-rule", "AB");
   if (testInfo.project.name === "chromium") {
     await board.screenshot({ path: "test-results/screenshots/code_pattern.png" });
   }
-  await board.locator("[data-choice=yellow]").click();
-  await expect(board.locator("[data-choice=yellow]")).toHaveAttribute("data-wiggle", "true");
+  // Every picture in the row and in the choices is a drawing with a size a child can see.
+  for (const picture of await board.locator(".pattern-choice .art").all()) {
+    const box = await picture.boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(72);
+  }
+  const answer = (await board.getAttribute("data-answer")) ?? "";
+  const wrong = await board.locator(`.pattern-choice:not([data-choice=${answer}])`).first().getAttribute("data-choice");
+  await board.locator(`[data-choice=${wrong}]`).click();
+  await expect(board.locator(`[data-choice=${wrong}]`)).toHaveAttribute("data-wiggle", "true");
   await expect(board).toHaveAttribute("data-solved", "0");
-  for (const rule of ["AB", "ABB", "ABC"]) {
+  for (const [index, rule] of ["AB", "ABB", "ABC"].entries()) {
     await expect(board).toHaveAttribute("data-rule", rule);
-    const answer = (await board.getAttribute("data-answer")) ?? "";
-    await board.locator(`[data-choice=${answer}]`).click();
+    await expect(board).toHaveAttribute("data-solved", String(index));
+    const next = (await board.getAttribute("data-answer")) ?? "";
+    await board.locator(`[data-choice=${next}]`).click();
+    // The answer drops into the row before the next pattern comes.
+    await expect(board.locator(`.pattern-missing [data-art=${next}]`)).toBeVisible();
+    await expect(board).toHaveAttribute("data-solved", String(index + 1));
   }
   await board.locator("[data-finish=pattern]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
-test("morning pictures accept a tap and a drag, and a wrong one wiggles", async ({ page }, testInfo) => {
+test("pictures go in the order they happen, by tap or by drag, and a wrong one wiggles", async ({ page }, testInfo) => {
   await install(page);
+  await openCoding(page);
   await page.locator("[data-game-tile=morning]").click();
   const board = page.locator("[data-game=morning] .game-board");
-  await expect(board).toHaveAttribute("data-order", "wake,brush,eat");
+  await expect(page.getByRole("heading", { name: "First, then" })).toBeVisible();
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "test-results/screenshots/code_morning.png" });
+    await board.screenshot({ path: "test-results/screenshots/code_order.png" });
   }
-  await board.locator("[data-card=eat]").click();
-  await expect(board.locator("[data-card=eat]")).toHaveAttribute("data-wiggle", "true");
-  await expect(board).toHaveAttribute("data-sorted", "0");
-  await board.locator("[data-card=wake]").click();
-  await expect(board).toHaveAttribute("data-placed", "wake");
-  await board.locator("[data-card=brush]").dragTo(board.locator("[data-slot='1']"));
-  await expect(board).toHaveAttribute("data-placed", "wake,brush");
-  await board.locator("[data-card=eat]").click();
-  await expect(board).toHaveAttribute("data-sorted", "3");
+  for (let round = 0; round < 2; round += 1) {
+    await expect(board).toHaveAttribute("data-rounds", String(round));
+    await expect(board).toHaveAttribute("data-sorted", "0");
+    const order = ((await board.getAttribute("data-order")) ?? "").split(",");
+    expect(order).toHaveLength(3);
+    // The cards are dealt out of order.
+    const dealt = await board.locator(".order-card").evaluateAll((cards) => cards.map((card) => card.getAttribute("data-card")));
+    expect(dealt).not.toEqual(order);
+    await board.locator(`[data-card=${order[2]}]`).click();
+    await expect(board.locator(`[data-card=${order[2]}]`)).toHaveAttribute("data-wiggle", "true");
+    await expect(board).toHaveAttribute("data-sorted", "0");
+    await board.locator(`[data-card=${order[0]}]`).click();
+    await expect(board).toHaveAttribute("data-placed", order[0]);
+    await board.locator(`[data-card=${order[1]}]`).dragTo(board.locator("[data-slot='1']"));
+    await expect(board).toHaveAttribute("data-placed", `${order[0]},${order[1]}`);
+    await board.locator(`[data-card=${order[2]}]`).click();
+  }
+  await expect(board).toHaveAttribute("data-rounds", "2");
   await board.locator("[data-finish=morning]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
-test("rain grows the flower and sun melts the ice", async ({ page }, testInfo) => {
+test("if it rains, an umbrella: each picture calls for one thing", async ({ page }, testInfo) => {
   await install(page);
+  await openCoding(page);
   await page.locator("[data-game-tile=garden]").click();
   const board = page.locator("[data-game=garden] .game-board");
-  await expect(board).toHaveAttribute("data-cause", "rain");
+  await expect(page.getByRole("heading", { name: "If, then" })).toBeVisible();
   if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "test-results/screenshots/code_garden.png" });
+    await board.screenshot({ path: "test-results/screenshots/code_rule.png" });
   }
-  await board.locator("[data-cause=sun]").click();
-  await expect(board.locator("[data-cause=sun]")).toHaveAttribute("data-wiggle", "true");
-  await expect(board).toHaveAttribute("data-effect", "wait");
-  await board.locator("[data-cause=rain]").click();
-  await expect(board).toHaveAttribute("data-effect", "flower");
-  await board.locator("[data-next=garden]").click();
-  await expect(board).toHaveAttribute("data-cause", "sun");
-  await board.locator("[data-cause=sun]").click();
-  await expect(board).toHaveAttribute("data-effect", "melt");
+  const pairs: Record<string, string> = { rain: "umbrella", sun: "hat", dark: "lamp", plant: "jug", dog: "bone" };
+  for (let round = 0; round < 3; round += 1) {
+    await expect(board).toHaveAttribute("data-round", String(round));
+    const rule = (await board.getAttribute("data-rule")) ?? "";
+    const need = (await board.getAttribute("data-need")) ?? "";
+    expect(pairs[rule]).toBe(need);
+    await expect(board.locator(".pattern-choice")).toHaveCount(3);
+    const wrong = await board.locator(`.pattern-choice:not([data-choice=${need}])`).first().getAttribute("data-choice");
+    await board.locator(`[data-choice=${wrong}]`).click();
+    await expect(board.locator(`[data-choice=${wrong}]`)).toHaveAttribute("data-wiggle", "true");
+    await expect(board).toHaveAttribute("data-answered", "false");
+    await board.locator(`[data-choice=${need}]`).click();
+    await expect(board).toHaveAttribute("data-answered", "true");
+    await expect(board.locator(`.rule-then [data-art=${need}]`)).toBeVisible();
+    if (round < 2) await board.locator("[data-next=garden]").click();
+  }
   await board.locator("[data-finish=garden]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
 test("ages 5 to 7 repeat a move and fix one wrong arrow", async ({ page }, testInfo) => {
   await install(page, older);
+  await openCoding(page);
   await page.locator("[data-game-tile=bird]").click();
   const board = page.locator("[data-game=bird] .game-board");
   await expect(board).toHaveAttribute("data-level", "later");
   await expect(board).toHaveAttribute("data-mode", "plan");
   const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
   expect(steps.length).toBeGreaterThanOrEqual(6);
+  // Six places on one line.
+  const tops = await board.locator(".code-place").evaluateAll((places) => places.map((place) => Math.round(place.getBoundingClientRect().top)));
+  expect(tops).toHaveLength(steps.length);
+  expect(new Set(tops).size).toBe(1);
   await runPath(board);
   await board.locator("[data-next=round]").click();
   await expect(board).toHaveAttribute("data-mode", "loop");
   await expect(board).toHaveAttribute("data-repeat", "3");
+  await expect(board.locator(".code-loop")).toHaveText("× 3");
   await runPath(board);
   await board.locator("[data-next=round]").click();
   await expect(board).toHaveAttribute("data-mode", "bug");
@@ -166,4 +254,18 @@ test("ages 5 to 7 repeat a move and fix one wrong arrow", async ({ page }, testI
   await expect(board).toHaveAttribute("data-home", "true");
   await board.locator("[data-finish=bird]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+});
+
+test("no two plays are alike: the boards turn and the pictures change", async ({ page }) => {
+  await install(page);
+  await openCoding(page);
+  const seen = new Set<string>();
+  for (let play = 0; play < 6; play += 1) {
+    await page.locator("[data-game-tile=pattern]").click();
+    const board = page.locator("[data-game=pattern] .game-board");
+    const row = await board.locator(".pattern-token [data-art]").evaluateAll((pictures) => pictures.map((picture) => picture.getAttribute("data-art")).join(","));
+    seen.add(row);
+    await page.getByRole("button", { name: "All coding" }).click();
+  }
+  expect(seen.size).toBeGreaterThan(2);
 });

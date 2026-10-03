@@ -29,6 +29,8 @@ import { animals } from "../src/data/animals";
 import { ladderClips } from "../src/data/ladder";
 import { pairLine, pairPromptId } from "../src/data/letterPairs";
 import { LETTER_WORDS } from "../src/data/letterWords";
+import { buildManifestEntries, buildWords } from "../src/data/build";
+import { logicManifestEntries, logicWords } from "../src/data/logic";
 import { STORIES, storyLineId, storyText, storyTitleId, storyWordList } from "../src/data/stories";
 import { SOUND_UNITS } from "../src/data/units";
 
@@ -117,6 +119,21 @@ for (const unit of SOUND_UNITS) {
   if (!manifest.sounds[unit.id]) manifest.sounds[unit.id] = { file: `sounds/${name}.mp3`, say, source: "neural" };
 }
 
+// The coding games' and Build It's spoken lines come from the code that says them, so a new or reworded
+// line cannot be missing from the clip list. (They were added to the list by hand.)
+const live = new Set<string>();
+for (const entry of [...logicManifestEntries(), ...buildManifestEntries()]) {
+  live.add(entry.id);
+  const before = manifest.prompts[entry.id];
+  if (before && before.say !== entry.say) drop(before.file);
+  manifest.prompts[entry.id] = { file: `prompts/${entry.id}.mp3`, say: entry.say, source: "neural" };
+}
+for (const id of Object.keys(manifest.prompts)) {
+  if (!/^(code|build)-/.test(id) || live.has(id)) continue;
+  drop(manifest.prompts[id].file, retired);
+  delete manifest.prompts[id];
+}
+
 const words = manifest.words;
 let added = 0;
 const addWord = (id: string, say = id) => {
@@ -132,6 +149,8 @@ for (const unit of SOUND_UNITS) addWord(unit.example);
 for (const { word } of Object.values(LETTER_WORDS)) addWord(word.toLowerCase().replace(/\s+/g, "-"), word);
 for (const word of storyWordList()) addWord(word);
 for (const animal of animals) addWord(animal.id);
+// A picture tapped in a coding game, or a block in Build It, says its name.
+for (const word of [...logicWords(), ...buildWords()]) addWord(word);
 
 // Keep the file's compact one-line-per-entry style.
 const line = (id: string, cue: Cue | { file: string; say: string; source: string }) =>

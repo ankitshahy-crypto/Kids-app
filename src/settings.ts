@@ -26,7 +26,7 @@ export type Settings = {
   showTips: boolean;
   /** Numbers, colors, games, and later Explore courses. Off leaves reading only. */
   showExplore: boolean;
-  /** Python for the same Build It program. Off until a grown-up turns it on. */
+  /** Python for the program the child builds in Coding. Off until a grown-up turns it on. */
   showCode: boolean;
   /** Less motion, softer colors, no confetti, no sudden sounds. */
   calm: boolean;

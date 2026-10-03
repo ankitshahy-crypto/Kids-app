@@ -25,10 +25,11 @@ import type { ChildProfile, StickerInput } from "../data/profiles";
 import { HearButton } from "./HearButton";
 import { Hero } from "./Hero";
 import { SpinSay } from "./SpinSay";
-import { BuildIt } from "./BuildIt";
-import { ThinkGame } from "./ThinkCode";
+import { BUILD_TITLES, BuildIt, BuildTileArt, ReadCode, ReadCodeTileArt } from "./BuildIt";
+import type { BuildActivity } from "../data/build";
+import { CodeTileArt, ThinkGame } from "./ThinkCode";
 
-export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory" | "spin" | "bird" | "pattern" | "morning" | "garden" | "build";
+export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory" | "spin" | "bird" | "pattern" | "morning" | "garden" | "build" | "code";
 
 const tiles: { id: GameId; label: string }[] = [
   { id: "hatch", label: "Hatch the Egg" },
@@ -39,14 +40,50 @@ const tiles: { id: GameId; label: string }[] = [
   { id: "spin", label: "Spin & Say" },
 ];
 
-const thinkTiles: { id: GameId; label: string }[] = [
-  { id: "bird", label: "Bird home" },
-  { id: "pattern", label: "What next" },
-  { id: "morning", label: "Morning" },
-  { id: "garden", label: "If then" },
+type CodeTile = { id: GameId; label: string; build?: BuildActivity };
+
+/**
+ * The Coding page, in the order the plan gave it: a first program (hello world), then think, build, code.
+ *
+ *  - Start: one block, and the animal says hello. The smallest program there is.
+ *  - Think: the four logic games. A path home, a pattern, an order, a rule.
+ *  - Build: blocks in a row that the animal acts out, a dance or a song.
+ *  - Code: a program written in words, read aloud, for the child to build.
+ *
+ * The names say what the child does. They were "Bird home", "What next", "Morning" and "If then", in one
+ * flat list under a heading at the bottom of Games that nobody found, and Build It's boards sat behind a
+ * second menu.
+ */
+const codeSections: { id: string; title: string; tiles: CodeTile[] }[] = [
+  { id: "start", title: "Start here", tiles: [{ id: "build", label: BUILD_TITLES.hello, build: "hello" }] },
+  {
+    id: "think",
+    title: "Think",
+    tiles: [
+      { id: "bird", label: "Take me home" },
+      { id: "pattern", label: "What comes next?" },
+      { id: "morning", label: "First, then" },
+      { id: "garden", label: "If, then" },
+    ],
+  },
+  {
+    id: "build",
+    title: "Build",
+    tiles: [
+      { id: "build", label: BUILD_TITLES.move, build: "move" },
+      { id: "build", label: BUILD_TITLES.music, build: "music" },
+    ],
+  },
+  // Read the code is a game of its own, so it opens with the full app. The free part of Coding is the
+  // first thing in each of the other parts: hello world, Take me home, and the Build boards.
+  { id: "code", title: "Code", tiles: [{ id: "code", label: "Read the code" }] },
 ];
 
+/** The two lists this screen can open on: the reading games, or the coding games. */
+export type GamesLobby = "games" | "code";
+
 export function Games({
+  lobby = "games",
   profile,
   knownLetters,
   settingsRef,
@@ -59,6 +96,8 @@ export function Games({
   locked,
   onLocked,
 }: {
+  /** Which list to show: Games (from the dock) or Coding (from its own tile on the home screen). */
+  lobby?: GamesLobby;
   profile: ChildProfile;
   knownLetters: string[];
   settingsRef: { current: Settings };
@@ -76,50 +115,54 @@ export function Games({
   // A number that is new each time a game is opened: it picks the round's word or letter and shuffles the
   // answers, so no two plays are alike. (Every game used to open on the same round, answer first.)
   const [plays, setPlays] = useState(() => Math.floor(Math.random() * 1000));
-  const open = (next: GameId) => {
+  const [board, setBoard] = useState<BuildActivity>("move");
+  const open = (next: GameId, build?: BuildActivity) => {
     if (locked?.(next)) {
       onLocked?.(next);
       return;
     }
     onEnter(next);
     setPlays((count) => count + 1);
+    if (build) setBoard(build);
     setGame(next);
   };
-  const tile = (id: GameId, label: string) => (
+  const tile = (id: GameId, label: string, build?: BuildActivity) => (
     <button
-      key={id}
+      key={build ? `${id}-${build}` : id}
       type="button"
       className={`game-tile${locked?.(id) ? " is-locked" : ""}`}
-      data-game-tile={id}
+      data-game-tile={build ? `${id}-${build}` : id}
       data-locked={locked?.(id) ? "true" : undefined}
-      onClick={() => open(id)}
+      onClick={() => open(id, build)}
     >
-      <TileArt id={id} />
+      {build ? <BuildTileArt activity={build} animal={profile.animal} outfit={profile.outfit} /> : <TileArt id={id} />}
       <span>{label}</span>
       {locked?.(id) ? <LockBadge /> : null}
     </button>
   );
 
   return (
-    <div className="games" data-screen="games" data-game={game}>
+    <div className="games" data-screen="games" data-lobby={lobby} data-game={game}>
       {game === "home" ? (
         <div className="game-lobby">
-          <h1>Games</h1>
-          <div className="game-tiles">
-            {tiles.map((item) => tile(item.id, item.label))}
-          </div>
-          <h2 className="game-section">Think & Code</h2>
-          <div className="game-tiles">
-            {thinkTiles.map((item) => tile(item.id, item.label))}
-          </div>
-          <h2 className="game-section">Build It</h2>
-          <div className="game-tiles">
-            {tile("build", "Build It")}
-          </div>
+          <h1>{lobby === "code" ? "Coding" : "Games"}</h1>
+          {lobby === "code" ? (
+            codeSections.map((section) => (
+              <section key={section.id} className="code-section" data-code-section={section.id}>
+                <h2>{section.title}</h2>
+                {/* A part with one thing in it shows that one as a wide tile, so nothing sits beside a gap. */}
+                <div className={`game-tiles is-code${section.tiles.length === 1 ? " is-single" : ""}`}>
+                  {section.tiles.map((item) => tile(item.id, item.label, item.build))}
+                </div>
+              </section>
+            ))
+          ) : (
+            <div className="game-tiles">{tiles.map((item) => tile(item.id, item.label))}</div>
+          )}
         </div>
       ) : (
         <button type="button" className="game-back" onClick={() => setGame("home")}>
-          All games
+          {lobby === "code" ? "All coding" : "All games"}
         </button>
       )}
       {game === "hatch" ? (
@@ -187,7 +230,22 @@ export function Games({
           ageRange={profile.ageRange}
           animal={profile.animal}
           outfit={profile.outfit}
+          salt={plays}
           settingsRef={settingsRef}
+          onDone={() => {
+            onDone(game, []);
+            setGame("home");
+          }}
+        />
+      ) : null}
+      {game === "code" ? (
+        <ReadCode
+          ageRange={profile.ageRange}
+          animal={profile.animal}
+          outfit={profile.outfit}
+          salt={plays}
+          settingsRef={settingsRef}
+          showCode={showCode}
           onDone={() => {
             onDone(game, []);
             setGame("home");
@@ -196,6 +254,7 @@ export function Games({
       ) : null}
       {game === "build" ? (
         <BuildIt
+          activity={board}
           childId={profile.id}
           ageRange={profile.ageRange}
           animal={profile.animal}
@@ -821,52 +880,10 @@ function TileArt({ id }: { id: GameId }) {
       </svg>
     );
   }
-  if (id === "bird") {
-    return (
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <ellipse cx="34" cy="40" rx="16" ry="12" fill="#F4A4B4" />
-        <circle cx="48" cy="32" r="8" fill="#F4A4B4" />
-        <path d="M54 32 h12 l-7 5 z" fill="#F6D56B" />
-        <ellipse cx="40" cy="62" rx="18" ry="8" fill="#E4C7A4" />
-      </svg>
-    );
-  }
-  if (id === "pattern") {
-    return (
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <circle cx="18" cy="40" r="10" fill="#E07A8A" />
-        <circle cx="40" cy="40" r="10" fill="#8EB4D6" />
-        <circle cx="62" cy="40" r="10" fill="#E07A8A" />
-      </svg>
-    );
-  }
-  if (id === "morning") {
-    return (
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <circle cx="40" cy="36" r="14" fill="#F6D56B" />
-        <path d="M18 58 h44" stroke="#E4C7A4" strokeWidth="4" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (id === "garden") {
-    return (
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <rect x="36" y="40" width="8" height="22" fill="#6E9A74" />
-        <circle cx="40" cy="32" r="8" fill="#F6D56B" />
-        <circle cx="28" cy="38" r="8" fill="#F4A4B4" />
-        <circle cx="52" cy="38" r="8" fill="#F4A4B4" />
-      </svg>
-    );
-  }
-  if (id === "build") {
-    return (
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <rect x="14" y="18" width="22" height="16" rx="4" fill="#F6D56B" />
-        <rect x="40" y="18" width="22" height="16" rx="4" fill="#B7D7F2" />
-        <rect x="27" y="40" width="22" height="16" rx="4" fill="#F4A4B4" />
-      </svg>
-    );
-  }
+  // The coding tiles show what the game is made of: an arrow and the nest, a row of animals, an egg that
+  // becomes a hen, rain and an umbrella. They were colored blobs.
+  if (id === "bird" || id === "pattern" || id === "morning" || id === "garden") return <CodeTileArt id={id} />;
+  if (id === "code") return <ReadCodeTileArt />;
   if (id === "spin") {
     return (
       <svg viewBox="0 0 80 80" aria-hidden="true">

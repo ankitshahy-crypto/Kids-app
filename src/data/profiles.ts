@@ -194,6 +194,8 @@ export const activitySteps = [
   "game-pattern",
   "game-morning",
   "game-garden",
+  "game-code",
+  "game-build-hello",
   "game-build-move",
   "game-build-music",
   "game-build-scene",

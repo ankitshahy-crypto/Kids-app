@@ -153,7 +153,7 @@ export function SettingsFields({
             Off
           </button>
         </div>
-        <p className="adult-copy">Shows the same Build It program as Python. It stays off until you turn it on. Children cannot edit it.</p>
+        <p className="adult-copy">Shows the program your child builds in Coding as Python, starting with print("Hello, world!"). It stays off until you turn it on. Children cannot edit it.</p>
       </fieldset>
       <fieldset className="setting-group" data-setting="reading-goal">
         <legend>Lesson length</legend>

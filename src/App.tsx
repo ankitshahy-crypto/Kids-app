@@ -34,7 +34,7 @@ import { StartScreen } from "./components/StartScreen";
 import { StickerBook } from "./components/StickerBook";
 import { SurpriseView } from "./components/SurpriseView";
 import { TeacherView } from "./components/TeacherView";
-import type { GameId } from "./components/Games";
+import type { GameId, GamesLobby } from "./components/Games";
 import { TodayPath } from "./components/TodayPath";
 import { colorTip, engineerTip, gameTip, mathTip, readTip, scienceTip, timeTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
@@ -156,6 +156,10 @@ export default function App() {
   const [goalMet, setGoalMet] = useState(false);
   const [tip, setTip] = useState<ReadTip | null>(null);
   const [course, setCourse] = useState<Course>("reading");
+  // The games screen opens on one of two lists: the reading games (the dock's Games button) or the coding
+  // games (the Coding tile under Explore). Coding had no door of its own: it was a heading at the bottom of
+  // the Games list, below the fold on a phone.
+  const [gamesLobby, setGamesLobby] = useState<GamesLobby>("games");
   // Set once the day's lesson is done or the lesson length is reached. From
   // then on, each chunk that ends is followed by "One more?" until the
   // parent's limit, then "All done".
@@ -860,6 +864,13 @@ export default function App() {
                   }}
                   onGames={() => {
                     primeSpeech();
+                    setGamesLobby("games");
+                    setScreen("games");
+                    setTip(null);
+                  }}
+                  onCode={() => {
+                    primeSpeech();
+                    setGamesLobby("code");
                     setScreen("games");
                     setTip(null);
                   }}
@@ -1126,6 +1137,8 @@ export default function App() {
                   ) : null}
                   {screen === "games" ? (
                     <Games
+                      key={gamesLobby}
+                      lobby={gamesLobby}
                       profile={active}
                       knownLetters={introducedAlphabet}
                       count={mathLesson.count}

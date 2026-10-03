@@ -27,6 +27,9 @@ describe("what is free before the unlock", () => {
     expect(activityOpen("games", "hatch", false)).toBe(true);
     expect(activityOpen("games", "bird", false)).toBe(true);
     expect(activityOpen("games", "build", false)).toBe(true);
+    // Read the code opens with the full app.
+    expect(activityOpen("games", "code", false)).toBe(false);
+    expect(activityOpen("games", "code", true)).toBe(true);
     expect(activityOpen("games", "pop", false)).toBe(false);
     expect(activityOpen("games", "pop", true)).toBe(true);
   });

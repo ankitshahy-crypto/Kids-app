@@ -16,6 +16,7 @@ export const MODULE_COLORS = "LittleNest Colors";
 export const MODULE_TIME = "LittleNest Time & Money";
 export const MODULE_BUILD = "LittleNest Build";
 export const MODULE_SCIENCE = "LittleNest Science";
+export const MODULE_CODE = "LittleNest Coding";
 
 /** Public site and help mailbox domain. Owned by TriageDesk AI LLC; the site is the repo's website/ folder. */
 export const PLANNED_DOMAIN = "littlenestlearning.app";

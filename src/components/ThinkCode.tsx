@@ -1,29 +1,50 @@
-import { useEffect, useRef, useState } from "react";
-import { playOnDevice, playPrompt } from "../audio/player";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { playEffect } from "../audio/manager";
+import { playPrompt, playWordId } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import {
   birdRounds,
-  gardenRounds,
   logicLevel,
-  morningDeal,
-  morningFits,
-  morningOrder,
   onGrid,
+  orderFits,
+  orderRounds,
   patternRounds,
   program,
   reachesNest,
+  ruleRounds,
   sameCell,
   stepCell,
   type BirdRound,
+  type Cell,
   type Dir,
   type LogicLevel,
+  type PictureCard,
 } from "../data/logic";
+import { Illustration, type IllustrationName } from "../illustrations";
 import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
 
+/**
+ * The four coding games. See src/data/logic.ts for what each one teaches and
+ * why they were rewritten after the first phone test.
+ *
+ * What changed on screen:
+ *  - Pictures are the app's own drawings at a size a child can see, not dots.
+ *  - A plan is laid out in numbered places under the board, and each arrow
+ *    lights as the animal takes that step, slowly enough to follow (it ran
+ *    at 120 ms a step, faster than a child can watch).
+ *  - Every word the games say is a recorded clip. Two lines used the phone's
+ *    own voice.
+ */
+
 const DIRS: Dir[] = ["up", "down", "left", "right"];
+
+/** How long the animal takes over one step of a plan. */
+const STEP_MS = 480;
+/** How long a solved round stays on screen before the next one. */
+const SOLVED_MS = 1100;
 
 function useSpeaker(settingsRef: { current: Settings }) {
   const playRef = useRef<AbortController | null>(null);
@@ -38,8 +59,9 @@ function useSpeaker(settingsRef: { current: Settings }) {
     prompt(id: string, fallback: string) {
       run((signal) => playPrompt(id, settingsRef.current, signal, fallback));
     },
-    words(text: string) {
-      run((signal) => playOnDevice(text, settingsRef.current, signal));
+    /** The name of a picture, from its recorded word clip. */
+    word(name: string) {
+      run((signal) => playWordId(name, name, settingsRef.current, signal));
     },
   };
 }
@@ -55,11 +77,42 @@ function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function reducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function Picture({ art }: { art: IllustrationName }) {
+  return (
+    <span className="code-pic" data-art={art}>
+      <Illustration name={art} />
+    </span>
+  );
+}
+
+function FinishButton({ id, onDone }: { id: string; onDone: () => void }) {
+  const finished = useRef(false);
+  return (
+    <button
+      type="button"
+      className="start-button"
+      data-finish={id}
+      onClick={() => {
+        if (finished.current) return;
+        finished.current = true;
+        onDone();
+      }}
+    >
+      Done
+    </button>
+  );
+}
+
 export function ThinkGame({
   kind,
   ageRange,
   animal,
   outfit,
+  salt,
   settingsRef,
   onDone,
 }: {
@@ -67,30 +120,35 @@ export function ThinkGame({
   ageRange: AgeRange;
   animal: AnimalId;
   outfit: Outfit;
+  /** New each time a game opens: it picks and arranges the rounds. */
+  salt: number;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
   const level = logicLevel(ageRange);
-  if (kind === "bird") return <BirdGame level={level} animal={animal} outfit={outfit} settingsRef={settingsRef} onDone={onDone} />;
-  if (kind === "pattern") return <PatternGame settingsRef={settingsRef} onDone={onDone} />;
-  if (kind === "morning") return <MorningGame level={level} settingsRef={settingsRef} onDone={onDone} />;
-  return <GardenGame settingsRef={settingsRef} onDone={onDone} />;
+  if (kind === "bird") return <BirdGame level={level} salt={salt} animal={animal} outfit={outfit} settingsRef={settingsRef} onDone={onDone} />;
+  if (kind === "pattern") return <PatternGame salt={salt} settingsRef={settingsRef} onDone={onDone} />;
+  if (kind === "morning") return <OrderGame level={level} salt={salt} settingsRef={settingsRef} onDone={onDone} />;
+  return <RuleGame level={level} salt={salt} animal={animal} outfit={outfit} settingsRef={settingsRef} onDone={onDone} />;
 }
 
+/** Take me home: move the animal to its nest, first by taps, then by a plan made before it moves. */
 function BirdGame({
   level,
+  salt,
   animal,
   outfit,
   settingsRef,
   onDone,
 }: {
   level: LogicLevel;
+  salt: number;
   animal: AnimalId;
   outfit: Outfit;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const rounds = birdRounds(level);
+  const rounds = useMemo(() => birdRounds(level, salt), [level, salt]);
   const speak = useSpeaker(settingsRef);
   const [index, setIndex] = useState(0);
   const round = rounds[index] ?? rounds[0];
@@ -100,8 +158,10 @@ function BirdGame({
   const [home, setHome] = useState(false);
   const [wiggle, setWiggle] = useState("");
   const [again, setAgain] = useState(false);
+  /** Which arrow of the plan is being walked, and the cells walked so far. */
+  const [running, setRunning] = useState(-1);
+  const [walked, setWalked] = useState<Cell[]>([]);
   const runId = useRef(0);
-  const finished = useRef(false);
 
   useEffect(() => {
     const next = rounds[index] ?? rounds[0];
@@ -111,6 +171,8 @@ function BirdGame({
     setHome(false);
     setAgain(false);
     setWiggle("");
+    setRunning(-1);
+    setWalked([]);
     runId.current += 1;
     const [id, fallback] = promptFor(next);
     speak.prompt(id, fallback);
@@ -122,6 +184,12 @@ function BirdGame({
     speak.prompt("code-again", "Try again.");
   };
 
+  const arrive = () => {
+    setAgain(false);
+    setHome(true);
+    playEffect("chime", settingsRef.current);
+  };
+
   const tapMove = (dir: Dir) => {
     if (home) return;
     const next = stepCell(pos, dir);
@@ -131,12 +199,13 @@ function BirdGame({
     }
     setWiggle("");
     setAgain(false);
+    setWalked((cells) => [...cells, pos]);
     setPos(next);
-    if (sameCell(next, round.nest)) setHome(true);
+    if (sameCell(next, round.nest)) arrive();
   };
 
   const queueDir = (dir: Dir) => {
-    if (home) return;
+    if (home || running >= 0) return;
     setAgain(false);
     setWiggle("");
     if (round.mode === "loop") {
@@ -148,46 +217,61 @@ function BirdGame({
   };
 
   const go = () => {
-    if (home) return;
+    if (home || running >= 0) return;
     const dirs = program(round, queue, fixed);
     if (dirs.length === 0) {
       miss("go");
       return;
     }
     const id = ++runId.current;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pace = reducedMotion() ? 0 : STEP_MS;
+    setAgain(false);
+    setWiggle("");
     void (async () => {
       let cell = round.start;
       setPos(cell);
-      for (const dir of dirs) {
+      setWalked([]);
+      for (const [step, dir] of dirs.entries()) {
         if (runId.current !== id) return;
+        // A loop has one arrow on the page, walked three times.
+        setRunning(round.mode === "loop" ? 0 : step);
         const next = stepCell(cell, dir);
         if (!onGrid(next, round.width, round.height)) {
+          if (pace) await sleep(pace);
+          if (runId.current !== id) return;
+          setRunning(-1);
+          setWalked([]);
           setPos(round.start);
           miss("go");
           return;
         }
+        const from = cell;
         cell = next;
+        setWalked((cells) => [...cells, from]);
         setPos(cell);
-        if (!reduce) await sleep(120);
+        if (pace) await sleep(pace);
       }
       if (runId.current !== id) return;
+      setRunning(-1);
       if (reachesNest(round, dirs)) {
-        setAgain(false);
-        setHome(true);
+        arrive();
         return;
       }
+      setWalked([]);
       setPos(round.start);
       miss("go");
     })();
   };
 
+  const planned = round.mode !== "tap";
   const arrows = round.mode === "bug" ? program(round, [], fixed) : queue;
+  // Empty places show how long the plan is: one for each step it takes to get home.
+  const places = round.mode === "loop" ? 1 : Math.max(round.path.length, arrows.length);
   const last = index >= rounds.length - 1;
 
   return (
     <div
-      className="game-board"
+      className="game-board code-board"
       data-level={level}
       data-mode={round.mode}
       data-path={round.path.join(",")}
@@ -195,10 +279,11 @@ function BirdGame({
       data-again={again ? "true" : "false"}
       data-repeat={round.repeat}
       data-fixed={round.mode === "bug" && fixed ? "true" : "false"}
+      data-running={running >= 0 ? "true" : "false"}
       data-x={pos.x}
       data-y={pos.y}
     >
-      <h1>Bird home</h1>
+      <h1>Take me home</h1>
       <div
         className="code-grid"
         style={{ gridTemplateColumns: `repeat(${round.width}, minmax(0, 1fr))` }}
@@ -210,52 +295,82 @@ function BirdGame({
           const y = Math.floor(cell / round.width);
           const here = pos.x === x && pos.y === y;
           const nest = round.nest.x === x && round.nest.y === y;
+          const passed = walked.some((step) => step.x === x && step.y === y);
           return (
-            <div key={`${x}-${y}`} className="code-cell" data-cell={`${x}-${y}`} data-animal={here ? "true" : "false"} data-nest={nest ? "true" : "false"}>
+            <div
+              key={`${x}-${y}`}
+              className="code-cell"
+              data-cell={`${x}-${y}`}
+              data-animal={here ? "true" : "false"}
+              data-nest={nest ? "true" : "false"}
+              data-walked={passed && !here ? "true" : "false"}
+            >
               {nest ? <NestMark /> : null}
               {here ? <Hero animal={animal} outfit={outfit} /> : null}
             </div>
           );
         })}
       </div>
-      {round.mode === "loop" ? <p className="code-loop">3 times</p> : null}
-      {arrows.length > 0 ? (
-        <div className="code-queue" aria-label="Arrows">
-          {arrows.map((dir, arrowIndex) => (
+      {planned ? (
+        <div className="code-plan" data-plan={round.mode}>
+          <div className="code-queue" aria-label="Your plan">
+            {Array.from({ length: places }, (_, place) => {
+              const dir = arrows[place];
+              if (!dir) {
+                return (
+                  <span key={`place-${place}`} className="code-place" data-place={place}>
+                    {place + 1}
+                  </span>
+                );
+              }
+              const bug = round.mode === "bug" && place === round.bugIndex;
+              return (
+                <button
+                  key={`${dir}-${place}`}
+                  type="button"
+                  className="code-chip"
+                  data-queued={place}
+                  data-dir={dir}
+                  data-on={running === place ? "true" : "false"}
+                  data-bug={bug ? "true" : "false"}
+                  data-mended={bug && fixed ? "true" : "false"}
+                  aria-label={bug && !fixed ? "Wrong arrow" : dir}
+                  onClick={() => {
+                    if (running >= 0) return;
+                    if (bug) setFixed(true);
+                    else if (round.mode !== "bug" && place === arrows.length - 1) setQueue((current) => current.slice(0, -1));
+                  }}
+                >
+                  <ArrowIcon dir={dir} />
+                </button>
+              );
+            })}
+            {round.mode === "loop" ? (
+              <span className="code-loop" aria-label="3 times">
+                × 3
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      {round.mode !== "bug" ? (
+        <div className="code-arrows" role="group" aria-label="Move">
+          {DIRS.map((dir) => (
             <button
-              key={`${dir}-${arrowIndex}`}
+              key={dir}
               type="button"
-              className="code-chip"
-              data-queued={arrowIndex}
-              data-dir={dir}
-              data-bug={round.mode === "bug" && arrowIndex === round.bugIndex ? "true" : "false"}
-              aria-label={round.mode === "bug" && arrowIndex === round.bugIndex ? "Wrong arrow" : dir}
-              onClick={() => {
-                if (round.mode === "bug" && arrowIndex === round.bugIndex) setFixed(true);
-                else if (round.mode !== "bug" && arrowIndex === arrows.length - 1) setQueue((current) => current.slice(0, -1));
-              }}
+              className="code-arrow"
+              data-arrow={dir}
+              data-wiggle={wiggle === dir ? "true" : "false"}
+              aria-label={dir}
+              onClick={() => (round.mode === "tap" ? tapMove(dir) : queueDir(dir))}
             >
               <ArrowIcon dir={dir} />
             </button>
           ))}
         </div>
       ) : null}
-      <div className="code-arrows" role="group" aria-label="Move">
-        {DIRS.map((dir) => (
-          <button
-            key={dir}
-            type="button"
-            className="code-arrow"
-            data-arrow={dir}
-            data-wiggle={wiggle === dir ? "true" : "false"}
-            aria-label={dir}
-            onClick={() => (round.mode === "tap" ? tapMove(dir) : queueDir(dir))}
-          >
-            <ArrowIcon dir={dir} />
-          </button>
-        ))}
-      </div>
-      {round.mode !== "tap" ? (
+      {planned && !home ? (
         <button type="button" className="start-button" data-go="run" data-wiggle={wiggle === "go" ? "true" : "false"} onClick={go}>
           Go
         </button>
@@ -265,289 +380,303 @@ function BirdGame({
           Next
         </button>
       ) : null}
-      {home && last ? (
-        <button
-          type="button"
-          className="start-button"
-          data-finish="bird"
-          onClick={() => {
-            if (finished.current) return;
-            finished.current = true;
-            onDone();
-          }}
-        >
-          Done
-        </button>
-      ) : null}
+      {home && last ? <FinishButton id="bird" onDone={onDone} /> : null}
     </div>
   );
 }
 
+/** What comes next: a row of pictures follows a rule, and the child picks the picture that continues it. */
 function PatternGame({
+  salt,
   settingsRef,
   onDone,
 }: {
+  salt: number;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const rounds = patternRounds();
+  const rounds = useMemo(() => patternRounds(salt), [salt]);
   const speak = useSpeaker(settingsRef);
   const [index, setIndex] = useState(0);
   const [wiggle, setWiggle] = useState("");
   const [solved, setSolved] = useState(0);
-  const finished = useRef(false);
+  /** The round just answered shows its answer in the row for a moment before the next one. */
+  const [filled, setFilled] = useState(false);
   const round = rounds[index] ?? rounds[0];
+  const timer = useRef(0);
 
   useEffect(() => {
     speak.prompt("code-pattern", "What comes next?");
   }, [index]);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const choose = (choice: string) => {
-    if (solved >= rounds.length) return;
+  const choose = (choice: IllustrationName) => {
+    if (filled || solved >= rounds.length) return;
     if (choice !== round.answer) {
       setWiggle(choice);
       speak.prompt("code-again", "Try again.");
       return;
     }
     setWiggle("");
+    setFilled(true);
+    playEffect("chime", settingsRef.current);
     const nextSolved = solved + 1;
-    setSolved(nextSolved);
-    if (index < rounds.length - 1) setIndex((current) => current + 1);
+    timer.current = window.setTimeout(
+      () => {
+        setSolved(nextSolved);
+        if (index < rounds.length - 1) {
+          setIndex((current) => current + 1);
+          setFilled(false);
+        }
+      },
+      reducedMotion() ? 0 : SOLVED_MS,
+    );
   };
 
   const done = solved >= rounds.length;
 
   return (
-    <div className="game-board" data-rule={round.rule} data-kind={round.kind} data-answer={round.answer} data-solved={solved}>
-      <h1>What next</h1>
+    <div className="game-board code-board" data-rule={round.rule} data-answer={round.answer} data-solved={solved} data-filled={filled ? "true" : "false"}>
+      <h1>What comes next?</h1>
       <div className="pattern-row" aria-label="Pattern">
         {round.shown.map((token, tokenIndex) => (
           <span key={`${token}-${tokenIndex}`} className="pattern-token" data-token={token}>
-            <TokenArt kind={round.kind} token={token} />
+            <Picture art={token} />
           </span>
         ))}
-        <span className="pattern-token pattern-missing" data-token="missing">
-          ?
+        <span className={`pattern-token pattern-missing${filled ? " is-filled" : ""}`} data-token="missing">
+          {filled ? <Picture art={round.answer} /> : "?"}
         </span>
       </div>
-      <div className="pattern-choices">
-        {round.choices.map((choice) => (
-          <button
-            key={choice}
-            type="button"
-            className="pattern-choice"
-            data-choice={choice}
-            data-wiggle={wiggle === choice ? "true" : "false"}
-            aria-label={choice}
-            onClick={() => choose(choice)}
-          >
-            <TokenArt kind={round.kind} token={choice} />
-          </button>
-        ))}
-      </div>
-      {done ? (
-        <button
-          type="button"
-          className="start-button"
-          data-finish="pattern"
-          onClick={() => {
-            if (finished.current) return;
-            finished.current = true;
-            onDone();
-          }}
-        >
-          Done
-        </button>
-      ) : null}
+      {done ? null : (
+        <div className="pattern-choices">
+          {round.choices.map((choice) => (
+            <button
+              key={choice}
+              type="button"
+              className="pattern-choice"
+              data-choice={choice}
+              data-wiggle={wiggle === choice ? "true" : "false"}
+              aria-label={choice}
+              onClick={() => choose(choice)}
+            >
+              <Picture art={choice} />
+            </button>
+          ))}
+        </div>
+      )}
+      {done ? <FinishButton id="pattern" onDone={onDone} /> : null}
     </div>
   );
 }
 
-function MorningGame({
+/** First, then: three pictures of something that happens in one order, to be put in that order. */
+function OrderGame({
   level,
+  salt,
   settingsRef,
   onDone,
 }: {
   level: LogicLevel;
+  salt: number;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const order = morningOrder(level).map((card) => card.id);
-  const titles = Object.fromEntries(morningOrder(level).map((card) => [card.id, card.title]));
-  const deal = morningDeal(level);
+  const rounds = useMemo(() => orderRounds(level, salt), [level, salt]);
   const speak = useSpeaker(settingsRef);
-  const [placed, setPlaced] = useState<string[]>([]);
+  const [index, setIndex] = useState(0);
+  const [placed, setPlaced] = useState<IllustrationName[]>([]);
   const [wiggle, setWiggle] = useState("");
+  const [finishedRounds, setFinishedRounds] = useState(0);
   const drag = useRef<{ id: string; x: number; y: number; moved: boolean } | null>(null);
-  const finished = useRef(false);
-  const done = placed.length === order.length;
+  const timer = useRef(0);
+  const round = rounds[index] ?? rounds[0];
+  const order = round.cards.map((card) => card.art);
+  const cards: Record<string, PictureCard> = Object.fromEntries(round.cards.map((card) => [card.art, card]));
+  const sorted = placed.length === order.length;
+  const done = finishedRounds >= rounds.length;
 
   useEffect(() => {
-    speak.prompt("code-morning", "Put the morning pictures in order.");
-  }, []);
+    speak.prompt("code-order", "What comes first? Put the pictures in order.");
+  }, [index]);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const place = (card: string, slot: number) => {
-    if (placed.includes(card) || done) return;
-    if (!morningFits(order, placed, card, slot)) {
+  const place = (card: IllustrationName, slot: number) => {
+    if (placed.includes(card) || sorted) return;
+    if (!orderFits(order, placed, card, slot)) {
       setWiggle(card);
       speak.prompt("code-again", "Try again.");
       return;
     }
     setWiggle("");
-    setPlaced((current) => [...current, card]);
-    speak.words(titles[card] ?? card);
+    const next = [...placed, card];
+    setPlaced(next);
+    speak.word(cards[card]?.name ?? card);
+    if (next.length < order.length) return;
+    playEffect("chime", settingsRef.current);
+    timer.current = window.setTimeout(
+      () => {
+        setFinishedRounds((count) => count + 1);
+        if (index < rounds.length - 1) {
+          setIndex((current) => current + 1);
+          setPlaced([]);
+        }
+      },
+      reducedMotion() ? 0 : SOLVED_MS + 400,
+    );
   };
 
   return (
-    <div className="game-board" data-level={level} data-order={order.join(",")} data-placed={placed.join(",")} data-sorted={placed.length}>
-      <h1>Morning</h1>
-      <div className="morning-slots">
-        {order.map((id, slot) => (
-          <div key={id} className="morning-slot" data-slot={slot} data-filled={placed[slot] ?? ""}>
-            {placed[slot] ? <StepArt id={placed[slot]} /> : <span>{slot + 1}</span>}
+    <div
+      className="game-board code-board"
+      data-level={level}
+      data-set={round.id}
+      data-order={order.join(",")}
+      data-placed={placed.join(",")}
+      data-sorted={placed.length}
+      data-rounds={finishedRounds}
+    >
+      <h1>First, then</h1>
+      <div className="order-slots">
+        {order.map((_, slot) => (
+          <div key={`${round.id}-${slot}`} className="order-slot" data-slot={slot} data-filled={placed[slot] ?? ""}>
+            {placed[slot] ? <Picture art={placed[slot]} /> : <span className="order-number">{slot + 1}</span>}
           </div>
         ))}
       </div>
-      <div className="morning-cards">
-        {deal.map((id) => (
-          <button
-            key={id}
-            type="button"
-            className="morning-card"
-            data-card={id}
-            data-used={placed.includes(id) ? "true" : "false"}
-            data-wiggle={wiggle === id ? "true" : "false"}
-            aria-label={titles[id] ?? id}
-            onPointerDown={(event) => {
-              if (placed.includes(id)) return;
-              event.currentTarget.setPointerCapture(event.pointerId);
-              drag.current = { id, x: event.clientX, y: event.clientY, moved: false };
-            }}
-            onPointerMove={(event) => {
-              const info = drag.current;
-              if (!info || info.id !== id) return;
-              if (Math.hypot(event.clientX - info.x, event.clientY - info.y) > 8) info.moved = true;
-            }}
-            onPointerUp={(event) => {
-              const info = drag.current;
-              drag.current = null;
-              if (!info || info.id !== id || placed.includes(id)) return;
-              if (!info.moved) {
-                place(id, placed.length);
-                return;
-              }
-              const slots = event.currentTarget.closest(".game-board")?.querySelectorAll("[data-slot]");
-              if (!slots) return;
-              for (const slot of slots) {
-                const box = slot.getBoundingClientRect();
-                const over =
-                  event.clientX >= box.left &&
-                  event.clientX <= box.right &&
-                  event.clientY >= box.top &&
-                  event.clientY <= box.bottom;
-                if (!over) continue;
-                place(id, Number(slot.getAttribute("data-slot") ?? "-1"));
-                return;
-              }
-            }}
-          >
-            <StepArt id={id} />
-            <span>{titles[id]}</span>
-          </button>
-        ))}
-      </div>
-      {done ? (
-        <button
-          type="button"
-          className="start-button"
-          data-finish="morning"
-          onClick={() => {
-            if (finished.current) return;
-            finished.current = true;
-            onDone();
-          }}
-        >
-          Done
-        </button>
-      ) : null}
+      {done ? null : (
+        <div className="order-cards">
+          {round.deal.map((id) => (
+            <button
+              key={`${round.id}-${id}`}
+              type="button"
+              className="order-card"
+              data-card={id}
+              data-used={placed.includes(id) ? "true" : "false"}
+              data-wiggle={wiggle === id ? "true" : "false"}
+              aria-label={cards[id]?.name ?? id}
+              onPointerDown={(event) => {
+                if (placed.includes(id)) return;
+                event.currentTarget.setPointerCapture(event.pointerId);
+                drag.current = { id, x: event.clientX, y: event.clientY, moved: false };
+              }}
+              onPointerMove={(event) => {
+                const info = drag.current;
+                if (!info || info.id !== id) return;
+                if (Math.hypot(event.clientX - info.x, event.clientY - info.y) > 8) info.moved = true;
+              }}
+              onPointerUp={(event) => {
+                const info = drag.current;
+                drag.current = null;
+                if (!info || info.id !== id || placed.includes(id)) return;
+                if (!info.moved) {
+                  place(id, placed.length);
+                  return;
+                }
+                const slots = event.currentTarget.closest(".game-board")?.querySelectorAll("[data-slot]");
+                if (!slots) return;
+                for (const slot of slots) {
+                  const box = slot.getBoundingClientRect();
+                  const over = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
+                  if (!over) continue;
+                  place(id, Number(slot.getAttribute("data-slot") ?? "-1"));
+                  return;
+                }
+              }}
+            >
+              <Picture art={id} />
+            </button>
+          ))}
+        </div>
+      )}
+      {done ? <FinishButton id="morning" onDone={onDone} /> : null}
     </div>
   );
 }
 
-function GardenGame({
+/** If, then: the picture shows what is so (it is raining), and the child picks what that calls for. */
+function RuleGame({
+  level,
+  salt,
+  animal,
+  outfit,
   settingsRef,
   onDone,
 }: {
+  level: LogicLevel;
+  salt: number;
+  animal: AnimalId;
+  outfit: Outfit;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const rounds = gardenRounds();
+  const rounds = useMemo(() => ruleRounds(level, salt), [level, salt]);
   const speak = useSpeaker(settingsRef);
   const [index, setIndex] = useState(0);
-  const [grown, setGrown] = useState(false);
+  const [answered, setAnswered] = useState(false);
   const [wiggle, setWiggle] = useState("");
-  const finished = useRef(false);
   const round = rounds[index] ?? rounds[0];
+  const last = index >= rounds.length - 1;
 
   useEffect(() => {
-    setGrown(false);
+    setAnswered(false);
     setWiggle("");
-    speak.prompt(round.prompt, round.cause === "rain" ? "If it rains, the flower grows." : "If the sun comes out, the ice melts.");
+    speak.prompt(round.ask, "What do you need?");
   }, [index]);
 
-  const tap = (cause: "rain" | "sun") => {
-    if (grown) return;
-    if (cause !== round.cause) {
-      setWiggle(cause);
+  const tap = (choice: PictureCard) => {
+    if (answered) return;
+    if (choice.art !== round.need.art) {
+      setWiggle(choice.art);
       speak.prompt("code-again", "Try again.");
       return;
     }
     setWiggle("");
-    setGrown(true);
+    setAnswered(true);
+    // The whole rule, said back: "If it rains, take an umbrella."
+    speak.prompt(round.rule, "");
   };
 
-  const last = index >= rounds.length - 1;
-
   return (
-    <div className="game-board" data-cause={round.cause} data-effect={grown ? round.effect : "wait"} data-round={index}>
-      <h1>If then</h1>
-      <div className="garden-scene" data-scene={round.effect}>
-        {round.effect === "flower" ? <Flower grown={grown} /> : <Ice melted={grown} />}
+    <div className="game-board code-board" data-rule={round.id} data-need={round.need.art} data-answered={answered ? "true" : "false"} data-round={index}>
+      <h1>If, then</h1>
+      <div className="rule-stage">
+        <span className="rule-when" data-when={round.when.art}>
+          <Picture art={round.when.art} />
+        </span>
+        <span className="rule-arrow" aria-hidden="true">
+          <ArrowIcon dir="right" />
+        </span>
+        <span className={`rule-then${answered ? " is-filled" : ""}`} data-then={answered ? round.need.art : ""}>
+          {answered ? <Picture art={round.need.art} /> : "?"}
+        </span>
       </div>
-      <div className="garden-causes">
-        {(["rain", "sun"] as const).map((cause) => (
-          <button
-            key={cause}
-            type="button"
-            className="garden-cause"
-            data-cause={cause}
-            data-wiggle={wiggle === cause ? "true" : "false"}
-            aria-label={cause === "rain" ? "Rain" : "Sun"}
-            onClick={() => tap(cause)}
-          >
-            {cause === "rain" ? <CloudArt /> : <SunArt />}
-          </button>
-        ))}
+      <div className="rule-who" aria-hidden="true">
+        <Hero animal={animal} outfit={outfit} />
       </div>
-      {grown && !last ? (
+      {answered ? null : (
+        <div className="rule-choices">
+          {round.choices.map((choice) => (
+            <button
+              key={choice.art}
+              type="button"
+              className="pattern-choice"
+              data-choice={choice.art}
+              data-wiggle={wiggle === choice.art ? "true" : "false"}
+              aria-label={choice.name}
+              onClick={() => tap(choice)}
+            >
+              <Picture art={choice.art} />
+            </button>
+          ))}
+        </div>
+      )}
+      {answered && !last ? (
         <button type="button" className="start-button" data-next="garden" onClick={() => setIndex((current) => current + 1)}>
           Next
         </button>
       ) : null}
-      {grown && last ? (
-        <button
-          type="button"
-          className="start-button"
-          data-finish="garden"
-          onClick={() => {
-            if (finished.current) return;
-            finished.current = true;
-            onDone();
-          }}
-        >
-          Done
-        </button>
-      ) : null}
+      {answered && last ? <FinishButton id="garden" onDone={onDone} /> : null}
     </div>
   );
 }
@@ -573,132 +702,22 @@ function NestMark() {
   );
 }
 
-const FILLS: Record<string, string> = {
-  red: "#e07a8a",
-  blue: "#8eb4d6",
-  yellow: "#f6d56b",
-  circle: "#f6c3cb",
-  square: "#b7d7f2",
-  triangle: "#c9e6d4",
-};
-
-function TokenArt({ kind, token }: { kind: string; token: string }) {
-  if (kind === "animal") {
-    if (token === "bird") {
-      return (
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <ellipse cx="30" cy="36" rx="16" ry="12" fill="#f4a4b4" />
-          <circle cx="44" cy="28" r="8" fill="#f4a4b4" />
-          <path d="M50 28 h10 l-6 4 z" fill="#f6d56b" />
-        </svg>
-      );
-    }
-    if (token === "nest") return <NestMark />;
+/** A small picture for each game's tile in the Coding list. */
+export function CodeTileArt({ id }: { id: "bird" | "pattern" | "morning" | "garden" }) {
+  if (id === "bird") {
     return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="32" cy="30" r="14" fill="#e07a5f" />
-        <ellipse cx="32" cy="48" rx="16" ry="10" fill="#e07a5f" />
-        <circle cx="26" cy="28" r="2" fill="#2c3a4f" />
-        <circle cx="36" cy="28" r="2" fill="#2c3a4f" />
-      </svg>
+      <span className="code-tile-art" aria-hidden="true">
+        <ArrowIcon dir="right" />
+        <NestMark />
+      </span>
     );
   }
-  const fill = FILLS[token] ?? "#f6e3b4";
-  if (token === "square") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect x="14" y="14" width="36" height="36" rx="6" fill={fill} />
-      </svg>
-    );
-  }
-  if (token === "triangle") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M32 12 L54 52 H10 Z" fill={fill} />
-      </svg>
-    );
-  }
+  const arts: IllustrationName[] = id === "pattern" ? ["cat", "dog", "cat"] : id === "morning" ? ["egg", "chick", "hen"] : ["rain", "umbrella"];
   return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <circle cx="32" cy="32" r="18" fill={fill} />
-    </svg>
-  );
-}
-
-function StepArt({ id }: { id: string }) {
-  if (id === "brush") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect x="28" y="8" width="8" height="28" rx="3" fill="#8eb4d6" />
-        <rect x="24" y="34" width="16" height="16" rx="4" fill="#f7f1e8" />
-      </svg>
-    );
-  }
-  if (id === "eat") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <ellipse cx="32" cy="40" rx="18" ry="10" fill="#f6d56b" />
-        <circle cx="32" cy="28" r="8" fill="#e07a8a" />
-      </svg>
-    );
-  }
-  if (id === "school") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M8 28 L32 14 L56 28 V50 H8 Z" fill="#c9e6d4" />
-        <rect x="28" y="34" width="8" height="16" fill="#e4c7a4" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <circle cx="32" cy="32" r="12" fill="#f6d56b" />
-      <path d="M32 8 v8 M32 48 v8 M8 32 h8 M48 32 h8" stroke="#f6d56b" strokeWidth="4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function Flower({ grown }: { grown: boolean }) {
-  return (
-    <svg viewBox="0 0 80 80" aria-hidden="true">
-      <rect x="36" y="40" width="8" height={grown ? 28 : 10} fill="#6e9a74" />
-      {grown ? (
-        <>
-          <circle cx="40" cy="28" r="8" fill="#f6d56b" />
-          <circle cx="28" cy="34" r="8" fill="#f4a4b4" />
-          <circle cx="52" cy="34" r="8" fill="#f4a4b4" />
-          <circle cx="34" cy="18" r="8" fill="#f4a4b4" />
-          <circle cx="48" cy="18" r="8" fill="#f4a4b4" />
-        </>
-      ) : (
-        <circle cx="40" cy="36" r="6" fill="#c9e6d4" />
-      )}
-    </svg>
-  );
-}
-
-function Ice({ melted }: { melted: boolean }) {
-  return (
-    <svg viewBox="0 0 80 80" aria-hidden="true">
-      {melted ? <ellipse cx="40" cy="58" rx="22" ry="8" fill="#b7d7f2" /> : <rect x="24" y="28" width="32" height="28" rx="6" fill="#d7eef8" stroke="#8eb4d6" strokeWidth="3" />}
-    </svg>
-  );
-}
-
-function CloudArt() {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <ellipse cx="32" cy="28" rx="16" ry="10" fill="#d7eef8" />
-      <path d="M24 36 v10 M32 34 v14 M40 36 v10" stroke="#8eb4d6" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function SunArt() {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <circle cx="32" cy="32" r="12" fill="#f6d56b" />
-      <path d="M32 8 v8 M32 48 v8 M8 32 h8 M48 32 h8 M14 14 l6 6 M44 44 l6 6 M50 14 l-6 6 M20 44 l-6 6" stroke="#f6d56b" strokeWidth="3" strokeLinecap="round" />
-    </svg>
+    <span className="code-tile-art" aria-hidden="true">
+      {arts.map((art, index) => (
+        <Picture key={`${art}-${index}`} art={art} />
+      ))}
+    </span>
   );
 }

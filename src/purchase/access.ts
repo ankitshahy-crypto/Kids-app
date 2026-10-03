@@ -13,7 +13,10 @@ export const FREE_WEEKS = 2;
 
 export type ExploreArea = "math" | "colors" | "time" | "money" | "build" | "science" | "games";
 
-/** The first game of each Games section stays open: Hatch, Bird home, and Build It. */
+/**
+ * The games that stay open: Hatch from Games, and from Coding the first thing in each part: hello world
+ * and the Build boards ("build"), and Take me home ("bird"). Read the code ("code") opens with the full app.
+ */
 const FREE_GAMES = new Set(["hatch", "bird", "build"]);
 
 const FIRST: Record<Exclude<ExploreArea, "games">, string> = {
