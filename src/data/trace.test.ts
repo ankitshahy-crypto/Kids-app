@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { fingerPath, QUICK_STRIDE } from "../../e2e/fingerPath";
 import manifest from "./audioManifest.json";
 import { alphabetForms, letterForm } from "./handwriting";
 import { pairLine, pairPromptId } from "./letterPairs";
+import { everyShape, shapeStrokes } from "./shapeStrokes";
 import {
+  TRACE_TOLERANCE,
   followStroke,
   matchDistractor,
   reversalPairs,
@@ -181,6 +184,50 @@ describe("tracing tolerance", () => {
   it("does not skip ahead to the end before the start is touched", () => {
     const end = stations[stations.length - 1];
     expect(followStroke(stroke, 0, end)).toBe(0);
+  });
+});
+
+/**
+ * The browser tests trace with a finger that touches every fourth station of a stroke
+ * (e2e/fingerPath.ts), because touching all of them took the tests to CI's time limit.
+ * A child who swipes fast leaves the same kind of trail. If the tracing rules ever stop
+ * following it, this says so by name; the browser tests would only time out.
+ */
+describe("a quick finger", () => {
+  const everyStroke = [
+    ...alphabetForms().flatMap((form) => form.strokes.map((stroke, index) => ({ name: `${form.letter}, stroke ${index + 1}`, stroke }))),
+    ...everyShape().flatMap((shape) => shapeStrokes(shape).map((stroke, index) => ({ name: `${shape}, stroke ${index + 1}`, stroke }))),
+  ];
+
+  it("is followed to the end of every stroke of every letter and shape", () => {
+    expect(everyStroke.length).toBeGreaterThan(52);
+    let stations = 0;
+    let touched = 0;
+    for (const { name, stroke } of everyStroke) {
+      const path = fingerPath(strokeStations(stroke), QUICK_STRIDE);
+      stations += strokeStations(stroke).length;
+      touched += path.length;
+      expect(strokeComplete(stroke, traceProgress(stroke, path)), name).toBe(true);
+    }
+    // It really is quick: it touches under a third of the stations a careful finger would.
+    expect(touched).toBeLessThan(stations / 3);
+  });
+
+  it("keeps its points no more than half the lane apart, so it is nowhere near being lost", () => {
+    for (const { name, stroke } of everyStroke) {
+      const path = fingerPath(strokeStations(stroke), QUICK_STRIDE);
+      for (let index = 1; index < path.length; index += 1) {
+        const gap = Math.hypot(path[index].x - path[index - 1].x, path[index].y - path[index - 1].y);
+        // Stations are rounded to a tenth of a unit, which can add a little.
+        expect(gap, name).toBeLessThanOrEqual(TRACE_TOLERANCE / 2 + 0.2);
+      }
+    }
+  });
+
+  it("ends on the stroke's last station whatever the stride", () => {
+    expect(fingerPath([0, 1, 2, 3, 4, 5, 6], 4)).toEqual([0, 4, 6]);
+    expect(fingerPath([0, 1, 2, 3, 4], 4)).toEqual([0, 4]);
+    expect(fingerPath([0, 1, 2], 1)).toEqual([0, 1, 2]);
   });
 });
 
