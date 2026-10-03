@@ -135,9 +135,15 @@ test("the Colors stop is a short color moment that earns the reading star", asyn
   await page.getByRole("button", { name: "Colors", exact: true }).click();
   const moment = page.locator("[data-screen=moment]");
   await expect(moment).toBeVisible();
-  const hear = await moment.locator("[data-screen=name]").getAttribute("data-hear");
+  // Two colors and no more: the moment is a short stop on the reading path, not the whole Colors game.
+  const play = moment.locator(".game-frame[data-screen=name]");
+  await expect(play).toHaveAttribute("data-rounds", "2");
+  const hear = await play.getAttribute("data-hear");
   expect(hear).toBeTruthy();
-  await moment.locator(`[data-color='${hear}']`).click();
+  await play.locator(`.pick[data-color='${hear}']`).click();
+  await expect(play).toHaveAttribute("data-round", "1");
+  await expect(play).toHaveAttribute("data-solved", "false");
+  await play.locator(`.pick[data-color='${await play.getAttribute("data-hear")}']`).click();
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await expect(page.locator(".star-count").first()).toHaveAttribute("data-stars", "1");
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-profiles-v1") ?? "{}"));

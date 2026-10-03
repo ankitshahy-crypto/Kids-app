@@ -40,13 +40,14 @@ const stepTips: Record<LessonStep, { start: string; end: string }> = {
 
 export type ReadTip = { id: string; text: string };
 
+// Two lines at most on a phone. The game says the rest to the child out loud.
 const mathTips: Record<string, { start: string; end: string }> = {
   count: {
-    start: "Touch each object, or drag it. Count out loud with your child.",
+    start: "Each one says its number when they tap it. Then they tap how many there are.",
     end: "Ask: can you find that many in the room?",
   },
   know: {
-    start: "Play the number, then let them tap it. A wrong tap is just another try.",
+    start: "The voice says a number and they find it. The dots show how many it is.",
     end: "Ask: what number comes next?",
   },
   trace: {
@@ -54,15 +55,15 @@ const mathTips: Record<string, { start: string; end: string }> = {
     end: "Ask them to draw that number in the air.",
   },
   shape: {
-    start: "Find the shape, then trace around it. Big fingers are welcome.",
+    start: "They find the block that fits the hole, three times. Then they trace the shape.",
     end: "Ask: where else do you see this shape?",
   },
   more: {
-    start: "Look at both groups before you tap. More means the bigger group.",
-    end: "Ask: which group has fewer?",
+    start: "Two plates. They tap the one with more. Ages 5 to 7 are asked for fewer too.",
+    end: "Ask: which of us has more on our plate?",
   },
   add: {
-    start: "Count one group, then the other, then all of them together.",
+    start: "Two groups. Tapping each one counts it aloud. Then they tap how many altogether.",
     end: "Ask: what if we added one more?",
   },
 };
@@ -73,17 +74,18 @@ export function mathTip(step: string, when: "start" | "end"): ReadTip {
   return { id: `math-${step}-${when}`, text: tip[when] };
 }
 
+// Two lines at most on a phone. The game says the rest to the child out loud.
 const colorTips: Record<string, { start: string; end: string }> = {
   name: {
-    start: "Play the color, then let them tap the object. The word is there if the color is hard to see.",
+    start: "The voice says a color and they tap that paint. Each paint has a pattern too.",
     end: "Ask: what else in the room is this color?",
   },
   mix: {
-    start: "Two paints go in the bucket. Stir with a finger until the new color shows, with its word.",
-    end: "Ask: what happens if we add white?",
+    start: "They tap two paints and see what the two make. Each new color goes on the shelf.",
+    end: "Ask: which two made green? Try it with real paint.",
   },
   paint: {
-    start: "Only colors they mixed can color their animal. Saving stays on this device.",
+    start: "They tap a paint to color their animal, then the check to keep it.",
     end: "Ask: which color did their animal like?",
   },
 };

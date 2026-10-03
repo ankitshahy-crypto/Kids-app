@@ -332,6 +332,9 @@ test("themed counting uses the day's theme object in Numbers", async ({ page }) 
   await page.locator("[data-course=math]").click();
   await page.locator("[data-activity=count]").click();
   await expect(page.locator("[data-screen=count]")).toHaveAttribute("data-theme", "dinosaurs");
-  await expect(page.locator(".math-prompt")).toHaveText("Tap each dinosaur, or drag it.");
-  await expect(page.locator(".math-theme-object").first()).toBeVisible();
+  // The first group to count is made of the theme's own picture, and is named for it.
+  const count = page.locator("[data-screen=count]");
+  await expect(count).toHaveAttribute("data-thing", "dinosaur");
+  await expect(count.locator(".count-thing").first()).toHaveAttribute("aria-label", "dinosaur");
+  await expect(count.locator(".count-thing .art").first()).toBeVisible();
 });

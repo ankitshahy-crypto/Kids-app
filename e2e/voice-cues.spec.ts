@@ -156,7 +156,7 @@ test("Trace my name says what to do, then the name, and Again repeats both", asy
 test("Count objects says its instruction on open, and Again repeats it", async ({ page }) => {
   await install(page);
   await pickSubject(page, "Numbers", "math");
-  await expectOpeningLine(page, () => page.getByRole("button", { name: "Count objects" }).click(), "count", [/^count each one\.$/]);
+  await expectOpeningLine(page, () => page.getByRole("button", { name: "Count objects" }).click(), "count", [/^how many\? tap each one to count\.$/]);
 });
 
 test("Hear a color says the instruction, then the color, and Again repeats both", async ({ page }) => {
@@ -168,8 +168,8 @@ test("Hear a color says the instruction, then the color, and Again repeats both"
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await expectOpeningLine(page, () => page.getByRole("button", { name: "Hear a color" }).click(), "name", [/^tap the color you hear\.$/, new RegExp(`^${hear}$`)]);
-  // The speaker mark tells a child this button makes a sound.
-  await expect(page.locator("[data-screen=name] .color-hear .hear-icon")).toBeVisible();
+  // The game's own speaker, above the animal, is a picture and not a word.
+  await expect(page.locator("[data-screen=name] .game-hear svg")).toBeVisible();
 });
 
 test("Parts of the day asks its question on open, and Again repeats it", async ({ page }) => {
@@ -193,7 +193,7 @@ test("Hear a number says the instruction, then the number, and the shape match n
     /^tap the number you hear\.$/,
     new RegExp(`^(${hear}|${numbers[Number(hear)] ?? hear})$`),
   ]);
-  await expect(page.locator("[data-screen=know] .math-hear .hear-icon")).toBeVisible();
+  await expect(page.locator("[data-screen=know] .game-hear svg")).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await page.getByRole("button", { name: "Match a shape" }).click();

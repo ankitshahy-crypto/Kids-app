@@ -2954,11 +2954,7 @@ button:focus-visible {
     height: 64px;
   }
 
-  .math-activity,
-  .math-object,
-  .math-choices button,
-  .math-sides button,
-  .math-hear {
+  .math-activity {
     min-height: 112px;
     font-size: 22px;
   }
@@ -4642,11 +4638,7 @@ button:focus-visible {
 }
 
 .course-button,
-.math-activity,
-.math-object,
-.math-choices button,
-.math-sides button,
-.math-hear {
+.math-activity {
   border-radius: 22px;
   background: var(--paper);
   color: var(--text);
@@ -4739,18 +4731,6 @@ button:focus-visible {
   padding: 8px 8px 28px;
 }
 
-/* In a Numbers activity the things to count and the numbers to tap are big: an apple was 40px and the
-   whole game sat in the top quarter of a phone screen. (The 40px size is for the menu tiles.) */
-.math-play .math-apple {
-  width: 68px;
-  height: 68px;
-}
-
-.math-play .math-cluster .math-apple {
-  width: 52px;
-  height: 52px;
-}
-
 .math-play h1 {
   margin: 0;
   font-size: 36px;
@@ -4759,48 +4739,6 @@ button:focus-visible {
 .math-prompt {
   margin: 0;
   font-size: 18px;
-}
-
-.math-hear,
-.math-choices button,
-.math-sides button,
-.math-object {
-  min-width: 96px;
-  min-height: 96px;
-  font-size: 44px;
-}
-
-.math-hear {
-  min-height: 76px;
-  font-size: 32px;
-}
-
-.math-objects,
-.math-choices,
-.math-sides,
-.math-sum {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  width: min(100%, 560px);
-}
-
-.math-object.is-counted {
-  opacity: 0.35;
-}
-
-.math-cluster {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 2px;
-  max-width: 170px;
-}
-
-.math-plus {
-  font-size: 40px;
-  align-self: center;
 }
 
 .trace-board {
@@ -4864,17 +4802,11 @@ button:focus-visible {
 }
 
 .color-activity,
-.color-choice,
-.color-hear,
-.paint-blob,
 .done-button {
   border-radius: 22px;
 }
 
-.color-activity,
-.color-choice,
-.color-hear,
-.paint-blob {
+.color-activity {
   background: var(--paper);
   color: var(--text);
   font-weight: 700;
@@ -4907,71 +4839,6 @@ button:focus-visible {
   display: none;
 }
 
-.color-play {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 8px 28px;
-  width: min(100%, 640px);
-  margin: 0 auto;
-}
-
-.color-play h1,
-.mix-said {
-  margin: 0;
-  font-size: 36px;
-  color: var(--text);
-}
-
-.color-prompt,
-.color-feedback,
-.color-note,
-.bucket-hint,
-.paint-caption {
-  margin: 0;
-  font-size: 18px;
-  color: var(--text);
-  text-align: center;
-}
-
-.color-hear,
-.color-choice,
-.paint-blob {
-  min-width: 76px;
-  min-height: 76px;
-}
-
-.color-choices,
-.mix-blobs,
-.bucket-paints {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-}
-
-.mix-blobs {
-  min-height: 120px;
-}
-
-.color-choice,
-.paint-blob {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 8px;
-  border: 3px solid #3d4a40;
-  touch-action: none;
-}
-
-.color-choice.is-selected {
-  box-shadow: inset 0 0 0 3px var(--sage-soft);
-}
-
 .color-word,
 .color-pattern {
   display: block;
@@ -4992,7 +4859,6 @@ button:focus-visible {
 }
 
 .color-swatch,
-.color-object,
 .print-swatch {
   position: relative;
   display: flex;
@@ -5006,12 +4872,6 @@ button:focus-visible {
   border: 3px solid #1c241f;
   overflow: hidden;
   padding: 6px 4px;
-}
-
-.color-object {
-  width: 72px;
-  height: 48px;
-  min-height: 48px;
 }
 
 .print-swatch {
@@ -5094,68 +4954,6 @@ button:focus-visible {
   opacity: 0.72;
 }
 
-.mix-stage {
-  position: relative;
-  width: min(100%, 560px);
-  min-height: 360px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.mix-bucket {
-  width: min(100%, 320px);
-  min-height: 180px;
-  border: 4px dashed #3d4a40;
-  border-radius: 28px;
-  background: var(--sand);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  touch-action: none;
-  padding: 12px;
-}
-
-.bucket-label {
-  font-weight: 700;
-  color: var(--text);
-}
-
-.bucket-blob {
-  pointer-events: none;
-}
-
-.mix-result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.painted-hero {
-  position: relative;
-  width: 160px;
-  height: 160px;
-}
-
-.painted-hero .hero,
-.painted-hero .avatar-art {
-  width: 160px;
-  height: 160px;
-}
-
-.paint-wash {
-  position: absolute;
-  inset: 18px 28px 10px;
-  border-radius: 50%;
-  opacity: 0.45;
-  mix-blend-mode: multiply;
-  pointer-events: none;
-}
-
 .coloring-outline {
   width: min(220px, 70%);
   height: auto;
@@ -5191,11 +4989,7 @@ button:focus-visible {
     height: 64px;
   }
 
-  .math-activity,
-  .math-object,
-  .math-choices button,
-  .math-sides button,
-  .math-hear {
+  .math-activity {
     min-height: 112px;
     font-size: 22px;
   }
@@ -5204,10 +4998,7 @@ button:focus-visible {
     width: min(420px, 70vw);
   }
 
-  .color-activity,
-  .color-choice,
-  .color-hear,
-  .paint-blob {
+  .color-activity {
     min-height: 112px;
     font-size: 22px;
   }
@@ -6135,7 +5926,6 @@ input.is-pressed,
 .balloon[data-wiggle="true"],
 .food-bit[data-wiggle="true"],
 .rhyme-card[data-wiggle="true"],
-.math-choices button[data-wiggle="true"],
 .code-arrow[data-wiggle="true"],
 .pattern-choice[data-wiggle="true"],
 .order-card[data-wiggle="true"],
@@ -6254,7 +6044,6 @@ input.is-pressed,
   .balloon[data-wiggle="true"],
   .food-bit[data-wiggle="true"],
   .rhyme-card[data-wiggle="true"],
-  .math-choices button[data-wiggle="true"],
   .code-arrow[data-wiggle="true"],
   .pattern-choice[data-wiggle="true"],
   .order-card[data-wiggle="true"],
@@ -7876,6 +7665,478 @@ input.is-pressed,
   }
 }
 
+/* ---- Numbers and Colors on the kit (src/components/MathPlay.tsx, ColorPlay.tsx) ---- */
+
+/* A group of things to count. Up to ten fit the scene on a phone: five to a row at most. A row that is
+   not full sits in the middle (it is a wrapping row, not a grid, for that). */
+.count-group {
+  --gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--gap);
+  width: 100%;
+}
+
+.count-group .count-thing {
+  flex: 0 0 auto;
+  width: min(70px, calc((100% - (var(--cols, 3) - 1) * var(--gap)) / var(--cols, 3)));
+}
+
+.count-thing {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 16px;
+  background: transparent;
+  touch-action: manipulation;
+}
+
+.count-thing .math-apple,
+.count-thing .art,
+.plate-thing .math-apple,
+.plate-thing .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* A drawing fitted to its slot (see THING_FIT in src/components/MathPlay.tsx). */
+.thing-fit {
+  display: block;
+  width: 100%;
+}
+
+.plate-thing {
+  display: grid;
+  place-items: center;
+}
+
+/* Things to count stand on the grass, and what is on a table stands on the table: not up in the sky or on the wall. */
+.game-frame[data-screen="count"] .game-stage {
+  align-items: flex-end;
+  padding-bottom: 14px;
+}
+
+.game-frame[data-screen="more"] .game-stage,
+.game-frame[data-screen="add"] .game-stage {
+  align-items: flex-end;
+  padding-bottom: 26px;
+}
+
+.count-thing:active {
+  transform: scale(0.92);
+}
+
+/* A thing that has been counted hops and keeps its number. */
+.count-thing[data-counted="true"] {
+  animation: count-hop 0.3s ease;
+}
+
+.count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #3d6b86;
+  color: #fffdfb;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #fffdfb;
+}
+
+@keyframes count-hop {
+  40% {
+    transform: translateY(-10px);
+  }
+}
+
+/* A number to tap is as big as the picture in any other choice. */
+.pick-number.is-numeral {
+  font-size: 56px;
+  line-height: 1;
+}
+
+.pick.is-mid .pick-number.is-numeral {
+  font-size: 44px;
+}
+
+/* Numbers: what the scene shows while a number is listened for, and once it is found. */
+.hear-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Found: the number and its dots are on a card, so they read against the window behind. */
+.hear-card[data-shown="true"] {
+  padding: 8px 14px 12px;
+  border-radius: 22px;
+  background: rgba(255, 253, 251, 0.94);
+  box-shadow: var(--shadow);
+}
+
+.hear-waves {
+  width: 120px;
+  animation: game-pulse 1.4s ease infinite;
+}
+
+.hear-numeral {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1;
+  color: #243056;
+  text-shadow: 0 3px 0 #fffdfb;
+  animation: plank-lay 0.3s ease;
+}
+
+.ten-frames {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ten-frame {
+  display: block;
+  width: 150px;
+}
+
+.ten-dot {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: ten-dot 0.25s ease backwards;
+}
+
+@keyframes ten-dot {
+  from {
+    transform: scale(0);
+  }
+}
+
+/* Shapes: the toy box and the block that drops into its hole. */
+.sorter-art {
+  display: block;
+  width: min(100%, 180px);
+  height: auto;
+  max-height: 100%;
+}
+
+.sorter-block {
+  animation: sorter-drop 0.45s ease;
+}
+
+@keyframes sorter-drop {
+  from {
+    transform: translateY(-46px);
+    opacity: 0;
+  }
+}
+
+/* More: two plates, wide enough for nine things in three rows. */
+.pick[data-side] {
+  width: 152px;
+}
+
+.plate {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 44px));
+  justify-content: center;
+  align-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 96px;
+  padding: 8px 6px;
+  border-radius: 20px;
+  background: #fffdfb;
+  box-shadow: inset 0 0 0 3px #e6dccf;
+}
+
+.plate.is-empty {
+  width: 130px;
+  min-height: 84px;
+  background: rgba(255, 253, 251, 0.5);
+  box-shadow: none;
+  border: 3px dashed #c9b8a6;
+}
+
+.more-won {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.more-won .plate {
+  width: 136px;
+  animation: plank-lay 0.3s ease;
+}
+
+/* Add: two groups with a plus between them. Solved, the plus goes and they come together. */
+.add-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  transition: gap 0.5s ease;
+}
+
+/* Each group is on a mat of its own, so it is seen as a group before the two are put together. Two to a
+   row at most: three and two, side by side with the plus, still fit a phone. */
+.add-row .count-group {
+  --gap: 4px;
+  width: calc(var(--cols, 2) * 40px + (var(--cols, 2) - 1) * 4px + 14px);
+  padding: 7px;
+  border-radius: 18px;
+  background: #fffdfb;
+  box-shadow: inset 0 0 0 3px #e6dccf;
+}
+
+.add-row .count-group .count-thing {
+  width: 40px;
+}
+
+.add-plus {
+  width: 26px;
+  overflow: hidden;
+  text-align: center;
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1;
+  color: #243056;
+  transition: width 0.5s ease, opacity 0.3s ease;
+}
+
+.add-row[data-joined="true"] {
+  gap: 3px;
+}
+
+.add-row[data-joined="true"] .add-plus {
+  width: 0;
+  opacity: 0;
+}
+
+/* Colors: a pot of paint. The pattern classes (.pattern-stripes and the rest) draw over the color. */
+.paint-pot {
+  display: block;
+  width: 80px;
+  height: 62px;
+  border-radius: 18px;
+  border: 3px solid #1c241f;
+}
+
+.pick.is-mid .paint-pot {
+  width: 62px;
+  height: 50px;
+  border-radius: 15px;
+}
+
+.pick.is-small .paint-pot {
+  width: 48px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.color-balloons {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.color-balloon {
+  flex: 0 1 54px;
+  min-width: 0;
+  height: auto;
+  transform-origin: 50% 100%;
+}
+
+.color-balloon[data-state="todo"] {
+  opacity: 0.45;
+}
+
+/* The balloon waiting for its color bobs. */
+.color-balloon[data-state="now"] {
+  animation: balloon-bob 1.6s ease-in-out infinite;
+}
+
+.color-balloon[data-state="done"] {
+  animation: balloon-fill 0.4s ease;
+}
+
+@keyframes balloon-bob {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes balloon-fill {
+  from {
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+}
+
+/* Mix: a shelf of the colors made so far, over a bowl. */
+.mix-scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+}
+
+.mix-shelf {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  min-height: 48px;
+  padding: 0 10px 3px;
+  border-bottom: 5px solid #c48f5c;
+  border-radius: 0 0 4px 4px;
+  min-width: 150px;
+}
+
+.mix-jar {
+  width: 32px;
+  height: auto;
+  animation: plank-lay 0.3s ease;
+}
+
+/* The color asked for: a jar still to be filled. */
+.mix-jar[data-want="true"] {
+  opacity: 0.75;
+  animation: game-pulse 1.4s ease infinite;
+}
+
+.mix-bowl {
+  display: block;
+  width: min(100%, 176px);
+  height: auto;
+}
+
+.bowl-paint {
+  animation: bowl-pour 0.3s ease;
+}
+
+/* The two paints are seen side by side for a moment, then turn into what they make. */
+.bowl-mixed {
+  animation: bowl-mix 0.6s ease 0.5s backwards;
+}
+
+@keyframes bowl-pour {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes bowl-mix {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Paint: the animal itself is what is painted, so it stands in the middle of the scene, big. */
+.game-frame[data-screen="paint"] .game-host {
+  display: none;
+}
+
+.game-frame[data-screen="paint"] .game-stage {
+  inset: 8px 10px;
+}
+
+.painted-hero {
+  position: relative;
+  width: min(170px, 100%);
+  aspect-ratio: 1;
+}
+
+.painted-hero .hero,
+.painted-hero .avatar-art {
+  width: 100%;
+  height: 100%;
+}
+
+.paint-filter {
+  position: absolute;
+}
+
+.painted-hero[data-tint]:not([data-tint=""]) .avatar-art {
+  filter: url(#paint-tint);
+}
+
+/* A splash of the paint behind the animal, so the color chosen shows even where a browser cannot tint the drawing. */
+.paint-splash {
+  position: absolute;
+  inset: -4% -8%;
+  border-radius: 46% 54% 52% 48% / 55% 48% 52% 45%;
+  opacity: 0.3;
+  animation: bowl-pour 0.3s ease;
+}
+
+.painted-hero .hero {
+  position: relative;
+}
+
+.painted-badge {
+  position: absolute;
+  right: -30px;
+  bottom: 4px;
+  animation: plank-lay 0.25s ease;
+}
+
+.painted-badge .paint-pot {
+  width: 44px;
+  height: 36px;
+  border-radius: 11px;
+}
+
+.keep-art {
+  width: 58px;
+}
+
+.pick.is-small .keep-art {
+  width: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .add-row,
+  .add-plus {
+    transition: none;
+  }
+
+  .count-thing[data-counted="true"],
+  .hear-waves,
+  .hear-numeral,
+  .ten-dot,
+  .sorter-block,
+  .color-balloon,
+  .mix-jar,
+  .bowl-paint,
+  .bowl-mixed,
+  .more-won .plate {
+    animation: none !important;
+  }
+}
+
 /* The Time & Money page: its games under two headings, each tile a picture. */
 .time-boards {
   display: flex;
@@ -8875,19 +9136,6 @@ input.is-pressed,
   }
 }
 
-/* Themed counting objects share the apple's slot. */
-.math-theme-object {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.math-theme-object .art {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
 /* Calm mode: softer surfaces, no motion, nothing bursts. */
 .app[data-calm="true"] {
   --cream: #f6f3ee;
@@ -9743,7 +9991,6 @@ a.unlock-buy {
 }
 
 .progress-head .avatar-art,
-
 
 .progress-head h3 {
   margin: 0;

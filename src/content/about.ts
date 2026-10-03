@@ -55,12 +55,12 @@ export const aboutContent = {
     {
       id: "math",
       title: MODULE_NUMBERS,
-      body: "Count to 10, hear and trace numbers, match and trace shapes, compare groups, and add with pictures up to 5.",
+      body: "Count things that say their number when tapped, hear a number and find it, and trace numbers. Fit a block into a toy box and trace its shape, pick the plate with more, and put two groups together, up to 5. Each game is a few rounds, starting with the week's number.",
     },
     {
       id: "colors",
       title: MODULE_COLORS,
-      body: "Hear a color and tap it, mix paints, and color their animal with colors they made. Every swatch shows the color word.",
+      body: "Hear a color and tap its paint to fill a balloon. Tap two paints, see them turn into a new color in the bowl, and hear it: red and yellow make orange. Then color their animal with a paint they made. Every paint has a pattern and its word, for a child who cannot tell it by color.",
     },
     {
       id: "games",

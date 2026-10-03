@@ -157,7 +157,6 @@
     "prompts/coins-find.mp3",
     "prompts/coins-jar.mp3",
     "prompts/coins-less.mp3",
-    "prompts/count.mp3",
     "prompts/day-breakfast.mp3",
     "prompts/day-from.mp3",
     "prompts/day-hours.mp3",
@@ -315,7 +314,6 @@
     "prompts/min-9-5.mp3",
     "prompts/min-9-50.mp3",
     "prompts/min-9-55.mp3",
-    "prompts/mix.mp3",
     "prompts/more.mp3",
     "prompts/name.mp3",
     "prompts/oclock-1.mp3",
@@ -331,7 +329,6 @@
     "prompts/oclock-8.mp3",
     "prompts/oclock-9.mp3",
     "prompts/one-dollar.mp3",
-    "prompts/paint.mp3",
     "prompts/pair-a.mp3",
     "prompts/pair-b.mp3",
     "prompts/pair-c.mp3",
@@ -436,7 +433,6 @@
     "prompts/sound-which.mp3",
     "prompts/square.mp3",
     "prompts/star.mp3",
-    "prompts/stir.mp3",
     "prompts/surprise-gift-animals.mp3",
     "prompts/surprise-gift-bugs.mp3",
     "prompts/surprise-gift-castles.mp3",
@@ -3542,7 +3538,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 16328520,
+    "shared": 16273428,
     "byAnimal": {
       "bear": 4881909,
       "bunny": 4851573,
