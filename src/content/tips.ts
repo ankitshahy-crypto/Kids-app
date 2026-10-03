@@ -115,25 +115,27 @@ const gameTips: Record<string, { start: string; end: string }> = {
     start: "Flick the wheel or tap it. Each slice is something they already know. A miss only shows a hint.",
     end: "Ask: which slice do you want to spin next?",
   },
+  // The coding tips are one short line each. The Build It tip was eleven lines on a phone and pushed the
+  // game's Play button off the screen.
   bird: {
-    start: "Arrows move their animal to the nest. A wrong way just asks them to try again. Ages 5 to 7 line the arrows up, repeat a move, and fix one wrong arrow.",
+    start: "They plan a path home with arrows. A wrong path just starts again.",
     end: "Ask: which way did the animal go to get home?",
   },
   pattern: {
-    start: "The pictures follow a pattern. They tap what comes next. No reading needed.",
-    end: "Ask: what would come next if we made the pattern longer?",
+    start: "The pictures repeat in a pattern. They pick what comes next.",
+    end: "Ask: what would come next if the row were longer?",
   },
   morning: {
-    start: "Drag or tap the morning pictures into order. A picture in the wrong spot wiggles back.",
-    end: "Ask: what do we do first in the morning at home?",
+    start: "They put three pictures in the order they happen. Ask why each comes before the next.",
+    end: "Ask: what do we do first when we get dressed?",
   },
   garden: {
-    start: "Rain grows the flower. Sun melts the ice. The other picture asks them to try again.",
-    end: "Ask: what else happens when it rains?",
+    start: "If this, then that: they pick what each picture calls for.",
+    end: "Ask: if it rains tomorrow, what will we take?",
   },
   build: {
-    start: "They stack picture blocks and press Play. Their animal, a song, the weather, or a sandwich follows the stack. A mixed-up sandwich is silly, then they try again. Ages 5 to 7 see a short line on each block, can repeat, splash at the pond, and save on this device. A grown-up can turn on a Python view of the same program.",
-    end: "Ask: what should happen next in the program?",
+    start: "They line up steps and press Play. The animal does each step in order.",
+    end: "Ask: what would happen if we swapped two steps?",
   },
 };
 

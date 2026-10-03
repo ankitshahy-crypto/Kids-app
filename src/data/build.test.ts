@@ -5,7 +5,7 @@ import {
   addBlock,
   buildLevel,
   buildManifestEntries,
-  chefResult,
+  buildWords,
   compile,
   loadBuild,
   moveResult,
@@ -15,7 +15,6 @@ import {
   pseudoLine,
   pythonCode,
   saveBuild,
-  sceneResult,
 } from "./build";
 
 describe("picture blocks", () => {
@@ -39,18 +38,6 @@ describe("picture blocks", () => {
     expect(moveResult(["walk", "repeat", "pond"])).toMatchObject({ steps: 3, splashed: true });
     expect(moveResult(["pond", "walk", "walk", "walk"]).splashed).toBe(false);
     expect(moveResult(["walk", "walk", "pond"]).splashed).toBe(false);
-  });
-
-  it("grows the flower when rain comes before it", () => {
-    expect(sceneResult(["rain", "flower"]).flower).toBe("grown");
-    expect(sceneResult(["flower", "rain"]).flower).toBe("bud");
-    expect(sceneResult(["rain", "sun", "flower"]).flower).toBe("bud");
-  });
-
-  it("makes a sandwich in order and a silly stack otherwise", () => {
-    expect(chefResult(["bread", "spread"])).toBe("wait");
-    expect(chefResult(["bread", "spread", "filling"])).toBe("sandwich");
-    expect(chefResult(["filling", "bread", "spread"])).toBe("silly");
   });
 
   it("saves block ids on the device without a child name", () => {
@@ -93,7 +80,7 @@ describe("one program, three views", () => {
 
 describe("build it stays a game", () => {
   it("can earn a star without finishing the reading lesson", () => {
-    for (const id of ["game-build-move", "game-build-music", "game-build-scene", "game-build-chef"]) {
+    for (const id of ["game-build-move", "game-build-music"]) {
       expect(isSubjectKey(id)).toBe(true);
       expect((readingSteps as readonly string[]).includes(id)).toBe(false);
     }
@@ -106,5 +93,8 @@ describe("build it stays a game", () => {
       expect(prompts[entry.id]?.source).toBe("neural");
       expect(prompts[entry.id]?.file).toBe(`prompts/${entry.id}.mp3`);
     }
+    // A tapped block says its name from a recorded clip, never the phone's own voice.
+    const words = manifest.words as Record<string, { say: string }>;
+    for (const word of buildWords()) expect(words[word], word).toBeTruthy();
   });
 });

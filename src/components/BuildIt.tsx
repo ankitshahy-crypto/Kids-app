@@ -1,54 +1,55 @@
 import { useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { playOnDevice, playPrompt } from "../audio/player";
+import { playPrompt, playWordId } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import {
   addBlock,
+  BLOCK_NAMES,
   buildLevel,
-  chefResult,
   loadBuild,
   moveResult,
   palette,
   playSteps,
+  POND_STEPS,
   pseudoLine,
   pythonCode,
   removeBlock,
   saveBuild,
-  sceneResult,
+  SCRIPT_LIMIT,
   type BuildActivity,
   type BuildBlock,
 } from "../data/build";
+import { Illustration } from "../illustrations";
 import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
 import { readSection, writeSection } from "../explore/sectionStore";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
 
-const ACTIVITIES: { id: BuildActivity; label: string }[] = [
-  { id: "move", label: "Move" },
-  { id: "music", label: "Music" },
-  { id: "scene", label: "Scene" },
-  { id: "chef", label: "Chef" },
-];
+/**
+ * Build It: line up picture blocks, press Play, and the child's animal does
+ * each step in order.
+ *
+ * The screen was rebuilt after the first phone test. Before:
+ *  - the blocks were stick figures 30px high, and the row of blocks you had
+ *    picked looked the same as the row you pick from;
+ *  - the stage was a strip with the animal at one edge, and a step lasted
+ *    280 ms, so nothing could be seen to happen;
+ *  - a grown-up tip eleven lines long sat above it all and pushed Play off
+ *    the screen.
+ * Now: a big stage, "Your steps" in numbered places, blocks that show the
+ * child's own animal doing the move, a name said aloud for each block, and
+ * steps slow enough to watch, with the running step lit.
+ */
 
-const NAMES: Record<BuildBlock, string> = {
-  walk: "Walk",
-  jump: "Jump",
-  spin: "Spin",
-  dance: "Dance",
-  sing: "Sing",
-  drum: "Drum",
-  bell: "Bell",
-  note: "Note",
-  repeat: "Repeat",
-  rain: "Rain",
-  sun: "Sun",
-  flower: "Flower",
-  bread: "Bread",
-  spread: "Spread",
-  filling: "Filling",
-  pond: "Pond",
-};
+export const BUILD_TITLES: Record<BuildActivity, string> = { move: "Make a dance", music: "Make a song" };
+
+/** How long one step of the program is on stage. */
+const STEP_MS = 700;
+
+type Frame = { steps: number; pose: string; splash: boolean; beat: number };
+
+const REST: Frame = { steps: 0, pose: "rest", splash: false, beat: 0 };
 
 function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -67,13 +68,28 @@ function useSpeaker(settingsRef: { current: Settings }) {
     prompt(id: string, fallback: string) {
       run((signal) => playPrompt(id, settingsRef.current, signal, fallback));
     },
-    words(text: string) {
-      run((signal) => playOnDevice(text, settingsRef.current, signal));
+    /** A block's name, from its recorded word clip. */
+    word(name: string) {
+      run((signal) => playWordId(name, name, settingsRef.current, signal));
     },
   };
 }
 
+/** The picture on a Build It tile: the child's animal mid-jump, or the drum. */
+export function BuildTileArt({ activity, animal, outfit }: { activity: BuildActivity; animal: AnimalId; outfit: Outfit }) {
+  return (
+    <span className="build-tile-art" aria-hidden="true">
+      <BlockArt kind={activity === "move" ? "jump" : "drum"} animal={animal} outfit={outfit} />
+    </span>
+  );
+}
+
+/**
+ * One Build It board. Each board is its own tile in the Coding list ("Make a dance", "Make a song"); there
+ * was a menu in between, which put three rows of buttons above the game.
+ */
 export function BuildIt({
+  activity,
   childId,
   ageRange,
   animal,
@@ -82,6 +98,7 @@ export function BuildIt({
   showCode,
   onDone,
 }: {
+  activity: BuildActivity;
   childId: string;
   ageRange: AgeRange;
   animal: AnimalId;
@@ -90,34 +107,16 @@ export function BuildIt({
   showCode: boolean;
   onDone: (step: string) => void;
 }) {
-  const [activity, setActivity] = useState<BuildActivity | null>(null);
-  const level = buildLevel(ageRange);
-  if (!activity) {
-    return (
-      <div className="game-board" data-build="menu">
-        <h1>Build It</h1>
-        <div className="game-tiles">
-          {ACTIVITIES.map((item) => (
-            <button key={item.id} type="button" className="game-tile" data-build-tile={item.id} onClick={() => setActivity(item.id)}>
-              <BlockArt kind={item.id === "move" ? "walk" : item.id === "music" ? "drum" : item.id === "scene" ? "flower" : "bread"} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
   return (
     <Builder
       key={activity}
       activity={activity}
       childId={childId}
-      level={level}
+      level={buildLevel(ageRange)}
       animal={animal}
       outfit={outfit}
       settingsRef={settingsRef}
       showCode={showCode}
-      onBack={() => setActivity(null)}
       onDone={() => onDone(`game-build-${activity}`)}
     />
   );
@@ -131,7 +130,6 @@ function Builder({
   outfit,
   settingsRef,
   showCode,
-  onBack,
   onDone,
 }: {
   activity: BuildActivity;
@@ -141,7 +139,6 @@ function Builder({
   outfit: Outfit;
   settingsRef: { current: Settings };
   showCode: boolean;
-  onBack: () => void;
   onDone: () => void;
 }) {
   const speak = useSpeaker(settingsRef);
@@ -151,7 +148,7 @@ function Builder({
   const [ran, setRan] = useState<string[]>([]);
   const [lit, setLit] = useState<number[]>([]);
   const [played, setPlayed] = useState(false);
-  const [frame, setFrame] = useState({ steps: 0, pose: "rest", splash: false, flower: "bud" as "bud" | "grown", sky: "clear" as "clear" | "rain" | "sun" });
+  const [frame, setFrame] = useState<Frame>(REST);
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [said, setSaid] = useState("");
@@ -161,17 +158,8 @@ function Builder({
   const boardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const prompt =
-      activity === "move" ? "build-move" : activity === "music" ? "build-music" : activity === "scene" ? "build-scene" : "build-chef";
-    const fallback =
-      activity === "move"
-        ? "Stack the blocks, then press play."
-        : activity === "music"
-          ? "Make a song. Press play."
-          : activity === "scene"
-            ? "What happens next?"
-            : "Make a sandwich.";
-    speak.prompt(prompt, fallback);
+    if (activity === "move") speak.prompt("build-move", "Stack the blocks, then press play.");
+    else speak.prompt("build-music", "Make a song. Press play.");
     if (level !== "later") return;
     const stored = loadBuild(childId, activity, readSection("games", "build"));
     if (stored.length > 0) {
@@ -185,7 +173,9 @@ function Builder({
     setScript((current) => addBlock(current, kind));
     setSaved(false);
     setPlayed(false);
-    setFrame({ steps: 0, pose: "rest", splash: false, flower: "bud", sky: "clear" });
+    setFrame(REST);
+    setSaid(BLOCK_NAMES[kind]);
+    speak.word(BLOCK_NAMES[kind]);
   };
 
   const play = () => {
@@ -193,16 +183,17 @@ function Builder({
     const steps = playSteps(script);
     if (steps.length === 0) return;
     const id = ++runId.current;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pace = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : STEP_MS;
+    // The program is acted out on the stage, so the stage has to be on screen when Play is pressed.
+    boardRef.current?.querySelector(".build-stage")?.scrollIntoView({ block: "nearest", behavior: pace ? "smooth" : "auto" });
     setPlayed(false);
     setRan([]);
     setLit([]);
+    setFrame(REST);
     void (async () => {
       const heard: string[] = [];
       let stepsWalked = 0;
-      let wet = false;
-      let sky: "clear" | "rain" | "sun" = "clear";
-      let flower: "bud" | "grown" = "bud";
+      let beat = 0;
       for (const step of steps) {
         if (runId.current !== id) return;
         setPlaying(step.index);
@@ -210,36 +201,23 @@ function Builder({
         heard.push(step.block);
         setRan([...heard]);
         if (step.block === "walk") stepsWalked += 1;
-        if (step.block === "rain") {
-          wet = true;
-          sky = "rain";
-        } else if (step.block === "sun") {
-          wet = false;
-          sky = "sun";
-        } else if (step.block === "flower" && wet) flower = "grown";
-        const splash = step.block === "pond" && stepsWalked >= 3;
+        const splash = step.block === "pond" && stepsWalked >= POND_STEPS;
         if (step.block !== "repeat") {
-          setFrame({
-            steps: stepsWalked,
-            pose: step.block === "pond" ? (splash ? "splash" : "pond") : step.block,
-            splash,
-            flower,
-            sky,
-          });
+          beat += 1;
+          setFrame({ steps: stepsWalked, pose: step.block === "pond" ? (splash ? "splash" : "pond") : step.block, splash, beat });
         }
+        // Every sound is the app's own: a drum, a bell, a note. The note used to be the phone's voice saying "la".
         if (step.block === "drum") playEffect("boop", settingsRef.current);
         if (step.block === "bell") playEffect("chime", settingsRef.current);
-        if (step.block === "note") speak.words("la");
-        if (splash) speak.prompt("build-splash", "The bird splashes.");
-        await sleep(reduce ? 0 : 280);
+        if (step.block === "note" || step.block === "sing") playEffect("pop", settingsRef.current);
+        if (splash) speak.prompt("build-splash", "Splash!");
+        // The repeat block itself is not a step on stage: it lights and the body runs again.
+        if (pace) await sleep(step.block === "repeat" ? pace / 3 : pace);
       }
       if (runId.current !== id) return;
       setPlaying(-1);
       setPlayed(true);
-      const scene = sceneResult(script);
-      const chef = chefResult(script);
-      if (activity === "scene" && scene.flower !== "grown") speak.prompt("build-again", "Try again.");
-      if (activity === "chef" && chef === "silly") speak.prompt("build-again", "Try again.");
+      setFrame((current) => ({ ...current, pose: current.pose === "splash" ? "splash" : "rest" }));
     })();
   };
 
@@ -251,18 +229,12 @@ function Builder({
   };
 
   const motion = moveResult(script);
-  const scene = sceneResult(played ? script : []);
-  const chef = played ? chefResult(script) : "wait";
-  const done =
-    played &&
-    ((activity === "move" && script.length > 0) ||
-      (activity === "music" && script.length > 0) ||
-      (activity === "scene" && scene.flower === "grown") ||
-      (activity === "chef" && chef === "sandwich"));
+  const done = played && script.length > 0;
+  const live = playing >= 0 ? script[playing] : null;
 
   return (
     <div
-      className="game-board"
+      className="game-board build-board"
       ref={boardRef}
       data-build={activity}
       data-level={level}
@@ -274,31 +246,27 @@ function Builder({
       data-steps={activity === "move" && played ? motion.steps : 0}
       data-pose={activity === "move" && played ? motion.pose : "rest"}
       data-splash={activity === "move" && played && motion.splashed ? "true" : "false"}
-      data-flower={activity === "scene" ? scene.flower : "bud"}
-      data-sky={activity === "scene" && played ? scene.sky : "clear"}
-      data-result={activity === "chef" ? chef : "wait"}
       data-saved={saved ? "true" : "false"}
       data-loaded={loaded ? "true" : "false"}
       data-lines={level === "later" ? "on" : "off"}
       data-python={showCode ? "on" : "off"}
       data-said={said}
     >
-      <button type="button" className="game-back" onClick={onBack}>
-        Build It
-      </button>
-      <h1>{ACTIVITIES.find((item) => item.id === activity)?.label}</h1>
-      <Stage activity={activity} animal={animal} outfit={outfit} script={script} played={played} playing={playing} frame={frame} />
-      <div className="build-script" data-drop="script" aria-label="Program">
-        {script.length === 0 ? <span className="build-empty">+</span> : null}
-        {script.map((kind, index) => {
-          const line = pseudoLine(script, index);
-          const drop = () => {
-            if (playing >= 0) return;
-            setScript((current) => removeBlock(current, index));
-            setPlayed(false);
-            setSaved(false);
-          };
-          if (level !== "later") {
+      <h1>{BUILD_TITLES[activity]}</h1>
+      <Stage activity={activity} animal={animal} outfit={outfit} level={level} live={live} frame={frame} />
+      <div className="build-steps">
+        <p className="build-label">Your steps</p>
+        <div className="build-script" data-drop="script" aria-label="Your steps">
+          {/* Five numbered places to fill, and room for up to eight steps. A tap on a step takes it out. */}
+          {Array.from({ length: Math.max(5, Math.min(SCRIPT_LIMIT, script.length + 1)) }, (_, index) => {
+            const kind = script[index];
+            if (!kind) {
+              return (
+                <span key={`place-${index}`} className="build-place" data-place={index}>
+                  {index + 1}
+                </span>
+              );
+            }
             return (
               <button
                 key={`${kind}-${index}`}
@@ -306,54 +274,35 @@ function Builder({
                 className="build-chip"
                 data-index={index}
                 data-kind={kind}
+                data-line={level === "later" ? pseudoLine(script, index) : undefined}
                 data-on={playing === index ? "true" : "false"}
-                aria-label={NAMES[kind]}
-                onClick={drop}
-              >
-                <BlockArt kind={kind} />
-              </button>
-            );
-          }
-          return (
-            <div
-              key={`${kind}-${index}`}
-              className="build-chip"
-              data-index={index}
-              data-kind={kind}
-              data-line={line}
-              data-on={playing === index ? "true" : "false"}
-              role="button"
-              tabIndex={0}
-              aria-label={line}
-              onClick={() => {
-                if (playing >= 0) return;
-                setSaid(line);
-                speak.words(line);
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                event.currentTarget.click();
-              }}
-            >
-              <BlockArt kind={kind} />
-              <span className="build-line">{line}</span>
-              <button
-                type="button"
-                className="build-remove"
-                data-remove={index}
-                aria-label="Remove"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  drop();
+                aria-label={BLOCK_NAMES[kind]}
+                onClick={() => {
+                  if (playing >= 0) return;
+                  setScript((current) => removeBlock(current, index));
+                  setPlayed(false);
+                  setSaved(false);
+                  setFrame(REST);
                 }}
               >
-                ×
+                <BlockArt kind={kind} animal={animal} outfit={outfit} />
               </button>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
+      {/* Ages 5–7 also see the program in words, one line a block, and the line that is running lights with
+          its block. (Each block used to be a full-width row of text, which pushed the stage off the screen
+          while the program ran.) */}
+      {level === "later" && script.length > 0 ? (
+        <ol className="build-lines" aria-label="The program in words">
+          {script.map((kind, index) => (
+            <li key={`${kind}-${index}`} data-line-index={index} data-on={playing === index ? "true" : "false"}>
+              {pseudoLine(script, index)}
+            </li>
+          ))}
+        </ol>
+      ) : null}
       {showCode ? (
         <pre className="build-python" data-python="on" aria-readonly="true">
           {pythonCode(script)}
@@ -366,7 +315,7 @@ function Builder({
             type="button"
             className="build-block"
             data-block={kind}
-            aria-label={NAMES[kind]}
+            aria-label={BLOCK_NAMES[kind]}
             onPointerDown={(event) => {
               event.currentTarget.setPointerCapture(event.pointerId);
               drag.current = { kind, x: event.clientX, y: event.clientY, moved: false };
@@ -386,17 +335,16 @@ function Builder({
               }
               const drop = boardRef.current?.querySelector("[data-drop=script]");
               const box = drop?.getBoundingClientRect();
-              const over = Boolean(
-                box && event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom,
-              );
+              const over = Boolean(box && event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom);
               if (over) append(kind);
             }}
           >
-            <BlockArt kind={kind} />
+            <BlockArt kind={kind} animal={animal} outfit={outfit} />
+            <span className="build-name">{kind === "repeat" ? "× 3" : BLOCK_NAMES[kind]}</span>
           </button>
         ))}
       </div>
-      <button type="button" className="start-button" data-play="run" onClick={play}>
+      <button type="button" className="start-button" data-play="run" disabled={script.length === 0} onClick={play}>
         Play
       </button>
       {level === "later" ? (
@@ -404,8 +352,6 @@ function Builder({
           Save
         </button>
       ) : null}
-      {activity === "chef" && chef === "silly" ? <p className="build-again">Try again.</p> : null}
-      {activity === "scene" && played && scene.flower !== "grown" ? <p className="build-again">Try again.</p> : null}
       {done ? (
         <button
           type="button"
@@ -424,164 +370,128 @@ function Builder({
   );
 }
 
+/** Where the program is acted out: the animal on a path to the pond, or a band of three instruments. */
 function Stage({
   activity,
   animal,
   outfit,
-  script,
-  played,
-  playing,
+  level,
+  live,
   frame,
 }: {
   activity: BuildActivity;
   animal: AnimalId;
   outfit: Outfit;
-  script: BuildBlock[];
-  played: boolean;
-  playing: number;
-  frame: { steps: number; pose: string; splash: boolean; flower: "bud" | "grown"; sky: "clear" | "rain" | "sun" };
+  level: ReturnType<typeof buildLevel>;
+  live: BuildBlock | null;
+  frame: Frame;
 }) {
-  const live = playing >= 0 ? script[playing] : null;
   if (activity === "move") {
+    // Three walks take the animal from the left edge to the pond.
+    const along = Math.min(frame.steps, POND_STEPS) / POND_STEPS;
     return (
-      <div className="build-stage" data-stage="move">
-        <div
-          className="build-actor"
-          data-pose={frame.pose}
-          style={{
-            transform: `translateX(${frame.steps * 28}px)${frame.pose === "jump" ? " translateY(-18px)" : frame.pose === "spin" ? " rotate(24deg)" : frame.pose === "dance" ? " translateY(-8px) rotate(-8deg)" : ""}`,
-          }}
-        >
-          <Hero animal={animal} outfit={outfit} />
+      <div className="build-stage" data-stage="move" data-pose={frame.pose}>
+        <div className="build-ground" />
+        {level === "later" ? <PondMark splash={frame.splash} /> : null}
+        <div className="build-actor" style={{ left: `calc(${along} * (100% - 116px) + 8px)` }}>
+          {/* `key` restarts the move's animation when the same block runs twice in a row. */}
+          <div key={frame.beat} className="build-pose" data-pose={frame.pose}>
+            <Hero animal={animal} outfit={outfit} />
+            {frame.pose === "sing" ? <span className="build-note">♪</span> : null}
+          </div>
         </div>
-        <PondMark splash={frame.splash} />
       </div>
     );
   }
-  if (activity === "music") {
-    const sound = live === "drum" || live === "bell" || live === "note" ? live : played ? script.filter((kind) => kind !== "repeat").at(-1) : "";
-    return (
-      <div className="build-stage build-music" data-stage="music" data-sound={sound || ""}>
-        <span data-sound="drum" data-on={sound === "drum" ? "true" : "false"}><BlockArt kind="drum" /></span>
-        <span data-sound="bell" data-on={sound === "bell" ? "true" : "false"}><BlockArt kind="bell" /></span>
-        <span data-sound="note" data-on={sound === "note" ? "true" : "false"}><BlockArt kind="note" /></span>
-      </div>
-    );
-  }
-  if (activity === "scene") {
-    return (
-      <div className="build-stage" data-stage="scene">
-        {frame.sky === "rain" || live === "rain" ? <Cloud /> : null}
-        {frame.sky === "sun" || live === "sun" ? <Sun /> : null}
-        <Flower grown={frame.flower === "grown"} />
-      </div>
-    );
-  }
-  const chef = played ? chefResult(script) : "wait";
+  const sound = live === "drum" || live === "bell" || live === "note" ? live : "";
   return (
-    <div className="build-stage" data-stage="chef">
-      <Robot />
-      <Sandwich result={chef} />
+    <div className="build-stage build-music" data-stage="music" data-sound={sound}>
+      {(["drum", "bell", "note"] as const).map((kind) => (
+        <span key={kind} className="build-instrument" data-sound={kind} data-on={sound === kind ? "true" : "false"}>
+          <BlockArt key={sound === kind ? frame.beat : 0} kind={kind} animal={animal} outfit={outfit} />
+        </span>
+      ))}
     </div>
   );
 }
 
-function BlockArt({ kind }: { kind: BuildBlock }) {
-  if (kind === "walk") {
+/** A block's picture. The move blocks show the child's own animal doing the move. */
+function BlockArt({ kind, animal, outfit }: { kind: BuildBlock; animal: AnimalId; outfit: Outfit }) {
+  if (kind === "walk" || kind === "jump" || kind === "spin" || kind === "dance" || kind === "sing") {
     return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="32" cy="18" r="8" fill="#e07a5f" />
-        <path d="M32 28 v12 M24 52 l8-12 8 12 M20 36 h24" stroke="#6d8f78" strokeWidth="4" fill="none" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (kind === "jump") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="32" cy="16" r="8" fill="#e07a5f" />
-        <path d="M24 48c8-16 8-16 16 0" stroke="#6d8f78" strokeWidth="4" fill="none" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (kind === "spin") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M18 32 a14 14 0 1 1 8-12" fill="none" stroke="#8eb4d6" strokeWidth="4" strokeLinecap="round" />
-        <path d="M26 16 l2 8 l-8 2" fill="#8eb4d6" />
-      </svg>
-    );
-  }
-  if (kind === "dance") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="32" cy="16" r="7" fill="#f4a4b4" />
-        <path d="M32 24 l-10 12 M32 24 l10 8 M22 50 l10-14 8 14" stroke="#6d8f78" strokeWidth="4" fill="none" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (kind === "sing") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="24" cy="40" r="8" fill="#f6d56b" />
-        <path d="M32 40 V16 h16" stroke="#e07a5f" strokeWidth="4" fill="none" strokeLinecap="round" />
-      </svg>
+      <span className="build-art build-art-move" data-move={kind} aria-hidden="true">
+        <span className="build-art-hero">
+          <Hero animal={animal} outfit={outfit} />
+        </span>
+        <MoveMark kind={kind} />
+      </span>
     );
   }
   if (kind === "drum") {
     return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <ellipse cx="32" cy="36" rx="18" ry="10" fill="#e07a8a" />
-        <path d="M14 36 v8 c0 8 36 8 36 0 v-8" fill="#f6c3cb" />
-      </svg>
+      <span className="build-art" aria-hidden="true">
+        <Illustration name="drum" />
+      </span>
     );
   }
   if (kind === "bell") {
     return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M32 12 v6 a16 16 0 0 1 16 16 v8 H16 v-8 a16 16 0 0 1 16-16" fill="#f6d56b" />
-        <circle cx="32" cy="48" r="4" fill="#e4c7a4" />
-      </svg>
+      <span className="build-art" aria-hidden="true">
+        <svg viewBox="0 0 64 64">
+          <path d="M32 8v6" stroke="#C9A24A" strokeWidth="5" strokeLinecap="round" />
+          <path d="M32 13a18 18 0 0 1 18 18v10l5 7H9l5-7V31a18 18 0 0 1 18-18Z" fill="#F6D56B" stroke="#E0B94A" strokeWidth="2.5" strokeLinejoin="round" />
+          <circle cx="32" cy="53" r="5.5" fill="#C9A24A" />
+          <path d="M22 28c2-5 6-8 10-8" fill="none" stroke="#FFF1C4" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      </span>
     );
   }
   if (kind === "note") {
     return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="22" cy="44" r="8" fill="#8eb4d6" />
-        <path d="M30 44 V14" stroke="#8eb4d6" strokeWidth="4" />
-        <path d="M30 14 h16 v8" fill="#b7d7f2" />
-      </svg>
+      <span className="build-art" aria-hidden="true">
+        <svg viewBox="0 0 64 64">
+          <path d="M26 46V14l24-6v32" fill="none" stroke="#6F9BC8" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <ellipse cx="18" cy="47" rx="9" ry="7" fill="#8EB4D6" />
+          <ellipse cx="42" cy="41" rx="9" ry="7" fill="#8EB4D6" />
+        </svg>
+      </span>
     );
   }
   if (kind === "repeat") {
     return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M18 24 h24 a10 10 0 0 1 0 20 H22" fill="none" stroke="#6d8f78" strokeWidth="4" strokeLinecap="round" />
-        <path d="M22 36 l-8 8 l8 8" fill="none" stroke="#6d8f78" strokeWidth="4" strokeLinecap="round" />
-      </svg>
+      <span className="build-art" aria-hidden="true">
+        <svg viewBox="0 0 64 64">
+          <path d="M14 30a18 18 0 0 1 31-12" fill="none" stroke="#6D8F78" strokeWidth="6" strokeLinecap="round" />
+          <path d="M47 8v12H35" fill="none" stroke="#6D8F78" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M50 34a18 18 0 0 1-31 12" fill="none" stroke="#6D8F78" strokeWidth="6" strokeLinecap="round" />
+          <path d="M17 56V44h12" fill="none" stroke="#6D8F78" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
     );
   }
-  if (kind === "rain") return <Cloud />;
-  if (kind === "sun") return <Sun />;
-  if (kind === "flower") return <Flower grown />;
-  if (kind === "bread") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect x="12" y="26" width="40" height="16" rx="8" fill="#f6d56b" />
-      </svg>
-    );
-  }
-  if (kind === "spread") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect x="14" y="28" width="36" height="12" rx="4" fill="#e4b07a" />
-      </svg>
-    );
-  }
-  if (kind === "pond") return <PondMark splash={false} />;
   return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <circle cx="32" cy="32" r="12" fill="#c9e6d4" />
-      <circle cx="32" cy="32" r="6" fill="#e07a8a" />
+    <span className="build-art" aria-hidden="true">
+      <PondMark splash />
+    </span>
+  );
+}
+
+/** The sign beside the animal that says which move this is: an arrow along, an arrow up, a turn, a wiggle, a note. */
+function MoveMark({ kind }: { kind: "walk" | "jump" | "spin" | "dance" | "sing" }) {
+  const stroke = { fill: "none", stroke: "#6D8F78", strokeWidth: 5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  return (
+    <svg className="build-mark" viewBox="0 0 32 32" aria-hidden="true">
+      {kind === "walk" ? <path d="M4 16h22M18 8l8 8-8 8" {...stroke} /> : null}
+      {kind === "jump" ? <path d="M16 28V6M8 14l8-8 8 8" {...stroke} /> : null}
+      {kind === "spin" ? <path d="M26 16a10 10 0 1 1-4-8M22 2v7h-7" {...stroke} /> : null}
+      {kind === "dance" ? <path d="M3 20c4-10 8 6 12-4s8 6 12-4" {...stroke} /> : null}
+      {kind === "sing" ? (
+        <>
+          <path d="M13 23V6l12-3v16" {...stroke} strokeWidth={4} />
+          <ellipse cx="9" cy="24" rx="5" ry="4" fill="#6D8F78" />
+          <ellipse cx="21" cy="20" rx="5" ry="4" fill="#6D8F78" />
+        </>
+      ) : null}
     </svg>
   );
 }
@@ -589,68 +499,9 @@ function BlockArt({ kind }: { kind: BuildBlock }) {
 function PondMark({ splash }: { splash: boolean }) {
   return (
     <svg className="pond-mark" viewBox="0 0 64 40" aria-hidden="true">
-      <ellipse cx="32" cy="24" rx="22" ry="10" fill="#8eb4d6" />
-      {splash ? <path d="M32 8 v8 M22 14 l6 6 M42 14 l-6 6" stroke="#d7eef8" strokeWidth="3" strokeLinecap="round" /> : null}
-    </svg>
-  );
-}
-
-function Cloud() {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <ellipse cx="32" cy="26" rx="16" ry="10" fill="#d7eef8" />
-      <path d="M24 36 v8 M32 34 v12 M40 36 v8" stroke="#8eb4d6" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function Sun() {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <circle cx="32" cy="32" r="10" fill="#f6d56b" />
-      <path d="M32 10 v6 M32 48 v6 M10 32 h6 M48 32 h6" stroke="#f6d56b" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function Flower({ grown }: { grown: boolean }) {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <rect x="30" y="34" width="4" height={grown ? 18 : 8} fill="#6e9a74" />
-      {grown ? (
-        <>
-          <circle cx="32" cy="24" r="6" fill="#f6d56b" />
-          <circle cx="22" cy="30" r="6" fill="#f4a4b4" />
-          <circle cx="42" cy="30" r="6" fill="#f4a4b4" />
-        </>
-      ) : (
-        <circle cx="32" cy="30" r="5" fill="#c9e6d4" />
-      )}
-    </svg>
-  );
-}
-
-function Robot() {
-  return (
-    <svg className="chef-robot" viewBox="0 0 64 64" aria-hidden="true">
-      <rect x="16" y="16" width="32" height="28" rx="8" fill="#d7eef8" />
-      <circle cx="26" cy="28" r="3" fill="#2c3a4f" />
-      <circle cx="38" cy="28" r="3" fill="#2c3a4f" />
-      <rect x="24" y="44" width="6" height="10" fill="#8eb4d6" />
-      <rect x="34" y="44" width="6" height="10" fill="#8eb4d6" />
-    </svg>
-  );
-}
-
-function Sandwich({ result }: { result: "wait" | "silly" | "sandwich" }) {
-  if (result === "wait") return null;
-  const messy = result === "silly";
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true" data-stack={result}>
-      <rect x={messy ? 10 : 14} y={messy ? 18 : 36} width="36" height="10" rx="4" fill="#f6d56b" transform={messy ? "rotate(-12 28 23)" : undefined} />
-      <rect x={messy ? 18 : 16} y={messy ? 34 : 28} width="30" height="8" rx="3" fill="#e4b07a" />
-      <circle cx={messy ? 40 : 32} cy={messy ? 30 : 24} r="6" fill="#e07a8a" />
-      {result === "sandwich" ? <rect x="14" y="16" width="36" height="10" rx="4" fill="#f6d56b" /> : null}
+      <ellipse cx="32" cy="26" rx="26" ry="11" fill="#8eb4d6" />
+      <ellipse cx="26" cy="24" rx="10" ry="3" fill="#b7d7f2" />
+      {splash ? <path d="M32 6v10M20 12l7 7M44 12l-7 7" stroke="#8eb4d6" strokeWidth="4" strokeLinecap="round" /> : null}
     </svg>
   );
 }
