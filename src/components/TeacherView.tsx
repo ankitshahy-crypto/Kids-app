@@ -23,6 +23,7 @@ import { Printables } from "./Printables";
 import { ReadingChart } from "./ReadingChart";
 import { ChildClassDetail, ClassProgress } from "./ProgressViews";
 import { Chevron } from "./icons";
+import { heldBack } from "../explore/flags";
 
 /**
  * One child's page on the class iPad: what they finished, a note and codes for
@@ -114,13 +115,16 @@ function ChildSheet({
         section="path-colors"
         placedIntroduced={colorResolved.source === "calendar" ? undefined : colorIntroduced(colorResolved.weekIndex)}
       />
-      <LearningPath
-        profile={profile}
-        name={name}
-        subject={TIME}
-        section="path-time"
-        placedIntroduced={timeResolved.source === "calendar" ? undefined : timeIntroduced(timeResolved.weekIndex)}
-      />
+      {/* Time & Money is being rebuilt and is left out of the installed app for now (src/explore/flags.ts), so the grown-up pages do not describe it either. */}
+      {heldBack("time") ? null : (
+        <LearningPath
+          profile={profile}
+          name={name}
+          subject={TIME}
+          section="path-time"
+          placedIntroduced={timeResolved.source === "calendar" ? undefined : timeIntroduced(timeResolved.weekIndex)}
+        />
+      )}
       <ReadingChart name={name} days={profile.readingMs} goalMinutes={goalMinutes} />
       <ReadingChart name={name} days={practiceTotal(profile)} goalMinutes={goalMinutes} title="Time practicing" section="practice" />
     </section>

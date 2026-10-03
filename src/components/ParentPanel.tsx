@@ -32,6 +32,7 @@ import { FamilyProgress, TeacherNote } from "./ProgressViews";
 import type { LessonPlace } from "../data/placement";
 import type { LadderStep } from "../data/ladder";
 import type { TeacherLink } from "../data/profileExtras";
+import { heldBack } from "../explore/flags";
 
 
 type ParentPage = "home" | "children" | "progress" | "teacher" | "rewards" | "settings" | "privacy";
@@ -329,9 +330,12 @@ function PlacementSummary({ child, placement }: { child: ChildProfile; placement
       <p className="adult-copy" data-color-stage={colorResolved.stageId} data-color-source={colorResolved.source}>
         {MODULE_COLORS}: {stageTitle(colorResolved.stageId, COLORS)}.
       </p>
-      <p className="adult-copy" data-time-stage={timeResolved.stageId} data-time-source={timeResolved.source}>
-        {MODULE_TIME}: {stageTitle(timeResolved.stageId, TIME)}.
-      </p>
+      {/* Time & Money is being rebuilt and is left out of the installed app for now (src/explore/flags.ts), so the grown-up pages do not describe it either. */}
+      {heldBack("time") ? null : (
+        <p className="adult-copy" data-time-stage={timeResolved.stageId} data-time-source={timeResolved.source}>
+          {MODULE_TIME}: {stageTitle(timeResolved.stageId, TIME)}.
+        </p>
+      )}
     </section>
   );
 }
@@ -404,12 +408,14 @@ function ParentHome({
         section="path-colors"
         placedIntroduced={colorResolved.source === "calendar" ? undefined : colorIntroduced(colorResolved.weekIndex)}
       />
-      <LearningPath
-        profile={child}
-        subject={TIME}
-        section="path-time"
-        placedIntroduced={timeResolved.source === "calendar" ? undefined : timeIntroduced(timeResolved.weekIndex)}
-      />
+      {heldBack("time") ? null : (
+        <LearningPath
+          profile={child}
+          subject={TIME}
+          section="path-time"
+          placedIntroduced={timeResolved.source === "calendar" ? undefined : timeIntroduced(timeResolved.weekIndex)}
+        />
+      )}
       <PlacementSummary child={child} placement={placement} />
 
       <section className="dash-card" data-section="letters">

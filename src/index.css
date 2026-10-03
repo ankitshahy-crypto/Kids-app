@@ -4735,8 +4735,20 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 18px;
   padding: 8px 8px 28px;
+}
+
+/* In a Numbers activity the things to count and the numbers to tap are big: an apple was 40px and the
+   whole game sat in the top quarter of a phone screen. (The 40px size is for the menu tiles.) */
+.math-play .math-apple {
+  width: 68px;
+  height: 68px;
+}
+
+.math-play .math-cluster .math-apple {
+  width: 52px;
+  height: 52px;
 }
 
 .math-play h1 {
@@ -4753,7 +4765,12 @@ button:focus-visible {
 .math-choices button,
 .math-sides button,
 .math-object {
-  min-width: 76px;
+  min-width: 96px;
+  min-height: 96px;
+  font-size: 44px;
+}
+
+.math-hear {
   min-height: 76px;
   font-size: 32px;
 }
@@ -4778,7 +4795,7 @@ button:focus-visible {
   flex-wrap: wrap;
   justify-content: center;
   gap: 2px;
-  max-width: 140px;
+  max-width: 170px;
 }
 
 .math-plus {
@@ -4881,6 +4898,13 @@ button:focus-visible {
   width: 54px;
   min-width: 54px;
   min-height: 54px;
+}
+
+/* On a menu tile the swatch is a picture of the color: no words. "Orange diagonal" did not fit a 54px
+   square and ran out of its sides. The tile's own label is underneath. */
+.color-activity-art .color-word,
+.color-activity-art .color-pattern {
+  display: none;
 }
 
 .color-play {
@@ -5987,6 +6011,10 @@ input.is-pressed,
 .game-tile .code-tile-art .code-pic {
   flex: 1 1 0;
   max-width: 58px;
+}
+
+.game-tile .code-tile-art .code-pic.is-wide {
+  max-width: 96px;
 }
 
 .game-tile .code-tile-art svg {
