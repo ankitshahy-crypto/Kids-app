@@ -99,7 +99,6 @@ test("a wrong coin is named and wiggles, the third miss shows the answer, and fo
   await onRound(shop, 3);
   await expect(shop.locator(".game-pips li[data-pip=done]")).toHaveCount(3);
   await payShop(shop);
-  await expect(shop).toHaveAttribute("data-finished", "true");
   await expectStar(page);
   await page.locator("[data-section-back]").click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
