@@ -6732,6 +6732,10 @@ input.is-pressed,
   width: 88px;
 }
 
+.pick.is-mid .coin-art {
+  width: 74px;
+}
+
 .pick.is-small .coin-art {
   width: 58px;
 }

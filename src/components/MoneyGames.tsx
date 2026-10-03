@@ -57,7 +57,7 @@ function CoinPick({
 }: {
   id: MoneyId;
   slot?: number;
-  size?: "big" | "small";
+  size?: "big" | "mid" | "small";
   wiggle?: number;
   reveal?: boolean;
   demo?: boolean;
@@ -208,7 +208,8 @@ export function ShopActivity({ lesson, animal, outfit, settingsRef, onDone }: Ga
               key={place}
               id={coin}
               slot={place}
-              size="small"
+              // Five pennies sit in one row; a purse of three or four coins gets bigger ones.
+              size={purse.length > 4 ? "small" : "mid"}
               used={paid.includes(place)}
               wiggle={wiggle.id === `purse-${place}` ? wiggle.count : 0}
               reveal={coach.reveal && place === owed}
