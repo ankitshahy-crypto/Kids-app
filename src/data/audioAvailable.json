@@ -125,6 +125,12 @@
     "prompts/choose-have.mp3",
     "prompts/choose-what.mp3",
     "prompts/circle.mp3",
+    "prompts/clock-dots-done.mp3",
+    "prompts/clock-dots.mp3",
+    "prompts/clock-find-long.mp3",
+    "prompts/clock-find-short.mp3",
+    "prompts/clock-is-long.mp3",
+    "prompts/clock-is-short.mp3",
     "prompts/clock-long.mp3",
     "prompts/clock-make.mp3",
     "prompts/code-again.mp3",
@@ -3481,7 +3487,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 15437583,
+    "shared": 15564957,
     "byAnimal": {
       "bear": 4881909,
       "bunny": 4851573,
