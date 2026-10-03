@@ -28,6 +28,7 @@ import { Illustration } from "../illustrations";
 import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
 import { readSection, writeSection } from "../explore/sectionStore";
+import { clickWithoutPointer } from "../input/keyboardClick";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
 import { SpeakerIcon } from "./icons";
@@ -509,6 +510,11 @@ function Builder({
               const box = drop?.getBoundingClientRect();
               const over = Boolean(box && event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom);
               if (over) append(kind);
+            }}
+            // A keyboard sends no pointer events, only a click. Without this, Enter on a block
+            // added nothing and Play could never be pressed.
+            onClick={(event) => {
+              if (clickWithoutPointer(event)) append(kind);
             }}
           >
             <BlockArt kind={kind} animal={animal} outfit={outfit} />

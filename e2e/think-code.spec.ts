@@ -192,6 +192,35 @@ test("pictures go in the order they happen, by tap or by drag, and a wrong one w
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
+test("First, then can be played from a keyboard, with no pointer at all", async ({ page }) => {
+  await install(page);
+  await openCoding(page);
+  await page.locator("[data-game-tile=morning]").click();
+  const board = page.locator("[data-game=morning] .game-board");
+  for (let round = 0; round < 2; round += 1) {
+    await expect(board).toHaveAttribute("data-rounds", String(round));
+    await expect(board).toHaveAttribute("data-sorted", "0");
+    const order = ((await board.getAttribute("data-order")) ?? "").split(",");
+    expect(order).toHaveLength(3);
+    // Focus and a key are what a hardware keyboard or a switch sends: only a click, no pointer.
+    // The cards listened for the pointer alone, so no card could be placed. The wrong card
+    // first: the keyboard gets the same wiggle a finger does, and nothing is placed.
+    await board.locator(`[data-card=${order[1]}]`).focus();
+    await page.keyboard.press("Enter");
+    await expect(board.locator(`[data-card=${order[1]}]`)).toHaveAttribute("data-wiggle", "true");
+    await expect(board).toHaveAttribute("data-sorted", "0");
+    for (const [place, card] of order.entries()) {
+      await board.locator(`[data-card=${card}]`).focus();
+      await page.keyboard.press(place === 1 ? "Space" : "Enter");
+      await expect(board).toHaveAttribute("data-placed", order.slice(0, place + 1).join(","));
+    }
+  }
+  await expect(board).toHaveAttribute("data-rounds", "2");
+  await board.locator("[data-finish=morning]").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+});
+
 test("if it rains, an umbrella: each picture calls for one thing", async ({ page }, testInfo) => {
   await install(page);
   await openCoding(page);

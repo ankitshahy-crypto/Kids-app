@@ -23,6 +23,7 @@ import {
 import { Illustration, type IllustrationName } from "../illustrations";
 import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
+import { clickWithoutPointer } from "../input/keyboardClick";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
 
@@ -582,6 +583,11 @@ function OrderGame({
                   place(id, Number(slot.getAttribute("data-slot") ?? "-1"));
                   return;
                 }
+              }}
+              // A keyboard sends no pointer events, only a click. Without this, Enter on a card
+              // placed nothing and the round could never be finished. Like a tap, it goes in the next place.
+              onClick={(event) => {
+                if (clickWithoutPointer(event)) place(id, placed.length);
               }}
             >
               <Picture art={id} />

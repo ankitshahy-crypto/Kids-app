@@ -496,6 +496,22 @@ test("a flick spins the wheel and a bonus can gift a dress-up item", async ({ pa
   await expect(page.locator('[data-item="scarf-stripe"]')).toHaveAttribute("data-unlocked", "true");
 });
 
+test("the wheel spins from a keyboard: Enter on it starts a challenge", async ({ page }) => {
+  await install(page);
+  await openGames(page);
+  await page.locator("[data-game-tile=spin]").click();
+  const board = page.locator("[data-game=spin] .game-board");
+  await expect(board).toHaveAttribute("data-phase", "ready");
+  // Focus and a key are what a hardware keyboard or a switch sends: only a click, no pointer.
+  // The wheel listened for the pointer alone, so the game could not be started.
+  await page.locator("[data-wheel]").focus();
+  await page.keyboard.press("Enter");
+  await expect(board).toHaveAttribute("data-phase", "challenge");
+  // A key press spins like a tap, not a flick.
+  await expect(board).toHaveAttribute("data-flick", "false");
+  await expect(board).toHaveAttribute("data-kind", /sound|word|count|color|trace|bonus/);
+});
+
 test("flicking the wheel starts a challenge", async ({ page }) => {
   await install(page);
   await openGames(page);
