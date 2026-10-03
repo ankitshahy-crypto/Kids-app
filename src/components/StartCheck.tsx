@@ -46,7 +46,8 @@ export function StartCheck({
   settingsRef: { current: Settings };
   /** Each letter-sound round, quietly: picked on the first try or not. */
   onRecord?: (sound: string, firstTry: boolean) => void;
-  onAccept: (result: CheckResult) => void;
+  /** `confirmed`: a grown-up has just passed the grown-up check for this result. */
+  onAccept: (result: CheckResult, confirmed: boolean) => void;
   onSkip: () => void;
 }) {
   const [rounds] = useState(() => buildCheck(`${profile.id}:${new Date().toDateString()}`));
@@ -153,10 +154,10 @@ export function StartCheck({
           Based on {answers} {answers === 1 ? "answer" : "answers"}.
           {confirm ? " A start this far along needs a grown-up to confirm it." : " A grown-up can change this any time in Grown-ups."}
         </p>
-        <button type="button" className="done-button check-accept" onClick={() => (confirm ? setConfirming(true) : onAccept(done))}>
+        <button type="button" className="done-button check-accept" onClick={() => (confirm ? setConfirming(true) : onAccept(done, false))}>
           Use this start
         </button>
-        {confirming ? <ParentGate onPass={() => onAccept(done)} onCancel={() => setConfirming(false)} /> : null}
+        {confirming ? <ParentGate onPass={() => onAccept(done, true)} onCancel={() => setConfirming(false)} /> : null}
         <button type="button" className="text-button" onClick={onSkip}>
           Keep it as it is
         </button>

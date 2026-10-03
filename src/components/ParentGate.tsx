@@ -92,8 +92,17 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
       >
         <p className="gate-kicker">For a grown-up</p>
         <h2 id={titleId}>{title}</h2>
-        {locked ? <p className="gate-miss">Wait a moment, then try again.</p> : null}
-        {missed && !locked ? <p className="gate-miss">Try another one.</p> : null}
+        {/* role="alert": a screen reader says a wrong answer and a lockout, which it could not see. */}
+        {locked ? (
+          <p className="gate-miss" role="alert">
+            Wait a moment, then try again.
+          </p>
+        ) : null}
+        {missed && !locked ? (
+          <p className="gate-miss" role="alert">
+            Try another one.
+          </p>
+        ) : null}
         {mode === "math" || mode === "recover" ? (
           <form
             className="pin-form"
@@ -136,6 +145,8 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
               value={digits}
               aria-label="4-digit PIN"
               disabled={locked}
+              // Like the sum's box above: the keyboard goes straight to the PIN.
+              autoFocus
               onChange={(event) => {
                 setDigits(event.target.value.replace(/\D/g, "").slice(0, 4));
                 setMissed(false);

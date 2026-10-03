@@ -70,6 +70,13 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
 
   await openCheck(page);
   await expect(page.locator("[data-screen='grownups']")).toHaveCount(0);
+  // Check is a full-size button here too. Its size was set only inside the grown-up pages, so on
+  // the check itself, which opens over a child's screen, it was a strip a few pixels tall.
+  const checkButton = page.getByRole("dialog").getByRole("button", { name: "Check", exact: true });
+  const checkBox = await checkButton.boundingBox();
+  expect(checkBox?.height).toBeGreaterThanOrEqual(56);
+  await expect(checkButton).toHaveCSS("border-top-left-radius", "18px");
+  await expect(checkButton).toHaveCSS("font-size", "18px");
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page.locator("[data-screen='start']")).toBeVisible();
 
@@ -77,6 +84,8 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
   await answer(page, false);
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByText("Try another one.")).toBeVisible();
+  // A wrong answer is announced, for someone who cannot see it.
+  await expect(page.getByRole("alert")).toHaveText("Try another one.");
   await answer(page, true);
   await expect(page.locator("[data-screen='grownups'][data-page='menu']")).toBeVisible();
   await dismissHint(page);

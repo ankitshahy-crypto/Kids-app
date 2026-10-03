@@ -902,16 +902,19 @@ export default function App() {
                   profile={active}
                   settingsRef={settingsRef}
                   onRecord={(sound, firstTry) => noteSoundCheck(active.id, sound, firstTry, "start")}
-                  onAccept={(result) => {
+                  // The check is started from the Grown-ups menu and then answered by the child, so
+                  // the device is in the child's hands when it ends. It used to end back in the
+                  // Grown-ups menu: one tap on "Stop for now", "Keep it as it is" or "Use this start"
+                  // put a child among the settings, the profiles and the purchase with no grown-up
+                  // check. It now ends on the child's own page. The one way back to the menu is a
+                  // start far enough along to need a grown-up: they have just passed the check.
+                  onAccept={(result, confirmed) => {
                     setChildPlace(active.id, result.place);
                     setLadderStep(active.id, result.ladderStep);
                     setScreen("today");
-                    setMode("grownups");
+                    if (confirmed) setMode("grownups");
                   }}
-                  onSkip={() => {
-                    setScreen("today");
-                    setMode("grownups");
-                  }}
+                  onSkip={() => setScreen("today")}
                 />
               ) : null}
               {screen === "sound-check" ? (

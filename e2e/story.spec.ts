@@ -227,6 +227,43 @@ test("the check stops early when the sounds are new, and keeping things as they 
   await page.getByRole("button", { name: "Keep it as it is" }).click();
   const placed = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-placement-v1") ?? "{}"));
   expect(placed.subjects?.reading?.byChildId?.mia).toBeUndefined();
+  // The child is holding the device by now, so the check ends on their own page, not in Grown-ups.
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
+  await expect(page.locator("[data-screen=grownups]")).toHaveCount(0);
+});
+
+test("the check never hands a child the Grown-ups menu: stopping, or a start with no confirm, ends on their page", async ({ page }) => {
+  await install(page, child(), 0);
+  const openCheck = async () => {
+    await page.getByRole("button", { name: /grown-ups/i }).click();
+    await passGate(page);
+    await page.getByRole("button", { name: /Child profiles/ }).click();
+    await page.getByRole("button", { name: "Where to start" }).click();
+    await expect(page.locator("[data-screen=check]")).toBeVisible();
+  };
+  // Stop for now, part way through. It used to open the Grown-ups menu with no grown-up check.
+  await openCheck();
+  await page.getByRole("button", { name: "Stop for now" }).click();
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
+  await expect(page.locator("[data-screen=grownups]")).toHaveCount(0);
+
+  // A start in the first weeks needs no grown-up to confirm it. It is saved, and the child's page opens.
+  await openCheck();
+  const check = page.locator("[data-screen=check]");
+  for (let turn = 0; turn < 2; turn += 1) {
+    const answer = await check.getAttribute("data-answer");
+    await page.locator(`.check-choice:not([data-choice='${answer}'])`).first().click();
+    await page.waitForTimeout(1000);
+  }
+  await expect(check).toHaveAttribute("data-confirm", "none");
+  await page.getByRole("button", { name: "Use this start" }).click();
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
+  await expect(page.locator("[data-screen=grownups]")).toHaveCount(0);
+  const placed = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-placement-v1") ?? "{}"));
+  expect(placed.subjects.reading.byChildId.mia).toMatchObject({ subject: "reading", weekIndex: 0 });
+  // Getting back to the menu takes the grown-up check, as it does from any child's page.
+  await page.getByRole("button", { name: /grown-ups/i }).click();
+  await expect(page.locator("[data-gate]")).toBeVisible();
 });
 
 test("each word lights up as the narrator reads it, in order, and lets go at the end", async ({ page }) => {
