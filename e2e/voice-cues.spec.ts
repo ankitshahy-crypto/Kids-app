@@ -174,8 +174,10 @@ test("Hear a color says the instruction, then the color, and Again repeats both"
 test("Parts of the day asks its question on open, and Again repeats it", async ({ page }) => {
   await install(page);
   await pickSubject(page, "Time & Money", "time");
-  await expectOpeningLine(page, () => page.getByRole("button", { name: "Parts of the day" }).click(), "day", [/^is it morning, afternoon, or night\?$/]);
-  await expect(page.locator("[data-screen=day] .math-hear .hear-icon")).toBeVisible();
+  // First what is happening ("We eat breakfast."), then the question.
+  await expectOpeningLine(page, () => page.getByRole("button", { name: "Day and night" }).click(), "day", [/\.$/, /^is it morning, afternoon, or night\?$/]);
+  // The game's own speaker, above the animal, is a picture and not a word.
+  await expect(page.locator("[data-screen=day] .game-hear svg")).toBeVisible();
 });
 
 test("Hear a number says the instruction, then the number, and the shape match names its shape", async ({ page }) => {

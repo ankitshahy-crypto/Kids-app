@@ -1,10 +1,10 @@
 import { MODULE_BUILD, MODULE_CODE, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
-import { TimeBoard } from "./TimePlay";
+import { TimeBoard } from "./TimeGames";
 import { COLORS, type ColorLesson, type ColorStep } from "../data/colors";
 import { MATH, type MathLesson, type MathStep } from "../data/math";
-import { TIME, type TimeLesson, type TimeStep } from "../data/timeMoney";
+import { TIME, type MoneyGame, type TimeLesson, type TimeStep } from "../data/timeMoney";
 import { BUILD, type BuildActivity } from "../data/engineer";
 import { SCIENCE, type ScienceActivity } from "../data/science";
 import { READING } from "../data/subject";
@@ -69,7 +69,7 @@ export function TodayPath({
   onColor,
   timeLesson,
   onTime,
-  onMoneyPlay,
+  onMoney,
   onBuild,
   onScience,
   canTraceWord,
@@ -113,7 +113,7 @@ export function TodayPath({
   onColor: (step: ColorStep) => void;
   timeLesson: TimeLesson;
   onTime: (step: TimeStep) => void;
-  onMoneyPlay: () => void;
+  onMoney: (game: MoneyGame) => void;
   onBuild: (activity: BuildActivity) => void;
   onScience: (activity: ScienceActivity) => void;
   canTraceWord: boolean;
@@ -311,7 +311,14 @@ export function TodayPath({
 
           {shown === "math" ? <MathBoard lesson={mathLesson} done={mathDone} onOpen={onMath} locked={(id) => lockedActivity?.("math", id) ?? false} /> : null}
           {shown === "colors" ? <ColorBoard lesson={colorLesson} done={colorDone} onOpen={onColor} locked={(id) => lockedActivity?.("colors", id) ?? false} /> : null}
-          {shown === "time" ? <TimeBoard lesson={timeLesson} done={timeDone} onOpen={onTime} onMoneyPlay={onMoneyPlay} locked={(id) => lockedActivity?.("time", id) ?? false} /> : null}
+          {shown === "time" ? <TimeBoard
+              lesson={timeLesson}
+              done={timeDone}
+              onOpen={onTime}
+              onMoney={onMoney}
+              locked={(id) => lockedActivity?.("time", id) ?? false}
+              moneyLocked={(id) => lockedActivity?.("money", id) ?? false}
+            /> : null}
           {shown === "build" ? (
             <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} locked={(id) => lockedActivity?.("build", id) ?? false} />
           ) : null}

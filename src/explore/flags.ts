@@ -17,14 +17,15 @@ export const EXPLORE_FLAGS: ExploreFlags = {
  * app people install (a production build) until each is finished, and stay in
  * development builds so their tests keep running.
  *
- * Why: on a phone these three were colored dots and word-only buttons. The
- * Science "Body" and "Senses" games, the daily routine and "Needs and wants"
- * could not be understood by the grown-up testing them, let alone a child. A
- * pilot family should see only what is finished.
+ * Why: on a phone these were colored dots and word-only buttons, and could
+ * not be understood by the grown-up testing them, let alone a child. A pilot
+ * family should see only what is finished.
  *
- * The pull request that finishes a section takes it off this list.
+ * The pull request that finishes a section takes it off this list. Time &
+ * Money came off when its ten games were rebuilt on the game kit
+ * (src/game/kit.tsx): pictures to tap, every instruction spoken.
  */
-export const HELD_BACK: readonly ExploreSection[] = ["time", "build", "science"];
+export const HELD_BACK: readonly ExploreSection[] = ["build", "science"];
 
 /** Is this section left out of this build? `production` is passed in by tests. */
 export function heldBack(section: ExploreSection, production: boolean = import.meta.env.PROD): boolean {

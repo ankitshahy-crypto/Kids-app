@@ -228,45 +228,46 @@ export function gameTip(game: string, when: "start" | "end"): ReadTip {
   return { id: `game-${game}-${when}`, text: tip[when] };
 }
 
+// The start tips are two lines at most on a phone. The game says the rest to the child out loud.
 const timeTips: Record<string, { start: string; end: string }> = {
   day: {
-    start: "Talk about morning, afternoon, and night. Later, ask how many hours until something they know.",
+    start: "The voice says what is happening. They tap the sky it goes with.",
     end: "Ask: what do we do at that time of day?",
   },
   routine: {
-    start: "Tap the next part of the day. A wrong tap just wiggles.",
+    start: "They tap the parts of a day in order. A wrong tap just wiggles.",
     end: "Ask: what do we do after school?",
   },
   clock: {
-    start: "Move the hands, or use Next hour and Next minute. The clock starts at 12.",
-    end: "Ask: where is the hour hand?",
+    start: "First the two hands and the minute dots. Then a tap on a number sets a time.",
+    end: "Ask: which hand tells the hour? Find the dots on a clock at home.",
   },
   coins: {
-    start: "Name the coin or bill out loud. The pictures are our own drawings, not real money.",
+    start: "Each coin says its name and what it is worth. The pictures are our own drawings.",
     end: "Ask: which coin is the biggest?",
   },
   shop: {
-    start: "Their animal buys a snack. Early on, one coin is enough. Later, count the change.",
-    end: "Ask: what else could we buy?",
+    start: "The voice says what the thing costs and asks for the money. A wrong coin wiggles.",
+    end: "Ask: what else could we buy with that coin?",
   },
   jars: {
-    start: "Pretend chores earn coins. Split them into save, spend, and share. The hat waits in the save jar.",
+    start: "A job earns a coin. Each coin goes in a jar: save, spend, or share.",
     end: "At home, talk about saving for something they want. A jar on the counter works too.",
   },
   lemonade: {
-    start: "Each cup they serve is work, and work earns a coin.",
-    end: "Ask: what chore at home could earn a coin in a jar?",
+    start: "A customer asks for some cups. They serve that many and earn a coin a cup.",
+    end: "Ask: what job at home could earn a coin in a jar?",
   },
   choose: {
-    start: "They can buy a snack the coins cover. A bigger price waits.",
+    start: "They buy what the coin covers. A bigger price waits.",
     end: "If something costs too much, say let's save for it. No one is in trouble.",
   },
   needs: {
-    start: "Food is a need. A toy crown is a want. Both can be good.",
+    start: "Food and a bed are needs. A kite is a want. Both can be good.",
     end: "Ask: is a warm coat a need or a want?",
   },
   cards: {
-    start: "A debit card uses money they already saved. A credit card borrows, then they pay it back. There is no interest.",
+    start: "A debit card uses saved money. A credit card borrows, then is paid back.",
     end: "Ask: which card made the save jar go down right away?",
   },
 };

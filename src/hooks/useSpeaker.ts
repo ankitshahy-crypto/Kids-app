@@ -39,8 +39,13 @@ export function useSpeaker(settingsRef: { current: Settings }) {
       color(name: string) {
         play((settings, signal) => playColor(name, settings, signal));
       },
-      line(cues: Cue[]) {
-        play((settings, signal) => playLine(cues, settings, signal));
+      /** `onDone` runs only when the whole line is said, not when it is stopped. */
+      line(cues: Cue[], onDone?: () => void) {
+        play((settings, signal) =>
+          playLine(cues, settings, signal).then(() => {
+            if (!signal.aborted) onDone?.();
+          }),
+        );
       },
     };
   }, [settingsRef]);
