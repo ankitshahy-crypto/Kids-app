@@ -71,6 +71,32 @@ test("hello world: one block, press play, and the animal says hello", async ({ p
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
+test("the hello board can be played from a keyboard, with no pointer at all", async ({ page }) => {
+  await install(page, "hello");
+  const board = page.locator("[data-build=hello]");
+  await expect(board.locator("[data-play=run]")).toBeDisabled();
+  // Focus and a key are what a hardware keyboard or a switch sends: no pointer-down and no
+  // pointer-up, only a click. The blocks listened for the pointer alone, so nothing was added
+  // and Play stayed disabled for good.
+  await board.locator("[data-block=hello]").focus();
+  await page.keyboard.press("Enter");
+  await expect(board).toHaveAttribute("data-script", "hello");
+  // Space presses a button too.
+  await board.locator("[data-block=jump]").focus();
+  await page.keyboard.press("Space");
+  await expect(board).toHaveAttribute("data-script", "hello,jump");
+  // A tap straight after still adds one block, not two.
+  await board.locator("[data-block=hello]").click();
+  await expect(board).toHaveAttribute("data-script", "hello,jump,hello");
+  // Play and Done from the keyboard as well, through to the star.
+  await board.locator("[data-play=run]").focus();
+  await page.keyboard.press("Enter");
+  await expect(board).toHaveAttribute("data-ran", "hello,jump,hello");
+  await board.locator("[data-finish=hello]").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+});
+
 test("the hello board is not done until the program says hello", async ({ page }) => {
   await install(page, "hello");
   const board = page.locator("[data-build=hello]");

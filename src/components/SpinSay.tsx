@@ -31,6 +31,7 @@ import { guideFor, letterItemId, writingLevel, type WritingMap } from "../data/s
 import { followStroke, stationsAttribute, strokeComplete, traceTolerance } from "../data/trace";
 import { wardrobeItem, type Outfit } from "../data/wardrobe";
 import { GameFrame, Pick, useCoach, useWiggle, type SceneKind } from "../game/kit";
+import { clickWithoutPointer } from "../input/keyboardClick";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
 import { BabyArt } from "./ReadingGames";
@@ -222,6 +223,11 @@ export function SpinSay({
               onPointerUp={onUp}
               onPointerCancel={() => {
                 drag.current = null;
+              }}
+              // A keyboard sends no pointer events, only a click. Without this, Enter on the wheel
+              // did nothing and the game could not be started. It spins like a tap, with no flick.
+              onClick={(event) => {
+                if (clickWithoutPointer(event)) begin(false);
               }}
             >
               <WheelFace />
