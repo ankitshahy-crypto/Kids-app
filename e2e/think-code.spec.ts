@@ -54,21 +54,24 @@ function wrongWay(first: string): string {
   return { right: "left", left: "right", up: "down", down: "up" }[first] ?? "left";
 }
 
-test("Coding is on the home screen, and its list names six things to do", async ({ page }) => {
+test("Coding is on the home screen, and its page goes start, think, build, code", async ({ page }) => {
   await install(page);
   const tile = page.locator("[data-area=explore] [data-course=code]");
   await expect(tile).toBeVisible();
   await expect(tile).toHaveAttribute("aria-label", "LittleNest Coding");
   await openCoding(page);
   await expect(page.getByRole("heading", { name: "Coding" })).toBeVisible();
-  await expect(page.locator(".game-tile > span:not([aria-hidden])")).toHaveText([
+  // The plan's three parts, after a first program: hello world.
+  await expect(page.locator("[data-code-section] h2")).toHaveText(["Start here", "Think", "Build", "Code"]);
+  await expect(page.locator("[data-code-section=start] .game-tile > span:not([aria-hidden])")).toHaveText(["Say hello"]);
+  await expect(page.locator("[data-code-section=think] .game-tile > span:not([aria-hidden])")).toHaveText([
     "Take me home",
     "What comes next?",
     "First, then",
     "If, then",
-    "Make a dance",
-    "Make a song",
   ]);
+  await expect(page.locator("[data-code-section=build] .game-tile > span:not([aria-hidden])")).toHaveText(["Make a dance", "Make a song"]);
+  await expect(page.locator("[data-code-section=code] .game-tile > span:not([aria-hidden])")).toHaveText(["Read the code"]);
   // The Games list keeps the reading games only.
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.locator("[data-dock=games]").click();

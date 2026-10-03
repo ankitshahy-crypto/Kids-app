@@ -25,7 +25,7 @@ import type { ChildProfile, StickerInput } from "../data/profiles";
 import { HearButton } from "./HearButton";
 import { Hero } from "./Hero";
 import { SpinSay } from "./SpinSay";
-import { BUILD_TITLES, BuildIt, BuildTileArt } from "./BuildIt";
+import { BUILD_TITLES, BuildIt, BuildTileArt, ReadCode, ReadCodeTileArt } from "./BuildIt";
 import type { BuildActivity } from "../data/build";
 import { CodeTileArt, ThinkGame } from "./ThinkCode";
 
@@ -40,16 +40,43 @@ const tiles: { id: GameId; label: string }[] = [
   { id: "spin", label: "Spin & Say" },
 ];
 
-// The coding games, with names that say what the child does. They were "Bird home", "What next",
-// "Morning" and "If then", under a heading at the bottom of the Games list that nobody found.
-const codeTiles: { id: GameId; label: string; build?: BuildActivity }[] = [
-  { id: "bird", label: "Take me home" },
-  { id: "pattern", label: "What comes next?" },
-  { id: "morning", label: "First, then" },
-  { id: "garden", label: "If, then" },
-  // Build It's two boards are tiles of their own. They sat behind a second menu.
-  { id: "build", label: BUILD_TITLES.move, build: "move" },
-  { id: "build", label: BUILD_TITLES.music, build: "music" },
+/** What a Build It tile opens: one of its boards, or Read the code. */
+type Board = BuildActivity | "code";
+type CodeTile = { id: GameId; label: string; build?: Board };
+
+/**
+ * The Coding page, in the order the plan gave it: a first program (hello world), then think, build, code.
+ *
+ *  - Start: one block, and the animal says hello. The smallest program there is.
+ *  - Think: the four logic games. A path home, a pattern, an order, a rule.
+ *  - Build: blocks in a row that the animal acts out, a dance or a song.
+ *  - Code: a program written in words, read aloud, for the child to build.
+ *
+ * The names say what the child does. They were "Bird home", "What next", "Morning" and "If then", in one
+ * flat list under a heading at the bottom of Games that nobody found, and Build It's boards sat behind a
+ * second menu.
+ */
+const codeSections: { id: string; title: string; tiles: CodeTile[] }[] = [
+  { id: "start", title: "Start here", tiles: [{ id: "build", label: BUILD_TITLES.hello, build: "hello" }] },
+  {
+    id: "think",
+    title: "Think",
+    tiles: [
+      { id: "bird", label: "Take me home" },
+      { id: "pattern", label: "What comes next?" },
+      { id: "morning", label: "First, then" },
+      { id: "garden", label: "If, then" },
+    ],
+  },
+  {
+    id: "build",
+    title: "Build",
+    tiles: [
+      { id: "build", label: BUILD_TITLES.move, build: "move" },
+      { id: "build", label: BUILD_TITLES.music, build: "music" },
+    ],
+  },
+  { id: "code", title: "Code", tiles: [{ id: "build", label: "Read the code", build: "code" }] },
 ];
 
 /** The two lists this screen can open on: the reading games, or the coding games. */
@@ -88,8 +115,8 @@ export function Games({
   // A number that is new each time a game is opened: it picks the round's word or letter and shuffles the
   // answers, so no two plays are alike. (Every game used to open on the same round, answer first.)
   const [plays, setPlays] = useState(() => Math.floor(Math.random() * 1000));
-  const [board, setBoard] = useState<BuildActivity>("move");
-  const open = (next: GameId, build?: BuildActivity) => {
+  const [board, setBoard] = useState<Board>("move");
+  const open = (next: GameId, build?: Board) => {
     if (locked?.(next)) {
       onLocked?.(next);
       return;
@@ -99,7 +126,7 @@ export function Games({
     if (build) setBoard(build);
     setGame(next);
   };
-  const tile = (id: GameId, label: string, build?: BuildActivity) => (
+  const tile = (id: GameId, label: string, build?: Board) => (
     <button
       key={build ? `${id}-${build}` : id}
       type="button"
@@ -108,7 +135,13 @@ export function Games({
       data-locked={locked?.(id) ? "true" : undefined}
       onClick={() => open(id, build)}
     >
-      {build ? <BuildTileArt activity={build} animal={profile.animal} outfit={profile.outfit} /> : <TileArt id={id} />}
+      {build === "code" ? (
+        <ReadCodeTileArt />
+      ) : build ? (
+        <BuildTileArt activity={build} animal={profile.animal} outfit={profile.outfit} />
+      ) : (
+        <TileArt id={id} />
+      )}
       <span>{label}</span>
       {locked?.(id) ? <LockBadge /> : null}
     </button>
@@ -119,9 +152,19 @@ export function Games({
       {game === "home" ? (
         <div className="game-lobby">
           <h1>{lobby === "code" ? "Coding" : "Games"}</h1>
-          <div className={`game-tiles${lobby === "code" ? " is-code" : ""}`}>
-            {lobby === "code" ? codeTiles.map((item) => tile(item.id, item.label, item.build)) : tiles.map((item) => tile(item.id, item.label))}
-          </div>
+          {lobby === "code" ? (
+            codeSections.map((section) => (
+              <section key={section.id} className="code-section" data-code-section={section.id}>
+                <h2>{section.title}</h2>
+                {/* A part with one thing in it shows that one as a wide tile, so nothing sits beside a gap. */}
+                <div className={`game-tiles is-code${section.tiles.length === 1 ? " is-single" : ""}`}>
+                  {section.tiles.map((item) => tile(item.id, item.label, item.build))}
+                </div>
+              </section>
+            ))
+          ) : (
+            <div className="game-tiles">{tiles.map((item) => tile(item.id, item.label))}</div>
+          )}
         </div>
       ) : (
         <button type="button" className="game-back" onClick={() => setGame("home")}>
@@ -201,7 +244,21 @@ export function Games({
           }}
         />
       ) : null}
-      {game === "build" ? (
+      {game === "build" && board === "code" ? (
+        <ReadCode
+          ageRange={profile.ageRange}
+          animal={profile.animal}
+          outfit={profile.outfit}
+          salt={plays}
+          settingsRef={settingsRef}
+          showCode={showCode}
+          onDone={() => {
+            onDone("build", [], { step: "game-build-code" });
+            setGame("home");
+          }}
+        />
+      ) : null}
+      {game === "build" && board !== "code" ? (
         <BuildIt
           activity={board}
           childId={profile.id}

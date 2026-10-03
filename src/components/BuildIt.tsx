@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { playPrompt, playWordId } from "../audio/player";
+import { playLine, playPrompt, playWordId, promptCue, wordCue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import {
   addBlock,
   BLOCK_NAMES,
   buildLevel,
+  codePalette,
+  codeRounds,
+  firstDifference,
+  lineCues,
   loadBuild,
   moveResult,
   palette,
@@ -14,6 +18,7 @@ import {
   pseudoLine,
   pythonCode,
   removeBlock,
+  sameProgram,
   saveBuild,
   SCRIPT_LIMIT,
   type BuildActivity,
@@ -25,10 +30,17 @@ import type { Outfit } from "../data/wardrobe";
 import { readSection, writeSection } from "../explore/sectionStore";
 import type { Settings } from "../settings";
 import { Hero } from "./Hero";
+import { SpeakerIcon } from "./icons";
 
 /**
  * Build It: line up picture blocks, press Play, and the child's animal does
- * each step in order.
+ * each step in order. Read the code: the same thing the other way round, a
+ * program given in words for the child to build.
+ *
+ * Coding follows the plan it started with: think (the logic games), build
+ * (blocks that make a program), and code (the program in words, with Python
+ * for a grown-up who wants to see it). It starts with hello world: one block,
+ * and the animal says hello.
  *
  * The screen was rebuilt after the first phone test. Before:
  *  - the blocks were stick figures 30px high, and the row of blocks you had
@@ -42,7 +54,7 @@ import { Hero } from "./Hero";
  * steps slow enough to watch, with the running step lit.
  */
 
-export const BUILD_TITLES: Record<BuildActivity, string> = { move: "Make a dance", music: "Make a song" };
+export const BUILD_TITLES: Record<BuildActivity, string> = { hello: "Say hello", move: "Make a dance", music: "Make a song" };
 
 /** How long one step of the program is on stage. */
 const STEP_MS = 700;
@@ -72,15 +84,84 @@ function useSpeaker(settingsRef: { current: Settings }) {
     word(name: string) {
       run((signal) => playWordId(name, name, settingsRef.current, signal));
     },
+    /** Lines of a program, said one after another: a recorded phrase or a recorded word for each part. */
+    lines(script: BuildBlock[], indexes: number[], lead?: { id: string; say: string }) {
+      const cues = [
+        ...(lead ? [promptCue(lead.id, lead.say)] : []),
+        ...indexes.flatMap((index) => lineCues(script, index).map((cue) => (cue.kind === "prompt" ? promptCue(cue.id, cue.say) : wordCue(cue.id, cue.say)))),
+      ];
+      run((signal) => playLine(cues, settingsRef.current, signal));
+    },
   };
 }
 
-/** The picture on a Build It tile: the child's animal mid-jump, or the drum. */
+/** The picture on a Build It tile: the child's animal saying hello, mid-jump, or the drum. */
 export function BuildTileArt({ activity, animal, outfit }: { activity: BuildActivity; animal: AnimalId; outfit: Outfit }) {
   return (
     <span className="build-tile-art" aria-hidden="true">
-      <BlockArt kind={activity === "move" ? "jump" : "drum"} animal={animal} outfit={outfit} />
+      <BlockArt kind={activity === "hello" ? "hello" : activity === "move" ? "jump" : "drum"} animal={animal} outfit={outfit} />
     </span>
+  );
+}
+
+/** The picture on the Read the code tile: three lines of a program, the top one ticked. */
+export function ReadCodeTileArt() {
+  return (
+    <span className="build-tile-art" aria-hidden="true">
+      <svg viewBox="0 0 64 64" focusable="false">
+        <rect x="8" y="6" width="48" height="52" rx="8" fill="#fff6e4" stroke="#33415c" strokeWidth="3" />
+        <path d="M18 22h28M18 33h20M18 44h24" fill="none" stroke="#33415c" strokeWidth="4" strokeLinecap="round" />
+        <circle cx="46" cy="44" r="9" fill="#3f9b6b" />
+        <path d="m41.5 44 3.5 3.5 6-7" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
+/**
+ * Read the code: three programs written in words, one after another. The app reads each line aloud;
+ * the child builds it with blocks and presses Play. The first one is always hello world.
+ *
+ * This is the "pseudo code" part of the plan made into something a child does. It was a caption on
+ * each block for ages 5 to 7, which a child could ignore.
+ */
+export function ReadCode({
+  ageRange,
+  animal,
+  outfit,
+  salt,
+  settingsRef,
+  showCode,
+  onDone,
+}: {
+  ageRange: AgeRange;
+  animal: AnimalId;
+  outfit: Outfit;
+  /** New each time the game opens: it picks which programs to read. */
+  salt: number;
+  settingsRef: { current: Settings };
+  showCode: boolean;
+  onDone: () => void;
+}) {
+  const level = buildLevel(ageRange);
+  const rounds = useMemo(() => codeRounds(level, salt), [level, salt]);
+  const [index, setIndex] = useState(0);
+  const last = index >= rounds.length - 1;
+  return (
+    <Builder
+      key={index}
+      activity="move"
+      childId=""
+      level={level}
+      animal={animal}
+      outfit={outfit}
+      settingsRef={settingsRef}
+      showCode={showCode}
+      code={rounds[index] ?? rounds[0]}
+      round={index}
+      last={last}
+      onDone={() => (last ? onDone() : setIndex((current) => current + 1))}
+    />
   );
 }
 
@@ -130,6 +211,9 @@ function Builder({
   outfit,
   settingsRef,
   showCode,
+  code,
+  round = 0,
+  last = true,
   onDone,
 }: {
   activity: BuildActivity;
@@ -139,10 +223,16 @@ function Builder({
   outfit: Outfit;
   settingsRef: { current: Settings };
   showCode: boolean;
+  /** Read the code: the program, in words, that the child is to build. Absent on a free board. */
+  code?: BuildBlock[];
+  round?: number;
+  last?: boolean;
   onDone: () => void;
 }) {
   const speak = useSpeaker(settingsRef);
-  const blocks = palette(activity, level);
+  const blocks = code ? codePalette(level, code) : palette(activity, level);
+  /** After a Play that did not match the code: the first line that differs. */
+  const [miss, setMiss] = useState(-1);
   const [script, setScript] = useState<BuildBlock[]>([]);
   const [playing, setPlaying] = useState(-1);
   const [ran, setRan] = useState<string[]>([]);
@@ -158,7 +248,13 @@ function Builder({
   const boardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (activity === "move") speak.prompt("build-move", "Stack the blocks, then press play.");
+    if (code) {
+      // The instruction, then the whole program read aloud, line by line.
+      speak.lines(code, code.map((_, index) => index), { id: "code-read", say: "Listen to the code. Then build it." });
+      return;
+    }
+    if (activity === "hello") speak.prompt("build-hello", "Make your animal say hello. Tap hello, then press play.");
+    else if (activity === "move") speak.prompt("build-move", "Stack the blocks, then press play.");
     else speak.prompt("build-music", "Make a song. Press play.");
     if (level !== "later") return;
     const stored = loadBuild(childId, activity, readSection("games", "build"));
@@ -170,23 +266,59 @@ function Builder({
 
   const append = (kind: BuildBlock) => {
     if (playing >= 0) return;
-    setScript((current) => addBlock(current, kind));
-    setSaved(false);
-    setPlayed(false);
-    setFrame(REST);
+    // Reading code: one block for each line, and no more. A block tapped after that still says its name.
+    if (!code || script.length < code.length) {
+      setScript((current) => addBlock(current, kind));
+      setSaved(false);
+      setPlayed(false);
+      setMiss(-1);
+      setFrame(REST);
+    }
     setSaid(BLOCK_NAMES[kind]);
     speak.word(BLOCK_NAMES[kind]);
   };
 
+  /** One of the child's steps. A tap takes it out. */
+  const chip = (kind: BuildBlock, index: number) => (
+    <button
+      key={`${kind}-${index}`}
+      type="button"
+      className="build-chip"
+      data-index={index}
+      data-kind={kind}
+      data-line={level === "later" ? pseudoLine(script, index) : undefined}
+      data-on={playing === index ? "true" : "false"}
+      aria-label={BLOCK_NAMES[kind]}
+      onClick={() => {
+        if (playing >= 0) return;
+        setScript((current) => removeBlock(current, index));
+        setPlayed(false);
+        setSaved(false);
+        setMiss(-1);
+        setFrame(REST);
+      }}
+    >
+      <BlockArt kind={kind} animal={animal} outfit={outfit} />
+    </button>
+  );
+
   const play = () => {
     if (script.length === 0 || playing >= 0) return;
     const steps = playSteps(script);
-    if (steps.length === 0) return;
+    if (steps.length === 0) {
+      // A repeat with nothing before it has nothing to play. When reading code, say so.
+      if (code) {
+        setMiss(firstDifference(script, code));
+        speak.prompt("build-again", "Try again.");
+      }
+      return;
+    }
     const id = ++runId.current;
     const pace = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : STEP_MS;
     // The program is acted out on the stage, so the stage has to be on screen when Play is pressed.
     boardRef.current?.querySelector(".build-stage")?.scrollIntoView({ block: "nearest", behavior: pace ? "smooth" : "auto" });
     setPlayed(false);
+    setMiss(-1);
     setRan([]);
     setLit([]);
     setFrame(REST);
@@ -210,6 +342,11 @@ function Builder({
         if (step.block === "drum") playEffect("boop", settingsRef.current);
         if (step.block === "bell") playEffect("chime", settingsRef.current);
         if (step.block === "note" || step.block === "sing") playEffect("pop", settingsRef.current);
+        // Hello world: the animal says it. The other moves are named as they happen, so the program is
+        // heard in words while it runs.
+        if (step.block === "hello" || step.block === "walk" || step.block === "jump" || step.block === "spin" || step.block === "dance") {
+          speak.word(BLOCK_NAMES[step.block]);
+        }
         if (splash) speak.prompt("build-splash", "Splash!");
         // The repeat block itself is not a step on stage: it lights and the body runs again.
         if (pace) await sleep(step.block === "repeat" ? pace / 3 : pace);
@@ -218,6 +355,13 @@ function Builder({
       setPlaying(-1);
       setPlayed(true);
       setFrame((current) => ({ ...current, pose: current.pose === "splash" ? "splash" : "rest" }));
+      if (code) {
+        if (sameProgram(script, code)) playEffect("chime", settingsRef.current);
+        else {
+          setMiss(firstDifference(script, code));
+          speak.prompt("build-again", "Try again.");
+        }
+      }
     })();
   };
 
@@ -229,15 +373,21 @@ function Builder({
   };
 
   const motion = moveResult(script);
-  const done = played && script.length > 0;
+  // A free board is done once a program has played (the first one, once it has said hello). Reading code
+  // is done when the blocks say what the code says.
+  const done = played && script.length > 0 && (code ? sameProgram(script, code) : activity !== "hello" || script.includes("hello"));
   const live = playing >= 0 ? script[playing] : null;
+  const title = code ? "Read the code" : BUILD_TITLES[activity];
 
   return (
     <div
-      className="game-board build-board"
+      className={`game-board build-board${code ? " is-code" : ""}`}
       ref={boardRef}
-      data-build={activity}
+      data-build={code ? "code" : activity}
       data-level={level}
+      data-code={code ? code.join(",") : undefined}
+      data-round={code ? round : undefined}
+      data-match={code && played ? (sameProgram(script, code) ? "true" : "false") : undefined}
       data-script={script.join(",")}
       data-playing={playing >= 0 ? String(playing) : ""}
       data-ran={ran.join(",")}
@@ -248,53 +398,74 @@ function Builder({
       data-splash={activity === "move" && played && motion.splashed ? "true" : "false"}
       data-saved={saved ? "true" : "false"}
       data-loaded={loaded ? "true" : "false"}
-      data-lines={level === "later" ? "on" : "off"}
+      data-lines={code ? "off" : "on"}
       data-python={showCode ? "on" : "off"}
       data-said={said}
     >
-      <h1>{BUILD_TITLES[activity]}</h1>
+      <h1>{title}</h1>
+      {code ? (
+        <div className="code-card" data-code-card>
+          {/* Each line of the code has a place beside it for the child's block, so the words and the block
+              that does them sit together. (A separate "Your steps" row under the stage put the two a
+              screen apart, and pushed Play off a phone.) */}
+          <ol className="code-lines" data-drop="script">
+            {code.map((kind, index) => {
+              const mine = script[index];
+              return (
+                <li key={`${kind}-${index}`} data-code-line={index} data-ok={mine === kind ? "true" : "false"} data-miss={miss === index ? "true" : "false"}>
+                  <button type="button" className="code-line" aria-label={`Line ${index + 1}: ${pseudoLine(code, index)}`} onClick={() => speak.lines(code, [index])}>
+                    <span className="code-line-hear" aria-hidden="true">
+                      <SpeakerIcon />
+                    </span>
+                    {/* Ages 3–4 see the block's picture beside its words. Ages 5–7 read the words alone. */}
+                    {level !== "later" ? (
+                      <span className="code-line-art">
+                        <BlockArt kind={kind} animal={animal} outfit={outfit} />
+                      </span>
+                    ) : null}
+                    <span className="code-line-words">{pseudoLine(code, index)}</span>
+                  </button>
+                  {mine ? (
+                    chip(mine, index)
+                  ) : (
+                    <span className="build-place" data-place={index}>
+                      {index + 1}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          {/* With "See the real code" on, the same program in Python sits under the words. */}
+          {showCode ? (
+            <pre className="build-python" data-python="on" aria-readonly="true">
+              {pythonCode(code)}
+            </pre>
+          ) : null}
+        </div>
+      ) : null}
       <Stage activity={activity} animal={animal} outfit={outfit} level={level} live={live} frame={frame} />
-      <div className="build-steps">
-        <p className="build-label">Your steps</p>
-        <div className="build-script" data-drop="script" aria-label="Your steps">
-          {/* Five numbered places to fill, and room for up to eight steps. A tap on a step takes it out. */}
-          {Array.from({ length: Math.max(5, Math.min(SCRIPT_LIMIT, script.length + 1)) }, (_, index) => {
-            const kind = script[index];
-            if (!kind) {
+      {code ? null : (
+        <div className="build-steps">
+          <p className="build-label">Your steps</p>
+          <div className="build-script" data-drop="script" aria-label="Your steps">
+            {/* Five numbered places to fill, and room for up to eight steps. A tap on a step takes it out. */}
+            {Array.from({ length: Math.max(5, Math.min(SCRIPT_LIMIT, script.length + 1)) }, (_, index) => {
+              const kind = script[index];
+              if (kind) return chip(kind, index);
               return (
                 <span key={`place-${index}`} className="build-place" data-place={index}>
                   {index + 1}
                 </span>
               );
-            }
-            return (
-              <button
-                key={`${kind}-${index}`}
-                type="button"
-                className="build-chip"
-                data-index={index}
-                data-kind={kind}
-                data-line={level === "later" ? pseudoLine(script, index) : undefined}
-                data-on={playing === index ? "true" : "false"}
-                aria-label={BLOCK_NAMES[kind]}
-                onClick={() => {
-                  if (playing >= 0) return;
-                  setScript((current) => removeBlock(current, index));
-                  setPlayed(false);
-                  setSaved(false);
-                  setFrame(REST);
-                }}
-              >
-                <BlockArt kind={kind} animal={animal} outfit={outfit} />
-              </button>
-            );
-          })}
+            })}
+          </div>
         </div>
-      </div>
-      {/* Ages 5–7 also see the program in words, one line a block, and the line that is running lights with
-          its block. (Each block used to be a full-width row of text, which pushed the stage off the screen
-          while the program ran.) */}
-      {level === "later" && script.length > 0 ? (
+      )}
+      {/* The program in words, one line a block, at every age: the line that is running lights with its
+          block, and each move is said as it happens. (It was a caption on each block for ages 5–7 only, as a
+          full-width row of text that pushed the stage off the screen.) Reading code has the words above. */}
+      {!code && script.length > 0 ? (
         <ol className="build-lines" aria-label="The program in words">
           {script.map((kind, index) => (
             <li key={`${kind}-${index}`} data-line-index={index} data-on={playing === index ? "true" : "false"}>
@@ -303,7 +474,8 @@ function Builder({
           ))}
         </ol>
       ) : null}
-      {showCode ? (
+      {/* The grown-up's Python view of the child's program. Nothing to show until there is a block. */}
+      {showCode && !code && script.length > 0 ? (
         <pre className="build-python" data-python="on" aria-readonly="true">
           {pythonCode(script)}
         </pre>
@@ -344,10 +516,13 @@ function Builder({
           </button>
         ))}
       </div>
-      <button type="button" className="start-button" data-play="run" disabled={script.length === 0} onClick={play}>
-        Play
-      </button>
-      {level === "later" ? (
+      {/* Once the blocks match the code, Next takes Play's place, so it is on screen where the child just tapped. */}
+      {code && done ? null : (
+        <button type="button" className="start-button" data-play="run" disabled={script.length === 0} onClick={play}>
+          Play
+        </button>
+      )}
+      {level === "later" && !code ? (
         <button type="button" className="game-back" data-save="device" onClick={store}>
           Save
         </button>
@@ -356,14 +531,15 @@ function Builder({
         <button
           type="button"
           className="start-button"
-          data-finish={activity}
+          data-finish={code ? "code" : activity}
+          data-next={code && !last ? "code" : undefined}
           onClick={() => {
             if (finished.current) return;
             finished.current = true;
             onDone();
           }}
         >
-          Done
+          {code && !last ? "Next" : "Done"}
         </button>
       ) : null}
     </div>
@@ -386,19 +562,26 @@ function Stage({
   live: BuildBlock | null;
   frame: Frame;
 }) {
-  if (activity === "move") {
+  if (activity !== "music") {
     // Three walks take the animal from the left edge to the pond.
     const along = Math.min(frame.steps, POND_STEPS) / POND_STEPS;
     return (
-      <div className="build-stage" data-stage="move" data-pose={frame.pose}>
+      <div className="build-stage" data-stage="move" data-board={activity} data-pose={frame.pose}>
         <div className="build-ground" />
-        {level === "later" ? <PondMark splash={frame.splash} /> : null}
-        <div className="build-actor" style={{ left: `calc(${along} * (100% - 116px) + 8px)` }}>
+        {level === "later" && activity === "move" ? <PondMark splash={frame.splash} /> : null}
+        {/* On the hello board the animal stands in the middle: there is nowhere to walk to. */}
+        <div className="build-actor" style={{ left: activity === "hello" ? "calc(50% - 76px)" : `calc(${along} * (100% - 116px) + 8px)` }}>
           {/* `key` restarts the move's animation when the same block runs twice in a row. */}
           <div key={frame.beat} className="build-pose" data-pose={frame.pose}>
             <Hero animal={animal} outfit={outfit} />
             {frame.pose === "sing" ? <span className="build-note">♪</span> : null}
           </div>
+          {/* Hello world: the animal says it, in a bubble and out loud. */}
+          {frame.pose === "hello" ? (
+            <span key={`hello-${frame.beat}`} className="build-bubble" data-says="hello">
+              Hello!
+            </span>
+          ) : null}
         </div>
       </div>
     );
@@ -417,7 +600,7 @@ function Stage({
 
 /** A block's picture. The move blocks show the child's own animal doing the move. */
 function BlockArt({ kind, animal, outfit }: { kind: BuildBlock; animal: AnimalId; outfit: Outfit }) {
-  if (kind === "walk" || kind === "jump" || kind === "spin" || kind === "dance" || kind === "sing") {
+  if (kind === "hello" || kind === "walk" || kind === "jump" || kind === "spin" || kind === "dance" || kind === "sing") {
     return (
       <span className="build-art build-art-move" data-move={kind} aria-hidden="true">
         <span className="build-art-hero">
@@ -477,10 +660,12 @@ function BlockArt({ kind, animal, outfit }: { kind: BuildBlock; animal: AnimalId
 }
 
 /** The sign beside the animal that says which move this is: an arrow along, an arrow up, a turn, a wiggle, a note. */
-function MoveMark({ kind }: { kind: "walk" | "jump" | "spin" | "dance" | "sing" }) {
+function MoveMark({ kind }: { kind: "hello" | "walk" | "jump" | "spin" | "dance" | "sing" }) {
   const stroke = { fill: "none", stroke: "#6D8F78", strokeWidth: 5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
     <svg className="build-mark" viewBox="0 0 32 32" aria-hidden="true">
+      {/* Hello is a speech bubble. */}
+      {kind === "hello" ? <path d="M5 6h22v14H15l-7 7v-7H5Z" {...stroke} strokeWidth={4} fill="#fff6e4" /> : null}
       {kind === "walk" ? <path d="M4 16h22M18 8l8 8-8 8" {...stroke} /> : null}
       {kind === "jump" ? <path d="M16 28V6M8 14l8-8 8 8" {...stroke} /> : null}
       {kind === "spin" ? <path d="M26 16a10 10 0 1 1-4-8M22 2v7h-7" {...stroke} /> : null}

@@ -1101,7 +1101,12 @@
     "code-if-plant": { "file": "prompts/code-if-plant.mp3", "say": "The plant is dry. What does it need?", "source": "neural" },
     "code-then-plant": { "file": "prompts/code-then-plant.mp3", "say": "If the plant is dry, give it a jug of water.", "source": "neural" },
     "code-if-dog": { "file": "prompts/code-if-dog.mp3", "say": "The dog is hungry. What does it need?", "source": "neural" },
-    "code-then-dog": { "file": "prompts/code-then-dog.mp3", "say": "If the dog is hungry, give it a bone.", "source": "neural" }
+    "code-then-dog": { "file": "prompts/code-then-dog.mp3", "say": "If the dog is hungry, give it a bone.", "source": "neural" },
+    "build-hello": { "file": "prompts/build-hello.mp3", "say": "Make your animal say hello. Tap hello, then press play.", "source": "neural" },
+    "code-read": { "file": "prompts/code-read.mp3", "say": "Listen to the code. Then build it.", "source": "neural" },
+    "code-say-hello": { "file": "prompts/code-say-hello.mp3", "say": "Say hello.", "source": "neural" },
+    "code-repeat": { "file": "prompts/code-repeat.mp3", "say": "Repeat three times.", "source": "neural" },
+    "code-if-pond": { "file": "prompts/code-if-pond.mp3", "say": "If at the pond, splash.", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },

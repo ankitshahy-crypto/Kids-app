@@ -6536,7 +6536,9 @@ input.is-pressed,
   animation: build-jump 0.6s ease;
 }
 
+/* A spin turns about the animal's middle, so its head does not swing below the grass. */
 .build-pose[data-pose="spin"] {
+  transform-origin: 50% 50%;
   animation: build-spin 0.6s ease;
 }
 
@@ -6550,6 +6552,50 @@ input.is-pressed,
 
 .build-pose[data-pose="splash"] {
   animation: build-jump 0.6s ease;
+}
+
+.build-pose[data-pose="hello"] {
+  animation: build-hello 0.6s ease;
+}
+
+/* Hello world: what the animal says, beside it. */
+.build-bubble {
+  position: absolute;
+  left: 92%;
+  top: 4px;
+  padding: 6px 14px;
+  border-radius: 18px 18px 18px 4px;
+  background: #fffdfb;
+  box-shadow: 0 2px 0 rgba(51, 65, 92, 0.18);
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 800;
+  white-space: nowrap;
+  animation: build-pop 0.25s ease;
+}
+
+@keyframes build-hello {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  30% {
+    transform: rotate(-8deg) translateY(-6px);
+  }
+  65% {
+    transform: rotate(8deg) translateY(-6px);
+  }
+}
+
+@keyframes build-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .build-note {
@@ -6811,7 +6857,135 @@ input.is-pressed,
   font-weight: 800;
 }
 
-/* The program in words, for ages 5–7: one short line a block. */
+/* Read the code: the program to build, in words. Each line is a button that says the line. */
+.code-card {
+  width: min(100%, 440px);
+  padding: 10px 12px;
+  border-radius: 22px;
+  background: #fff8ee;
+  box-shadow: var(--shadow);
+}
+
+.code-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A line: its words on the left, and the place for the child's block on the right. */
+.code-lines li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.code-line {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 2px 10px;
+  border-radius: 14px;
+  background: #fffdfb;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.code-lines .build-chip,
+.code-lines .build-place {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+
+.code-line-hear {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  color: var(--text-sage);
+}
+
+.code-line-hear svg {
+  width: 22px;
+  height: 22px;
+}
+
+.code-line-art {
+  flex: 0 0 auto;
+  width: 40px;
+}
+
+/* Reading code has a card above the stage, so the stage gives up some height to keep Play on the screen. */
+.build-board.is-code .build-stage {
+  height: 116px;
+}
+
+.build-board.is-code .build-actor {
+  width: 92px;
+}
+
+.code-card .build-python {
+  margin-top: 8px;
+  box-shadow: none;
+  background: #fffdfb;
+}
+
+.code-line-words {
+  flex: 1 1 auto;
+}
+
+/* A line the child has built is ticked off in green. The first line that is wrong, after Play, is marked. */
+.code-lines li[data-ok="true"] .code-line {
+  background: #e3f3e8;
+}
+
+.code-lines li[data-miss="true"] .code-line {
+  box-shadow: 0 0 0 3px #f0c55b;
+}
+
+/* The Coding page's four parts: start, think, build, code. */
+.code-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Eight tiles and four headings have to fit a phone without scrolling. */
+.code-section .game-tile {
+  min-height: 104px;
+}
+
+.game-tiles.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.game-tiles.is-single .game-tile {
+  flex-direction: row;
+  gap: 16px;
+  min-height: 84px;
+  font-size: 20px;
+}
+
+.code-section h2 {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-sage);
+}
+
+/* The program in words: one short line a block. */
 .build-lines {
   width: min(100%, 440px);
   margin: 0;
@@ -6873,6 +7047,7 @@ input.is-pressed,
   }
 
   .build-pose,
+  .build-bubble,
   .build-note,
   .build-instrument[data-on="true"] .build-art {
     animation: none !important;
