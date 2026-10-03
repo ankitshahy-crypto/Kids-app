@@ -92,6 +92,7 @@
     "prompts/add.mp3",
     "prompts/blend-say.mp3",
     "prompts/build-again.mp3",
+    "prompts/build-hello.mp3",
     "prompts/build-move.mp3",
     "prompts/build-music.mp3",
     "prompts/build-save.mp3",
@@ -118,12 +119,16 @@
     "prompts/code-if-dark.mp3",
     "prompts/code-if-dog.mp3",
     "prompts/code-if-plant.mp3",
+    "prompts/code-if-pond.mp3",
     "prompts/code-if-rain.mp3",
     "prompts/code-if-sun.mp3",
     "prompts/code-loop.mp3",
     "prompts/code-order.mp3",
     "prompts/code-pattern.mp3",
     "prompts/code-plan.mp3",
+    "prompts/code-read.mp3",
+    "prompts/code-repeat.mp3",
+    "prompts/code-say-hello.mp3",
     "prompts/code-then-dark.mp3",
     "prompts/code-then-dog.mp3",
     "prompts/code-then-plant.mp3",
@@ -3415,7 +3420,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 14721717,
+    "shared": 14809686,
     "byAnimal": {
       "bear": 4881909,
       "bunny": 4851573,
