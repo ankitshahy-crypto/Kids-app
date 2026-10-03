@@ -6184,7 +6184,10 @@ input.is-pressed,
 
 /* "Say it again": a speaker above the animal, as if it were the one asking. A picture, not a word, so a
    child who cannot read knows what it does. */
-.game-hear {
+/* The speaker in a kit game's scene. The rule is tied to the scene because the reading games (Hatch,
+   Pop, Feed, Rhyme, Memory) also call their "Hear it" button .game-hear: untied, this lifted that
+   button out of its place and set it over the Back button at the top of the screen. */
+.game-scene > .game-hear {
   position: absolute;
   left: 10px;
   top: 10px;
@@ -6199,7 +6202,7 @@ input.is-pressed,
   box-shadow: 0 2px 0 rgba(36, 48, 86, 0.16);
 }
 
-.game-hear svg {
+.game-scene > .game-hear svg {
   width: 26px;
   height: 26px;
 }
