@@ -166,8 +166,11 @@ export function useProfiles() {
   };
 
   /** One finished word try. The same word counts once per local day. */
-  /** `cap`: the furthest step the letters taught so far can support (ladderCap). */
-  const noteLadder = (id: string, phonics: boolean, word: string, cap?: LadderStep) => {
+  /**
+   * `cap`: the furthest step the letters taught so far can support (ladderCap). It is required: left
+   * optional, two of the three callers forgot it and a child could climb past the letters they knew.
+   */
+  const noteLadder = (id: string, phonics: boolean, word: string, cap: LadderStep) => {
     const day = todayKey();
     setStore((current) => ({
       ...current,
