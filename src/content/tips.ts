@@ -137,6 +137,11 @@ const gameTips: Record<string, { start: string; end: string }> = {
     start: "They line up steps and press Play. The animal does each step in order.",
     end: "Ask: what would happen if we swapped two steps?",
   },
+  code: {
+    // Two lines on a phone, like the others: a third pushes Play off the screen.
+    start: "They hear a short program and build it, one block for each line.",
+    end: "Ask: what did the second line tell the animal to do?",
+  },
 };
 
 const engineerTips: Record<string, { start: string; end: string }> = {

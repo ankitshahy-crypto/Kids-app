@@ -177,7 +177,7 @@ describe("read the code", () => {
 
 describe("build it stays a game", () => {
   it("can earn a star without finishing the reading lesson", () => {
-    for (const id of ["game-build-hello", "game-build-move", "game-build-music", "game-build-code"]) {
+    for (const id of ["game-build-hello", "game-build-move", "game-build-music", "game-code"]) {
       expect(isSubjectKey(id)).toBe(true);
       // A star step the app will accept: an id missing from the list earns nothing, silently.
       expect(stepAllowed(READING, id), id).toBe(true);

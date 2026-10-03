@@ -29,7 +29,7 @@ import { BUILD_TITLES, BuildIt, BuildTileArt, ReadCode, ReadCodeTileArt } from "
 import type { BuildActivity } from "../data/build";
 import { CodeTileArt, ThinkGame } from "./ThinkCode";
 
-export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory" | "spin" | "bird" | "pattern" | "morning" | "garden" | "build";
+export type GameId = "hatch" | "pop" | "feed" | "rhyme" | "memory" | "spin" | "bird" | "pattern" | "morning" | "garden" | "build" | "code";
 
 const tiles: { id: GameId; label: string }[] = [
   { id: "hatch", label: "Hatch the Egg" },
@@ -40,9 +40,7 @@ const tiles: { id: GameId; label: string }[] = [
   { id: "spin", label: "Spin & Say" },
 ];
 
-/** What a Build It tile opens: one of its boards, or Read the code. */
-type Board = BuildActivity | "code";
-type CodeTile = { id: GameId; label: string; build?: Board };
+type CodeTile = { id: GameId; label: string; build?: BuildActivity };
 
 /**
  * The Coding page, in the order the plan gave it: a first program (hello world), then think, build, code.
@@ -76,7 +74,9 @@ const codeSections: { id: string; title: string; tiles: CodeTile[] }[] = [
       { id: "build", label: BUILD_TITLES.music, build: "music" },
     ],
   },
-  { id: "code", title: "Code", tiles: [{ id: "build", label: "Read the code", build: "code" }] },
+  // Read the code is a game of its own, so it opens with the full app. The free part of Coding is the
+  // first thing in each of the other parts: hello world, Take me home, and the Build boards.
+  { id: "code", title: "Code", tiles: [{ id: "code", label: "Read the code" }] },
 ];
 
 /** The two lists this screen can open on: the reading games, or the coding games. */
@@ -115,8 +115,8 @@ export function Games({
   // A number that is new each time a game is opened: it picks the round's word or letter and shuffles the
   // answers, so no two plays are alike. (Every game used to open on the same round, answer first.)
   const [plays, setPlays] = useState(() => Math.floor(Math.random() * 1000));
-  const [board, setBoard] = useState<Board>("move");
-  const open = (next: GameId, build?: Board) => {
+  const [board, setBoard] = useState<BuildActivity>("move");
+  const open = (next: GameId, build?: BuildActivity) => {
     if (locked?.(next)) {
       onLocked?.(next);
       return;
@@ -126,7 +126,7 @@ export function Games({
     if (build) setBoard(build);
     setGame(next);
   };
-  const tile = (id: GameId, label: string, build?: Board) => (
+  const tile = (id: GameId, label: string, build?: BuildActivity) => (
     <button
       key={build ? `${id}-${build}` : id}
       type="button"
@@ -135,13 +135,7 @@ export function Games({
       data-locked={locked?.(id) ? "true" : undefined}
       onClick={() => open(id, build)}
     >
-      {build === "code" ? (
-        <ReadCodeTileArt />
-      ) : build ? (
-        <BuildTileArt activity={build} animal={profile.animal} outfit={profile.outfit} />
-      ) : (
-        <TileArt id={id} />
-      )}
+      {build ? <BuildTileArt activity={build} animal={profile.animal} outfit={profile.outfit} /> : <TileArt id={id} />}
       <span>{label}</span>
       {locked?.(id) ? <LockBadge /> : null}
     </button>
@@ -244,7 +238,7 @@ export function Games({
           }}
         />
       ) : null}
-      {game === "build" && board === "code" ? (
+      {game === "code" ? (
         <ReadCode
           ageRange={profile.ageRange}
           animal={profile.animal}
@@ -253,12 +247,12 @@ export function Games({
           settingsRef={settingsRef}
           showCode={showCode}
           onDone={() => {
-            onDone("build", [], { step: "game-build-code" });
+            onDone(game, []);
             setGame("home");
           }}
         />
       ) : null}
-      {game === "build" && board !== "code" ? (
+      {game === "build" ? (
         <BuildIt
           activity={board}
           childId={profile.id}
@@ -889,6 +883,7 @@ function TileArt({ id }: { id: GameId }) {
   // The coding tiles show what the game is made of: an arrow and the nest, a row of animals, an egg that
   // becomes a hen, rain and an umbrella. They were colored blobs.
   if (id === "bird" || id === "pattern" || id === "morning" || id === "garden") return <CodeTileArt id={id} />;
+  if (id === "code") return <ReadCodeTileArt />;
   if (id === "spin") {
     return (
       <svg viewBox="0 0 80 80" aria-hidden="true">

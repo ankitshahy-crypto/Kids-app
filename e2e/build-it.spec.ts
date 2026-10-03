@@ -36,7 +36,7 @@ async function install(page: Page, board: "hello" | "move" | "music" | "code", s
   await page.getByRole("button", { name: "Mia" }).click();
   await page.locator("[data-course=code]").click();
   await expect(page.locator("[data-screen=games]")).toHaveAttribute("data-lobby", "code");
-  await page.locator(`[data-game-tile=build-${board}]`).click();
+  await page.locator(board === "code" ? "[data-game-tile=code]" : `[data-game-tile=build-${board}]`).click();
   await expect(page.locator(`[data-build=${board}]`)).toBeVisible();
 }
 

@@ -109,6 +109,16 @@ test("the first activity of each Explore area is open, and the rest ask for a gr
   await expect(page.locator("[data-screen=count]")).toBeVisible();
 });
 
+test("Coding's first program is open, and Read the code asks for a grown-up", async ({ page }) => {
+  await install(page, 0);
+  await page.locator("[data-course=code]").click();
+  await expect(page.locator("[data-game-tile=build-hello]")).not.toHaveAttribute("data-locked", "true");
+  await expect(page.locator("[data-game-tile=bird]")).not.toHaveAttribute("data-locked", "true");
+  await expect(page.locator("[data-game-tile=code]")).toHaveAttribute("data-locked", "true");
+  await page.locator("[data-game-tile=code]").click();
+  await expect(page.locator("[data-screen=locked]")).toBeVisible();
+});
+
 test("the website without the preview flag is fully open", async ({ page }) => {
   await install(page, 5, false);
   const today = page.locator("[data-screen=today]");
