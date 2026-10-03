@@ -8,6 +8,7 @@ const files = {
   time: "icons/module-time.svg",
   build: "icons/module-build.svg",
   science: "icons/module-science.svg",
+  code: "icons/module-code.svg",
 } as const;
 
 export type ModuleMarkName = keyof typeof files;

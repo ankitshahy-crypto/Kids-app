@@ -1,4 +1,4 @@
-import { MODULE_BUILD, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME } from "../brand";
+import { MODULE_BUILD, MODULE_CODE, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
 import { TimeBoard } from "./TimePlay";
@@ -55,6 +55,7 @@ export function TodayPath({
   onCloset,
   onStickers,
   onGames,
+  onCode,
   dayKey,
   switchNeedsGrownup,
   onSoundGame,
@@ -94,6 +95,8 @@ export function TodayPath({
   onCloset: () => void;
   onStickers: () => void;
   onGames: () => void;
+  /** Opens the coding games. */
+  onCode: () => void;
   /** Today's local date. A new value re-renders the path on a new day. */
   dayKey?: string;
   /** A shared class iPad: the avatar opens the grown-up check on a tap instead of a long press. */
@@ -320,7 +323,7 @@ export function TodayPath({
         {/* A section's page holds that section only: its name, Back, and its activities. The Explore tiles and
             the dock belong to the home screen. Left on a section's page they pushed its activities off a
             sideways tablet, and gave a child six other things to tap on a page with no way back. */}
-        {shown === "reading" && (showMath || showColors || showTime || showBuild || showScience) ? (
+        {shown === "reading" && (showMath || showColors || showTime || showBuild || showScience || showGames) ? (
           <section className="explore-area" data-area="explore">
             <div className="explore-head">
               <h2>Explore</h2>
@@ -411,6 +414,19 @@ export function TodayPath({
                   <span className="course-name">
                     <span className="course-brand">LittleNest</span>
                     <span>Science</span>
+                  </span>
+                </button>
+              ) : null}
+              {/* Coding has its own tile. Its games were only reachable from the bottom of the Games list, and
+                  the first phone test did not find them ("I see build but don't see coding"). */}
+              {showGames ? (
+                <button type="button" className="course-button" data-course="code" aria-label={MODULE_CODE} onClick={onCode}>
+                  <span className="course-art" aria-hidden="true">
+                    <ModuleMark name="code" />
+                  </span>
+                  <span className="course-name">
+                    <span className="course-brand">LittleNest</span>
+                    <span>Coding</span>
                   </span>
                 </button>
               ) : null}

@@ -1,50 +1,25 @@
 import { logicLevel, type LogicLevel } from "./logic";
 import type { AgeRange } from "./profiles";
 
-/** Picture blocks. A repeat plays the block before it two more times. */
-export type BuildBlock =
-  | "walk"
-  | "jump"
-  | "spin"
-  | "dance"
-  | "sing"
-  | "drum"
-  | "bell"
-  | "note"
-  | "repeat"
-  | "rain"
-  | "sun"
-  | "flower"
-  | "bread"
-  | "spread"
-  | "filling"
-  | "pond";
+/**
+ * Build It: line up picture blocks, press Play, and the child's animal does
+ * each step in order.
+ *
+ * There were four boards. Two are gone after the first phone test: "Scene"
+ * (rain, then a flower) and "Chef" (the order of a sandwich) were the If-then
+ * and First-then games again, drawn as colored bars a few pixels wide. What is
+ * left is the part that is a program: steps in an order, a repeat, and an if.
+ */
 
-export type BuildActivity = "move" | "music" | "scene" | "chef";
+/** Picture blocks. A repeat plays the block before it two more times. */
+export type BuildBlock = "walk" | "jump" | "spin" | "dance" | "sing" | "drum" | "bell" | "note" | "repeat" | "pond";
+
+export type BuildActivity = "move" | "music";
 
 export const SCRIPT_LIMIT = 8;
 export const POND_STEPS = 3;
 
-const BLOCKS = new Set<string>([
-  "walk",
-  "jump",
-  "spin",
-  "dance",
-  "sing",
-  "drum",
-  "bell",
-  "note",
-  "repeat",
-  "rain",
-  "sun",
-  "flower",
-  "bread",
-  "spread",
-  "filling",
-  "pond",
-]);
-
-export const RECIPE = ["bread", "spread", "filling"] as const;
+const BLOCKS = new Set<string>(["walk", "jump", "spin", "dance", "sing", "drum", "bell", "note", "repeat", "pond"]);
 
 export type PlayStep = { block: BuildBlock; index: number };
 
@@ -65,12 +40,6 @@ const PYTHON: Record<DoAction, string> = {
   drum: "play.drum()",
   bell: "play.bell()",
   note: "play.note()",
-  rain: "scene.rain()",
-  sun: "scene.sun()",
-  flower: "scene.flower()",
-  bread: "chef.bread()",
-  spread: "chef.spread()",
-  filling: "chef.filling()",
   splash: "bird.splash()",
 };
 
@@ -84,9 +53,7 @@ export function palette(activity: BuildActivity, level: LogicLevel): BuildBlock[
     if (level === "later") blocks.push("repeat", "pond");
     return blocks;
   }
-  if (activity === "music") return ["drum", "bell", "note", "repeat"];
-  if (activity === "scene") return ["rain", "sun", "flower"];
-  return ["bread", "spread", "filling"];
+  return ["drum", "bell", "note", "repeat"];
 }
 
 export function buildLevel(ageRange: AgeRange | string): LogicLevel {
@@ -197,29 +164,6 @@ export function moveResult(script: BuildBlock[]): { steps: number; splashed: boo
   return { steps, splashed, pose };
 }
 
-export function sceneResult(script: BuildBlock[]): { flower: "bud" | "grown"; sky: "clear" | "rain" | "sun" } {
-  let wet = false;
-  let sky: "clear" | "rain" | "sun" = "clear";
-  let flower: "bud" | "grown" = "bud";
-  for (const step of playSteps(script)) {
-    if (step.block === "rain") {
-      wet = true;
-      sky = "rain";
-    } else if (step.block === "sun") {
-      wet = false;
-      sky = "sun";
-    } else if (step.block === "flower" && wet) flower = "grown";
-  }
-  return { flower, sky };
-}
-
-export function chefResult(script: BuildBlock[]): "wait" | "silly" | "sandwich" {
-  const food = script.filter((block) => block === "bread" || block === "spread" || block === "filling");
-  if (food.length < RECIPE.length) return "wait";
-  const made = food.slice(0, RECIPE.length);
-  return made.every((block, index) => block === RECIPE[index]) ? "sandwich" : "silly";
-}
-
 export function addBlock(script: BuildBlock[], block: BuildBlock): BuildBlock[] {
   if (script.length >= SCRIPT_LIMIT) return script;
   return [...script, block];
@@ -263,14 +207,32 @@ function loadStore(raw: string | null): BuildStore {
   }
 }
 
+/** The words said when a block is tapped: each needs a recorded word clip. */
+export const BLOCK_NAMES: Record<BuildBlock, string> = {
+  walk: "walk",
+  jump: "jump",
+  spin: "spin",
+  dance: "dance",
+  sing: "sing",
+  drum: "drum",
+  bell: "bell",
+  note: "note",
+  repeat: "again",
+  pond: "pond",
+};
+
+export function buildWords(): string[] {
+  return [...new Set(Object.values(BLOCK_NAMES))];
+}
+
+/** Build It's spoken lines. scripts/sync-manifest.ts writes these into the clip list. */
 export function buildManifestEntries(): { id: string; say: string }[] {
   return [
     { id: "build-move", say: "Stack the blocks, then press play." },
     { id: "build-music", say: "Make a song. Press play." },
-    { id: "build-scene", say: "What happens next?" },
-    { id: "build-chef", say: "Make a sandwich." },
     { id: "build-again", say: "Try again." },
     { id: "build-save", say: "Saved on this device." },
-    { id: "build-splash", say: "The bird splashes." },
+    // The child's animal may be any of twelve; this line used to call it a bird.
+    { id: "build-splash", say: "Splash!" },
   ];
 }
