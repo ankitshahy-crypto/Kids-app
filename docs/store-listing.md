@@ -24,8 +24,8 @@ LittleNest Learning helps young children take their first steps into letters, nu
 - **Short daily lessons:** You pick 2, 5, or 10 minutes. A little every day builds the habit without much screen time.
 - **Stars for trying:** Effort, not perfection. No pressure, no scores.
 - **Rewards that feel great:** Stars for effort unlock outfits for your child's animal, a sticker book of letters, numbers, colors, clocks, coins, and baby animals, and a growing nest. Every reward is earned by practicing, never bought.
-- **LittleNest Numbers:** Count to 10, hear and trace numbers, match and trace shapes, compare groups, and add with pictures up to 5.
-- **LittleNest Colors:** Hear a color and tap it, mix paints, and color their animal with colors they made. Every swatch shows the color word.
+- **LittleNest Numbers:** Count things that say their number when tapped, hear a number and find it, and trace numbers. Fit a block into a toy box and trace its shape, pick the plate with more, and put two groups together, up to 5. Each game is a few rounds, starting with the week's number.
+- **LittleNest Colors:** Hear a color and tap its paint to fill a balloon. Tap two paints, see them turn into a new color in the bowl, and hear it: red and yellow make orange. Then color their animal with a paint they made. Every paint has a pattern and its word, for a child who cannot tell it by color.
 - **Games to play:** Hatch an egg, pop letter balloons, feed their animal, match rhymes, flip memory cards, and spin a pastel wheel. Coding starts with hello world: one block, and their animal says hello. Thinking games guide their animal home, continue a picture pattern, put pictures in order, and try an if-then rule. Building stacks picture blocks that play as a dance or a song, with the program shown in words. Reading the code turns it round: a short program is read aloud, and they build it. Ages 5 to 7 use longer arrow paths, a repeat, a bug fix, a pond splash, and can save a program on this device. A grown-up can turn on a Python view of that same program. A miss just means try again.
 - **LittleNest Time & Money:** Morning, afternoon, and night, then the daily routine and o'clock. Ages 5 to 7 set half hours, quarter hours, and five-minute steps, match a digital time, and ask how long until. Name a penny, nickel, dime, quarter, and one- and five-dollar bills drawn for this app, sort coins, and buy things at a shop that says out loud what each one costs and asks for the money. Later they count mixed coins, pay dollars and cents, make change, and compare prices. Pretend chores fill Save, Spend, and Share jars, a lemonade stand earns coins, and a shop says let's save for it when the price is too big. Needs and wants are sorted. Pretend debit and credit cards come later, with no interest and no real payments.
 - **LittleNest Build:** Pick the plank that fits the river and their animal walks across. Stack a tower with the widest block at the bottom, find the ramp that rolls a ball to the flag, and choose a lever, a pulley, or wheels to move something heavy. Each try is shown: a short plank falls in, a low ramp stops short. Ages 5 to 7 also balance a beam.
@@ -48,15 +48,15 @@ LittleNest Words:
 
 LittleNest Numbers:
 
-1. **Counting:** Count objects from 1 to 10.
+1. **Counting:** Count things from 1 to 10. Each says its number when tapped.
 2. **Numbers:** Hear a number and tap it. Trace 0 to 9.
-3. **Shapes:** Find a shape, then trace it. The same writing levels apply.
+3. **Shapes:** Fit a block into the hole of its shape, then trace the shape. The same writing levels apply.
 4. **Adding:** Put two groups together, up to 5.
 
 LittleNest Colors:
 
-1. **Color names:** Hear a color and tap the matching object.
-2. **Mixing:** Mix two paints and see the new color.
+1. **Color names:** Hear a color and tap its paint.
+2. **Mixing:** Tap two paints and see and hear the new color. Ages 5 to 7 are asked to make a color by name.
 
 Games and LittleNest Coding:
 

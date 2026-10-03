@@ -31,7 +31,9 @@ import { pairLine, pairPromptId } from "../src/data/letterPairs";
 import { LETTER_WORDS } from "../src/data/letterWords";
 import { buildManifestEntries, buildWords } from "../src/data/build";
 import { logicManifestEntries, logicWords } from "../src/data/logic";
+import { colorManifestEntries } from "../src/data/colorGames";
 import { engineerManifestEntries, engineerWords } from "../src/data/engineer";
+import { numberManifestEntries, numberWords } from "../src/data/numberGames";
 import { scienceManifestEntries, scienceWords, wordId } from "../src/data/science";
 import { surpriseManifestEntries } from "../src/data/surprise";
 import { timeGameManifestEntries, timeGameWords } from "../src/data/timeGames";
@@ -126,7 +128,7 @@ for (const unit of SOUND_UNITS) {
 // The coding games', Build It's and the daily surprise's spoken lines come from the code that says them, so a new or reworded
 // line cannot be missing from the clip list. (They were added to the list by hand.)
 const live = new Set<string>();
-for (const entry of [...logicManifestEntries(), ...buildManifestEntries(), ...surpriseManifestEntries(), ...timeGameManifestEntries(), ...scienceManifestEntries(), ...engineerManifestEntries()]) {
+for (const entry of [...logicManifestEntries(), ...buildManifestEntries(), ...surpriseManifestEntries(), ...timeGameManifestEntries(), ...scienceManifestEntries(), ...engineerManifestEntries(), ...numberManifestEntries(), ...colorManifestEntries()]) {
   live.add(entry.id);
   const before = manifest.prompts[entry.id];
   if (before && before.say !== entry.say) drop(before.file);
@@ -134,8 +136,8 @@ for (const entry of [...logicManifestEntries(), ...buildManifestEntries(), ...su
 }
 for (const id of Object.keys(manifest.prompts)) {
   // The same goes for the lines of the Time & Money games and the game kit.
-  // ...and Science.
-  if (!/^(code|build|surprise|kit|shop|coins|day|routine|clock|lemon|choose|jars|cards|science|engineer)-/.test(id) || live.has(id)) continue;
+  // ...and Science, Build, Numbers and Colors.
+  if (!/^(code|build|surprise|kit|shop|coins|day|routine|clock|lemon|choose|jars|cards|science|engineer|num|color)-/.test(id) || live.has(id)) continue;
   drop(manifest.prompts[id].file, retired);
   delete manifest.prompts[id];
 }
@@ -156,7 +158,7 @@ for (const { word } of Object.values(LETTER_WORDS)) addWord(word.toLowerCase().r
 for (const word of storyWordList()) addWord(word);
 for (const animal of animals) addWord(animal.id);
 // A picture tapped in a coding game, or a block in Build It, says its name.
-for (const word of [...logicWords(), ...buildWords(), ...timeGameWords(), ...engineerWords()]) addWord(word);
+for (const word of [...logicWords(), ...buildWords(), ...timeGameWords(), ...engineerWords(), ...numberWords()]) addWord(word);
 // A Science picture says its name too ("dog house" is the clip dog-house).
 for (const name of scienceWords()) addWord(wordId(name), name);
 

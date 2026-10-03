@@ -491,9 +491,11 @@ export default function App() {
     else setTip(null);
   };
 
-  const finishColor = (step: ColorStep, label: string) => {
+  /** `label` is what was learned: one color, or (from Mix) every color the child made, each kept as a sticker. */
+  const finishColor = (step: ColorStep, label: string | string[]) => {
     if (!active) return;
-    const learned: StickerInput[] = label ? [{ subject: COLORS, kind: "color", label }] : [];
+    const labels = (Array.isArray(label) ? label : [label]).filter(Boolean);
+    const learned: StickerInput[] = labels.map((made) => ({ subject: COLORS, kind: "color" as const, label: made }));
     const result = giveStar(active.id, step, learned, COLORS);
     if (result.awarded) {
       if (!calm) setFlying(true);
@@ -1005,17 +1007,17 @@ export default function App() {
               {screen === "moment" ? (
                 <Suspense fallback={<p className="adult-copy">Loading</p>}>
                   <div className="color-moment" data-screen="moment">
-                    <NameActivity lesson={colorLesson} settingsRef={settingsRef} onDone={(label) => finishMoment(label)} />
+                    <NameActivity lesson={colorLesson} brief ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMoment(label)} />
                   </div>
                 </Suspense>
               ) : null}
               {exploreSection ? (
                 <ExploreFrame section={exploreSection} childId={active.id}>
                   {screen === "count" ? (
-                    <CountActivity lesson={mathLesson} settingsRef={settingsRef} theme={themeToday ?? undefined} onDone={(label) => finishMath("count", label)} />
+                    <CountActivity lesson={mathLesson} ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} theme={themeToday ?? undefined} onDone={(label) => finishMath("count", label)} />
                   ) : null}
                   {screen === "know" ? (
-                    <KnowActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("know", label)} />
+                    <KnowActivity lesson={mathLesson} ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMath("know", label)} />
                   ) : null}
                   {screen === "trace" ? (
                     <TraceActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("trace", label)} />
@@ -1023,22 +1025,22 @@ export default function App() {
                   {screen === "shape" ? (
                     <ShapeActivity
                       lesson={mathLesson}
-                      settingsRef={settingsRef}
+                      ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef}
                       writing={active.writing}
                       onAttempt={(itemId, success) => recordWriting(active.id, itemId, success)}
                       onDone={(label) => finishMath("shape", label)}
                     />
                   ) : null}
                   {screen === "more" ? (
-                    <MoreActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("more", label)} />
+                    <MoreActivity lesson={mathLesson} ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMath("more", label)} />
                   ) : null}
                   {screen === "add" ? (
-                    <AddActivity lesson={mathLesson} settingsRef={settingsRef} onDone={(label) => finishMath("add", label)} />
+                    <AddActivity lesson={mathLesson} ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMath("add", label)} />
                   ) : null}
                   {screen === "name" ? (
-                    <NameActivity lesson={colorLesson} settingsRef={settingsRef} onDone={(label) => finishColor("name", label)} />
+                    <NameActivity lesson={colorLesson} ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishColor("name", label)} />
                   ) : null}
-                  {screen === "mix" ? <MixActivity settingsRef={settingsRef} onDone={(label) => finishColor("mix", label)} /> : null}
+                  {screen === "mix" ? <MixActivity ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(made) => finishColor("mix", made)} /> : null}
                   {screen === "paint" ? (
                     <PaintActivity
                       animal={active.animal}

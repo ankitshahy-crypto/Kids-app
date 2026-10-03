@@ -12,8 +12,8 @@ export const colorSteps = ["name", "mix", "paint"] as const;
 export type ColorStep = (typeof colorSteps)[number];
 
 export const colorStages = [
-  { id: "names", title: "Color names", detail: "Hear a color and tap the matching object.", size: 10 },
-  { id: "mixing", title: "Mixing", detail: "Mix two paints and see the new color.", size: 4 },
+  { id: "names", title: "Color names", detail: "Hear a color and tap its paint.", size: 10 },
+  { id: "mixing", title: "Mixing", detail: "Tap two paints and see and hear the new color.", size: 4 },
 ] as const;
 
 export type ColorStageId = (typeof colorStages)[number]["id"];
