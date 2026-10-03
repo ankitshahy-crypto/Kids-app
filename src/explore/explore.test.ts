@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ExploreBoundary } from "./boundary";
-import { sectionVisible, visibleExplore } from "./flags";
+import { EXPLORE_FLAGS, HELD_BACK, heldBack, sectionVisible, visibleExplore } from "./flags";
 import { readSection, sectionStorageKey, writeSection } from "./sectionStore";
 import { exploreImportViolations, forbiddenSpecifier, valueSpecifiers } from "./importRule";
 import { sectionForScreen } from "./sections";
@@ -77,5 +77,16 @@ describe("explore isolation", () => {
     expect(sectionVisible("math", { math: false })).toBe(false);
     expect(sectionVisible("colors", { math: false })).toBe(true);
     expect(visibleExplore({}, false)).toEqual([]);
+  });
+
+  it("leaves the sections being rebuilt out of the app people install, and keeps them in development", () => {
+    for (const section of HELD_BACK) {
+      expect(sectionVisible(section, EXPLORE_FLAGS, true, true), section).toBe(false);
+      expect(sectionVisible(section, EXPLORE_FLAGS, true, false), section).toBe(true);
+      expect(heldBack(section, true)).toBe(true);
+      expect(heldBack(section, false)).toBe(false);
+    }
+    // What is finished is in every build.
+    expect(visibleExplore(EXPLORE_FLAGS, true, true)).toEqual(["math", "colors", "games"]);
   });
 });
