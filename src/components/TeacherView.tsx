@@ -22,6 +22,7 @@ import { PlacementControls } from "./PlacementControls";
 import { Printables } from "./Printables";
 import { ReadingChart } from "./ReadingChart";
 import { ChildClassDetail, ClassProgress } from "./ProgressViews";
+import { Chevron } from "./icons";
 
 /**
  * One child's page on the class iPad: what they finished, a note and codes for
@@ -172,9 +173,14 @@ export function TeacherView({
   return (
     <div className="teacher-shell" data-screen="teacher" data-open-child={open?.id ?? ""}>
       <div className="teacher-scroll">
-        <button type="button" className="quiet-back" onClick={onClose}>
-          Back
-        </button>
+        {/* The same Back button as the Grown-ups pages: a white pill with an arrow that stays at the top while
+            the page scrolls. It was a line of small grey text here, easy to miss on a phone. */}
+        <div className="grownups-bar">
+          <button type="button" className="grownups-back" onClick={onClose}>
+            <Chevron direction="left" />
+            Back
+          </button>
+        </div>
         {open ? (
           <ChildSheet
             profile={open}

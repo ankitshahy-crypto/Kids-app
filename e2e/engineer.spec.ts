@@ -42,18 +42,10 @@ test("Build sits on the home screen and a bridge can cross", async ({ page }, te
   await expect(board).toHaveAttribute("data-level", "early");
   await expect(board.locator("[data-activity=balance]")).toHaveCount(0);
   await expect(board.locator("[data-activity=bridge]")).toBeVisible();
-  const dock = await page.locator(".today-dock").boundingBox();
-  const tile = await board.locator("[data-activity=machines]").boundingBox();
+  // The Build page holds Build only: no dock for a tile to slide under, and every tile on screen.
+  await expect(page.locator(".today-dock")).toHaveCount(0);
+  await expect(board.locator("[data-activity=machines]")).toBeInViewport({ ratio: 1 });
   await expect(board.locator("[data-activity=float]")).toHaveCount(0);
-  const overlaps = Boolean(
-    dock &&
-      tile &&
-      tile.x < dock.x + dock.width &&
-      tile.x + tile.width > dock.x &&
-      tile.y < dock.y + dock.height &&
-      tile.y + tile.height > dock.y,
-  );
-  expect(overlaps).toBe(false);
   if (testInfo.project.name === "chromium" || testInfo.project.name === "iphone") {
     await page.locator("[data-screen=today]").screenshot({ path: `test-results/screenshots/build_home_${testInfo.project.name}.png` });
   }

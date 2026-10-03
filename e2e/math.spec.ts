@@ -113,6 +113,8 @@ test("number tracing follows the dots in order", async ({ page }, testInfo) => {
     await next.click();
   }
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+  // A section's page holds that section only; the dock and the other tiles are on the home screen.
+  await page.locator("[data-section-back]").click();
   await page.getByRole("button", { name: "Stickers" }).click();
   await expect(page.locator(`[data-sticker='${digit}'][data-kind=number][data-subject=math]`)).toBeVisible();
 });
@@ -135,6 +137,8 @@ test("shape matching finds the prompted shape, then tracing finishes it", async 
   }
   await finishPathTrace(page, "shape");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+  // A section's page holds that section only; the dock and the other tiles are on the home screen.
+  await page.locator("[data-section-back]").click();
   await page.getByRole("button", { name: "Stickers" }).click();
   await expect(page.locator(`[data-sticker='${prompt}'][data-kind=shape][data-subject=math]`)).toBeVisible();
 });
@@ -173,6 +177,8 @@ async function passGate(page: Page) {
 
 test("number sheets and the class numbers place are on the grown-up screens", async ({ page }) => {
   await install(page);
+  // A section page has Back where the child's animal is on the reading path, so step back to the path first.
+  await page.locator("[data-section-back]").click();
   await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
   await passGate(page);
@@ -199,6 +205,8 @@ test("number sheets and the class numbers place are on the grown-up screens", as
 
 test("letters and numbers stay large on iPad", async ({ page }) => {
   await install(page);
+  // The Numbers tile and the reading trail are both on the home screen.
+  await page.locator("[data-section-back]").click();
   for (const size of [
     { width: 1024, height: 1366 },
     { width: 1366, height: 1024 },
@@ -208,11 +216,9 @@ test("letters and numbers stay large on iPad", async ({ page }) => {
     expect(numbers).toBeTruthy();
     expect(numbers!.height).toBeGreaterThanOrEqual(100);
     expect(numbers!.width).toBeGreaterThan(140);
-    await page.getByRole("button", { name: "Reading", exact: true }).click();
     const trail = await page.locator(".trail").boundingBox();
     expect(trail).toBeTruthy();
     expect(trail!.height).toBeGreaterThanOrEqual(100);
     expect(trail!.width).toBeGreaterThan(140);
-    await page.getByRole("button", { name: "LittleNest Numbers" }).click();
   }
 });

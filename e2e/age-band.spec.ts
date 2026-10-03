@@ -44,7 +44,7 @@ test("a 5-year-old with the same history moves on past o'clock", async ({ page }
   const today = page.locator("[data-screen=today]");
   await expect(today).toHaveAttribute("data-subject", "time");
   await expect(today).not.toHaveAttribute("data-stage", "shop");
-  await expect(page.locator("[data-course=time]")).toBeVisible();
+  await expect(page.locator("[data-section-title=time]")).toBeVisible();
 });
 
 test("a 3-year-old stays on shapes in Numbers while a 4-year-old reaches adding", async ({ page }) => {

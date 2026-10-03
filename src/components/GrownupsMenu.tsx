@@ -175,10 +175,12 @@ export function GrownupsMenu({
 
   return (
     <div className="grownups-view" data-screen="grownups" data-page={page}>
-      <button type="button" className="grownups-back" onClick={back}>
-        <Chevron direction="left" />
-        Back
-      </button>
+      <div className="grownups-bar">
+        <button type="button" className="grownups-back" onClick={back}>
+          <Chevron direction="left" />
+          Back
+        </button>
+      </div>
 
       {page === "menu" ? (
         <>

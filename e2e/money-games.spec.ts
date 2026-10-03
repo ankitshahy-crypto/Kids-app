@@ -74,7 +74,7 @@ test("three jars earn coins and the save jar can reach the hat", async ({ page }
   await play.locator("[data-finish=jars]").click();
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
   await expect.poll(async () => page.evaluate(() => localStorage.getItem("kids-app-profiles-v1") ?? "")).toContain("hat-crown");
-  await page.getByRole("button", { name: "Reading", exact: true }).click();
+  await page.locator("[data-section-back]").click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
@@ -129,6 +129,8 @@ test("cards stay closed early, then a debit tap lowers the save jar", async ({ p
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("[data-screen=money-play]")).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
+  // A section page has Back where the child's animal is on the reading path, so step back to the path first.
+  await page.locator("[data-section-back]").click();
   await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
   await passGate(page);
