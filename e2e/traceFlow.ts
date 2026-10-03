@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { fingerPath, QUICK_STRIDE } from "./fingerPath";
 
 /**
@@ -131,8 +131,21 @@ async function pairOne(page: Page) {
   await root.locator(`[data-match-lower="${letter.toLowerCase()}"]`).click();
 }
 
+/**
+ * A whole letter lesson is long by nature: twelve strokes for two letters, the app's own
+ * pause after each one, then matching. Even with the quick finger, a test built around a
+ * lesson takes 14 to 20 s in CI, depending on the runner, and a test gets 30 s unless it
+ * says otherwise. That is too little room: a runner one and a half times slower again
+ * would fail a test that is doing nothing wrong. So any test that runs a lesson gets a minute.
+ */
+const LESSON_TEST_LIMIT = 60000;
+
 /** Finish big and little tracing, matching, and reversal practice for today's letters. */
 export async function finishLetterTracing(page: Page) {
+  // Only ever a longer limit: a test that already asked for more keeps it, and so does a
+  // debugging run, where the limit is 0 for "none".
+  const limit = test.info().timeout;
+  if (limit > 0 && limit < LESSON_TEST_LIMIT) test.setTimeout(LESSON_TEST_LIMIT);
   // Page errors and the screen's state ride along on a failure, since CI keeps its logs elsewhere.
   const errors: string[] = [];
   const onError = (error: Error) => errors.push(`pageerror: ${error.message}`);
