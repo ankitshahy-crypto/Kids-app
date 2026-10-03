@@ -383,6 +383,10 @@
     "prompts/pair-x.mp3",
     "prompts/pair-y.mp3",
     "prompts/pair-z.mp3",
+    "prompts/play-bonus.mp3",
+    "prompts/play-rhyme-no.mp3",
+    "prompts/play-rhyme-yes.mp3",
+    "prompts/play-trace.mp3",
     "prompts/quarter-past-1.mp3",
     "prompts/quarter-past-10.mp3",
     "prompts/quarter-past-11.mp3",
@@ -3566,7 +3570,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 16685952,
+    "shared": 16732596,
     "byAnimal": {
       "bear": 4881909,
       "bunny": 4851573,
