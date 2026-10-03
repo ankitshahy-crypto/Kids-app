@@ -7230,6 +7230,290 @@ input.is-pressed,
   }
 }
 
+/* ---- Science (src/components/ScienceGames.tsx) ---- */
+
+/* The garden: one plant in the middle of the bed, and a bubble with what it needs next. */
+.garden-bed {
+  position: relative;
+  width: 170px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+}
+
+.garden-plant {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  overflow: visible;
+}
+
+/* Each step the plant is drawn anew, a little bigger: it rises out of the soil. */
+.garden-grow {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: garden-rise 0.7s ease;
+}
+
+.garden-drops {
+  animation: garden-fall 0.8s ease-in forwards;
+}
+
+.garden-rays {
+  animation: garden-shine 0.9s ease forwards;
+}
+
+.garden-need {
+  position: absolute;
+  left: 78%;
+  top: 14%;
+  width: 64px;
+  padding: 4px;
+  border-radius: 18px 18px 18px 4px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 rgba(36, 48, 86, 0.16);
+  animation: build-pop 0.25s ease;
+}
+
+.garden-need .art,
+.garden-need .can-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.can-art {
+  width: 88px;
+}
+
+@keyframes garden-rise {
+  from {
+    transform: scaleY(0.55);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes garden-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(96px);
+  }
+}
+
+@keyframes garden-shine {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Three pictures of a life, in order: bigger places than the five of a day. */
+.routine-line.order-line li {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  font-size: 22px;
+}
+
+.routine-line.order-line .art {
+  width: 60px;
+}
+
+/* What a question is about: an animal, a drum, a flower. */
+.science-subject .art {
+  display: block;
+  width: 160px;
+  height: auto;
+}
+
+/* What the animal took for the weather stands beside it. */
+.science-subject.is-held {
+  align-self: flex-end;
+  margin: 0 auto 6px 0;
+  animation: build-pop 0.25s ease;
+}
+
+.science-subject.is-held .art {
+  width: 110px;
+}
+
+/* The bird, with each part its own thing to tap. Its scene is taller, like the clock's. */
+.game-frame[data-screen="body"] .game-scene {
+  height: clamp(250px, 38svh, 330px);
+}
+
+.game-frame[data-screen="body"] .game-stage {
+  inset: 8px 8px 8px 70px;
+}
+
+.game-frame[data-screen="body"] .game-host {
+  width: 68px;
+}
+
+.bird-stage {
+  position: relative;
+  width: min(100%, 290px);
+}
+
+.bird-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.body-part {
+  cursor: pointer;
+  outline: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.body-part[data-wiggle="true"] {
+  animation: game-wiggle-a 0.4s ease;
+}
+
+.body-part[data-reveal="true"],
+.body-part[data-found="true"] {
+  filter: drop-shadow(0 0 5px #f2c14e) drop-shadow(0 0 2px #f2c14e);
+}
+
+.body-part:focus-visible {
+  filter: drop-shadow(0 0 3px #243056);
+}
+
+.bird-hint {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.bird-hint .game-hand {
+  right: auto;
+  bottom: auto;
+  left: -6px;
+  top: 4px;
+}
+
+/* Sink or float: the thing waits above the pond, then rests on the water or goes to the bottom. */
+.game-frame[data-screen="float"] .game-stage {
+  inset: 0 0 0 100px;
+}
+
+.float-thing {
+  position: absolute;
+  left: 50%;
+  top: 2%;
+  width: 104px;
+  transform: translateX(-50%);
+  transition: top 0.9s cubic-bezier(0.3, 0, 0.4, 1);
+}
+
+.float-thing .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.float-thing[data-result="float"] {
+  top: 37%;
+  animation: float-bob 1.6s ease-in-out 0.9s infinite;
+}
+
+.float-thing[data-result="sink"] {
+  top: 66%;
+}
+
+.water-art {
+  width: 86px;
+}
+
+@keyframes float-bob {
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, -5px);
+  }
+}
+
+/* Weather that moves: rain falls, snow drifts, wind blows. */
+.scene-rain {
+  animation: scene-rain 0.7s linear infinite;
+}
+
+.scene-snow {
+  animation: scene-snow 3s ease-in-out infinite alternate;
+}
+
+.scene-wind {
+  animation: scene-wind 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes scene-rain {
+  from {
+    transform: translate(4px, -12px);
+  }
+  to {
+    transform: translate(-4px, 12px);
+  }
+}
+
+@keyframes scene-snow {
+  from {
+    transform: translate(-6px, -6px);
+  }
+  to {
+    transform: translate(6px, 8px);
+  }
+}
+
+@keyframes scene-wind {
+  from {
+    transform: translateX(-14px);
+  }
+  to {
+    transform: translateX(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .garden-grow,
+  .garden-drops,
+  .garden-rays,
+  .garden-need,
+  .float-thing,
+  .scene-rain,
+  .scene-snow,
+  .scene-wind,
+  .body-part {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .garden-drops,
+  .garden-rays {
+    opacity: 0;
+  }
+}
+
 /* The Time & Money page: its games under two headings, each tile a picture. */
 .time-boards {
   display: flex;

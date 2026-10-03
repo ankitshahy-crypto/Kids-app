@@ -167,46 +167,31 @@ const engineerTips: Record<string, { start: string; end: string }> = {
   },
 };
 
+// Two lines at most on a phone. The game says the rest to the child out loud.
 const scienceTips: Record<string, { start: string; end: string }> = {
   life: {
-    start: "They put the pictures in order: seed, sprout, plant, and the other life cycles. A skip just means try again.",
-    end: "Ask: what came after the seed?",
+    start: "They plant a seed and give it water and sun when it asks. Then a life goes in order.",
+    end: "Ask: what did the seed need to grow? Plant a bean in a cup and watch.",
   },
   homes: {
-    start: "They match each animal to a home, then to a food. The pictures are the words.",
-    end: "Ask: where does the bird live?",
+    start: "The voice asks where an animal lives. They tap its home.",
+    end: "Ask: where does a bird live? Look for a nest outside.",
   },
   body: {
-    start: "A voice asks for a wing, a beak, or a tail. They tap the matching picture.",
-    end: "Ask: which part was the beak?",
-  },
-  change: {
-    start: "Ice melts and water turns to steam on the screen. The fizz says to do it with a grown-up and not to taste it. Then they sort solid, liquid, and gas.",
-    end: "Ask: what did the ice become?",
+    start: "The voice asks for a part of the bird. They tap it on the bird.",
+    end: "Ask: where is your nose? Does a bird have one?",
   },
   weather: {
-    start: "They dress their animal for sun, rain, or snow, then pick the season.",
-    end: "Ask: what did the animal wear in the snow?",
+    start: "The weather is on the screen. They tap what to take for it.",
+    end: "Ask: what is the weather today? What should we wear?",
   },
   senses: {
-    start: "They listen, match a texture, and tell day from night.",
-    end: "Ask: which picture was the night?",
+    start: "The voice asks which part of them sees, hears, smells, tastes, or touches.",
+    end: "Ask: what can you hear right now?",
   },
   float: {
-    start: "They guess sink or float, then the object drops. A miss is try again, not a score.",
-    end: "Ask: which ones floated?",
-  },
-  predict: {
-    start: "Ages 5 to 7 say what they think will happen, then press Test. A wrong guess does not show the result.",
-    end: "Ask: what happened when they tested it?",
-  },
-  chain: {
-    start: "Ages 5 to 7 line up grass, then the rabbit, then the fox.",
-    end: "Ask: who eats the grass?",
-  },
-  water: {
-    start: "Ages 5 to 7 put the puddle, the vapor, the cloud, and the rain in order.",
-    end: "Ask: where did the rain come from?",
+    start: "They guess, then the thing drops in the pond. A wrong guess is still finding out.",
+    end: "Try it in the sink: a spoon, a cork, a leaf. Guess first.",
   },
 };
 

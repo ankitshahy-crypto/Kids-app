@@ -439,10 +439,12 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
       {kind === "pond" ? (
         <>
           <rect width="360" height="200" fill="#dcedf9" />
-          <circle cx="56" cy="40" r="22" fill="#f9d976" />
+          <circle cx="320" cy="36" r="22" fill="#f9d976" />
           <path d="M0 96c80-18 220-18 360 0v104H0Z" fill="#b8dfb4" />
-          <path d="M40 120h280c14 0 24 10 24 24v56H16v-56c0-14 10-24 24-24Z" fill="#9ccbe8" />
-          <path d="M40 120h280c14 0 24 10 24 24v6H16v-6c0-14 10-24 24-24Z" fill="#bfe0f4" />
+          {/* the water, with a bank on the left for the animal to stand on */}
+          <path d="M96 116h264v84H96Z" fill="#9ccbe8" />
+          <path d="M96 116h264v10H96Z" fill="#bfe0f4" />
+          <path d="M0 118c40-8 80-6 104 2 10 30 8 56 0 80H0Z" fill="#9bd1a0" />
         </>
       ) : null}
     </svg>

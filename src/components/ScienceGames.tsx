@@ -201,6 +201,8 @@ function LifeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
         "data-level": level,
         "data-task": round.kind,
         "data-step": done,
+        // The next tap is taken once the praise for the last one has been said.
+        "data-ready": done === asked ? "true" : "false",
         "data-need": round.kind === "grow" ? (need ?? "none") : (round.stages[done]?.art ?? "none"),
         "data-cycle": round.kind === "order" ? round.id : "garden",
         "data-order": round.kind === "order" ? round.stages.map((stage) => stage.art).join(",") : undefined,
@@ -520,6 +522,9 @@ function WaterMark({ kind }: { kind: FloatGuess }) {
   );
 }
 
+/** How long the thing is left where it came to rest before the next one is held up. */
+const SETTLE_MS = 700;
+
 /** Sink or float: a guess, then the thing is dropped in the pond and the child sees what it does. */
 function FloatGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const [salt] = useState(newSalt);
@@ -535,9 +540,11 @@ function FloatGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
     if (guess) return;
     setGuess(kind);
     const said = [say(result === "float" ? "science-floats" : "science-sinks")];
+    // The thing takes a moment to settle on the water or the bottom; the next one waits for it.
+    const next = () => window.setTimeout(rounds.next, SETTLE_MS);
     // A right guess is cheered. A wrong one is not a miss: the child has just found something out.
-    if (kind === result) coach.right(said, rounds.next);
-    else coach.tell(said, rounds.next);
+    if (kind === result) coach.right(said, next);
+    else coach.tell(said, next);
   };
 
   return (
@@ -601,6 +608,7 @@ function TileArt({ id }: { id: string }) {
 
 /** The Science page: one picture tile for each game. */
 export function ScienceBoard({
+  ageRange,
   done,
   locked,
   onOpen,
@@ -612,7 +620,7 @@ export function ScienceBoard({
   onOpen: (activity: ScienceId) => void;
 }) {
   return (
-    <div className="math-board science-board">
+    <div className="math-board science-board" data-science="menu" data-level={scienceLevel(ageRange)}>
       {TILES.map((tile) => (
         <button
           key={tile.id}

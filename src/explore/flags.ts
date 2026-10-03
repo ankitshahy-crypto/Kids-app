@@ -23,9 +23,10 @@ export const EXPLORE_FLAGS: ExploreFlags = {
  *
  * The pull request that finishes a section takes it off this list. Time &
  * Money came off when its ten games were rebuilt on the game kit
- * (src/game/kit.tsx): pictures to tap, every instruction spoken.
+ * (src/game/kit.tsx): pictures to tap, every instruction spoken. Science
+ * came off the same way, with the garden where a seed is grown.
  */
-export const HELD_BACK: readonly ExploreSection[] = ["build", "science"];
+export const HELD_BACK: readonly ExploreSection[] = ["build"];
 
 /** Is this section left out of this build? `production` is passed in by tests. */
 export function heldBack(section: ExploreSection, production: boolean = import.meta.env.PROD): boolean {
