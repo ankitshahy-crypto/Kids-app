@@ -17,7 +17,7 @@ import { practiceTotal } from "../data/reading";
 import { sectionVisible } from "../explore/flags";
 import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
-import { StarIcon } from "./icons";
+import { Chevron, StarIcon } from "./icons";
 import { EngineerBoard } from "./NestBuild";
 import { ScienceBoard } from "./SciencePlay";
 import { LockBadge } from "./LockBadge";
@@ -31,6 +31,15 @@ const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
   { id: "story", label: "Story", left: "32%", top: "58%" },
   { id: "moment", label: "Colors", left: "64%", top: "80%" },
 ];
+
+/** The name at the top of each Explore section's page: the same word its tile shows. */
+const SECTION_TITLE: Record<"math" | "colors" | "time" | "build" | "science", string> = {
+  math: "Numbers",
+  colors: "Colors",
+  time: "Time & Money",
+  build: "Build",
+  science: "Science",
+};
 
 export function TodayPath({
   profile,
@@ -151,7 +160,7 @@ export function TodayPath({
 
   return (
     <div
-      className="today"
+      className={`today${shown === "reading" ? "" : " is-section"}`}
       data-screen="today"
       data-subject={shown === "math" ? MATH : shown === "colors" ? COLORS : shown === "time" ? TIME : shown === "build" ? BUILD : shown === "science" ? SCIENCE : READING}
       data-review={review ? "true" : "false"}
@@ -162,7 +171,16 @@ export function TodayPath({
       data-letters={letters.join("")}
     >
       <div className="today-top">
-        {switchNeedsGrownup ? (
+        {/* An Explore section (Numbers, Science and the rest) opens as its own page, so it has the same Back
+            button, in the same corner, as every lesson and game. Before, the only way back to the reading
+            path was the small "READING" pill, which nobody on the first phone test read as a way out. */}
+        {shown !== "reading" ? (
+          <button type="button" className="back-button" aria-label="Back" data-course="reading" data-section-back onClick={() => onCourse("reading")}>
+            <span className="gear-face">
+              <Chevron direction="left" />
+            </span>
+          </button>
+        ) : switchNeedsGrownup ? (
           <button type="button" className="today-avatar" aria-label="Switch child" onClick={onLeave}>
             <Hero animal={profile.animal} outfit={profile.outfit} />
           </button>
@@ -192,16 +210,23 @@ export function TodayPath({
       <div className="today-body">
         <section className="lesson">
           <div className="lesson-head">
-            <button
-              type="button"
-              className={`pilot-label${shown === "reading" ? " is-selected" : ""}`}
-              data-area="pilot"
-              data-course="reading"
-              aria-pressed={shown === "reading"}
-              onClick={() => onCourse("reading")}
-            >
-              Reading
-            </button>
+            {shown === "reading" ? (
+              <button
+                type="button"
+                className="pilot-label is-selected"
+                data-area="pilot"
+                data-course="reading"
+                aria-pressed="true"
+                onClick={() => onCourse("reading")}
+              >
+                Reading
+              </button>
+            ) : (
+              // The page says which section it is. The pill used to read "READING" on the Science page.
+              <h1 className="section-title" data-section-title={shown}>
+                {SECTION_TITLE[shown]}
+              </h1>
+            )}
             {shown === "reading" ? (
               <p className="chunk-strip" data-done={finishedCount} data-left={left} aria-live="polite">
                 {strip}
@@ -292,19 +317,23 @@ export function TodayPath({
           ) : null}
         </section>
 
-        {showMath || showColors || showTime || showBuild || showScience ? (
+        {/* A section's page holds that section only: its name, Back, and its activities. The Explore tiles and
+            the dock belong to the home screen. Left on a section's page they pushed its activities off a
+            sideways tablet, and gave a child six other things to tap on a page with no way back. */}
+        {shown === "reading" && (showMath || showColors || showTime || showBuild || showScience) ? (
           <section className="explore-area" data-area="explore">
             <div className="explore-head">
               <h2>Explore</h2>
               <p className="explore-tag">New – try it!</p>
             </div>
+            {/* Each tile opens its section's page. (They were toggles that swapped the board above them, with
+                one shown as pressed; a tile is a plain door now.) */}
             <div className="course-pick" role="group" aria-label="Explore">
               {showMath ? (
                 <button
                   type="button"
-                  className={`course-button${shown === "math" ? " is-selected" : ""}`}
+                  className="course-button"
                   data-course="math"
-                  aria-pressed={shown === "math"}
                   aria-label={MODULE_NUMBERS}
                   onClick={() => onCourse("math")}
                 >
@@ -320,9 +349,8 @@ export function TodayPath({
               {showColors ? (
                 <button
                   type="button"
-                  className={`course-button${shown === "colors" ? " is-selected" : ""}`}
+                  className="course-button"
                   data-course="colors"
-                  aria-pressed={shown === "colors"}
                   aria-label={MODULE_COLORS}
                   onClick={() => onCourse("colors")}
                 >
@@ -338,9 +366,8 @@ export function TodayPath({
               {showTime ? (
                 <button
                   type="button"
-                  className={`course-button${shown === "time" ? " is-selected" : ""}`}
+                  className="course-button"
                   data-course="time"
-                  aria-pressed={shown === "time"}
                   aria-label={MODULE_TIME}
                   onClick={() => onCourse("time")}
                 >
@@ -356,9 +383,8 @@ export function TodayPath({
               {showBuild ? (
                 <button
                   type="button"
-                  className={`course-button${shown === "build" ? " is-selected" : ""}`}
+                  className="course-button"
                   data-course="build"
-                  aria-pressed={shown === "build"}
                   aria-label={MODULE_BUILD}
                   onClick={() => onCourse("build")}
                 >
@@ -374,9 +400,8 @@ export function TodayPath({
               {showScience ? (
                 <button
                   type="button"
-                  className={`course-button${shown === "science" ? " is-selected" : ""}`}
+                  className="course-button"
                   data-course="science"
-                  aria-pressed={shown === "science"}
                   aria-label={MODULE_SCIENCE}
                   onClick={() => onCourse("science")}
                 >
@@ -394,6 +419,7 @@ export function TodayPath({
         ) : null}
       </div>
 
+      {shown === "reading" ? (
       <div className="today-dock">
         <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>
           <span className="dock-art dock-dress" aria-hidden="true" />
@@ -437,6 +463,7 @@ export function TodayPath({
           <span>Surprise</span>
         </button>
       </div>
+      ) : null}
     </div>
   );
 }

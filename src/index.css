@@ -1804,14 +1804,6 @@ button:focus-visible {
   font-weight: 400;
 }
 
-.quiet-back {
-  min-height: 40px;
-  padding: 0;
-  color: var(--text-muted);
-  font-size: 16px;
-  font-weight: 600;
-}
-
 .adult-section,
 .teacher-card {
   background: #fff;
@@ -2034,6 +2026,33 @@ button:focus-visible {
 }
 
 /* A 64px touch area around the 32px pill, without taking more room. */
+/* An Explore section's page: one column, with room for all of its activities, on any screen. */
+.today.is-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Back, the name and the tiles share one column, so they line up on a wide screen too. */
+.today.is-section .today-top,
+.today.is-section .today-body {
+  width: min(100%, 560px);
+  margin: 0 auto;
+}
+
+.today.is-section .today-body {
+  max-height: none;
+}
+
+/* The name of an Explore section at the top of its page, under the Back button. */
+.section-title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .pilot-label::before {
   content: "";
   position: absolute;
@@ -2436,12 +2455,28 @@ button:focus-visible {
   height: 22px;
 }
 
+/* Back on every grown-up page (Grown-ups, Parent, Teacher). Its bar stays at the top while a long
+   page scrolls: on a phone the Settings page is several screens long, and once Back had scrolled
+   away there was nothing on screen that led out. The bar has the page's own color, so the text
+   scrolling under it does not show beside the button. */
+.grownups-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 -4px 12px;
+  padding: 0 4px 8px;
+  background: var(--adult);
+}
+
+.app.mode-teacher .grownups-bar {
+  background: var(--cream);
+}
+
 .grownups-back {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   min-height: 56px;
-  margin-bottom: 12px;
   padding: 8px 18px 8px 12px;
   border-radius: 16px;
   background: #fff;
@@ -3167,7 +3202,6 @@ button:focus-visible {
   }
 
   .parent-row,
-  .quiet-back,
   .scan-button,
   .class-menu button,
   .class-list button {
@@ -4629,11 +4663,6 @@ button:focus-visible {
   gap: 2px;
   border: 3px solid transparent;
   font-size: 20px;
-}
-
-.course-button.is-selected {
-  border-color: var(--sage-soft);
-  background: #f3faf4;
 }
 
 .course-art {
