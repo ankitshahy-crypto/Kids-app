@@ -14,7 +14,7 @@ import {
 } from "../data/schedule";
 import type { Settings } from "../settings";
 import { ChildForm } from "./ChildForm";
-import { StarIcon } from "./icons";
+import { Chevron, StarIcon } from "./icons";
 import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME } from "../brand";
 import { tint } from "../palette";
 import { COLORS, colorIntroduced } from "../data/colors";
@@ -105,9 +105,14 @@ export function ParentView({
 
   return (
     <div className="parent-view" data-screen="parent" data-page={page}>
-      <button type="button" className="quiet-back" onClick={back}>
-        Back
-      </button>
+      {/* The same Back button as the Grown-ups pages: a white pill with an arrow that stays at the top while
+          the page scrolls. It was a line of small grey text here, easy to miss on a phone. */}
+      <div className="grownups-bar">
+        <button type="button" className="grownups-back" onClick={back}>
+          <Chevron direction="left" />
+          Back
+        </button>
+      </div>
 
       {child && page === "teacher" ? (
         <header className="parent-child-head" data-section="child-head" data-child={child.id}>

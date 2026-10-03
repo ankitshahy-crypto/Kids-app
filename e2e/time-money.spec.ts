@@ -65,7 +65,7 @@ test("morning is the week 0 day task and a wrong part only wiggles", async ({ pa
   await expect(play.locator("[data-part=afternoon]")).toHaveAttribute("data-wiggle", "true");
   await play.locator("[data-part=morning]").click();
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
-  await page.getByRole("button", { name: "Reading", exact: true }).click();
+  await page.locator("[data-section-back]").click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
@@ -83,7 +83,7 @@ test("next hour sets the clock and does not finish the reading lesson", async ({
   await clock.getByRole("button", { name: "Next hour" }).click();
   await expect(clock).toHaveAttribute("data-matched", "true");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
-  await page.getByRole("button", { name: "Reading", exact: true }).click();
+  await page.locator("[data-section-back]").click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
@@ -105,6 +105,8 @@ test("the pretend shop takes the matching coin", async ({ page }, testInfo) => {
 
 test("teacher placement and printables cover the clock and coins", async ({ page }) => {
   await install(page);
+  // A section page has Back where the child's animal is on the reading path, so step back to the path first.
+  await page.locator("[data-section-back]").click();
   await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
   await passGate(page);

@@ -122,6 +122,8 @@ for (const mix of [
 
 test("coloring page and the color path are on the grown-up screens", async ({ page }) => {
   await install(page);
+  // A section page has Back where the child's animal is on the reading path, so step back to the path first.
+  await page.locator("[data-section-back]").click();
   await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
   await passGate(page);

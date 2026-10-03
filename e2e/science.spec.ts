@@ -21,20 +21,6 @@ const older = {
   profiles: [{ ...profile.profiles[0], ageRange: "6-7" }],
 };
 
-function overlaps(
-  a: { x: number; y: number; width: number; height: number } | null,
-  b: { x: number; y: number; width: number; height: number } | null,
-) {
-  return Boolean(
-    a &&
-      b &&
-      a.x < b.x + b.width &&
-      a.x + a.width > b.x &&
-      a.y < b.y + b.height &&
-      a.y + a.height > b.y,
-  );
-}
-
 async function install(page: Page, saved: unknown = profile) {
   await page.addInitScript((saved) => {
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
@@ -53,6 +39,8 @@ test("Science sits on the home screen and life cycles can be ordered", async ({ 
   await expect(science).toHaveAttribute("aria-label", "LittleNest Science");
   await page.locator("[data-course=build]").click();
   await expect(page.locator("[data-engineer=menu] [data-activity=float]")).toHaveCount(0);
+  // A section's page holds that section only; the dock and the other tiles are on the home screen.
+  await page.locator("[data-section-back]").click();
   await science.click();
   const board = page.locator("[data-science=menu]");
   await expect(board).toHaveAttribute("data-level", "early");
@@ -60,9 +48,9 @@ test("Science sits on the home screen and life cycles can be ordered", async ({ 
   await expect(board.locator("[data-activity=chain]")).toHaveCount(0);
   await expect(board.locator("[data-activity=water]")).toHaveCount(0);
   await expect(board.locator("[data-activity=float]")).toBeVisible();
-  const dock = await page.locator(".today-dock").boundingBox();
-  const menu = await board.boundingBox();
-  expect(overlaps(menu, dock)).toBe(false);
+  // The Science page holds Science only: no dock for the tiles to slide under.
+  await expect(page.locator(".today-dock")).toHaveCount(0);
+  await expect(board.locator("[data-activity=float]")).toBeInViewport({ ratio: 1 });
   if (testInfo.project.name === "chromium" || testInfo.project.name === "iphone") {
     await page.locator("[data-screen=today]").screenshot({ path: `test-results/screenshots/science_home_${testInfo.project.name}.png` });
   }
@@ -228,21 +216,26 @@ test("ages 5 to 7 predict, then order a food chain and the water cycle", async (
   await expect(page.locator("[data-part=paw]")).toBeVisible();
 });
 
-test("the home dock stays on screen with Science", async ({ page }, testInfo) => {
+test("the home dock stays on screen, and each section's page shows all of its activities", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "iphone" && testInfo.project.name !== "pixel", "phone layout");
   await install(page);
-  for (const course of ["reading", "math", "colors", "time", "build", "science"]) {
+  const height = page.viewportSize()?.height ?? 0;
+  const dockBottom = () => page.locator("[data-dock=nest]").evaluate((el) => el.getBoundingClientRect().bottom);
+  expect(await dockBottom(), "home").toBeLessThanOrEqual(height - 2);
+  // A section's page holds that section only, so its tiles have the whole screen: none is cut off.
+  for (const course of ["math", "colors", "time", "build", "science"]) {
     await page.locator(`[data-course=${course}]`).click();
-    const bottom = await page.locator("[data-dock=nest]").evaluate((el) => el.getBoundingClientRect().bottom);
-    const height = page.viewportSize()?.height ?? 0;
-    expect(bottom, course).toBeLessThanOrEqual(height - 2);
+    const tiles = page.locator("[data-screen=today] [data-activity]");
+    for (let index = 0; index < (await tiles.count()); index += 1) {
+      await expect(tiles.nth(index), `${course} tile ${index}`).toBeInViewport({ ratio: 1 });
+    }
+    await page.locator("[data-section-back]").click();
+    expect(await dockBottom(), `home after ${course}`).toBeLessThanOrEqual(height - 2);
   }
   await install(page, older);
   await page.locator("[data-course=science]").click();
-  const bottom = await page.locator("[data-dock=nest]").evaluate((el) => el.getBoundingClientRect().bottom);
-  const height = page.viewportSize()?.height ?? 0;
-  expect(bottom, "science later").toBeLessThanOrEqual(height - 2);
-  const dock = await page.locator(".today-dock").boundingBox();
-  const menu = await page.locator("[data-science=menu]").boundingBox();
-  expect(overlaps(menu, dock)).toBe(false);
+  const later = page.locator("[data-science=menu] [data-activity]");
+  for (let index = 0; index < (await later.count()); index += 1) {
+    await expect(later.nth(index), `science later tile ${index}`).toBeInViewport({ ratio: 1 });
+  }
 });
