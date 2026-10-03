@@ -52,18 +52,24 @@ const TRY_MS = 900;
 /** How long the scene is given to show a right answer working (the walk across, the lever lifting) before the next round. */
 const SHOW_MS = 1700;
 
-/** A timer that is dropped if the game closes first. */
+/**
+ * One timer at a time, dropped if the game closes first. `run` replaces whatever was waiting; `cancel`
+ * drops it. A right answer cancels: the timer set by a wrong try just before it would otherwise still go
+ * off and take the right answer away again (the plank that fits vanished from under the animal).
+ */
 function useLater() {
   const timer = useRef<number | null>(null);
-  useEffect(
-    () => () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
-    },
-    [],
-  );
-  return (run: () => void, ms: number) => {
+  const cancel = () => {
     if (timer.current !== null) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(run, ms);
+    timer.current = null;
+  };
+  useEffect(() => cancel, []);
+  return {
+    run(fn: () => void, ms: number) {
+      cancel();
+      timer.current = window.setTimeout(fn, ms);
+    },
+    cancel,
   };
 }
 
@@ -106,6 +112,7 @@ function BridgeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
     const fit = plankFit(round.gap, plank);
     setTried({ plank, fit });
     if (fit === "fits") {
+      later.cancel();
       wiggle.still();
       setCrossed(true);
       coach.right([say("engineer-fits")], rounds.next, SHOW_MS);
@@ -114,7 +121,7 @@ function BridgeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
     wiggle.shake(String(plank));
     coach.miss([say(fit === "short" ? "engineer-short" : "engineer-long")]);
     // The plank that did not fit is taken away again.
-    later(() => setTried(null), TRY_MS + 500);
+    later.run(() => setTried(null), TRY_MS + 500);
   };
 
   const far = BANK + round.gap * SPAN;
@@ -204,10 +211,11 @@ function TowerGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
     if (block !== want) {
       wiggle.shake(String(block));
       setWobble(block);
-      later(() => setWobble(0), TRY_MS);
+      later.run(() => setWobble(0), TRY_MS);
       coach.miss([say("engineer-tower-wide")]);
       return;
     }
+    later.cancel();
     wiggle.still();
     setWobble(0);
     const next = [...stack, block];
@@ -297,7 +305,7 @@ function RampGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
     setRolling(true);
     coach.touch();
     // The ball is watched all the way before anything is said about where it stopped.
-    later(() => {
+    later.run(() => {
       setRolling(false);
       const result = rampTry(height, round.flag);
       if (result === "reach") {
@@ -580,6 +588,7 @@ function BalanceGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) 
     if (solved) return;
     setRight(count);
     if (count === round.left) {
+      later.cancel();
       wiggle.still();
       setSolved(true);
       coach.right([numberCue(count), say("engineer-balance-done")], rounds.next, 1300);
@@ -588,7 +597,7 @@ function BalanceGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) 
     wiggle.shake(String(count));
     coach.miss([say(count < round.left ? "engineer-balance-few" : "engineer-balance-many")]);
     // The pile is lifted off again after the beam has shown which way it leans.
-    later(() => setRight(0), TRY_MS + 700);
+    later.run(() => setRight(0), TRY_MS + 700);
   };
 
   return (

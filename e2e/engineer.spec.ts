@@ -88,22 +88,16 @@ test("bridge: a plank that is too short falls in, and the one that fits lets the
       await expect(bridge).toHaveAttribute("data-crossed", "false");
       await expect(bridge).toHaveAttribute("data-misses", "1");
     }
+    // The plank that fits. What that looks like is checked below, where the game is not hurried:
+    // here the next river follows at once.
     await bridge.locator(`.pick[data-plank="${gap}"]`).click();
-    if (round === 0) {
-      await expect(bridge).toHaveAttribute("data-crossed", "true");
-      await expect(bridge.locator(".bridge-plank")).toHaveAttribute("data-fit", "fits");
-      // The animal is sent to the far bank.
-      await expect
-        .poll(() => bridge.locator(".game-host").evaluate((host) => parseFloat((host as HTMLElement).style.left)))
-        .toBeGreaterThan(28 + gap * 9);
-      if (testInfo.project.name === "chromium") await bridge.screenshot({ path: "test-results/screenshots/build_bridge.png" });
-    }
   }
   await expectStar(page);
 });
 
 test("bridge: the third miss points at the plank that fits", async ({ page }) => {
-  const bridge = await openBuild(page, "bridge");
+  // Not hurried: the crossing at the end has to stay on screen long enough to be seen.
+  const bridge = await openBuild(page, "bridge", { quick: false });
   await onRound(bridge, 0);
   const gap = Number(await bridge.getAttribute("data-gap"));
   const wrong = (await numbers(bridge, "data-plank")).find((plank) => plank !== gap)!;
@@ -203,11 +197,6 @@ test("machines: a lever lifts the rock, a pulley pulls up the bucket, and wheels
       await expect(machines.locator(".job-art")).toHaveAttribute("data-done", "false");
     }
     await machines.locator(`.pick[data-machine=${answer}]`).click();
-    if (round === 0) {
-      // The machine is seen doing the job.
-      await expect(machines.locator(`.job-art[data-job=${job}]`)).toHaveAttribute("data-done", "true");
-      if (testInfo.project.name === "chromium") await machines.screenshot({ path: "test-results/screenshots/build_machines.png" });
-    }
   }
   expect([...jobs].sort()).toEqual(["box", "bucket", "rock"]);
   await expectStar(page);
@@ -249,15 +238,11 @@ test("ages 5 to 7 get Balance: the beam leans to the heavier side and is level w
       await expect(balance).toHaveAttribute("data-right", "0");
     }
     await balance.locator(`.pick[data-pile="${left}"]`).click();
-    if (round === 0) {
-      await expect(balance).toHaveAttribute("data-tilt", "level");
-      if (testInfo.project.name === "chromium") await balance.screenshot({ path: "test-results/screenshots/build_balance.png" });
-    }
   }
   await expectStar(page);
 });
 
-test("Build asks aloud, and says what happened to each try", async ({ page }) => {
+test("Build asks aloud, and says what happened to each try", async ({ page }, testInfo) => {
   await installAudioSpy(page);
   const before = (await spokenLines(page)).length;
   const said = async () => (await spokenLines(page)).slice(before);
@@ -276,6 +261,11 @@ test("Build asks aloud, and says what happened to each try", async ({ page }) =>
     await expect.poll(said, { timeout: 8_000 }).toContain("too long. it sticks out.");
   }
   await bridge.locator(`.pick[data-plank="${gap}"]`).click();
+  // The plank lies across, and the animal is sent to the far bank.
+  await expect(bridge).toHaveAttribute("data-crossed", "true");
+  await expect(bridge.locator(".bridge-plank")).toHaveAttribute("data-fit", "fits");
+  await expect.poll(() => bridge.locator(".game-host").evaluate((host) => parseFloat((host as HTMLElement).style.left))).toBeGreaterThan(28 + gap * 9);
+  if (testInfo.project.name === "chromium") await bridge.screenshot({ path: "test-results/screenshots/build_bridge.png" });
   await expect.poll(said, { timeout: 8_000 }).toContain("it fits!");
   // The speaker in the scene says the question again.
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -298,6 +288,64 @@ test("Build asks aloud, and says what happened to each try", async ({ page }) =>
   const beforeMiss = (await spokenLines(page)).length;
   await wrong.click();
   await expect.poll(async () => (await spokenLines(page)).slice(beforeMiss), { timeout: 8_000 }).toContain(name);
+});
+
+/** Note every value an attribute of the game takes, with the round it was in: "0:fits". */
+async function watch(frame: Locator, attribute: string) {
+  await frame.evaluate((node, name) => {
+    const seen: string[] = [];
+    (window as unknown as { __seen: string[] }).__seen = seen;
+    const note = () => seen.push(`${node.getAttribute("data-round")}:${node.getAttribute(name)}`);
+    new MutationObserver(note).observe(node, { attributes: true, attributeFilter: [name, "data-round"] });
+  }, attribute);
+}
+
+const watched = (page: Page) => page.evaluate(() => (window as unknown as { __seen: string[] }).__seen);
+
+test("a right answer straight after a wrong one stays: the plank is not taken away again, nor the pile", async ({ page }) => {
+  // A wrong try is cleared away after a moment. That clearing used to go off even when the right answer
+  // had been given in the meantime, and took it away: the plank vanished from under the animal.
+  const bridge = await openBuild(page, "bridge", { quick: false, ageRange: "6-7" });
+  const gap = Number(await bridge.getAttribute("data-gap"));
+  const wrong = (await numbers(bridge, "data-plank")).find((plank) => plank !== gap)!;
+  await watch(bridge, "data-tried");
+  await bridge.locator(`.pick[data-plank="${wrong}"]`).click();
+  await bridge.locator(`.pick[data-plank="${gap}"]`).click();
+  await expect(bridge).toHaveAttribute("data-round", "1", { timeout: 10_000 });
+  // From the plank that fits to the end of the round, it was never taken away.
+  const tried = (await watched(page)).filter((entry) => entry.startsWith("0:"));
+  expect(tried).toContain("0:fits");
+  expect(tried.slice(tried.indexOf("0:fits"))).not.toContain("0:none");
+
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.locator("[data-engineer=menu] [data-activity=balance]").click();
+  const balance = game(page, "balance");
+  const left = Number(await balance.getAttribute("data-left"));
+  const other = (await numbers(balance, "data-pile")).find((pile) => pile !== left)!;
+  await watch(balance, "data-right");
+  await balance.locator(`.pick[data-pile="${other}"]`).click();
+  await balance.locator(`.pick[data-pile="${left}"]`).click();
+  await expect(balance).toHaveAttribute("data-round", "1", { timeout: 10_000 });
+  const piles = (await watched(page)).filter((entry) => entry.startsWith("0:"));
+  expect(piles).toContain(`0:${left}`);
+  expect(piles.slice(piles.indexOf(`0:${left}`))).not.toContain("0:0");
+});
+
+test("a right answer is seen working: the machine does the job, and the beam comes level", async ({ page }, testInfo) => {
+  // Not hurried, so what the right answer does stays on screen: in a quick game the next round follows at once.
+  const machines = await openBuild(page, "machines", { quick: false, ageRange: "6-7" });
+  const job = (await machines.getAttribute("data-job")) ?? "";
+  await expect(machines.locator(".job-art")).toHaveAttribute("data-done", "false");
+  await machines.locator(`.pick[data-machine=${await machines.getAttribute("data-answer")}]`).click();
+  await expect(machines.locator(`.job-art[data-job=${job}]`)).toHaveAttribute("data-done", "true");
+  if (testInfo.project.name === "chromium") await machines.screenshot({ path: "test-results/screenshots/build_machines.png" });
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.locator("[data-engineer=menu] [data-activity=balance]").click();
+  const balance = game(page, "balance");
+  await expect(balance).toHaveAttribute("data-tilt", "left");
+  await balance.locator(`.pick[data-pile="${await balance.getAttribute("data-left")}"]`).click();
+  await expect(balance).toHaveAttribute("data-tilt", "level");
+  if (testInfo.project.name === "chromium") await balance.screenshot({ path: "test-results/screenshots/build_balance.png" });
 });
 
 for (const id of ["bridge", "tower", "ramp", "machines", "balance"]) {
