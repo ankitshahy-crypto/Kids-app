@@ -1,38 +1,52 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+import { installAudioSpy, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
+import { expectStar, expectWiggle, game, onRound } from "./kit";
 
-const profile = {
-  activeId: "mia",
-  profiles: [
-    {
-      id: "mia",
-      name: "Mia",
-      ageRange: "4",
-      animal: "fox",
-      createdAt: createdThisWeek(),
-      stars: 0,
-      days: {},
+function child(ageRange = "4") {
+  return {
+    activeId: "mia",
+    profiles: [{ id: "mia", name: "Mia", ageRange, animal: "fox", createdAt: createdThisWeek(), stars: 0, days: {} }],
+  };
+}
+
+async function install(page: Page, options: { ageRange?: string; quick?: boolean; tips?: boolean } = {}) {
+  const { ageRange = "4", quick = true, tips = false } = options;
+  await page.addInitScript(
+    ({ saved, quick, tips }) => {
+      if (sessionStorage.getItem("science-seeded")) return;
+      sessionStorage.setItem("science-seeded", "1");
+      localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+      localStorage.removeItem("kids-app-silent-hint-v1");
+      if (quick) localStorage.setItem("littlenest-quick-rounds", "1");
+      if (!tips) localStorage.setItem("littlenest-settings-v1", JSON.stringify({ showTips: false }));
     },
-  ],
-};
-
-const older = {
-  activeId: "mia",
-  profiles: [{ ...profile.profiles[0], ageRange: "6-7" }],
-};
-
-async function install(page: Page, saved: unknown = profile) {
-  await page.addInitScript((saved) => {
-    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
-    localStorage.removeItem("kids-app-silent-hint-v1");
-  }, saved);
+    { saved: child(ageRange), quick, tips },
+  );
   await page.goto("./");
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
   await page.getByRole("button", { name: "Mia" }).click();
 }
 
-test("Science sits on the home screen and life cycles can be ordered", async ({ page }, testInfo) => {
+async function openScience(page: Page, id: string, options: Parameters<typeof install>[1] = {}): Promise<Locator> {
+  await install(page, options);
+  await page.locator("[data-course=science]").click();
+  await page.locator(`[data-science=menu] [data-activity=${id}]`).click();
+  const frame = game(page, id);
+  await expect(frame).toBeVisible();
+  return frame;
+}
+
+/** Give the plant what it asks for, or put the next picture in place, and wait for the game to be ready again. */
+async function nextStep(frame: Locator) {
+  await expect(frame).toHaveAttribute("data-ready", "true");
+  const task = await frame.getAttribute("data-task");
+  const need = (await frame.getAttribute("data-need")) ?? "";
+  await frame.locator(task === "grow" ? `.pick[data-give=${need}]` : `.pick[data-pick=${need}]`).click();
+}
+
+test("Science is on the home screen, and its page is six picture tiles", async ({ page }) => {
   await install(page);
   const science = page.locator("[data-course=science]");
   await expect(science).toBeVisible();
@@ -44,177 +58,200 @@ test("Science sits on the home screen and life cycles can be ordered", async ({ 
   await science.click();
   const board = page.locator("[data-science=menu]");
   await expect(board).toHaveAttribute("data-level", "early");
-  await expect(board.locator("[data-activity=predict]")).toHaveCount(0);
-  await expect(board.locator("[data-activity=chain]")).toHaveCount(0);
-  await expect(board.locator("[data-activity=water]")).toHaveCount(0);
-  await expect(board.locator("[data-activity=float]")).toBeVisible();
-  // The Science page holds Science only: no dock for the tiles to slide under.
-  await expect(page.locator(".today-dock")).toHaveCount(0);
-  await expect(board.locator("[data-activity=float]")).toBeInViewport({ ratio: 1 });
-  if (testInfo.project.name === "chromium" || testInfo.project.name === "iphone") {
-    await page.locator("[data-screen=today]").screenshot({ path: `test-results/screenshots/science_home_${testInfo.project.name}.png` });
+  await expect(board.locator(".time-tile > span:last-child")).toHaveText(["Grow", "Homes", "Body", "Weather", "Senses", "Sink or float"]);
+  // The four that are waiting for drawings of their own are not offered.
+  for (const id of ["change", "predict", "chain", "water"]) await expect(board.locator(`[data-activity=${id}]`)).toHaveCount(0);
+  // Every tile is one of the app's drawings, and none runs off a phone.
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const tile of await board.locator("[data-activity]").all()) {
+    await expect(tile.locator(".math-activity-art svg")).toHaveCount(1);
+    const box = await tile.boundingBox();
+    expect(box!.x).toBeGreaterThanOrEqual(-1);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(391);
   }
-  await board.locator("[data-activity=life]").click();
-  const play = page.locator("[data-science=life]");
-  await expect(page.locator("[data-tip=science-life-start]")).toBeVisible();
-  await play.locator("[data-piece=plant]").click();
-  await expect(play.locator(".build-again")).toHaveText("Try again.");
-  await expect(play).toHaveAttribute("data-order", "");
-  await play.locator("[data-piece=seed]").dragTo(play.locator("[data-order-row=life]"));
-  await expect(play).toHaveAttribute("data-order", "seed");
-  for (const piece of ["sprout", "plant", "egg", "chick", "bird", "caterpillar", "chrysalis", "butterfly"]) {
-    await play.locator(`[data-piece=${piece}]`).click();
+});
+
+test("the garden: a seed, then water, sun and water again grow a flower, and then a life is put in order", async ({ page }, testInfo) => {
+  const grow = await openScience(page, "life");
+  await expect(grow).toHaveAttribute("data-task", "grow");
+  await expect(grow).toHaveAttribute("data-rounds", "2");
+  await expect(grow.locator(".garden-bed")).toHaveAttribute("data-grown", "0");
+  // What the plant needs is shown beside it, as the same picture as the thing to tap.
+  await expect(grow.locator(".garden-need")).toHaveAttribute("data-need", "seed");
+  await expect(grow.locator(".pick[data-give=seed] .game-hand")).toBeVisible();
+  // The sun before there is a seed: it wiggles, and nothing grows.
+  await grow.locator(".pick[data-give=sun]").click();
+  await expectWiggle(grow.locator(".pick[data-give=sun]"));
+  await expect(grow).toHaveAttribute("data-step", "0");
+  for (const [step, need] of ["seed", "water", "sun", "water"].entries()) {
+    await expect(grow).toHaveAttribute("data-need", need);
+    if (step > 0) await expect(grow.locator(".garden-need")).toHaveAttribute("data-need", need);
+    await nextStep(grow);
+    if (step < 3) {
+      // It grows at once: a seed in the soil, a sprout, a plant.
+      await expect(grow.locator(".garden-bed")).toHaveAttribute("data-grown", String(step + 1));
+      await expect(grow.locator(".garden-bed")).toHaveAttribute("data-effect", need);
+    }
+    if (step === 1 && testInfo.project.name === "chromium") {
+      await grow.screenshot({ path: "test-results/screenshots/science_grow.png" });
+    }
   }
-  await expect(play.locator("[data-finish=life]")).toBeVisible();
-  if (testInfo.project.name === "chromium") {
-    await play.screenshot({ path: "test-results/screenshots/science_life.png" });
-  }
-  await play.locator("[data-finish=life]").click();
-  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
-  await page.locator("[data-course=reading]").click();
+  // Then three pictures of a life, out of order, to put in order.
+  await expect(grow).toHaveAttribute("data-round", "1");
+  await expect(grow).toHaveAttribute("data-task", "order");
+  const order = ((await grow.getAttribute("data-order")) ?? "").split(",");
+  expect(order).toHaveLength(3);
+  const dealt = await grow.locator(".game-tray .pick").evaluateAll((picks) => picks.map((pick) => pick.getAttribute("data-pick")));
+  expect(dealt).not.toEqual(order);
+  // The last one first: it wiggles, and nothing is placed.
+  await expect(grow).toHaveAttribute("data-ready", "true");
+  await grow.locator(`.pick[data-pick=${order[2]}]`).click();
+  await expectWiggle(grow.locator(`.pick[data-pick=${order[2]}]`));
+  await expect(grow).toHaveAttribute("data-step", "0");
+  for (const _ of order) await nextStep(grow);
+  await expectStar(page);
+  await page.locator("[data-section-back]").click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
-test("homes, body parts, on-screen changes, weather, and senses", async ({ page }) => {
-  await install(page);
-  await page.locator("[data-course=science]").click();
-  await page.locator("[data-activity=homes]").click();
-  const homes = page.locator("[data-science=homes]");
-  await homes.locator("[data-animal=fox]").dragTo(homes.locator("[data-place=den]"));
-  await homes.locator("[data-animal=bird]").click();
-  await homes.locator("[data-place=nest]").click();
-  await homes.locator("[data-animal=fish]").click();
-  await homes.locator("[data-place=pond]").click();
-  await expect(homes).toHaveAttribute("data-round", "food");
-  await homes.locator("[data-animal=fox]").click();
-  await homes.locator("[data-place=berries]").click();
-  await homes.locator("[data-animal=bird]").click();
-  await homes.locator("[data-place=worm]").click();
-  await homes.locator("[data-animal=fish]").click();
-  await homes.locator("[data-place=plant]").click();
-  await homes.locator("[data-finish=homes]").click();
-
-  await page.locator("[data-activity=body]").click();
-  const body = page.locator("[data-science=body]");
-  await expect(body).toHaveAttribute("data-said", "Find the wing.");
-  await body.locator("[data-part=beak]").click();
-  await expect(body.locator(".build-again")).toHaveText("Try again.");
-  await body.locator("[data-part=wing]").click();
-  await body.locator("[data-part=beak]").click();
-  await body.locator("[data-part=tail]").click();
-  await expect(body.locator("[data-part=paw]")).toHaveCount(0);
-  await body.locator("[data-finish=body]").click();
-
-  await page.locator("[data-activity=change]").click();
-  const change = page.locator("[data-science=change]");
-  await change.locator("[data-act=warm]").click();
-  await expect(change).toHaveAttribute("data-result", "water");
-  await change.locator("[data-next=change]").click();
-  await change.locator("[data-act=heat]").click();
-  await expect(change).toHaveAttribute("data-result", "steam");
-  await change.locator("[data-next=change]").click();
-  await expect(change.locator("[data-grownup=true]")).toHaveText("Do this with a grown-up. Do not taste it.");
-  await expect(change.getByRole("button", { name: /taste/i })).toHaveCount(0);
-  await change.locator("[data-act=mix]").click();
-  await expect(change).toHaveAttribute("data-result", "bubbles");
-  await change.locator("[data-next=change]").click();
-  await change.locator("[data-item=rock]").dragTo(change.locator("[data-bin=solid]"));
-  await change.locator("[data-item=juice]").click();
-  await change.locator("[data-bin=liquid]").click();
-  await change.locator("[data-item=steam]").click();
-  await change.locator("[data-bin=gas]").click();
-  await change.locator("[data-finish=change]").click();
-
-  await page.locator("[data-activity=weather]").click();
-  const weather = page.locator("[data-science=weather]");
-  await weather.locator("[data-cloth=hat]").dragTo(weather.locator("[data-wear-target=animal]"));
-  await weather.locator("[data-season=summer]").click();
-  await weather.locator("[data-cloth=coat]").click();
-  await weather.locator("[data-season=spring]").click();
-  await weather.locator("[data-cloth=scarf]").click();
-  await weather.locator("[data-season=winter]").click();
-  await weather.locator("[data-finish=weather]").click();
-
-  await page.locator("[data-activity=senses]").click();
-  const senses = page.locator("[data-science=senses]");
-  await senses.locator("[data-listen=tweet]").click();
-  for (const choice of ["bird", "rain", "drum", "bunny", "rock", "ice", "sun", "moon"]) {
-    await senses.locator(`[data-choice=${choice}]`).click();
-  }
-  await senses.locator("[data-finish=senses]").click();
-  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "5");
+test("the garden says what the plant needs at each step", async ({ page }) => {
+  await installAudioSpy(page);
+  const before = (await spokenLines(page)).length;
+  const grow = await openScience(page, "life", { quick: false });
+  await expect.poll(async () => (await spokenLines(page)).slice(before), { timeout: 8_000 }).toContain("plant the seed.");
+  await grow.locator(".pick[data-give=seed]").click();
+  await expect.poll(async () => (await spokenLines(page)).slice(before), { timeout: 8_000 }).toContain("the seed is thirsty. give it water.");
+  // The wrong thing says its own name.
+  await expect(grow).toHaveAttribute("data-ready", "true");
+  const heard = (await spokenLines(page)).length;
+  await grow.locator(".pick[data-give=sun]").click();
+  await expect.poll(async () => (await spokenLines(page)).slice(heard), { timeout: 8_000 }).toContain("sun");
+  await grow.locator(".pick[data-give=water]").click();
+  await expect.poll(async () => (await spokenLines(page)).slice(heard), { timeout: 8_000 }).toContain("now it needs light. tap the sun.");
 });
 
-test("a guess drops an object in the water", async ({ page }, testInfo) => {
-  await install(page);
-  await page.locator("[data-course=science]").click();
-  await page.locator("[data-activity=float]").click();
-  const play = page.locator("[data-science=float]");
-  await play.locator("[data-guess=sink]").click();
-  await expect(play.locator(".build-again")).toHaveText("Try again.");
-  await play.locator("[data-guess=float]").click();
-  await expect(play).toHaveAttribute("data-object", "rock");
-  await play.locator("[data-guess=sink]").click();
-  await expect(play).toHaveAttribute("data-object", "boat");
-  await play.locator("[data-guess=float]").click();
-  await expect(play.locator("[data-finish=float]")).toBeVisible();
+for (const [id, rounds] of [
+  ["homes", 3],
+  ["weather", 3],
+  ["senses", 3],
+] as const) {
+  test(`${id}: a question said aloud, three pictures to choose from, and a wrong one ends nothing`, async ({ page }, testInfo) => {
+    const frame = await openScience(page, id);
+    await expect(frame).toHaveAttribute("data-rounds", String(rounds));
+    for (let round = 0; round < rounds; round += 1) {
+      await onRound(frame, round);
+      await expect(frame.locator(".game-tray .pick")).toHaveCount(3);
+      await expect(frame.locator(".game-tray .pick .art")).toHaveCount(3);
+      const answer = (await frame.getAttribute("data-answer")) ?? "";
+      if (round === 0) {
+        if (testInfo.project.name === "chromium") await frame.screenshot({ path: `test-results/screenshots/science_${id}.png` });
+        const wrong = frame.locator(`.pick:not([data-pick=${answer}])`).first();
+        await wrong.click();
+        await expectWiggle(wrong);
+        await expect(frame).toHaveAttribute("data-solved", "false");
+      }
+      await frame.locator(`.pick[data-pick=${answer}]`).click();
+    }
+    await expectStar(page);
+  });
+}
+
+test("the weather is the scene itself", async ({ page }) => {
+  const weather = await openScience(page, "weather");
+  const scenes: Record<string, string> = { rain: "rainy", sun: "afternoon", snow: "snowy", wind: "windy" };
+  for (let round = 0; round < 3; round += 1) {
+    await onRound(weather, round);
+    const kind = (await weather.getAttribute("data-item")) ?? "";
+    await expect(weather.locator(".game-scene")).toHaveAttribute("data-scene", scenes[kind]);
+    await weather.locator(`.pick[data-pick=${await weather.getAttribute("data-answer")}]`).click();
+  }
+});
+
+test("body: the voice asks for a part, and it is tapped on the bird itself", async ({ page }, testInfo) => {
+  const body = await openScience(page, "body");
+  await expect(body).toHaveAttribute("data-rounds", "3");
+  // One bird, and nothing in the tray: the bird is the thing to tap.
+  await expect(body.locator(".bird-art")).toBeVisible();
+  await expect(body.locator(".game-tray .pick")).toHaveCount(0);
+  const first = (await body.getAttribute("data-answer")) ?? "";
+  const other = ["beak", "wing", "tail"].find((part) => part !== first) ?? "tail";
+  await body.locator(`.body-part[data-part=${other}]`).click();
+  await expect(body.locator(`.body-part[data-part=${other}]`)).toHaveAttribute("data-wiggle", "true");
+  await body.locator(`.body-part[data-part=${other}]`).click();
+  await body.locator(`.body-part[data-part=${other}]`).click();
+  // Three misses: the part lights up and the hand points at it.
+  await expect(body).toHaveAttribute("data-reveal", "true");
+  await expect(body.locator(`.body-part[data-part=${first}]`)).toHaveAttribute("data-reveal", "true");
+  await expect(body.locator(".bird-hint .game-hand")).toBeVisible();
   if (testInfo.project.name === "chromium") {
-    await play.screenshot({ path: "test-results/screenshots/science_float.png" });
+    await body.screenshot({ path: "test-results/screenshots/science_body.png" });
   }
-  await play.locator("[data-finish=float]").click();
-  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
-  await page.locator("[data-course=reading]").click();
-  await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
+  for (let round = 0; round < 3; round += 1) {
+    await onRound(body, round);
+    await body.locator(`.body-part[data-part=${await body.getAttribute("data-answer")}]`).click();
+  }
+  await expectStar(page);
 });
 
-test("ages 5 to 7 predict, then order a food chain and the water cycle", async ({ page }, testInfo) => {
-  await install(page, older);
+test("sink or float: a guess, then the thing is dropped, and a wrong guess is not a miss", async ({ page }, testInfo) => {
+  const float = await openScience(page, "float");
+  await expect(float).toHaveAttribute("data-rounds", "4");
+  let floats = 0;
+  for (let round = 0; round < 4; round += 1) {
+    await expect(float).toHaveAttribute("data-round", String(round));
+    await expect(float).toHaveAttribute("data-dropped", "false");
+    await expect(float.locator(".float-thing")).toHaveAttribute("data-result", "held");
+    const answer = (await float.getAttribute("data-answer")) ?? "";
+    if (answer === "float") floats += 1;
+    // The first guess is the wrong one on purpose.
+    const guess = round === 0 ? (answer === "float" ? "sink" : "float") : answer;
+    await float.locator(`.pick[data-guess=${guess}]`).click();
+    await expect(float).toHaveAttribute("data-dropped", "true");
+    // Whatever was guessed, the thing does what it really does.
+    await expect(float.locator(".float-thing")).toHaveAttribute("data-result", answer);
+    await expect(float).toHaveAttribute("data-misses", "0");
+    if (round === 0 && testInfo.project.name === "chromium") {
+      await float.screenshot({ path: "test-results/screenshots/science_float.png" });
+    }
+  }
+  // As many float as sink.
+  expect(floats).toBe(2);
+  await expectStar(page);
+});
+
+test("ages 5 to 7 play more rounds: two lives to order, five parts of the bird, six things in the pond", async ({ page }) => {
+  await install(page, { ageRange: "6-7" });
   await page.locator("[data-course=science]").click();
-  const board = page.locator("[data-science=menu]");
-  await expect(board).toHaveAttribute("data-level", "later");
-  await expect(board.locator("[data-activity=predict]")).toBeVisible();
-  await expect(board.locator("[data-activity=paw]")).toHaveCount(0);
-  await page.locator("[data-activity=predict]").click();
-  const play = page.locator("[data-science=predict]");
-  await expect(play.locator("[data-question=predict]")).toHaveText("What do you think will happen?");
-  await play.locator("[data-guess=stay]").click();
-  await expect(play).toHaveAttribute("data-revealed", "false");
-  await expect(play.locator("[data-test=predict]")).toHaveCount(0);
-  await expect(play.locator(".build-again")).toHaveText("Try again.");
-  await play.locator("[data-guess=melt]").click();
-  await play.locator("[data-test=predict]").click();
-  await expect(play).toHaveAttribute("data-revealed", "melt");
-  await play.locator("[data-next=predict]").click();
-  await play.locator("[data-guess=grow]").click();
-  await play.locator("[data-test=predict]").click();
-  await play.locator("[data-next=predict]").click();
-  await expect(play.locator("[data-grownup=true]")).toHaveText("Do this with a grown-up. Do not taste it.");
-  await play.locator("[data-guess=bubbles]").click();
-  await play.locator("[data-test=predict]").click();
-  if (testInfo.project.name === "chromium") {
-    await play.screenshot({ path: "test-results/screenshots/science_predict.png" });
+  await expect(page.locator("[data-science=menu]")).toHaveAttribute("data-level", "later");
+  for (const [id, rounds] of [
+    ["life", "3"],
+    ["homes", "4"],
+    ["body", "5"],
+    ["weather", "4"],
+    ["senses", "5"],
+    ["float", "6"],
+  ]) {
+    await page.locator(`[data-science=menu] [data-activity=${id}]`).click();
+    await expect(game(page, id)).toHaveAttribute("data-rounds", rounds);
+    await expect(game(page, id)).toHaveAttribute("data-level", "later");
+    await page.getByRole("button", { name: "Back", exact: true }).click();
   }
-  await play.locator("[data-finish=predict]").click();
-
-  await page.locator("[data-activity=chain]").click();
-  const chain = page.locator("[data-science=chain]");
-  await chain.locator("[data-piece=fox]").click();
-  await expect(chain.locator(".build-again")).toHaveText("Try again.");
-  await chain.locator("[data-piece=grass]").dragTo(chain.locator("[data-order-row=chain]"));
-  await chain.locator("[data-piece=rabbit]").click();
-  await chain.locator("[data-piece=fox]").click();
-  await chain.locator("[data-finish=chain]").click();
-
-  await page.locator("[data-activity=water]").click();
-  const water = page.locator("[data-science=water]");
-  for (const piece of ["puddle", "vapor", "cloud", "rain"]) {
-    await water.locator(`[data-piece=${piece}]`).click();
-  }
-  await water.locator("[data-finish=water]").click();
-  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "3");
-  await page.locator("[data-activity=body]").click();
-  await expect(page.locator("[data-part=paw]")).toBeVisible();
 });
+
+for (const id of ["life", "homes", "body", "weather", "senses", "float"]) {
+  test(`${id} fits a phone with the tip showing: the scene and every choice are in view`, async ({ page }) => {
+    // A phone's screen less its status bar and home bar.
+    await page.setViewportSize({ width: 390, height: 763 });
+    const frame = await openScience(page, id, { tips: true });
+    await expect(page.locator("[data-tip]")).toBeVisible();
+    await expect(frame.locator(".game-scene")).toBeInViewport({ ratio: 1 });
+    for (const pick of await frame.locator(".game-tray .pick").all()) {
+      await expect(pick).toBeInViewport({ ratio: 1 });
+      const box = await pick.boundingBox();
+      expect(box?.width ?? 0).toBeGreaterThanOrEqual(60);
+    }
+  });
+}
 
 test("the home dock stays on screen, and each section's page shows all of its activities", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "iphone" && testInfo.project.name !== "pixel", "phone layout");
@@ -231,11 +268,5 @@ test("the home dock stays on screen, and each section's page shows all of its ac
     }
     await page.locator("[data-section-back]").click();
     expect(await dockBottom(), `home after ${course}`).toBeLessThanOrEqual(height - 2);
-  }
-  await install(page, older);
-  await page.locator("[data-course=science]").click();
-  const later = page.locator("[data-science=menu] [data-activity]");
-  for (let index = 0; index < (await later.count()); index += 1) {
-    await expect(later.nth(index), `science later tile ${index}`).toBeInViewport({ ratio: 1 });
   }
 });

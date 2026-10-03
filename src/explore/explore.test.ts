@@ -87,8 +87,9 @@ describe("explore isolation", () => {
       expect(heldBack(section, false)).toBe(false);
     }
     // What is finished is in every build.
-    expect(visibleExplore(EXPLORE_FLAGS, true, true)).toEqual(["math", "colors", "time", "games"]);
-    // Time & Money was rebuilt and is no longer held back.
+    expect(visibleExplore(EXPLORE_FLAGS, true, true)).toEqual(["math", "colors", "time", "science", "games"]);
+    // Time & Money and Science were rebuilt and are no longer held back.
     expect(heldBack("time", true)).toBe(false);
+    expect(heldBack("science", true)).toBe(false);
   });
 });

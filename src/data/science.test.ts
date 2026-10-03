@@ -1,143 +1,154 @@
 import { describe, expect, it } from "vitest";
 import manifest from "./audioManifest.json";
 import {
-  CYCLE_KINDS,
-  EXPERIMENTS,
-  FOOD_CHAIN,
-  GROWNUP_FIZZ,
-  HOMES,
-  PREDICT_QUESTION,
-  WATER_CYCLE,
-  acceptNext,
   activitiesForScience,
-  bodyParts,
-  bodyPrompt,
-  clothesFor,
-  cycleStages,
-  floatSet,
-  floatVerdict,
-  foodMatch,
-  heatWater,
-  homeMatch,
-  mixSoda,
-  predictionOk,
+  BODY_PARTS,
+  bodyRounds,
+  FLOAT_THINGS,
+  floatResult,
+  floatRounds,
+  GROW_NEEDS,
+  GROW_STEPS,
+  growAccepts,
+  homeRounds,
+  HOMES,
+  lifeRounds,
+  SCIENCE_NOW,
+  scienceActivities,
   scienceLevel,
   scienceManifestEntries,
+  scienceStages,
   scienceSteps,
-  seasonFor,
+  scienceWords,
   senseRounds,
-  sortMatter,
-  warmIce,
+  SENSES,
+  weatherRounds,
+  WEATHERS,
+  wordId,
 } from "./science";
-import { isSubjectKey, readingSteps } from "./subject";
+import { isSubjectKey } from "./subject";
 
-describe("LittleNest Science", () => {
-  it("keeps ages 3 to 4 on pictures and ages 5 to 7 on predict, chains, and weather cycles", () => {
+const prompts = manifest.prompts as Record<string, { say: string; source: string }>;
+const words = manifest.words as Record<string, { say: string }>;
+const salts = Array.from({ length: 50 }, (_, index) => index * 11 + 3);
+
+describe("science", () => {
+  it("opens six activities at every age, and keeps the ids of the four that are waiting", () => {
     expect(scienceLevel("3")).toBe("early");
-    expect(scienceLevel("4")).toBe("early");
-    expect(scienceLevel("5")).toBe("later");
     expect(scienceLevel("6-7")).toBe("later");
-    expect(activitiesForScience("early")).toEqual(["life", "homes", "body", "change", "weather", "senses", "float"]);
-    expect(activitiesForScience("later")).toEqual([
-      "life",
-      "homes",
-      "body",
-      "change",
-      "weather",
-      "senses",
-      "float",
-      "predict",
-      "chain",
-      "water",
-    ]);
-  });
-
-  it("accepts the next life-cycle stage and rejects a skip", () => {
-    expect(cycleStages("plant", "early")).toEqual(["seed", "sprout", "plant"]);
-    expect(cycleStages("bird", "later")).toEqual(["egg", "chick", "bird"]);
-    expect(cycleStages("butterfly", "early")).toEqual(["caterpillar", "chrysalis", "butterfly"]);
-    expect(cycleStages("butterfly", "later")[0]).toBe("egg");
-    const plant = cycleStages("plant", "early");
-    const skipped = acceptNext([], "plant", plant);
-    expect(skipped).toMatchObject({ ok: false, done: false, order: [] });
-    const seeded = acceptNext([], "seed", plant);
-    const grown = acceptNext(acceptNext(seeded.order, "sprout", plant).order, "plant", plant);
-    expect(grown).toMatchObject({ ok: true, done: true, order: ["seed", "sprout", "plant"] });
-    expect(CYCLE_KINDS).toEqual(["plant", "bird", "butterfly"]);
-  });
-
-  it("matches homes, foods, body parts, clothes, and states of matter", () => {
-    expect(HOMES.fox).toBe("den");
-    expect(homeMatch("bird", "nest")).toBe(true);
-    expect(homeMatch("fish", "den")).toBe(false);
-    expect(foodMatch("fox", "berries")).toBe(true);
-    expect(foodMatch("bird", "worm")).toBe(true);
-    expect(foodMatch("fish", "plant")).toBe(true);
-    expect(bodyParts("early")).toEqual(["wing", "beak", "tail"]);
-    expect(bodyParts("later")).toContain("paw");
-    expect(bodyPrompt("wing")).toBe("Find the wing.");
-    expect(bodyPrompt("wing")).not.toMatch(/Mia|name/i);
-    expect(clothesFor("sun")).toBe("hat");
-    expect(clothesFor("rain")).toBe("coat");
-    expect(clothesFor("snow")).toBe("scarf");
-    expect(seasonFor("sun")).toBe("summer");
-    expect(seasonFor("rain")).toBe("spring");
-    expect(seasonFor("snow")).toBe("winter");
-    expect(sortMatter("rock", "solid")).toBe(true);
-    expect(sortMatter("juice", "liquid")).toBe(true);
-    expect(sortMatter("steam", "gas")).toBe(true);
-    expect(sortMatter("rock", "gas")).toBe(false);
-    expect(warmIce()).toBe("water");
-    expect(heatWater()).toBe("steam");
-    expect(mixSoda()).toBe("bubbles");
-  });
-
-  it("keeps sink or float here", () => {
-    expect(floatSet("early")).toEqual(["leaf", "rock", "boat"]);
-    expect(floatSet("later")).toContain("spoon");
-    expect(floatVerdict("leaf", "float").ok).toBe(true);
-    expect(floatVerdict("rock", "float")).toMatchObject({ ok: false, hint: "That one is heavy, so it sinks." });
-    expect(floatVerdict("boat", "sink").hint).toBe("That one is light, so it floats.");
-    expect(floatVerdict("spoon", "sink").ok).toBe(true);
-  });
-
-  it("checks a prediction before the result, then a food chain and the water cycle", () => {
-    expect(PREDICT_QUESTION).toBe("What do you think will happen?");
-    expect(predictionOk("ice", "melt")).toBe(true);
-    expect(predictionOk("ice", "stay")).toBe(false);
-    expect(predictionOk("seed", "grow")).toBe(true);
-    expect(predictionOk("fizz", "bubbles")).toBe(true);
-    expect(EXPERIMENTS.find((item) => item.id === "ice")?.result).toBe("melt");
-    const chain = acceptNext(acceptNext(acceptNext([], "grass", FOOD_CHAIN).order, "rabbit", FOOD_CHAIN).order, "fox", FOOD_CHAIN);
-    expect(chain.done).toBe(true);
-    expect(acceptNext([], "fox", FOOD_CHAIN).ok).toBe(false);
-    const water = WATER_CYCLE.reduce((order, piece) => acceptNext(order, piece, WATER_CYCLE).order, [] as string[]);
-    expect(water).toEqual(["puddle", "vapor", "cloud", "rain"]);
-  });
-
-  it("tells a grown-up to help and does not invite a taste", () => {
-    expect(GROWNUP_FIZZ).toBe("Do this with a grown-up. Do not taste it.");
-    expect(GROWNUP_FIZZ.toLowerCase()).not.toMatch(/taste the|try a taste|drink|eat /);
-    const rounds = senseRounds();
-    expect(rounds.filter((round) => round.sense === "sound").map((round) => round.cue)).toEqual(["tweet", "drip", "boom"]);
-    expect(rounds.find((round) => round.cue === "soft")?.answer).toBe("bunny");
-    expect(rounds.find((round) => round.cue === "night")?.answer).toBe("moon");
-  });
-
-  it("can earn a star without finishing the reading lesson", () => {
-    for (const id of [...scienceSteps, "predict", "chain", "water"]) {
+    expect(activitiesForScience("early")).toEqual([...SCIENCE_NOW]);
+    expect(activitiesForScience("later")).toEqual([...SCIENCE_NOW]);
+    for (const id of ["change", "predict", "chain", "water"]) expect(scienceActivities).toContain(id);
+    // Every open activity has a stage a grown-up can read about, and is a step that can earn a star.
+    for (const id of SCIENCE_NOW) {
+      expect(scienceStages.some((stage) => stage.id === id), id).toBe(true);
+      expect((scienceSteps as readonly string[]).includes(id)).toBe(true);
       expect(isSubjectKey(id)).toBe(true);
-      expect((readingSteps as readonly string[]).includes(id)).toBe(false);
+    }
+  });
+});
+
+describe("growing", () => {
+  it("is a seed, then water, then sun, then water again", () => {
+    expect(GROW_STEPS.map((step) => step.need)).toEqual(["seed", "water", "sun", "water"]);
+    expect(GROW_NEEDS).toEqual(["seed", "water", "sun"]);
+    for (const [index, step] of GROW_STEPS.entries()) {
+      for (const need of GROW_NEEDS) expect(growAccepts(index, need)).toBe(need === step.need);
+    }
+    // Nothing is taken once it is grown.
+    for (const need of GROW_NEEDS) expect(growAccepts(GROW_STEPS.length, need)).toBe(false);
+  });
+
+  it("starts in the garden, then puts a life in order: one at ages 3 to 4, two at 5 to 7", () => {
+    for (const salt of salts) {
+      const early = lifeRounds("early", salt);
+      const later = lifeRounds("later", salt);
+      expect(early.map((round) => round.kind)).toEqual(["grow", "order"]);
+      expect(later.map((round) => round.kind)).toEqual(["grow", "order", "order"]);
+      for (const round of later) {
+        if (round.kind !== "order") continue;
+        expect(round.stages).toHaveLength(3);
+        expect([...round.deal].map((stage) => stage.art).sort()).toEqual(round.stages.map((stage) => stage.art).sort());
+        // Never handed over already in order.
+        expect(round.deal.map((stage) => stage.art)).not.toEqual(round.stages.map((stage) => stage.art));
+      }
+      const ids = later.flatMap((round) => (round.kind === "order" ? [round.id] : []));
+      expect(new Set(ids).size).toBe(2);
+    }
+  });
+});
+
+describe("the picture questions", () => {
+  it("asks where three or four animals live, with the home among three", () => {
+    for (const salt of salts) {
+      expect(homeRounds("early", salt)).toHaveLength(3);
+      const rounds = homeRounds("later", salt);
+      expect(rounds).toHaveLength(HOMES.length);
+      expect(new Set(rounds.map((round) => round.id)).size).toBe(rounds.length);
+      for (const round of rounds) {
+        expect(round.choices.map((choice) => choice.art)).toContain(round.home.art);
+        expect(new Set(round.choices.map((choice) => choice.art)).size).toBe(3);
+      }
     }
   });
 
-  it("lists spoken lines for a natural voice later", () => {
-    const prompts = manifest.prompts as Record<string, { say: string; source: string; file: string }>;
-    for (const entry of scienceManifestEntries()) {
-      expect(prompts[entry.id]?.say).toBe(entry.say);
-      expect(prompts[entry.id]?.source).toBe("neural");
-      expect(prompts[entry.id]?.file).toBe(`prompts/${entry.id}.mp3`);
+  it("asks for the parts of a bird: three for the youngest, all five later", () => {
+    for (const salt of salts) {
+      expect([...bodyRounds("early", salt)].sort()).toEqual(["beak", "tail", "wing"]);
+      expect([...bodyRounds("later", salt)].sort()).toEqual([...BODY_PARTS].sort());
     }
-    expect(prompts["engineer-float"]).toBeUndefined();
+    expect(new Set(salts.map((salt) => bodyRounds("later", salt).join(","))).size).toBeGreaterThan(5);
+  });
+
+  it("asks what to take for the weather, and each kind of weather has its own thing", () => {
+    expect(new Set(WEATHERS.map((entry) => entry.thing.art)).size).toBe(WEATHERS.length);
+    for (const salt of salts) {
+      expect(weatherRounds("early", salt)).toHaveLength(3);
+      for (const round of weatherRounds("later", salt)) {
+        expect(round.choices.map((choice) => choice.art)).toContain(round.thing.art);
+        expect(new Set(round.choices.map((choice) => choice.art)).size).toBe(3);
+      }
+    }
+  });
+
+  it("asks which part of you does each of the five senses", () => {
+    expect(new Set(SENSES.map((entry) => entry.part.art)).size).toBe(5);
+    for (const salt of salts) {
+      expect(senseRounds("early", salt)).toHaveLength(3);
+      const rounds = senseRounds("later", salt);
+      expect(rounds).toHaveLength(5);
+      for (const round of rounds) expect(round.choices.map((choice) => choice.art)).toContain(round.part.art);
+    }
+  });
+
+  it("drops as many things that float as things that sink", () => {
+    for (const salt of salts) {
+      for (const [level, each] of [["early", 2], ["later", 3]] as const) {
+        const rounds = floatRounds(level, salt);
+        expect(rounds).toHaveLength(each * 2);
+        expect(rounds.filter((round) => round.floats)).toHaveLength(each);
+        expect(new Set(rounds.map((round) => round.picture.art)).size).toBe(each * 2);
+        for (const round of rounds) expect(floatResult(round)).toBe(round.floats ? "float" : "sink");
+      }
+    }
+    expect(FLOAT_THINGS.filter((thing) => thing.floats)).toHaveLength(3);
+  });
+});
+
+describe("what science says", () => {
+  it("has a recorded line for every question and every answer", () => {
+    const entries = scienceManifestEntries();
+    expect(new Set(entries.map((entry) => entry.id)).size).toBe(entries.length);
+    for (const entry of entries) {
+      expect(prompts[entry.id]?.say, entry.id).toBe(entry.say);
+      expect(prompts[entry.id]?.source).toBe("neural");
+    }
+    for (const step of GROW_STEPS) expect(prompts[step.line]?.say).toBe(step.say);
+    for (const entry of HOMES) expect(prompts[`science-home-${entry.id}`]?.say).toBe(entry.ask);
+  });
+
+  it("has a recorded word for every picture that says its name", () => {
+    for (const name of scienceWords()) expect(words[wordId(name)], name).toBeTruthy();
+    expect(wordId("dog house")).toBe("dog-house");
   });
 });
