@@ -18,7 +18,7 @@ import { sectionVisible } from "../explore/flags";
 import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
 import { Chevron, StarIcon } from "./icons";
-import { EngineerBoard } from "./NestBuild";
+import { EngineerBoard } from "./BuildGames";
 import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
 import { ModuleMark } from "./ModuleMark";

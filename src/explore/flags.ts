@@ -13,20 +13,15 @@ export const EXPLORE_FLAGS: ExploreFlags = {
 };
 
 /**
- * Sections being rebuilt after the first phone test. They are left out of the
- * app people install (a production build) until each is finished, and stay in
- * development builds so their tests keep running.
+ * Sections left out of the app people install (a production build) while they
+ * are being rebuilt. They stay in development builds so their tests keep running.
  *
- * Why: on a phone these were colored dots and word-only buttons, and could
- * not be understood by the grown-up testing them, let alone a child. A pilot
- * family should see only what is finished.
- *
- * The pull request that finishes a section takes it off this list. Time &
- * Money came off when its ten games were rebuilt on the game kit
- * (src/game/kit.tsx): pictures to tap, every instruction spoken. Science
- * came off the same way, with the garden where a seed is grown.
+ * After the first phone test Time & Money, Build and Science were held back:
+ * on a phone they were colored dots and word-only buttons. Each came off this
+ * list when it was rebuilt on the game kit (src/game/kit.tsx), and the list is
+ * empty now. It stays, so a section can be held back again the same way.
  */
-export const HELD_BACK: readonly ExploreSection[] = ["build"];
+export const HELD_BACK: readonly ExploreSection[] = [];
 
 /** Is this section left out of this build? `production` is passed in by tests. */
 export function heldBack(section: ExploreSection, production: boolean = import.meta.env.PROD): boolean {

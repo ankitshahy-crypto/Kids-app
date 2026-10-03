@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installAudioSpy, requestedCues, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
+import { sentAddresses } from "./requests";
 
 /**
  * A child who cannot read yet needs to hear what to do. Every first activity
@@ -149,7 +150,7 @@ test("Trace my name says what to do, then the name, and Again repeats both", asy
   await install(page);
   await expectOpeningLine(page, () => page.getByRole("button", { name: "Trace my name" }).click(), "my-name", [/^trace your name\.$/, /^mia$/]);
   // The name is spoken by the device only; nothing with the name in it is fetched.
-  expect(requested.join(" ")).not.toMatch(/mia/i);
+  expect(sentAddresses(requested)).not.toMatch(/mia/i);
 });
 
 test("Count objects says its instruction on open, and Again repeats it", async ({ page }) => {

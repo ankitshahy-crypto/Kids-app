@@ -181,8 +181,12 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
     /**
      * A right answer. It is named aloud, the animal cheers, and `then` runs when the words are done
      * (never sooner than a moment, never later than a few seconds).
+     *
+     * `hold` is that moment. A game whose answer is something that happens in the scene (the animal
+     * walking over the bridge, a lever lifting the rock) passes how long that takes, so it is seen to
+     * the end even with the voice off, when there are no words to wait for.
      */
-    right(said: Cue[] = [], then?: () => void) {
+    right(said: Cue[] = [], then?: () => void, hold: number = SOLVED_MIN_MS) {
       quiet.current = true;
       stopIdle();
       setNudge(false);
@@ -198,7 +202,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
         if (ran) return;
         ran = true;
         if (after.current !== null) window.clearTimeout(after.current);
-        const wait = Math.max(0, (reducedMotion() ? 300 : SOLVED_MIN_MS) - (Date.now() - started));
+        const wait = Math.max(0, (reducedMotion() ? 300 : hold) - (Date.now() - started));
         after.current = window.setTimeout(then, wait);
       };
       if (quick()) {
@@ -206,7 +210,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
         after.current = window.setTimeout(then, 150);
         return;
       }
-      after.current = window.setTimeout(go, SOLVED_MAX_MS);
+      after.current = window.setTimeout(go, Math.max(SOLVED_MAX_MS, hold));
       if (said.length > 0) speak.line(said, go);
       else go();
     },
@@ -299,7 +303,7 @@ export function Hand() {
 }
 
 /** A drawn place for a game to happen in. Each is a wide picture that fills the top of the game. */
-export type SceneKind = "shop" | "room" | "garden" | "stand" | "morning" | "afternoon" | "night" | "pond" | "table" | "field" | "rainy" | "snowy" | "windy";
+export type SceneKind = "shop" | "room" | "garden" | "stand" | "morning" | "afternoon" | "night" | "pond" | "table" | "field" | "rainy" | "snowy" | "windy" | "sky";
 
 export function Backdrop({ kind }: { kind: SceneKind }) {
   return (
@@ -381,6 +385,15 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
           <circle cx="262" cy="44" r="24" fill="#2f3f73" />
           <path d="M60 40l3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1ZM140 70l2 5 5 1-4 4 1 5-4-3-4 3 1-5-4-4 5-1ZM320 110l2 5 5 1-4 4 1 5-4-3-4 3 1-5-4-4 5-1Z" fill="#fbf1c8" />
           <path d="M0 150c80-20 200-20 360 0v50H0Z" fill="#4f7a6b" />
+        </>
+      ) : null}
+      {/* Only a sky: a game that builds its own ground (a river to bridge, a track to roll along). */}
+      {kind === "sky" ? (
+        <>
+          <rect width="360" height="200" fill="#dcedf9" />
+          <circle cx="306" cy="40" r="22" fill="#f9d976" />
+          <ellipse cx="96" cy="46" rx="34" ry="12" fill="#fffdfb" />
+          <ellipse cx="124" cy="40" rx="24" ry="12" fill="#fffdfb" />
         </>
       ) : null}
       {kind === "rainy" ? (
@@ -477,6 +490,7 @@ export function GameFrame({
   rounds,
   scene,
   stage,
+  hostAt,
   children,
   attrs,
 }: {
@@ -490,6 +504,12 @@ export function GameFrame({
   scene: SceneKind;
   /** What the round is about, drawn in the scene beside the animal. */
   stage?: ReactNode;
+  /**
+   * Where the animal stands, as shares of the scene, when a game places it (on a river bank, say).
+   * With `walk` it glides to the new place; without, it is simply there. A bridge sets `walk` only
+   * while the animal crosses, so the next round does not show it sliding backwards over the water.
+   */
+  hostAt?: { left: number; bottom: number; walk?: boolean };
   /** The things to tap. */
   children?: ReactNode;
   attrs?: Record<string, string | number | undefined>;
@@ -517,8 +537,9 @@ export function GameFrame({
         <button type="button" className="game-hear" data-hear="true" aria-label="Hear it again" onClick={() => coach.again()}>
           <SpeakerIcon />
         </button>
-        <span className="game-host" data-mood={mood}>
-          {outfit ? <Hero animal={animal} outfit={outfit} /> : <Avatar animal={animal} />}
+        <span className="game-host" data-mood={mood} data-walks={hostAt?.walk ? "true" : undefined} style={hostAt ? { left: `${hostAt.left}%`, bottom: `${hostAt.bottom}%` } : undefined}>
+          {/* The jump and the tilt are on the inner one, so they do not fight with the walk. */}
+          <span className="game-host-body">{outfit ? <Hero animal={animal} outfit={outfit} /> : <Avatar animal={animal} />}</span>
         </span>
         <div className="game-stage">{stage}</div>
         {mood === "cheer" ? <Sparkles /> : null}
