@@ -35,7 +35,7 @@ test("past the free weeks, the lesson replays week 2 until a grown-up unlocks, t
   await install(page, 5);
   const today = page.locator("[data-screen=today]");
   await expect(today).toHaveAttribute("data-week", "1");
-  await expect(today).toHaveAttribute("data-letters", "st");
+  await expect(today).toHaveAttribute("data-letters", /^st/);
   const held = page.locator("[data-held=true]");
   await expect(held).toBeVisible();
   // The child sees no price, only "ask a grown-up".

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { answerGate } from "./gate";
 import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
-import { createdThisWeek } from "./clock";
+import { createdThisWeek, midweek } from "./clock";
 
 /**
  * The sound-unit weeks (15 to 26): sh, ee, magic e. A five-year-old placed on
@@ -35,6 +35,8 @@ function placement(weekIndex: number, stageId = "phonics") {
 }
 
 async function install(page: Page, profile: Record<string, unknown>, placed: Record<string, unknown> | null) {
+  // Not a Friday: these tests are about a week's own letters, without the review letters.
+  await page.clock.setFixedTime(midweek());
   await installAudioSpy(page);
   await page.addInitScript(
     ({ saved, place }) => {
@@ -58,7 +60,7 @@ async function passGate(page: Page) {
 test("week 15 leads with the sh card, and its story sounds out sh as one sound", async ({ page }) => {
   await install(page, child(), placement(14));
   const today = page.locator("[data-screen=today]");
-  await expect(today).toHaveAttribute("data-letters", "shch");
+  await expect(today).toHaveAttribute("data-letters", /^shch/);
   await expect(today).toHaveAttribute("data-stage", "phonics");
   // The Letters stop shows the unit as it is written, not a capital.
   await expect(page.locator(".trail-letter")).toHaveText("sh");
@@ -84,7 +86,7 @@ test("week 15 leads with the sh card, and its story sounds out sh as one sound",
   await page.getByRole("button", { name: "Back" }).click();
   // Drawing a unit week traces its letters one by one: s, h, c.
   await page.getByRole("button", { name: "Draw" }).click();
-  await expect(page.locator("[data-screen=draw]")).toHaveAttribute("data-letters", "shc");
+  await expect(page.locator("[data-screen=draw]")).toHaveAttribute("data-letters", /^shc/);
 
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "Story" }).click();
@@ -119,7 +121,7 @@ test("week 15 leads with the sh card, and its story sounds out sh as one sound",
 
 test("a magic-e word keeps its quiet e on the tiles, and phonics words wait for their sounds", async ({ page }) => {
   await install(page, child({ ladder: { step: 5, successes: 0 } }), placement(20));
-  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", "a_ei_e");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", /^a_ei_e/);
   await page.getByRole("button", { name: "Letters" }).click();
   const activity = page.locator(".activity");
   await expect(activity).toHaveAttribute("data-word", "letter-a_e");
@@ -144,8 +146,9 @@ test("the parent panel lists the sound units learned, and the calendar holds a f
   // Created 20 weeks ago: a five-year-old is on week 21 (a-e, i-e); a four-year-old waits at week 14 (x, q).
   const created = new Date(new Date(createdThisWeek()).getTime() - 20 * 7 * 24 * 60 * 60 * 1000).toISOString();
   await install(page, child({ createdAt: created }), null);
-  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", "a_ei_e");
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", /^a_ei_e/);
+  // Enter, not a held press: the page's date is pinned (see install), and a held press is timed.
+  await page.getByRole("button", { name: "Switch child" }).press("Enter");
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
   const letters = page.locator("[data-screen=parent] [data-section=letters]");
@@ -163,6 +166,6 @@ test("the parent panel lists the sound units learned, and the calendar holds a f
   });
   await page.reload();
   await page.getByRole("button", { name: "Mia" }).click();
-  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", "xq");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", /^xq/);
   await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-week", "13");
 });
