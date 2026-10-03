@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { answerGate, openTeacherChild } from "./gate";
 import { installAudioSpy, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
-import { expectWiggle, game, onRound } from "./kit";
+import { expectWiggle, game, matchPairs, onRound } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -64,30 +64,6 @@ async function openGames(page: Page) {
 
 async function passGate(page: Page) {
   await answerGate(page, true);
-}
-
-/** Find every pair on the board and tap its two cards. */
-async function matchPairs(root: Locator, cardSelector: string) {
-  const cards = await root.locator(cardSelector).evaluateAll((nodes) =>
-    nodes.map((node) => ({
-      id: node.getAttribute("data-card") ?? node.getAttribute("data-rhyme") ?? "",
-      pair: node.getAttribute("data-pair") ?? "",
-    })),
-  );
-  const groups = new Map<string, string[]>();
-  for (const card of cards) {
-    const list = groups.get(card.pair) ?? [];
-    list.push(card.id);
-    groups.set(card.pair, list);
-  }
-  let found = 0;
-  for (const ids of groups.values()) {
-    await root.locator(`${cardSelector}[data-card="${ids[0]}"], ${cardSelector}[data-rhyme="${ids[0]}"]`).click();
-    await root.locator(`${cardSelector}[data-card="${ids[1]}"], ${cardSelector}[data-rhyme="${ids[1]}"]`).click();
-    found += 1;
-    // The last pair ends the round, and the next round's count starts again.
-    if (found < groups.size) await expect(root).toHaveAttribute("data-matched", String(found));
-  }
 }
 
 test("game tiles stay large on iPad", async ({ page }, testInfo) => {

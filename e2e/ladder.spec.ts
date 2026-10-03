@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { answerGate, openTeacherChild } from "./gate";
 import { createdThisWeek } from "./clock";
+import { game, matchPairs, onRound } from "./kit";
 import { finishPathTrace } from "./traceFlow";
 
 const profile = {
@@ -94,6 +95,9 @@ test("a week-one child does not climb the ladder by playing games", async ({ pag
       localStorage.setItem("littlenest-profiles-v1", JSON.stringify(saved));
       localStorage.setItem("littlenest-placement-v1", JSON.stringify(placed));
       localStorage.setItem("littlenest-silent-hint-v1", "1");
+      // The games wait for their praise to be said before the next round. This development-build
+      // switch skips the wait, so both games can be played to the end here.
+      localStorage.setItem("littlenest-quick-rounds", "1");
     },
     { saved: child, placed: weekOne },
   );
@@ -101,29 +105,32 @@ test("a week-one child does not climb the ladder by playing games", async ({ pag
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", "ma");
 
-  // Hatch the Egg counts toward the ladder.
+  // Hatch the Egg counts toward the ladder. A new child is on its first level, where one letter,
+  // the word's first sound, finishes each word; the egg hatches after the last one.
   await page.locator("[data-dock=games]").click();
   await page.locator("[data-game-tile=hatch]").click();
-  const hatch = page.locator("[data-game=hatch] .game-board");
-  while ((await hatch.locator('[data-letter][data-needed="true"]').count()) > 0) {
-    await hatch.locator('[data-letter][data-needed="true"]').first().click();
+  const hatch = game(page, "hatch");
+  await expect(hatch).toHaveAttribute("data-level", "1");
+  const words = Number(await hatch.getAttribute("data-rounds"));
+  expect(words).toBeGreaterThanOrEqual(1);
+  for (let round = 0; round < words; round += 1) {
+    await onRound(hatch, round);
+    await hatch.locator('.pick[data-letter][data-needed="true"]').click();
   }
-  await expect(hatch).toHaveAttribute("data-phase", "hatched");
-  await hatch.getByRole("button", { name: "Done" }).click();
+  await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   expect((await savedLadder(page)).step).toBe(2);
 
   // So does Rhyme Match.
   await page.locator("[data-game-tile=rhyme]").click();
-  const rhyme = page.locator("[data-game=rhyme] .game-board");
-  const cards = await rhyme.locator("[data-rhyme]").evaluateAll((nodes) =>
-    nodes.map((node) => ({ id: node.getAttribute("data-rhyme") ?? "", pair: node.getAttribute("data-pair") ?? "" })),
-  );
-  for (const pair of new Set(cards.map((card) => card.pair))) {
-    for (const card of cards.filter((entry) => entry.pair === pair)) await rhyme.locator(`[data-rhyme="${card.id}"]`).click();
+  const rhyme = game(page, "rhyme");
+  const boards = Number(await rhyme.getAttribute("data-rounds"));
+  expect(boards).toBeGreaterThanOrEqual(1);
+  for (let round = 0; round < boards; round += 1) {
+    await onRound(rhyme, round);
+    await matchPairs(rhyme, ".pick[data-rhyme]");
   }
-  await expect(rhyme).toHaveAttribute("data-phase", "done");
-  await rhyme.getByRole("button", { name: "Done" }).click();
+  await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "2");
   const ladder = await savedLadder(page);
   expect(ladder.step).toBe(2);
