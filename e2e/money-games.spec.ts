@@ -1,134 +1,113 @@
 import { expect, test, type Page } from "@playwright/test";
 import { answerGate, openClassPlace } from "./gate";
-import { createdThisWeek } from "./clock";
-
-const profile = {
-  activeId: "mia",
-  profiles: [
-    {
-      id: "mia",
-      name: "Mia",
-      ageRange: "4",
-      animal: "fox",
-      createdAt: createdThisWeek(),
-      stars: 0,
-      days: {},
-    },
-  ],
-};
-
-const placement = {
-  version: 1,
-  origin: "device",
-  classId: "device-class",
-  updatedAt: "2026-09-26T00:00:00.000Z",
-  subjects: {
-    time: {
-      classDefault: { subject: "time", stageId: "day", weekIndex: 0 },
-      byChildId: {},
-    },
-  },
-};
-
-async function install(page: Page) {
-  await page.addInitScript(
-    ({ saved, placed }) => {
-      localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
-      localStorage.setItem("littlenest-placement-v1", JSON.stringify(placed));
-      localStorage.removeItem("kids-app-silent-hint-v1");
-    },
-    { saved: profile, placed: placement },
-  );
-  await page.goto("./");
-  const hint = page.getByRole("status").getByRole("button", { name: "OK" });
-  if (await hint.count()) await hint.click();
-  await page.getByRole("button", { name: "Mia" }).click();
-  await page.getByRole("button", { name: "LittleNest Time & Money" }).click();
-}
-
-async function openPlay(page: Page, name: string) {
-  await page.getByRole("button", { name: "Money play" }).click();
-  await page.getByRole("button", { name }).click();
-}
+import { expectStar, expectWiggle, onRound, openGame, openTimeMoney } from "./kit";
 
 async function passGate(page: Page) {
   await answerGate(page, true);
 }
 
-test("three jars earn coins and the save jar can reach the hat", async ({ page }, testInfo) => {
-  await install(page);
-  await openPlay(page, "Three jars");
-  const play = page.locator("[data-screen=jars]");
+test("three jars: jobs as pictures earn coins, and two in the save jar reach the crown", async ({ page }, testInfo) => {
+  await openTimeMoney(page);
+  const jars = await openGame(page, "jars");
+  // Three jobs, each a drawing. The first is pointed at.
+  await expect(jars.locator("[data-chore] .art")).toHaveCount(3);
+  await expect(jars.locator("[data-chore=tidy] .game-hand")).toBeVisible();
   if (testInfo.project.name === "chromium") {
-    await play.screenshot({ path: "test-results/screenshots/money_jars.png" });
+    await jars.screenshot({ path: "test-results/screenshots/money_jars.png" });
   }
-  await play.locator("[data-chore=tidy]").click();
-  await play.locator("[data-chore=feed]").click();
-  await play.locator("[data-chore=help]").click();
-  await expect(play).toHaveAttribute("data-earned", "3");
-  await play.locator("[data-jar=save]").click();
-  await play.locator("[data-jar=save]").click();
-  await play.locator("[data-jar=save]").click();
-  await expect(play).toHaveAttribute("data-save", "3");
-  await expect(play).toHaveAttribute("data-goal", "met");
-  await play.locator("[data-finish=jars]").click();
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+  for (const chore of ["tidy", "feed", "help"]) await jars.locator(`[data-chore=${chore}]`).click();
+  await expect(jars).toHaveAttribute("data-earned", "3");
+  // The jars take the place of the jobs. What the save jar is for is shown with two places to fill.
+  await expect(jars.locator("[data-jar]")).toHaveCount(3);
+  await expect(jars.locator(".jars-goal .price-slot")).toHaveCount(2);
+  await jars.locator("[data-jar=save]").click();
+  await jars.locator("[data-jar=save]").click();
+  await expect(jars.locator(".jars-goal .price-slot[data-filled=true]")).toHaveCount(2);
+  await jars.locator("[data-jar=share]").click();
+  await expect(jars).toHaveAttribute("data-save", "2");
+  await expect(jars).toHaveAttribute("data-share", "1");
+  await expect(jars).toHaveAttribute("data-goal", "met");
+  await expectStar(page);
   await expect.poll(async () => page.evaluate(() => localStorage.getItem("kids-app-profiles-v1") ?? "")).toContain("hat-crown");
   await page.locator("[data-section-back]").click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
-test("the lemonade stand pays a coin for each cup served", async ({ page }, testInfo) => {
-  await install(page);
-  await openPlay(page, "Lemonade stand");
-  const play = page.locator("[data-screen=lemonade]");
-  if (testInfo.project.name === "chromium") {
-    await play.screenshot({ path: "test-results/screenshots/money_lemonade.png" });
+test("three jars: spending it all still ends the game, and the crown waits", async ({ page }) => {
+  await openTimeMoney(page);
+  const jars = await openGame(page, "jars");
+  for (const chore of ["tidy", "feed", "help"]) await jars.locator(`[data-chore=${chore}]`).click();
+  for (const jar of ["spend", "spend", "share"]) await jars.locator(`[data-jar=${jar}]`).click();
+  await expect(jars).toHaveAttribute("data-goal", "later");
+  await expectStar(page);
+  expect(await page.evaluate(() => localStorage.getItem("kids-app-profiles-v1") ?? "")).not.toContain("hat-crown");
+});
+
+test("the lemonade stand: three customers, and a coin for each cup", async ({ page }, testInfo) => {
+  await openTimeMoney(page);
+  const stand = await openGame(page, "lemonade");
+  let earned = 0;
+  for (let round = 0; round < 3; round += 1) {
+    await onRound(stand, round);
+    const cups = Number(await stand.getAttribute("data-answer"));
+    // What the customer wants is a picture of that many cups.
+    await expect(stand.locator(".stand-bubble .art")).toHaveCount(cups);
+    if (round === 0) {
+      if (testInfo.project.name === "chromium") await stand.screenshot({ path: "test-results/screenshots/money_lemonade.png" });
+      const wrong = stand.locator(`.pick:not([data-cups="${cups}"])`).first();
+      await wrong.click();
+      await expectWiggle(wrong);
+      await expect(stand).toHaveAttribute("data-earned", "0");
+    }
+    await stand.locator(`.pick[data-cups="${cups}"]`).click();
+    earned += cups;
+    await expect(stand).toHaveAttribute("data-earned", String(earned));
   }
-  await play.locator("[data-serve=cup]").click();
-  await play.locator("[data-serve=cup]").click();
-  await expect(play).toHaveAttribute("data-earned", "2");
-  await play.locator("[data-serve=cup]").click();
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+  expect(earned).toBe(6);
+  await expectStar(page);
 });
 
-test("a snack that costs too much asks them to save", async ({ page }) => {
-  await install(page);
-  await openPlay(page, "Choose a snack");
-  const play = page.locator("[data-screen=choose]");
-  await expect(play).toHaveAttribute("data-wallet", "10");
-  await play.locator("[data-snack=milk]").click();
-  await expect(play).toHaveAttribute("data-wallet", "10");
-  await expect(play.locator("[data-message=save]")).toHaveText("Let's save for it!");
-  await play.locator("[data-snack=cookie]").click();
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+test("what can I buy: a price the coin does not cover waits, and one it covers is bought", async ({ page }) => {
+  await openTimeMoney(page);
+  const choose = await openGame(page, "choose");
+  for (let round = 0; round < 3; round += 1) {
+    await onRound(choose, round);
+    // Every price is on a tag with its coin drawn beside it.
+    await expect(choose.locator(".game-tray .pick .price-tag .coin-art")).toHaveCount(3);
+    if (round === 0) {
+      const dear = choose.locator(".pick[data-afford=false]").first();
+      await dear.click();
+      await expectWiggle(dear);
+      await expect(choose).toHaveAttribute("data-solved", "false");
+    }
+    await choose.locator(".pick[data-afford=true]").first().click();
+  }
+  await expectStar(page);
 });
 
-test("needs and wants sort without a wrong bin ending the game", async ({ page }) => {
-  await install(page);
-  await openPlay(page, "Needs and wants");
-  const play = page.locator("[data-screen=needs]");
-  await play.locator("[data-item=apple]").click();
-  await play.locator("[data-bin=want]").click();
-  await expect(play.locator("[data-bin=want]")).toHaveAttribute("data-wiggle", "true");
-  await expect(play).toHaveAttribute("data-sorted", "0");
-  await play.locator("[data-bin=need]").click();
-  await play.locator("[data-item=milk]").click();
-  await play.locator("[data-bin=need]").click();
-  await play.locator("[data-item=cookie]").click();
-  await play.locator("[data-bin=want]").click();
-  await play.locator("[data-item=crown]").click();
-  await play.locator("[data-bin=want]").click();
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+test("need or want: six pictures, one at a time, and a wrong basket ends nothing", async ({ page }, testInfo) => {
+  await openTimeMoney(page);
+  const needs = await openGame(page, "needs");
+  await expect(needs).toHaveAttribute("data-rounds", "6");
+  for (let round = 0; round < 6; round += 1) {
+    await onRound(needs, round);
+    const answer = (await needs.getAttribute("data-answer")) ?? "";
+    await expect(needs.locator(".need-item .art")).toBeVisible();
+    if (round === 0) {
+      if (testInfo.project.name === "chromium") await needs.screenshot({ path: "test-results/screenshots/money_needs.png" });
+      const wrong = needs.locator(`.pick:not([data-bin=${answer}])`);
+      await wrong.click();
+      await expectWiggle(wrong);
+      await expect(needs).toHaveAttribute("data-round", "0");
+    }
+    await needs.locator(`.pick[data-bin=${answer}]`).click();
+  }
+  await expectStar(page);
 });
 
-test("cards stay closed early, then a debit tap lowers the save jar", async ({ page }, testInfo) => {
-  await install(page);
-  await openPlay(page, "Pretend cards");
-  await expect(page.locator("[data-screen=cards]")).toHaveAttribute("data-cards", "closed");
-  await page.getByRole("button", { name: "Back", exact: true }).click();
-  await expect(page.locator("[data-screen=money-play]")).toBeVisible();
-  await page.getByRole("button", { name: "Back", exact: true }).click();
+test("cards wait for the end of the course, then a debit card takes from the save jar and a credit card is paid back", async ({ page }, testInfo) => {
+  await openTimeMoney(page);
+  await expect(page.locator("[data-activity=cards]")).toHaveCount(0);
   // A section page has Back where the child's animal is on the reading path, so step back to the path first.
   await page.locator("[data-section-back]").click();
   await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
@@ -150,15 +129,22 @@ test("cards stay closed early, then a debit tap lowers the save jar", async ({ p
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Mia" }).click();
   await page.getByRole("button", { name: "LittleNest Time & Money" }).click();
-  await openPlay(page, "Pretend cards");
-  const cards = page.locator("[data-screen=cards]");
+  const cards = await openGame(page, "cards");
   await expect(cards).toHaveAttribute("data-cards", "open");
+  await expect(cards).toHaveAttribute("data-card", "debit");
   await expect(cards).toHaveAttribute("data-save", "4");
   if (testInfo.project.name === "chromium") {
     await cards.screenshot({ path: "test-results/screenshots/money_cards.png" });
   }
-  await cards.locator("[data-card=debit]").click();
+  // Debit: the coin leaves the save jar at once.
+  await cards.locator(".pick[data-card=debit]").click();
   await expect(cards).toHaveAttribute("data-save", "3");
-  await cards.locator("[data-tap=card]").click();
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+  // Credit: bought now, and the jar is the same until the coin is paid back.
+  await expect(cards).toHaveAttribute("data-card", "credit");
+  await cards.locator(".pick[data-card=credit]").click();
+  await expect(cards).toHaveAttribute("data-owing", "true");
+  await expect(cards).toHaveAttribute("data-save", "3");
+  await cards.locator(".pick[data-jar=save]").click();
+  await expect(cards).toHaveAttribute("data-save", "2");
+  await expectStar(page);
 });

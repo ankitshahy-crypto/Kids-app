@@ -53,7 +53,6 @@ import {
   KnowActivity,
   LemonadeActivity,
   MixActivity,
-  MoneyBoard,
   MoreActivity,
   NameActivity,
   NeedsActivity,
@@ -95,7 +94,7 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors" | "time" | "build" | "science";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "money-play" | "break" | "surprise" | "check" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name" | "sound-check";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "break" | "surprise" | "check" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name" | "sound-check";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 
@@ -107,7 +106,6 @@ function isChunkScreen(screen: Screen): boolean {
     colorScreens.includes(screen as ColorStep) ||
     timeScreens.includes(screen as TimeStep) ||
     moneyScreens.includes(screen as MoneyGame) ||
-    screen === "money-play" ||
     screen === "word" ||
     screen === "my-name" ||
     screen === "games" ||
@@ -254,7 +252,7 @@ export default function App() {
     }
     if (screen === "draw" || screen === "word" || screen === "my-name") setMusicArea("focus");
     else if (screen === "story") setMusicArea("story");
-    else if (screen === "library" || screen === "games" || screen === "money-play" || moneyScreens.includes(screen as MoneyGame)) setMusicArea("play");
+    else if (screen === "library" || screen === "games" || moneyScreens.includes(screen as MoneyGame)) setMusicArea("play");
     else setMusicArea("today");
   }, [mode, screen]);
 
@@ -567,12 +565,6 @@ export default function App() {
     else setTip(null);
   };
 
-  const openMoneyPlay = () => {
-    primeSpeech();
-    setScreen("money-play");
-    setTip(null);
-  };
-
   const openMoney = (step: MoneyGame) => {
     if (lockedActivity("money", step)) {
       askGrownup();
@@ -774,11 +766,6 @@ export default function App() {
                   className="back-button"
                   aria-label="Back"
                   onClick={() => {
-                    if (moneyScreens.includes(screen as MoneyGame)) {
-                      setTip(null);
-                      setScreen("money-play");
-                      return;
-                    }
                     // Leaving a lesson early clears its tip. A finished step sets its own end tip.
                     setTip(null);
                     setScreen("today");
@@ -836,7 +823,7 @@ export default function App() {
                   onColor={openColor}
                   timeLesson={timeLesson}
                   onTime={openTime}
-                  onMoneyPlay={openMoneyPlay}
+                  onMoney={openMoney}
                   onBuild={openBuild}
                   onScience={openScience}
                   canTraceWord={blendedWords.length > 0}
@@ -1053,49 +1040,40 @@ export default function App() {
                     />
                   ) : null}
                   {screen === "day" ? (
-                    <DayActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishTime("day", label)} />
+                    <DayActivity lesson={timeLesson} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishTime("day", label)} />
                   ) : null}
                   {screen === "routine" ? (
-                    <RoutineActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishTime("routine", label)} />
+                    <RoutineActivity animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishTime("routine", label)} />
                   ) : null}
                   {screen === "clock" ? (
-                    <ClockActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishTime("clock", label)} />
+                    <ClockActivity lesson={timeLesson} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishTime("clock", label)} />
                   ) : null}
                   {screen === "coins" ? (
-                    <CoinsActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishTime("coins", label)} />
+                    <CoinsActivity lesson={timeLesson} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishTime("coins", label)} />
                   ) : null}
                   {screen === "jars" ? (
                     <JarsActivity
                       lesson={timeLesson}
                       animal={active.animal}
+                      outfit={active.outfit}
                       settingsRef={settingsRef}
                       onDone={(label, goalMet) => finishMoney("jars", label, goalMet ? timeLesson.goalItem : undefined)}
                     />
                   ) : null}
                   {screen === "lemonade" ? (
-                    <LemonadeActivity animal={active.animal} settingsRef={settingsRef} onDone={(label) => finishMoney("lemonade", label)} />
+                    <LemonadeActivity animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMoney("lemonade", label)} />
                   ) : null}
                   {screen === "choose" ? (
-                    <ChooseActivity
-                      lesson={timeLesson}
-                      animal={active.animal}
-                      settingsRef={settingsRef}
-                      onDone={(label) => finishMoney("choose", label)}
-                    />
+                    <ChooseActivity animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMoney("choose", label)} />
                   ) : null}
                   {screen === "needs" ? (
-                    <NeedsActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishMoney("needs", label)} />
+                    <NeedsActivity animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMoney("needs", label)} />
                   ) : null}
                   {screen === "cards" ? (
-                    <CardsActivity lesson={timeLesson} settingsRef={settingsRef} onDone={(label) => finishMoney("cards", label)} />
+                    <CardsActivity lesson={timeLesson} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMoney("cards", label)} />
                   ) : null}
                   {screen === "shop" ? (
-                    <ShopActivity
-                      lesson={timeLesson}
-                      animal={active.animal}
-                      settingsRef={settingsRef}
-                      onDone={(label) => finishTime("shop", label)}
-                    />
+                    <ShopActivity lesson={timeLesson} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishTime("shop", label)} />
                   ) : null}
                   {buildScreens.includes(screen as BuildActivity) ? (
                     <EngineerActivity
@@ -1116,13 +1094,6 @@ export default function App() {
                       settingsRef={settingsRef}
                       onDone={() => finishScience(screen as ScienceId)}
                     />
-                  ) : null}
-                  {screen === "money-play" ? (
-                    <div className="math-play" data-screen="money-play">
-                      <h1>Money play</h1>
-                      <p className="math-prompt">Pretend coins only.</p>
-                      <MoneyBoard done={active.days[todayKey()]?.[TIME] ?? {}} onOpen={openMoney} locked={(id) => lockedActivity("money", id)} />
-                    </div>
                   ) : null}
                   {screen === "games" ? (
                     <Games

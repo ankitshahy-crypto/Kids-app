@@ -6363,80 +6363,885 @@ input.is-pressed,
   }
 }
 
-.clock-face {
-  width: min(100%, 280px);
-  height: auto;
-  touch-action: none;
-}
-
-.clock-hand {
-  transition: transform 0.15s linear;
-}
-
-.clock-face[data-motion="reduce"] .clock-hand {
-  transition: none;
-}
-
-.clock-digital {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.clock-controls {
-  width: min(100%, 420px);
-}
-
-.money-games {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  width: min(100%, 560px);
-  margin: 0 auto;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-.jar-row {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  width: min(100%, 420px);
-}
-
-.jar {
-  position: relative;
-  min-height: 120px;
-  flex: 1;
-  overflow: hidden;
-  border-radius: 18px 18px 28px 28px;
-  border: 3px solid #6d5b86;
-  background: #fffaf3;
-}
-
-.jar-fill {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #d7f3ea;
-}
-
-.jar span {
-  position: relative;
-  z-index: 1;
-}
-
-.pretend-card {
-  min-height: 96px;
+/* ---------------------------------------------------------------------------
+   The game kit (src/game/kit.tsx): one frame for every game. A scene with the
+   child's animal in it, the round dots, a speaker button, and a tray of big
+   pictures to tap.
+   --------------------------------------------------------------------------- */
+.game-frame {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 4px 0 20px;
+}
+
+.game-top {
+  width: min(100%, 460px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.game-top h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--ink);
+}
+
+/* "Say it again": a speaker above the animal, as if it were the one asking. A picture, not a word, so a
+   child who cannot read knows what it does. */
+.game-hear {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 3;
+  width: 48px;
+  height: 48px;
+  border-radius: 50% 50% 50% 12px;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+  color: var(--text-warm);
+  box-shadow: 0 2px 0 rgba(36, 48, 86, 0.16);
+}
+
+.game-hear svg {
+  width: 26px;
+  height: 26px;
+}
+
+.game-pips {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game-pips li {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.game-pips li[data-pip="done"] {
+  background: var(--sage);
+}
+
+.game-pips li[data-pip="now"] {
+  background: var(--paper);
+  box-shadow: inset 0 0 0 3px var(--sage);
+}
+
+/* The scene takes about a third of the screen: more on a tall phone, never less than the games need. */
+.game-scene {
+  position: relative;
+  width: min(100%, 460px);
+  height: clamp(210px, 33svh, 300px);
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.game-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* The child's animal stands in the scene and reacts: a jump for a right answer, a tilt for a miss. */
+.game-host {
+  position: absolute;
+  left: 8px;
+  bottom: 12px;
+  z-index: 2;
+  width: 92px;
+  transform-origin: 50% 90%;
+}
+
+.game-host .hero,
+.game-host .avatar-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.game-host[data-mood="cheer"] {
+  animation: game-cheer 0.5s ease 2;
+}
+
+.game-host[data-mood="think"] {
+  animation: game-think 0.7s ease;
+}
+
+.game-stage {
+  position: absolute;
+  inset: 8px 10px 8px 104px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.game-sparkles {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.game-sparkles svg {
+  position: absolute;
+  width: 22px;
+  opacity: 0;
+  animation: game-spark 0.9s ease forwards;
+}
+
+.game-sparkles [data-spark="0"] { left: 12%; top: 18%; }
+.game-sparkles [data-spark="1"] { left: 30%; top: 8%; animation-delay: 0.08s; }
+.game-sparkles [data-spark="2"] { left: 52%; top: 20%; animation-delay: 0.16s; }
+.game-sparkles [data-spark="3"] { left: 70%; top: 8%; animation-delay: 0.05s; }
+.game-sparkles [data-spark="4"] { left: 86%; top: 22%; animation-delay: 0.2s; }
+.game-sparkles [data-spark="5"] { left: 42%; top: 40%; animation-delay: 0.12s; }
+
+.game-tray {
+  width: min(100%, 460px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* The child has waited: the things that can be tapped breathe. */
+.game-tray[data-nudge="true"] .pick:not([data-used="true"]) {
+  animation: game-pulse 1s ease 2;
+}
+
+/* A choice: a picture big enough for a small hand. */
+.pick {
+  position: relative;
+  width: 110px;
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 22px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  touch-action: manipulation;
+  transition: transform 0.1s ease;
+}
+
+/* Four to a row on a phone. */
+.pick.is-mid {
+  width: 82px;
+  min-height: 96px;
+  border-radius: 18px;
+}
+
+/* Five small ones fit a phone in one row. */
+.pick.is-small {
+  width: 64px;
+  min-height: 72px;
+  padding: 4px;
+  border-radius: 16px;
+}
+
+.pick:active {
+  transform: scale(0.95);
+}
+
+.pick-art {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+
+/* The app's drawings sit in a wide box with air around them, so in a choice they fill the whole width. */
+.pick-art > svg,
+.pick-art .art {
+  width: 100%;
+  height: auto;
+}
+
+.pick-art > .basket-art,
+.pick-art > .card-art {
+  width: 88px;
+}
+
+.pick-label {
+  line-height: 1.1;
+}
+
+.pick-number {
+  font-size: 34px;
+  font-weight: 800;
+  color: #3d6b86;
+}
+
+.pick[data-wiggle="a"] {
+  animation: game-wiggle-a 0.4s ease;
+}
+
+.pick[data-wiggle="b"] {
+  animation: game-wiggle-b 0.4s ease;
+}
+
+.pick[data-used="true"] {
+  opacity: 0.3;
+}
+
+.pick[data-chosen="true"],
+.pick[data-reveal="true"] {
+  box-shadow: 0 0 0 5px var(--gold), var(--shadow);
+}
+
+.game-hand {
+  position: absolute;
+  right: -4px;
+  bottom: -16px;
+  z-index: 4;
+  width: 40px;
+  pointer-events: none;
+  animation: game-hand 0.9s ease-in-out infinite;
+}
+
+@keyframes game-cheer {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  40% {
+    transform: translateY(-22px) rotate(-6deg);
+  }
+  70% {
+    transform: translateY(-6px) rotate(6deg);
+  }
+}
+
+@keyframes game-think {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  35% {
+    transform: rotate(-10deg);
+  }
+  70% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes game-spark {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-20deg);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.2) rotate(10deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-18px) rotate(30deg);
+  }
+}
+
+@keyframes game-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes game-wiggle-a {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px) rotate(-4deg);
+  }
+  75% {
+    transform: translateX(8px) rotate(4deg);
+  }
+}
+
+@keyframes game-wiggle-b {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px) rotate(-4deg);
+  }
+  75% {
+    transform: translateX(8px) rotate(4deg);
+  }
+}
+
+@keyframes game-hand {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-6px, -8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-host,
+  .game-sparkles svg,
+  .game-tray .pick,
+  .pick,
+  .game-hand {
+    animation: none !important;
+  }
+
+  .game-sparkles svg {
+    opacity: 1;
+  }
+}
+
+/* ---- Money (src/game/money.tsx, src/components/MoneyGames.tsx) ---- */
+.coin-art {
+  display: block;
+  width: 72px;
+  height: auto;
+}
+
+.pick .coin-art {
+  width: 88px;
+}
+
+.pick.is-small .coin-art {
+  width: 58px;
+}
+
+.good-art {
+  display: block;
+  width: 132px;
+}
+
+.good-art .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pick .good-art {
+  width: 100%;
+}
+
+.pick .coin-jar {
+  width: 80px;
+}
+
+.pick.is-mid .coin-jar {
+  width: 70px;
+}
+
+.pick.is-small .coin-jar {
+  width: 52px;
+}
+
+.pick .coin-jar .jar-label .coin-art,
+.pick .coin-jar .jar-label .art {
+  width: 100%;
+}
+
+.price-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
+  box-shadow: 0 2px 0 rgba(36, 48, 86, 0.16);
+}
+
+.price-number {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.pick .price-tag {
+  flex-direction: row;
+  gap: 6px;
+  padding: 2px 8px;
+  box-shadow: none;
+  background: var(--butter);
+}
+
+.pick .price-tag .coin-art {
+  width: 30px;
+}
+
+.pick .price-number {
+  font-size: 18px;
+}
+
+/* One place for each cent of a price, or each coin of a goal. They fill as coins are paid. */
+.price-slots {
+  display: flex;
   gap: 4px;
 }
 
-.pretend-card span {
-  font-size: 14px;
-  font-weight: 600;
+.price-slot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px dashed #c9b8a6;
+  display: grid;
+  place-items: center;
+}
+
+.price-slot[data-filled="true"] {
+  border-color: transparent;
+}
+
+.price-slot .coin-art {
+  width: 34px;
+  max-width: none;
+}
+
+/* The shop: the thing for sale stands on the counter with its price beside it. */
+.shop-counter {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding-bottom: 44px;
+}
+
+.shop-counter .price-tag {
+  margin-bottom: 18px;
+}
+
+.shop-till {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-end;
+  gap: 2px;
+  max-width: 96px;
+  min-height: 40px;
+  margin-bottom: 14px;
+}
+
+.shop-till .coin-art {
+  width: 40px;
+}
+
+.shop-paid {
+  margin-bottom: 14px;
+}
+
+.shop-paid .coin-art {
+  width: 60px;
+}
+
+.coin-show .coin-art {
+  width: 128px;
+}
+
+.less-art {
+  width: 110px;
+}
+
+.coin-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+}
+
+.coin-row .coin-art {
+  width: 62px;
+}
+
+.coin-jar {
+  position: relative;
+  display: block;
+  width: 78px;
+}
+
+.coin-jar > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.jar-label {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 52%;
+  transform: translate(-50%, -50%);
+}
+
+.jar-label svg,
+.jar-label .art,
+.jar-label .coin-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.jar-coins {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 7%;
+  display: flex;
+  justify-content: center;
+}
+
+.jar-coins .coin-art {
+  width: 34%;
+  margin: 0 -4%;
+}
+
+.jars-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.jars-goal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px 8px;
+  border-radius: 16px;
+  background: rgba(255, 253, 251, 0.8);
+}
+
+.jars-goal .art {
+  width: 84px;
+  height: auto;
+}
+
+.stand-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 0 0 30px 6px;
+}
+
+/* The coins earned so far sit on the counter. */
+.stand-stage .coin-row {
+  position: absolute;
+  right: 0;
+  bottom: 34px;
+  width: 96px;
+  justify-content: flex-end;
+}
+
+.stand-stage .coin-row .coin-art {
+  width: 34px;
+  margin-left: -8px;
+}
+
+.stand-customer {
+  position: relative;
+  flex: 0 0 auto;
+  width: 120px;
+}
+
+.stand-customer > .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* What the customer asks for, as a picture of that many cups. */
+.stand-bubble {
+  position: absolute;
+  left: 70%;
+  top: -30px;
+  padding: 4px 8px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 rgba(36, 48, 86, 0.16);
+}
+
+.cup-row {
+  display: flex;
+  justify-content: center;
+}
+
+/* The cup drawing has air round it; pulled together so three cups read as three. */
+.cup-row .art {
+  width: 42px;
+  height: auto;
+  margin: 0 -8px;
+}
+
+.pick .cup-row .art {
+  width: 50px;
+  margin: 0 -9px;
+}
+
+.pick .cup-row[data-cups="1"] .art {
+  width: 84px;
+}
+
+.pick .cup-row[data-cups="2"] .art {
+  width: 64px;
+  margin: 0 -10px;
+}
+
+.need-item .art,
+.day-scene .art {
+  display: block;
+  width: 150px;
+  height: auto;
+}
+
+.basket-art {
+  width: 88px;
+}
+
+.card-art {
+  width: 92px;
+}
+
+/* ---- Time (src/components/TimeGames.tsx) ---- */
+.sky-art {
+  position: relative;
+  display: block;
+  width: 88px;
+  height: 62px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.day-clocks {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.day-clocks .clock-face {
+  width: 96px;
+}
+
+.day-arrow {
+  width: 30px;
+}
+
+/* The day so far: a numbered place for each part, filled as the child puts them in order. */
+.routine-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.routine-line li {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 2px dashed #b9c7d6;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 253, 251, 0.6);
+  color: #7d8ea3;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.routine-line li[data-filled="true"] {
+  border-color: transparent;
+  background: var(--paper);
+}
+
+.routine-line .art {
+  width: 40px;
+  height: auto;
+}
+
+.clock-face {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: manipulation;
+}
+
+.clock-hand {
+  transition: transform 0.3s ease;
+}
+
+.clock-number {
+  cursor: pointer;
+  outline: none;
+}
+
+.clock-number:focus-visible .clock-spot {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.clock-spot {
+  fill: transparent;
+}
+
+.clock-number[data-reveal="true"] .clock-spot {
+  fill: var(--gold);
+}
+
+.clock-number[data-wiggle="true"] .clock-spot {
+  fill: #f6d9d2;
+}
+
+.clock-number[data-wiggle="true"] {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: game-wiggle-a 0.4s ease;
+}
+
+.clock-number[data-wiggle="true"][data-turn$="0"],
+.clock-number[data-wiggle="true"][data-turn$="2"],
+.clock-number[data-wiggle="true"][data-turn$="4"],
+.clock-number[data-wiggle="true"][data-turn$="6"],
+.clock-number[data-wiggle="true"][data-turn$="8"] {
+  animation-name: game-wiggle-b;
+}
+
+/* The clock needs room: its scene is taller, and the animal stands in the corner. */
+.game-frame[data-screen="clock"] .game-scene {
+  height: clamp(280px, 40svh, 340px);
+}
+
+.game-frame[data-screen="clock"] .game-host {
+  width: 64px;
+}
+
+.game-frame[data-screen="clock"] .game-stage {
+  inset: 8px;
+}
+
+.clock-stage {
+  position: relative;
+  width: min(256px + (100svh - 760px) * 0.5, 300px);
+  min-width: 250px;
+}
+
+.clock-hint {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.clock-hint .game-hand {
+  right: auto;
+  bottom: auto;
+  left: -4px;
+  top: 2px;
+}
+
+.clock-digital {
+  padding: 4px 16px;
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clock-hand {
+    transition: none;
+  }
+}
+
+/* The Time & Money page: its games under two headings, each tile a picture. */
+.time-boards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+}
+
+.time-group h2 {
+  margin: 2px 0 6px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-sage);
+}
+
+.time-tile {
+  min-height: 104px;
+  line-height: 1.1;
+}
+
+.time-tile .math-activity-art {
+  width: 60px;
+  height: 56px;
+}
+
+.time-tile .math-activity-art svg,
+.time-tile .math-activity-art .art,
+.time-tile .math-activity-art .coin-art {
+  width: 56px;
+  height: auto;
+}
+
+.time-tile .math-activity-art .coin-jar {
+  width: 44px;
+}
+
+.time-tile .math-activity-art .coin-jar svg {
+  width: 100%;
+}
+
+.time-tile .math-activity-art .good-art {
+  width: 64px;
+}
+
+.time-tile .math-activity-art .sky-art {
+  width: 64px;
+  height: 46px;
+}
+
+.time-tile .math-activity-art .clock-face {
+  width: 52px;
 }
 
 .jar-chart {
@@ -6457,28 +7262,6 @@ input.is-pressed,
   height: 28px;
   border-radius: 50%;
   border: 2px solid #3d4a40;
-}
-
-.money-art,
-.snack-art {
-  width: 72px;
-  height: 72px;
-}
-
-.coin-pile,
-.coin-show,
-.shop-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.shop-row .avatar-art,
-.shop-row .hero {
-  width: 72px;
-  height: 72px;
 }
 
 .print-clock {
