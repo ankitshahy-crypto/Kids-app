@@ -850,7 +850,7 @@
     "time-count": { "file": "prompts/time-count.mp3", "say": "How many cents?", "source": "neural" },
     "game-hatch": { "file": "prompts/game-hatch.mp3", "say": "Tap the missing letters.", "source": "neural" },
     "game-pop": { "file": "prompts/game-pop.mp3", "say": "Pop the balloons with this letter.", "source": "neural" },
-    "game-feed": { "file": "prompts/game-feed.mp3", "say": "Feed the foods that start with this letter.", "source": "neural" },
+    "game-feed": { "file": "prompts/game-feed.mp3", "say": "Feed me the pictures that start with this letter.", "source": "neural" },
     "game-rhyme": { "file": "prompts/game-rhyme.mp3", "say": "Find two pictures that rhyme.", "source": "neural" },
     "game-memory": { "file": "prompts/game-memory.mp3", "say": "Flip two cards. Find a match.", "source": "neural" },
     "game-spin": { "file": "prompts/game-spin.mp3", "say": "Spin the wheel.", "source": "neural" },
