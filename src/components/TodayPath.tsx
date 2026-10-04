@@ -3,7 +3,7 @@ import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
 import { TimeBoard } from "./TimeGames";
 import { COLORS, type ColorLesson, type ColorStep } from "../data/colors";
-import { MATH, type MathLesson, type MathStep } from "../data/math";
+import { MATH, type MathGame, type MathLesson } from "../data/math";
 import { TIME, type MoneyGame, type TimeLesson, type TimeStep } from "../data/timeMoney";
 import { BUILD, type BuildActivity } from "../data/engineer";
 import { SCIENCE, type ScienceActivity } from "../data/science";
@@ -108,7 +108,7 @@ export function TodayPath({
   course: "reading" | "math" | "colors" | "time" | "build" | "science";
   onCourse: (course: "reading" | "math" | "colors" | "time" | "build" | "science") => void;
   mathLesson: MathLesson;
-  onMath: (step: MathStep) => void;
+  onMath: (step: MathGame) => void;
   colorLesson: ColorLesson;
   onColor: (step: ColorStep) => void;
   timeLesson: TimeLesson;

@@ -210,6 +210,7 @@ export const activitySteps = [
   "chain",
   "water",
   "check-in",
+  "peek",
 ] as const;
 
 const activityStepSet = new Set<string>(activitySteps);

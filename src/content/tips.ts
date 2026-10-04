@@ -66,6 +66,10 @@ const mathTips: Record<string, { start: string; end: string }> = {
     start: "Two groups. Tapping each one counts it aloud. Then they tap how many altogether.",
     end: "Ask: what if we added one more?",
   },
+  peek: {
+    start: "Ladybugs show for a moment, then hide. Seeing a few at a glance, without counting, comes first.",
+    end: "Ask: hold up some fingers for a second. How many did they see?",
+  },
 };
 
 /** A short grown-up line for a numbers activity. */
