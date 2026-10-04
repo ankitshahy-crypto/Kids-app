@@ -18,7 +18,7 @@ const profile = {
   ],
 };
 
-/** Week 0 of the letter plan: m and a. Big M is the first letter to trace. */
+/** Week 0 of the letter plan: a, m, t and s. Big A is the first letter to trace. */
 const placement = {
   version: 1,
   origin: "device",

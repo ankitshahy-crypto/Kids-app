@@ -69,7 +69,7 @@ test("a teacher places the word ladder and the egg uses that step", async ({ pag
   }
 });
 
-/** Week 0 of the letter plan: m and a. The longest word they spell has two letters, so the ladder stops at step 2. */
+/** Week 0 of the letter plan: a, m, t and s. The longest word they spell has three letters, so the ladder stops at step 3. */
 const weekOne = {
   version: 1,
   origin: "device",

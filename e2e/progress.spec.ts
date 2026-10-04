@@ -4,7 +4,7 @@ import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioS
 
 /**
  * Progress for grown-ups: completion on the parent's device and the class
- * iPad, the Friday sound game's quiet check-in, and the two codes that carry
+ * iPad, the Friday Challenge's quiet check-in, and the two codes that carry
  * a little progress between them with no account and no server.
  */
 
@@ -95,7 +95,7 @@ test("the parent sees lessons finished this week, never a score", async ({ page 
   await expect(card).not.toContainText(/score|grade|behind|below/i);
 });
 
-test("the sound game plays the bare sound from the sound clips, never the letter phrase", async ({ page }) => {
+test("the Friday Challenge plays the bare sound from the sound clips, never the letter phrase", async ({ page }) => {
   await installAudioSpy(page);
   await openApp(page);
   await page.getByRole("button", { name: "Mia" }).click();

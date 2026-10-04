@@ -18,7 +18,7 @@ const profile = {
   ],
 };
 
-/** Week 0 of the letter plan: m and a. */
+/** Week 0 of the letter plan: a, m, t and s. */
 const placement = {
   version: 1,
   origin: "device",

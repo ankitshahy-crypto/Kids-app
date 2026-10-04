@@ -21,8 +21,8 @@ function child(extra: Record<string, unknown> = {}) {
 }
 
 /**
- * The class's place in the letter plan. Week 0 is m and a; week 5 is u and b,
- * the first week a child can sound out a vehicle word (bus, cab).
+ * The class's place in the letter plan. Week 0 is a, m, t and s; week 5 is f, l and k,
+ * by when a child can sound out vehicle words (bus, cab).
  */
 function placementAt(week: number) {
   return {

@@ -142,7 +142,7 @@ export function SoundItOut({
   useEffect(() => {
     if (!word.nestCard || paused || toldNest.current) return undefined;
     const timer = window.setTimeout(() => {
-      speak.prompt("nest-card", "Nest words. We know these. Tap each one.", () => {
+      speak.prompt("nest-card", "Nest words. We just know these. Tap each one.", () => {
         toldNest.current = true;
       });
     }, 300);

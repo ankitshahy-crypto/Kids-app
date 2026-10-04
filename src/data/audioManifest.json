@@ -1099,7 +1099,7 @@
     "engineer-balance": { "file": "prompts/engineer-balance.mp3", "say": "Make it balance. Which pile is the same?", "source": "neural" },
     "science-float": { "file": "prompts/science-float.mp3", "say": "Will it sink or float?", "source": "neural" },
     "blend-say": { "file": "prompts/blend-say.mp3", "say": "Say each sound as you slide.", "source": "neural" },
-    "nest-card": { "file": "prompts/nest-card.mp3", "say": "Nest words. We know these. Tap each one.", "source": "neural" },
+    "nest-card": { "file": "prompts/nest-card.mp3", "say": "Nest words. We just know these. Tap each one.", "source": "neural" },
     "read-your-turn": { "file": "prompts/read-your-turn.mp3", "say": "Your turn! Tap a word, then slide.", "source": "neural" },
     "read-hint": { "file": "prompts/read-hint.mp3", "say": "Tap a word. Then slide your animal.", "source": "neural" },
     "code-order": { "file": "prompts/code-order.mp3", "say": "What comes first? Put the pictures in order.", "source": "neural" },

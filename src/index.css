@@ -11610,3 +11610,8 @@ a.unlock-buy {
     height: 176px;
   }
 }
+
+/* The animal's ears clear the Friday Challenge chip. */
+.challenge .challenge-name {
+  margin-bottom: 10px;
+}
