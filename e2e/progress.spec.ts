@@ -4,7 +4,7 @@ import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioS
 
 /**
  * Progress for grown-ups: completion on the parent's device and the class
- * iPad, the Friday sound game's quiet check-in, and the two codes that carry
+ * iPad, the Friday Challenge's quiet check-in, and the two codes that carry
  * a little progress between them with no account and no server.
  */
 
@@ -95,7 +95,7 @@ test("the parent sees lessons finished this week, never a score", async ({ page 
   await expect(card).not.toContainText(/score|grade|behind|below/i);
 });
 
-test("the sound game plays the bare sound from the sound clips, never the letter phrase", async ({ page }) => {
+test("the Friday Challenge plays the bare sound from the sound clips, never the letter phrase", async ({ page }) => {
   await installAudioSpy(page);
   await openApp(page);
   await page.getByRole("button", { name: "Mia" }).click();
@@ -119,13 +119,16 @@ test("the sound game plays the bare sound from the sound clips, never the letter
   expect(await playedClips(page)).not.toContain(`letters/${answer}.mp3`);
 });
 
-test("the Friday sound game notes first tries quietly and shows grown-ups what they know", async ({ page }) => {
+test("the Friday Challenge notes first tries quietly and shows grown-ups what they know", async ({ page }) => {
   await openApp(page);
   await page.getByRole("button", { name: "Mia" }).click();
   await page.locator("[data-practice=sounds]").click();
   const game = page.locator("[data-screen=sound-check]");
   await expect(game).toBeVisible();
-  const rounds = Number((await game.locator(".chunk-strip").innerText()).match(/of (\d+)/)?.[1] ?? 0);
+  // The Friday Challenge: feed the animal one berry a round. Progress is berries, never a score.
+  await expect(game.locator(".challenge-name")).toHaveText("Friday Challenge");
+  const rounds = Number(await game.getAttribute("data-rounds"));
+  await expect(game.locator(".challenge-berries span")).toHaveCount(rounds);
   expect(rounds).toBeGreaterThanOrEqual(2);
   let missed = "";
   for (let round = 0; round < rounds; round += 1) {

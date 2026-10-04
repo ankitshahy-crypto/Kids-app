@@ -328,7 +328,7 @@ for (const id of ["hatch", "pop", "feed", "rhyme", "memory"]) {
 }
 
 test("a teacher sets the hatch level and the egg follows it", async ({ page }) => {
-  // Week one (m and a), whatever today's date: the egg's word must have a letter not yet taught.
+  // Week one (a, m, t and s), whatever today's date.
   await page.addInitScript(() => {
     localStorage.setItem(
       "littlenest-placement-v1",
@@ -360,10 +360,10 @@ test("a teacher sets the hatch level and the egg follows it", async ({ page }) =
   await page.locator("[data-game-tile=hatch]").click();
   const board = game(page, "hatch");
   await expect(board).toHaveAttribute("data-level", "2");
-  // Level 2 blanks every taught letter (week one teaches m and a) and shows the rest.
+  // Level 2 blanks every taught letter (week one teaches a, m, t and s) and shows the rest.
   const word = (await board.getAttribute("data-word")) ?? "";
   expect(word).toHaveLength(3);
-  const taught = [...word].filter((letter) => "ma".includes(letter)).length;
+  const taught = [...word].filter((letter) => "amts".includes(letter)).length;
   expect(taught).toBeGreaterThan(0);
   await expect(board.locator('[data-blank="open"]')).toHaveCount(taught);
   await expect(board.locator('[data-blank="shown"]')).toHaveCount(3 - taught);

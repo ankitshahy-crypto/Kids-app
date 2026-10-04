@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { noteSlide, type SoundingMode } from "../data/sounding";
+import type { ReadingPace } from "../data/schedule";
 import {
   createChild,
   editChild,
@@ -214,7 +216,17 @@ export function useProfiles() {
 
   /** A grown-up's choice: the child says the letter sounds in Sound It Out, or the app does. */
   const setSaysSounds = (id: string, on: boolean) =>
-    patchChild(id, (item) => ({ ...item, saysSounds: on ? true : undefined }));
+    patchChild(id, (item) => ({ ...item, saysSounds: on ? true : undefined, sounding: on ? "child" : "app" }));
+
+  /** Who says the sounds while sliding. The old on/off switch is kept in step for older builds. */
+  const setSounding = (id: string, mode: SoundingMode) =>
+    patchChild(id, (item) => ({ ...item, sounding: mode, saysSounds: mode === "child" ? true : undefined }));
+
+  /** One more slide of this word with the app saying the sounds. */
+  const noteSlid = (id: string, word: string) => patchChild(id, (item) => ({ ...item, slidWithApp: noteSlide(item.slidWithApp, word) }));
+
+  const setReadingPace = (id: string, pace: ReadingPace) =>
+    patchChild(id, (item) => ({ ...item, readingPace: pace === "gentle" ? "gentle" : undefined }));
 
   const setWritingLevel = (id: string, itemId: string, level: ScaffoldLevel) => {
     setStore((current) => ({
@@ -248,6 +260,9 @@ export function useProfiles() {
     noteLadder,
     setLadderStep,
     setSaysSounds,
+    setSounding,
+    noteSlid,
+    setReadingPace,
     noteSpin,
     giveGift,
     wear,

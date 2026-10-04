@@ -103,6 +103,12 @@ export function usePlayback(
           await sleep(BETWEEN_LETTERS_MS, signal);
         }
         if (!live()) return;
+        // A Nest card's tiles are whole words of their own ("I", "a", "the"): there is no word made of them to say.
+        if (current.nestCard) {
+          setActive(null);
+          if (options.finish !== false) onFinishedRef.current?.();
+          return;
+        }
         setActive("all");
         await sleep(BEFORE_WORD_MS, signal);
         try {

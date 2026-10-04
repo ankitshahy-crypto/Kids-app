@@ -41,7 +41,7 @@ describe("subject key", () => {
       classId: "device-class",
       updatedAt: now.toISOString(),
       classDefault: { stageId: "letters", weekIndex: 4 },
-      byChildId: { mia: { stageId: "words", weekIndex: 8 } },
+      byChildId: { mia: { stageId: "words", weekIndex: 5 } },
     });
     expect(loaded?.subjects.reading.classDefault).toEqual({
       subject: "reading",

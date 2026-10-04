@@ -732,7 +732,7 @@ test("a new letter is still said by the app, even when the child says the sounds
   await expect(track).toHaveAttribute("aria-valuetext", example);
 });
 
-test("a parent turns it on for one child, and the last sound game suggests when", async ({ page }) => {
+test("a parent turns it on for one child, and the last Friday Challenge suggests when", async ({ page }) => {
   const friday = "2026-09-25";
   await install(
     page,
@@ -748,7 +748,9 @@ test("a parent turns it on for one child, and the last sound game suggests when"
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
   const card = page.locator("[data-section=says-sounds][data-child=mia]");
-  await expect(card).toHaveAttribute("data-says-sounds", "app");
+  // The default: the app says the sounds for a word's first slides, then the child says them.
+  await expect(card).toHaveAttribute("data-says-sounds", "auto");
+  await expect(card.getByRole("button", { name: "Hear, then say" })).toHaveAttribute("aria-pressed", "true");
   await expect(card.locator("[data-says-hint=ready]")).toContainText("M S T");
   await card.getByRole("button", { name: "Mia" }).click();
   await expect(card).toHaveAttribute("data-says-sounds", "child");
@@ -759,6 +761,7 @@ test("a parent turns it on for one child, and the last sound game suggests when"
   await card.getByRole("button", { name: "The app" }).click();
   await expect(card).toHaveAttribute("data-says-sounds", "app");
   expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "{}").profiles?.[0]?.saysSounds, KEY)).toBeUndefined();
+  expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "{}").profiles?.[0]?.sounding, KEY)).toBe("app");
 });
 
 test("the Where to start check does not make a new child 'ready' on day one", async ({ page }) => {
@@ -789,7 +792,7 @@ test("a teacher can set it on the child's page", async ({ page }) => {
   await passGate(page);
   await openTeacherChild(page, "mia");
   const card = page.locator("[data-child-sheet=mia] [data-section=says-sounds]");
-  await expect(card).toHaveAttribute("data-says-sounds", "app");
+  await expect(card).toHaveAttribute("data-says-sounds", "auto");
   await card.getByRole("button", { name: "Mia" }).click();
   await expect(card).toHaveAttribute("data-says-sounds", "child");
   expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "{}").profiles?.[0]?.saysSounds, KEY)).toBe(true);

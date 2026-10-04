@@ -113,10 +113,10 @@ describe("hatch level", () => {
 describe("the other games", () => {
   it("pops three balloons of one taught letter among three others, and moves on each play", () => {
     const round = popRound(taught, 0);
-    expect(round.target).toBe("m");
+    expect(round.target).toBe("a");
     expect(round.balloons).toHaveLength(6);
     expect(round.balloons.filter((balloon) => balloon.target).length).toBe(3);
-    expect(popRound(taught, 1).target).toBe("a");
+    expect(popRound(taught, 1).target).toBe("m");
     // The same three places every time taught "tap these three": the layout changes too.
     const layouts = [0, 8, 16, 24].map((salt) => popRound(taught, salt).balloons.map((balloon) => (balloon.target ? "x" : "o")).join(""));
     expect(new Set(layouts).size).toBeGreaterThan(1);
@@ -126,13 +126,13 @@ describe("the other games", () => {
 
   it("feeds the animal pictures that start with a taught letter", () => {
     const round = feedRound(taught, 0);
-    expect(round.target).toBe("m");
+    expect(round.target).toBe("a");
     expect(round.items).toHaveLength(4);
-    const right = round.items.filter((item) => item.letter === "m");
+    const right = round.items.filter((item) => item.letter === "a");
     expect(right.length).toBeGreaterThan(0);
     expect(right.length).toBeLessThan(4);
     for (const item of round.items) expect(item.illustration).toBeTruthy();
-    expect(feedRound(taught, 1).target).toBe("a");
+    expect(feedRound(taught, 1).target).toBe("m");
   });
 
   it("names every picture by a letter that says its own sound there", () => {
@@ -210,9 +210,9 @@ describe("the other games", () => {
     expect(kindAtRotation(wheelRotation(2, 40))).toBe("count");
     expect(wheelRotation(1, wheelRotation(0))).toBeGreaterThan(wheelRotation(0));
     const sound = soundChoices(taught, 0);
-    expect(sound.target).toBe("m");
+    expect(sound.target).toBe("a");
     expect(sound.choices).toHaveLength(3);
-    expect(sound.choices).toContain("m");
+    expect(sound.choices).toContain("a");
     const blank = wordBlank(taught, 1, pictureWords(), 0);
     expect(taught).toContain(blank.word.letters[0].char);
     expect(blank.blank).toBe(0);

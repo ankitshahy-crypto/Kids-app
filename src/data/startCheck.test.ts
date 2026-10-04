@@ -44,11 +44,11 @@ describe("where to start check", () => {
 
   it("suggests a start that grows with each part passed", () => {
     expect(placeFromCheck(tally([0, 2], [0, 0], [0, 0]))).toMatchObject({ place: { weekIndex: 0 }, ladderStep: 1, cheerId: "check-great" });
-    expect(placeFromCheck(tally([3, 3], [2, 4], [0, 0]))).toMatchObject({ place: { weekIndex: 2 }, ladderStep: 2, cheerId: "check-sounds" });
-    expect(placeFromCheck(tally([3, 4], [3, 3], [0, 2]))).toMatchObject({ place: { weekIndex: 6 }, ladderStep: 3, cheerId: "check-words" });
+    expect(placeFromCheck(tally([3, 3], [2, 4], [0, 0]))).toMatchObject({ place: { weekIndex: 1 }, ladderStep: 2, cheerId: "check-sounds" });
+    expect(placeFromCheck(tally([3, 4], [3, 3], [0, 2]))).toMatchObject({ place: { weekIndex: 4 }, ladderStep: 3, cheerId: "check-words" });
     const top = placeFromCheck(tally([3, 3], [3, 3], [1, 1]));
-    expect(top).toMatchObject({ place: { subject: "reading", weekIndex: 9 }, ladderStep: 4, cheerId: "check-read" });
-    expect(top.summary).toBe("Week 10 · letter k · Four letters");
+    expect(top).toMatchObject({ place: { subject: "reading", weekIndex: 8 }, ladderStep: 4, cheerId: "check-read" });
+    expect(top.summary).toBe("Week 9 · review e, i and u · Four letters");
     expect(top.cheer).toMatch(/read/);
     // Two lucky taps no longer pass the sounds.
     expect(placeFromCheck(tally([2, 2], [2, 2], [1, 1]))).toMatchObject({ place: { weekIndex: 0 }, ladderStep: 1 });

@@ -1,5 +1,7 @@
 import type { IllustrationName } from "../illustrations";
 import { PHONICS_READERS } from "./readersPhonics";
+import { SHARED_READERS } from "./readersShared";
+import { ALWAYS_WHOLE } from "./nest";
 import type { ThemeId } from "./themes";
 import { soundMet, soundsNeeded } from "./units";
 
@@ -13,8 +15,20 @@ import { soundMet, soundsNeeded } from "./units";
  */
 export type StorySetting = "meadow" | "hill" | "room" | "night" | "beach" | "road" | "pond" | "farm" | "sky" | "castle";
 
+/** A page's small surprise, played once the child has read their line (see StoryReader). */
+export type StoryPayoff = "topple" | "splash" | "wiggle" | "spin" | "bounce" | "fly";
+
 export type StoryPage = {
+  /** The page's line. On a shared page (one with `child`), this is the grown-up's line, which tells the story. */
   text: string;
+  /**
+   * A shared page's child line: only words the child can sound out that week,
+   * Nest words already taught, and the child's animal. The narrator does not
+   * read it first; the child reads it, then can tap to hear it.
+   */
+  child?: string;
+  /** Plays once the child line is read: the pile topples, the wave splashes. */
+  payoff?: StoryPayoff;
   setting: StorySetting;
   props: IllustrationName[];
   /** A line for the grown-up reading along. Shown only with read-together tips on. */
@@ -33,183 +47,14 @@ export type Story = {
 };
 
 export const STORIES: Story[] = [
-  {
-    id: "w01-i-am",
-    title: "I Am {hero}",
-    week: 1,
-    pages: [
-      { text: "Hi! I am {hero}.", setting: "meadow", props: ["sun"], parent: "Point to the word 'am'. Say the two sounds slowly: aaa, mmm. Then say it fast: am." },
-      { text: "I am a {hero-kind}.", setting: "meadow", props: [] },
-      { text: "I am up! Look at me.", setting: "hill", props: ["balloon"] },
-      { text: "Am I big? Yes, I am.", setting: "hill", props: [], parent: "Let your child tap 'am' and hear the sounds blend." },
-      { text: "I am {hero}. This is my home.", setting: "room", props: ["lamp"] },
-    ],
-    before: "Look at the cover. Ask: who is this? It is your child's own animal.",
-    after: "Ask: what did {hero} say? Can you say 'I am' with your name?",
-  },
-  // Weeks 1 to 3 were rewritten after the first phone test. Each week had three readers that told one
-  // idea three times ("I am", then three friends sitting on a mat three times over, then tapping). Now
-  // each week has four, and each is its own small story: a question the picture answers, a trip out
-  // and home, a problem and how it ends. The words a child sounds out are the same few (am; sat, mat;
-  // sit, sip, tap), so the practice is not less; the app reads the rest.
-  {
-    id: "w01-where-am-i",
-    title: "Where Am I?",
-    week: 1,
-    pages: [
-      { text: "Where am I? Look!", setting: "beach", props: ["sand"], parent: "Stop here. Ask: where is this? Let your child answer from the picture before you turn the page." },
-      { text: "I am at the sea. I see a fish!", setting: "beach", props: ["fish"] },
-      { text: "Now where am I? Look!", setting: "farm", props: ["hay"], parent: "Ask again: where now? What do you see?" },
-      { text: "I am with a goat. Hi, goat!", setting: "farm", props: ["goat"] },
-      { text: "Where am I now? I am home!", setting: "room", props: ["bed"] },
-    ],
-    before: "Each page asks a question, and the next picture answers it. Let your child guess first.",
-    after: "Ask: where did {hero} go first? Then where? Where did {hero} end up?",
-  },
-  {
-    id: "w01-up-up-up",
-    title: "Up, Up, Up!",
-    week: 1,
-    pages: [
-      { text: "Look! I see a big one.", setting: "meadow", props: ["balloon"], parent: "Ask: what is it? What do you think will happen?" },
-      { text: "Up I go! I am up.", setting: "hill", props: ["balloon"] },
-      { text: "Up, up, up! I am in the sky.", setting: "sky", props: ["balloon"], parent: "Point to 'am'. Say the two sounds slowly: aaa, mmm. Then fast: am." },
-      { text: "Am I big now? My home is so little!", setting: "sky", props: ["cloud"] },
-      { text: "Down I go. I am home. Hi, Mom!", setting: "room", props: ["lamp"] },
-    ],
-    before: "Look at the cover. Ask: where could a balloon take you?",
-    after: "Ask: why did home look so little from the sky?",
-  },
-  {
-    id: "w01-am-i-big",
-    title: "Am I Big?",
-    week: 1,
-    pages: [
-      { text: "Look, a little one!", setting: "meadow", props: ["ant"], parent: "Ask: who is bigger, {hero} or the ant?" },
-      { text: "Am I big? Yes! I am big.", setting: "meadow", props: ["ant"] },
-      { text: "Look, a big one!", setting: "beach", props: ["whale"], parent: "Ask: who is bigger now?" },
-      { text: "Am I big now? No. I am little.", setting: "beach", props: ["whale"] },
-      { text: "Big and little. I am me!", setting: "meadow", props: ["smile"] },
-    ],
-    before: "Ask: are you big or little? It depends who is next to you!",
-    after: "Ask: what are you bigger than? What is bigger than you?",
-  },
-  {
-    id: "w02-the-mat",
-    title: "{hero} and the Mat",
-    week: 2,
-    pages: [
-      { text: "{hero} has a mat.", setting: "room", props: ["mat"], parent: "Sound out 'mat' together: mmm, aaa, t. Mat." },
-      { text: "{hero} sat on the mat.", setting: "room", props: ["mat"] },
-      { text: "Sam sat on the mat too.", setting: "room", props: ["mat", "duck"], parent: "Sam is a new friend. Point to the s in Sam." },
-      { text: "Tam is here. Is the mat too little?", setting: "room", props: ["mat", "cat"], parent: "Ask: will Tam fit? What could they do?" },
-      { text: "No! Tam sat on Sam. We all sat on the mat!", setting: "room", props: ["duck", "cat"] },
-    ],
-    before: "Ask: what do you like to sit on? Who would you share it with?",
-    after: "Ask: how did all three fit on one mat?",
-  },
-  {
-    id: "w02-where-is-sam",
-    title: "Where Is Sam?",
-    week: 2,
-    pages: [
-      { text: "Where is Sam? Sam is not at the mat.", setting: "room", props: ["mat"], parent: "Sam is a duck. Ask: where would a duck like to be?" },
-      { text: "Is Sam at the sea? No, not here.", setting: "beach", props: ["sand"] },
-      { text: "Is Sam up here? No, Sam is not.", setting: "hill", props: [] },
-      { text: "Look, Tam! I see Sam.", setting: "pond", props: ["duck", "cat"], parent: "Point to 'Sam'. Three sounds: sss, aaa, mmm." },
-      { text: "Hi, Sam! Sam sat here all day.", setting: "pond", props: ["duck"] },
-    ],
-    before: "Sam the duck is missing. Ask: where should we look?",
-    after: "Ask: where was Sam? Why does a duck like the pond?",
-  },
-  {
-    id: "w02-tam-sat",
-    title: "Tam Sat on That!",
-    week: 2,
-    pages: [
-      { text: "This is Tam.", setting: "room", props: ["cat"], parent: "Tam is a cat who sits on everything. Ask: what will Tam sit on?" },
-      { text: "Tam sat on my mat.", setting: "room", props: ["mat", "cat"] },
-      { text: "Tam sat on that! Oh, Tam!", setting: "room", props: ["hat", "cat"], parent: "Ask: what did Tam sit on this time?" },
-      { text: "Tam sat on Sam! No, Tam, no!", setting: "room", props: ["duck", "cat"] },
-      { text: "Now Tam sat on me. I like Tam.", setting: "room", props: ["cat"] },
-    ],
-    before: "Ask: do you know a cat? Where do cats like to sit?",
-    after: "Ask: what was the funniest thing Tam sat on?",
-  },
-  {
-    id: "w02-one-mat",
-    title: "One Mat",
-    week: 2,
-    pages: [
-      { text: "A mat for Sam. A mat for Tam.", setting: "room", props: ["mat"], parent: "This is a game: walk round, then sit on a mat. Count the mats and the friends." },
-      { text: "Up, Sam! Up, Tam! Go, go, go!", setting: "room", props: ["duck", "cat"] },
-      { text: "Now, down! Sam sat. Tam sat.", setting: "room", props: ["mat"] },
-      { text: "Oh no! No mat for {hero}.", setting: "room", props: [], parent: "Ask: how does {hero} feel? What could a friend do?" },
-      { text: "Sam said, come here! Sam and {hero} sat on one mat.", setting: "room", props: ["mat", "duck"] },
-    ],
-    before: "Ask: have you played a game where you have to find a seat?",
-    after: "Ask: what did Sam do when {hero} had no mat? Was that kind?",
-  },
-  {
-    id: "w03-the-map",
-    title: "The Map",
-    week: 3,
-    pages: [
-      { text: "{hero} has a map.", setting: "room", props: ["map"], parent: "Ask: what is a map for? What could be hidden?" },
-      { text: "Pip and {hero} go. It is past the pit.", setting: "meadow", props: ["dig", "pig"] },
-      { text: "It is up at the tip!", setting: "hill", props: ["map"], parent: "Sound out 'tip': t, i, p. The tip is the very top." },
-      { text: "Tap, tap, tap. Pip taps it.", setting: "hill", props: ["dig", "pig"] },
-      { text: "It is a star! Pip and {hero} sit and look at it.", setting: "night", props: ["star", "pig"] },
-    ],
-    before: "A map shows the way to something hidden. Ask: what would you hide?",
-    after: "Ask: where did the map lead? What did they find?",
-  },
-  {
-    id: "w03-sip-it-pip",
-    title: "Sip It, Pip!",
-    week: 3,
-    pages: [
-      { text: "Pam has this for Pip.", setting: "room", props: ["cup", "cat"] },
-      { text: "Sip it, Pip! Sip, sip, sip.", setting: "room", props: ["cup", "pig"], parent: "Sound out 'sip': sss, i, p." },
-      { text: "Pip tips it. Oh no!", setting: "room", props: ["cup", "pig"], parent: "Ask: what happened? What should they do now?" },
-      { text: "Pat, pat, pat. Pam pats the mat.", setting: "room", props: ["mat", "cat"] },
-      { text: "Sit, Pip. A new sip for you!", setting: "room", props: ["cup", "pig"] },
-    ],
-    before: "Ask: have you ever spilled a drink? What did you do?",
-    after: "Ask: was Pam cross with Pip? What did Pam do?",
-  },
-  {
-    id: "w03-tip-tip-tip",
-    title: "Tip, Tip, Tip!",
-    week: 3,
-    pages: [
-      { text: "Tim has one. Pam has one.", setting: "room", props: ["stacked", "dog"], parent: "Tim and Pam are building a tower. Ask: how tall can it get?" },
-      { text: "Tap, tap. Up it can go!", setting: "room", props: ["stacked", "cat"] },
-      { text: "It is so big! It tips.", setting: "room", props: ["tower"], parent: "Ask: what will happen next?" },
-      { text: "Tip, tip, tip. Oh no! It is down.", setting: "room", props: ["tumble"] },
-      { text: "Sit, Tim. Sit, Pam. Tap, tap. Up it can go!", setting: "room", props: ["tower", "smile"] },
-    ],
-    before: "Ask: have you built a tower? What happens when it gets tall?",
-    after: "Ask: what did Tim and Pam do when it fell down?",
-  },
-  {
-    id: "w03-sit-pip-sit",
-    title: "Sit, Pip, Sit!",
-    week: 3,
-    pages: [
-      { text: "Sit, Pip. Sit on the mat.", setting: "room", props: ["mat", "pig"], parent: "Sound out 'sit': sss, i, t." },
-      { text: "Pip sat. Now Pip is up! Tap, tap, tap.", setting: "room", props: ["pig"] },
-      { text: "Sit, Pip, sit! Pam pats the mat.", setting: "room", props: ["mat", "cat"] },
-      { text: "Pip sits. Pip sips. Pip is up!", setting: "room", props: ["cup", "pig"], parent: "Ask: why can't Pip sit still?" },
-      { text: "Pam sits. {hero} sits. Now Pip sits too. Yes, Pip!", setting: "room", props: ["mat", "pig"] },
-    ],
-    before: "Ask: is it hard to sit still? When?",
-    after: "Ask: what helped Pip sit at last?",
-  },
+  ...SHARED_READERS,
+  // The readers below were written for the old order (two letters a week). With 3 or 4 new sounds a week
+  // from week 1, each moved to the week whose letters it needs, or to a review or practice week; their ids
+  // keep the old week number so their recorded clips stay theirs.
   {
     id: "w04-sand",
     title: "Sand and a Pan",
-    week: 4,
+    week: 9,
     pages: [
       { text: "{hero} is at the sand.", setting: "beach", props: ["sand"], parent: "Point to 'sand'. Sound it out: s, a, n, d." },
       { text: "Dan has a pan. Dip it in!", setting: "beach", props: ["pan"] },
@@ -223,7 +68,7 @@ export const STORIES: Story[] = [
   {
     id: "w04-nan-and-the-ant",
     title: "Nan and the Ant",
-    week: 4,
+    week: 9,
     pages: [
       { text: "Nan sat in the sand.", setting: "beach", props: ["sand"], parent: "Sound out 'sand': s, a, n, d. Four sounds!" },
       { text: "An ant! An ant is in the sand.", setting: "beach", props: ["ant", "sand"] },
@@ -237,7 +82,7 @@ export const STORIES: Story[] = [
   {
     id: "w04-dip-dip-dan",
     title: "Dip, Dip, Dan",
-    week: 4,
+    week: 9,
     pages: [
       { text: "Dan dips in. Dip, dip, Dan.", setting: "pond", props: ["duck"], parent: "Sound out 'dip': d, i, p." },
       { text: "Dip, dip. Dan dips a pan in.", setting: "pond", props: ["pan"] },
@@ -251,7 +96,7 @@ export const STORIES: Story[] = [
   {
     id: "w05-the-cot",
     title: "A Nap on the Cot",
-    week: 5,
+    week: 10,
     pages: [
       { text: "{hero} is on the cot.", setting: "room", props: ["bed"], parent: "Sound out 'cot': c, o, t." },
       { text: "Tom the cat is on top.", setting: "room", props: ["cat", "bed"] },
@@ -265,7 +110,7 @@ export const STORIES: Story[] = [
   {
     id: "w05-spot-the-dot",
     title: "Spot the Dot",
-    week: 5,
+    week: 10,
     pages: [
       { text: "{hero} has a pot.", setting: "room", props: ["pot"], parent: "Sound out 'pot': p, o, t." },
       { text: "A dot is on the pot. Spot the dot!", setting: "room", props: ["pot", "spot"] },
@@ -279,7 +124,7 @@ export const STORIES: Story[] = [
   {
     id: "w05-camp",
     title: "Camp",
-    week: 5,
+    week: 10,
     pages: [
       { text: "{hero} is at camp.", setting: "meadow", props: ["tent"], parent: "Sound out 'camp': c, a, m, p." },
       { text: "Dan is at camp. Nan is at camp too.", setting: "meadow", props: ["tent"] },
@@ -293,7 +138,7 @@ export const STORIES: Story[] = [
   {
     id: "w06-bus",
     title: "The Bus and the Cub",
-    week: 6,
+    week: 9,
     pages: [
       { text: "{hero} is on the bus.", setting: "road", props: ["bus"], parent: "Sound out 'bus': b, u, s." },
       { text: "A cub is on the bus. A pup is on the bus.", setting: "road", props: ["bus", "cub"] },
@@ -307,7 +152,7 @@ export const STORIES: Story[] = [
   {
     id: "w06-the-mud-pup",
     title: "The Mud Pup",
-    week: 6,
+    week: 10,
     pages: [
       { text: "A pup is in the mud.", setting: "pond", props: ["dog"], parent: "Sound out 'mud': mmm, u, d." },
       { text: "Bad pup! Up, pup, up.", setting: "pond", props: ["dog"] },
@@ -321,7 +166,7 @@ export const STORIES: Story[] = [
   {
     id: "w06-a-bun-for-hero",
     title: "A Bun for {hero}",
-    week: 6,
+    week: 12,
     pages: [
       { text: "{hero} has a bun. A big bun.", setting: "room", props: ["bun"], parent: "Sound out 'bun': b, u, n." },
       { text: "A cub sits. The cub sits and sits.", setting: "room", props: ["cub"] },
@@ -335,7 +180,7 @@ export const STORIES: Story[] = [
   {
     id: "w07-the-hat",
     title: "The Big Hat",
-    week: 7,
+    week: 12,
     pages: [
       { text: "{hero} has a big hat.", setting: "meadow", props: ["hat"], parent: "Sound out 'hat': h, a, t. Feel the puff of air on h." },
       { text: "A bug got in the hat.", setting: "meadow", props: ["hat", "bug"] },
@@ -349,7 +194,7 @@ export const STORIES: Story[] = [
   {
     id: "w07-the-hog-and-the-hat",
     title: "The Hog and the Hat",
-    week: 7,
+    week: 12,
     pages: [
       { text: "A hog has a hat.", setting: "farm", props: ["hat", "pig"], parent: "Sound out 'hog': h, o, g." },
       { text: "The hog hops? No. The hog digs.", setting: "farm", props: ["dig", "pig"] },
@@ -363,7 +208,7 @@ export const STORIES: Story[] = [
   {
     id: "w07-dig-dug",
     title: "Dig, Dug",
-    week: 7,
+    week: 12,
     pages: [
       { text: "{hero} digs. Dig, dig, dig.", setting: "beach", props: ["dig"], parent: "Sound out 'dig': d, i, g." },
       { text: "A pup digs. A cub digs. Dig, dig!", setting: "beach", props: ["dog", "cub"] },
@@ -377,7 +222,7 @@ export const STORIES: Story[] = [
   {
     id: "w08-the-nest",
     title: "The Nest in the Tent",
-    week: 8,
+    week: 5,
     pages: [
       { text: "{hero} set up a red tent.", setting: "meadow", props: ["tent"], parent: "Sound out 'tent': t, e, n, t." },
       { text: "A hen got in the tent.", setting: "meadow", props: ["tent", "hen"] },
@@ -391,7 +236,7 @@ export const STORIES: Story[] = [
   {
     id: "w08-ben-and-the-drum",
     title: "Ben and the Drum",
-    week: 8,
+    week: 5,
     pages: [
       { text: "Ben has a drum. Rat-a-tat!", setting: "room", props: ["drum"], parent: "Sound out 'drum': d, r, u, m." },
       { text: "Tap the drum, Ben. Tap, tap, tap.", setting: "room", props: ["drum"] },
@@ -405,7 +250,7 @@ export const STORIES: Story[] = [
   {
     id: "w08-ted-and-meg",
     title: "Ted and Meg",
-    week: 8,
+    week: 5,
     pages: [
       { text: "Ted has a pet cat. The cat is Meg.", setting: "room", props: ["cat"], parent: "Sound out 'pet': p, e, t." },
       { text: "Meg gets on the bed. Get up, Meg!", setting: "room", props: ["bed", "cat"] },
@@ -421,7 +266,7 @@ export const STORIES: Story[] = [
     // problem and the child's animal solves it.
     id: "w09-frog",
     title: "The Frog on the Log",
-    week: 9,
+    week: 6,
     pages: [
       { text: "{hero} is at the pond. A frog is on a log.", setting: "pond", props: ["frog", "log"], parent: "Sound out 'frog': f, r, o, g." },
       { text: "Flip, flop. The frog fell off the log.", setting: "pond", props: ["frog"] },
@@ -435,7 +280,7 @@ export const STORIES: Story[] = [
   {
     id: "w09-fun-in-the-fog",
     title: "Fun in the Fog",
-    week: 9,
+    week: 6,
     pages: [
       { text: "Fog! {hero} is in the fog.", setting: "hill", props: [], parent: "Sound out 'fog': f, o, g." },
       { text: "Is it a flag? No, it is a lamp!", setting: "hill", props: ["lamp"] },
@@ -449,7 +294,7 @@ export const STORIES: Story[] = [
   {
     id: "w09-the-elf-and-the-sled",
     title: "The Elf and the Sled",
-    week: 9,
+    week: 6,
     pages: [
       { text: "An elf has a sled.", setting: "hill", props: [], parent: "Sound out 'sled': s, l, e, d." },
       { text: "{hero} gets on the sled. Fast, fast, fast!", setting: "hill", props: [] },
@@ -463,7 +308,7 @@ export const STORIES: Story[] = [
   {
     id: "w10-milk",
     title: "Milk for the Kid",
-    week: 10,
+    week: 11,
     pages: [
       { text: "The kid is a small goat. {hero} met the kid.", setting: "farm", props: ["goat"], parent: "'Kid' is a small goat. Sound it out: k, i, d." },
       { text: "The kid can skip. Skip, skip, kick!", setting: "farm", props: [] },
@@ -477,7 +322,7 @@ export const STORIES: Story[] = [
   {
     id: "w10-the-mask",
     title: "The Mask",
-    week: 10,
+    week: 11,
     pages: [
       { text: "{hero} has a mask. A pink mask.", setting: "room", props: ["mask"], parent: "Sound out 'mask': m, a, s, k." },
       { text: "Kim has a mask. A red mask.", setting: "room", props: ["mask"] },
@@ -491,7 +336,7 @@ export const STORIES: Story[] = [
   {
     id: "w10-the-sink",
     title: "The Sink",
-    week: 10,
+    week: 11,
     pages: [
       { text: "A cup is in the sink.", setting: "room", props: ["cup"], parent: "Sound out 'sink': s, i, n, k." },
       { text: "Plink, plink. Drip, drip.", setting: "room", props: ["cup"] },
@@ -505,7 +350,7 @@ export const STORIES: Story[] = [
   {
     id: "w11-jump",
     title: "Jump in the Web",
-    week: 11,
+    week: 7,
     pages: [
       { text: "{hero} can jump. Jump, jump, jump!", setting: "meadow", props: ["jumper"], parent: "Sound out 'jump': j, u, m, p." },
       { text: "A wasp is in a web. Wig, wig, wag.", setting: "meadow", props: ["web", "wasp"] },
@@ -519,7 +364,7 @@ export const STORIES: Story[] = [
   {
     id: "w11-jog-with-jill",
     title: "Jog with Jill",
-    week: 11,
+    week: 7,
     pages: [
       { text: "Jill jogs. Jog, jog, jog.", setting: "road", props: [], parent: "Sound out 'jog': j, o, g." },
       { text: "{hero} jogs with Jill. Left, left.", setting: "road", props: [] },
@@ -533,7 +378,7 @@ export const STORIES: Story[] = [
   {
     id: "w11-the-wind",
     title: "The Wind",
-    week: 11,
+    week: 7,
     pages: [
       { text: "The wind is up. It is a big wind.", setting: "hill", props: [], parent: "Sound out 'wind': w, i, n, d." },
       { text: "{hero} has a hat. Off it went!", setting: "hill", props: ["hat"] },
@@ -547,7 +392,7 @@ export const STORIES: Story[] = [
   {
     id: "w12-the-van",
     title: "Yes, Van!",
-    week: 12,
+    week: 8,
     pages: [
       { text: "{hero} is in a van. Yes, a big van!", setting: "road", props: ["van"], parent: "Sound out 'van': v, a, n. Feel your lip buzz on v." },
       { text: "The van went past a yak. Yak, yak, yak!", setting: "road", props: ["van", "yak"] },
@@ -563,7 +408,7 @@ export const STORIES: Story[] = [
     // it? No!") meant nothing. One yam, shared out bit by bit.
     id: "w12-yum-yam",
     title: "Yum, Yam!",
-    week: 12,
+    week: 8,
     pages: [
       { text: "{hero} has a big yam.", setting: "farm", props: ["yam"], parent: "Sound out 'yam': y, a, m. A yam is like a sweet potato." },
       { text: "Val yells, yum! Can I get a bit?", setting: "farm", props: ["yam", "hen"] },
@@ -577,7 +422,7 @@ export const STORIES: Story[] = [
   {
     id: "w12-vic-the-yak",
     title: "Vic the Yak",
-    week: 12,
+    week: 8,
     pages: [
       { text: "Vic is a yak. A big yak.", setting: "hill", props: ["yak"], parent: "Sound out 'yak': y, a, k." },
       { text: "Vic has a velvet vest.", setting: "hill", props: ["yak"] },
@@ -680,7 +525,7 @@ export const STORIES: Story[] = [
   {
     id: "t-dinosaurs-egg",
     title: "{hero} and the Egg",
-    week: 10,
+    week: 6,
     theme: "dinosaurs",
     pages: [
       { text: "{hero} dug in the sand. Dig, dig, dig.", setting: "beach", props: ["dig"], parent: "Sound out 'dig': d, i, g." },
@@ -695,7 +540,7 @@ export const STORIES: Story[] = [
   {
     id: "t-vehicles-jet",
     title: "The Jet and the Cab",
-    week: 12,
+    week: 7,
     theme: "vehicles",
     pages: [
       { text: "{hero} is in a cab. The cab can go fast.", setting: "road", props: ["cab"], parent: "Sound out 'cab': c, a, b." },
@@ -710,7 +555,7 @@ export const STORIES: Story[] = [
   {
     id: "t-space-rocket",
     title: "Up to the Moon",
-    week: 10,
+    week: 6,
     theme: "space",
     pages: [
       { text: "{hero} is in a rocket. Up, up, up!", setting: "night", props: ["space"], parent: "Point to the rocket. Sound out 'up': u, p." },
@@ -725,7 +570,7 @@ export const STORIES: Story[] = [
   {
     id: "t-animals-hen",
     title: "The Hen and the Cub",
-    week: 9,
+    week: 6,
     theme: "animals",
     pages: [
       { text: "{hero} met a hen. The hen can hop.", setting: "farm", props: ["hen"], parent: "Sound out 'hen': h, e, n." },
@@ -740,7 +585,7 @@ export const STORIES: Story[] = [
   {
     id: "t-bugs-ant",
     title: "The Ant and the Bug",
-    week: 7,
+    week: 5,
     theme: "bugs",
     pages: [
       { text: "An ant is on a big mat.", setting: "meadow", props: ["ant", "mat"], parent: "Sound out 'ant': a, n, t." },
@@ -755,7 +600,7 @@ export const STORIES: Story[] = [
   {
     id: "t-ocean-crab",
     title: "The Crab on the Sand",
-    week: 9,
+    week: 6,
     theme: "ocean",
     pages: [
       { text: "{hero} is at the sand. A crab is on the sand.", setting: "beach", props: ["crab", "sand"], parent: "Sound out 'crab': c, r, a, b." },
@@ -770,7 +615,7 @@ export const STORIES: Story[] = [
   {
     id: "t-castles-gem",
     title: "The Gem and the King",
-    week: 10,
+    week: 6,
     theme: "castles",
     pages: [
       { text: "{hero} has a gem. It is a red gem.", setting: "castle", props: ["gem"], parent: "Sound out 'gem': g, e, m. This g says j." },
@@ -807,7 +652,7 @@ const STORY_READ = new Set(
 );
 
 export type StoryToken =
-  | { kind: "word"; text: string; word: string; role: "target" | "glue" | "hero" }
+  | { kind: "word"; text: string; word: string; role: "target" | "nest" | "glue" | "hero" }
   | { kind: "gap"; text: string };
 
 export type StoryHero = { name: string; kind: string };
@@ -822,7 +667,7 @@ const TOKEN = /\{hero-kind\}|\{hero\}|[A-Za-z']+|[^A-Za-z'{}]+/g;
  */
 export function decodable(word: string, letters: readonly string[]): boolean {
   const plain = word.toLowerCase().replace(/'/g, "");
-  if (!plain || STORY_READ.has(plain)) return false;
+  if (!plain || STORY_READ.has(plain) || ALWAYS_WHOLE.has(plain)) return false;
   const known = new Set(letters.map((letter) => letter.toLowerCase()));
   return soundsNeeded(plain).every((sound) => soundMet(sound, known));
 }
@@ -834,18 +679,23 @@ export function storyText(text: string, hero: StoryHero): string {
 
 /**
  * Split a line into tappable words and the spaces and marks between them.
- * A target word is one the child can blend with the letters they know; the
- * rest are read whole by the app.
+ * A target word is one the child can blend with the letters they know; a
+ * Nest word (one of `nest`, the Nest words taught so far) is read whole and
+ * wears a feather; the rest are read whole by the app.
  */
-export function storyTokens(text: string, hero: StoryHero, letters: readonly string[]): StoryToken[] {
+export function storyTokens(text: string, hero: StoryHero, letters: readonly string[], nest: readonly string[] = []): StoryToken[] {
   const tokens: StoryToken[] = [];
+  const nestSet = new Set(nest.map((word) => word.toLowerCase()));
   for (const match of text.match(TOKEN) ?? []) {
     if (match === "{hero}" || match === "{hero-kind}") {
       const shown = match === "{hero}" ? hero.name : hero.kind;
       tokens.push({ kind: "word", text: shown, word: shown.toLowerCase(), role: "hero" });
     } else if (/^[A-Za-z']+$/.test(match)) {
       const word = match.toLowerCase().replace(/'/g, "");
-      tokens.push({ kind: "word", text: match, word, role: decodable(match, letters) ? "target" : "glue" });
+      const target = decodable(match, letters);
+      // A Nest word becomes a sound-out word once its sounds are taught, except the few that never do (I, a, the, is).
+      const role = nestSet.has(word) && !target ? "nest" : target ? "target" : "glue";
+      tokens.push({ kind: "word", text: match, word, role });
     } else {
       tokens.push({ kind: "gap", text: match });
     }
@@ -853,12 +703,27 @@ export function storyTokens(text: string, hero: StoryHero, letters: readonly str
   return tokens;
 }
 
+/** Is this page a shared page: a grown-up line and a child line? */
+export function isShared(page: StoryPage): page is StoryPage & { child: string } {
+  return typeof page.child === "string" && page.child.length > 0;
+}
+
+/**
+ * The lines on a page a child taps words in: the child line of a shared page
+ * (the grown-up line is the grown-up's to read), or the whole page otherwise.
+ */
+export function tappableLines(page: StoryPage): string[] {
+  return isShared(page) ? [page.child] : [page.text];
+}
+
 /** Every word a story can show, lowercased, without the hero tokens. */
 export function storyWordList(): string[] {
   const words = new Set<string>();
   for (const story of STORIES) {
     for (const page of story.pages) {
-      for (const match of page.text.match(/[A-Za-z']+/g) ?? []) words.add(match.toLowerCase().replace(/'/g, ""));
+      for (const line of tappableLines(page)) {
+        for (const match of line.replace(/\{hero(-kind)?\}/g, " ").match(/[A-Za-z']+/g) ?? []) words.add(match.toLowerCase().replace(/'/g, ""));
+      }
     }
   }
   return [...words].sort();
@@ -915,6 +780,13 @@ export function storyLineId(story: Story, pageIndex: number, animal: string): st
   const page = story.pages[pageIndex];
   const named = page ? /\{hero\}|\{hero-kind\}/.test(page.text) : false;
   return `${story.id}-p${pageIndex + 1}${named ? `-${animal}` : ""}`;
+}
+
+/** Manifest id for a shared page's child line ("w01-who-sat-p2c"), for "hear it". */
+export function storyChildLineId(story: Story, pageIndex: number, animal: string): string {
+  const page = story.pages[pageIndex];
+  const named = page?.child ? /\{hero\}|\{hero-kind\}/.test(page.child) : false;
+  return `${story.id}-p${pageIndex + 1}c${named ? `-${animal}` : ""}`;
 }
 
 /** Manifest id for the title, with the hero's animal when the title names the hero. */

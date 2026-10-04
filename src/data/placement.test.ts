@@ -30,9 +30,9 @@ const now = new Date("2026-09-26T15:00:00.000Z");
 describe("lesson placement", () => {
   it("starts each stage on the lesson week after the previous stage", () => {
     expect(placeForStage("letters")).toEqual({ subject: "reading", stageId: "letters", weekIndex: 0 });
-    expect(placeForStage("blending")).toEqual({ subject: "reading", stageId: "blending", weekIndex: 4 });
-    expect(placeForStage("words")).toEqual({ subject: "reading", stageId: "words", weekIndex: 8 });
-    expect(placeForStage("stories")).toEqual({ subject: "reading", stageId: "stories", weekIndex: 11 });
+    expect(placeForStage("blending")).toEqual({ subject: "reading", stageId: "blending", weekIndex: 2 });
+    expect(placeForStage("words")).toEqual({ subject: "reading", stageId: "words", weekIndex: 5 });
+    expect(placeForStage("stories")).toEqual({ subject: "reading", stageId: "stories", weekIndex: 7 });
   });
 
   it("saves a class place and a per-child override", () => {
@@ -50,8 +50,8 @@ describe("lesson placement", () => {
     const loaded = loadPlacement(storage);
     expect(loaded.origin).toBe("server");
     expect(loaded.classId).toBe("class-room");
-    expect(loaded.subjects.reading.classDefault).toEqual({ subject: "reading", stageId: "blending", weekIndex: 4 });
-    expect(loaded.subjects.reading.byChildId.mia).toEqual({ subject: "reading", stageId: "words", weekIndex: 8 });
+    expect(loaded.subjects.reading.classDefault).toEqual({ subject: "reading", stageId: "blending", weekIndex: 2 });
+    expect(loaded.subjects.reading.byChildId.mia).toEqual({ subject: "reading", stageId: "words", weekIndex: 5 });
     expect(storage.getItem(PLACEMENT_STORAGE_KEY)).toContain("class-room");
 
     const child = resolvePlacement(loaded, "mia", created, now, "UTC");
@@ -106,7 +106,7 @@ describe("printable sheets", () => {
       expect(picture.word).toBe(letterCard(letter).word);
     }
     const blends = blendingWords(["c", "a", "t"], 3, ["c", "a", "t"]);
-    expect(blends.map((word) => word.word)).toEqual(["cat", "at"]);
+    expect(blends.map((word) => word.word)).toEqual(["at", "cat"]);
     expect(blendingWords(["c", "a", "t"]).every((word) => !word.letterCard && !word.sentenceId)).toBe(true);
     // With the letters a child has been taught, the sheet holds only words they can sound out.
     expect(blendingWords(["m", "a"], 3, ["m", "a"]).map((word) => word.word)).toEqual(["am"]);

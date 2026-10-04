@@ -38,7 +38,7 @@ import { numberManifestEntries, numberWords } from "../src/data/numberGames";
 import { scienceManifestEntries, scienceWords, wordId } from "../src/data/science";
 import { surpriseManifestEntries } from "../src/data/surprise";
 import { timeGameManifestEntries, timeGameWords } from "../src/data/timeGames";
-import { STORIES, storyLineId, storyText, storyTitleId, storyWordList } from "../src/data/stories";
+import { STORIES, storyChildLineId, storyLineId, storyText, storyTitleId, storyWordList } from "../src/data/stories";
 import { SOUND_UNITS } from "../src/data/units";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -62,6 +62,14 @@ for (const story of STORIES) {
     for (const hero of pageHeroes) {
       const id = storyLineId(story, index, hero.id);
       stories[id] = { file: `stories/${story.id}/${id.slice(story.id.length + 1)}.mp3`, say: storyText(page.text, hero), source: "neural" };
+    }
+    // A shared page's child line: not read first, but there for "hear it" once the child has read it.
+    if (page.child) {
+      const childHeroes = named(page.child) ? heroes : [{ id: "fox", name: "Fox", kind: "fox" }];
+      for (const hero of childHeroes) {
+        const id = storyChildLineId(story, index, hero.id);
+        stories[id] = { file: `stories/${story.id}/${id.slice(story.id.length + 1)}.mp3`, say: storyText(page.child, hero), source: "neural" };
+      }
     }
   });
 }

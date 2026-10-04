@@ -26,7 +26,7 @@ import {
   timeWeekCount,
 } from "./timeMoney";
 import { learningPlace, type PathStageId } from "./path";
-import { isReviewDay, letterSchedule, lettersIntroduced, planForWeek, practiceLetters, weekIndex } from "./schedule";
+import { isReviewDay, letterSchedule, lettersIntroduced, paceWeek, planForWeek, practiceLetters, weekIndex, type ReadingPace } from "./schedule";
 import { unitLabel } from "./units";
 import { READING, isSubjectKey, readingStages, subjectDefinition, type SubjectId } from "./subject";
 import { deviceTimeZone } from "./time";
@@ -173,9 +173,23 @@ export function placeForWeek(index: number, subject: SubjectId = READING): Lesso
           : clampWeek(index);
   return {
     subject,
-    stageId: learningPlace(subject, introducedFor(subject, week)).currentId,
+    stageId: subject === READING ? readingStageOfWeek(week) : learningPlace(subject, introducedFor(subject, week)).currentId,
     weekIndex: week,
   };
+}
+
+/**
+ * The reading stage a week is in: the last stage that has begun by then. Read
+ * from the stages' first weeks, so a week's label and a grown-up's stage pick
+ * agree. (Counted from sounds alone, the alphabet's last week, with all 26
+ * letters, would read as phonics, and the stories stage would never be shown.)
+ */
+function readingStageOfWeek(week: number): string {
+  let current: string = readingStages[0]?.id ?? "";
+  for (const stage of readingStages) {
+    if (isPathStageId(stage.id) && firstWeekForStage(stage.id) <= week) current = stage.id;
+  }
+  return current;
 }
 
 export function weekLabel(index: number, subject: SubjectId = READING): string {
@@ -196,6 +210,10 @@ export function weekLabel(index: number, subject: SubjectId = READING): string {
   }
   const week = clampWeek(index);
   const plan = letterSchedule[week];
+  if (plan.newLetters.length === 0) {
+    const letters = plan.reviewLetters.map((letter) => unitLabel(letter).toUpperCase()).join(" ");
+    return `Week ${week + 1} · ${plan.kind === "practice" ? "Practice" : "Review"} ${letters}`;
+  }
   const letters = plan.newLetters.map((letter) => unitLabel(letter).toUpperCase()).join(" ");
   return `Week ${week + 1} · ${letters}`;
 }
@@ -337,8 +355,9 @@ export function calendarCapWeek(subject: SubjectId, ageRange: AgeRange | string 
 
 /**
  * Child override, then the class place, then that subject's calendar. Reading
- * uses weeks since the profile was created. The calendar stops at the stage for
- * the child's age; a grown-up's placement is used as given.
+ * uses weeks since the profile was created, at the child's reading pace (a
+ * gentle pace spends two calendar weeks on each plan week). The calendar stops
+ * at the stage for the child's age; a grown-up's placement is used as given.
  */
 export function resolvePlacement(
   doc: PlacementDocument,
@@ -348,12 +367,14 @@ export function resolvePlacement(
   timeZone = deviceTimeZone(),
   subject: SubjectId = READING,
   ageRange?: AgeRange | string,
+  pace?: ReadingPace,
 ): ResolvedPlacement {
   const slot = placesFor(doc, subject);
   const childPlace = slot.byChildId[childId] ?? null;
   const chosen = childPlace ?? slot.classDefault;
   const source: PlacementSource = childPlace ? "child" : slot.classDefault ? "class" : "calendar";
-  const calendar = weekIndex(createdAt, now, timeZone);
+  const weeks = weekIndex(createdAt, now, timeZone);
+  const calendar = subject === READING ? paceWeek(weeks, pace) : weeks;
   const cap = chosen ? null : calendarCapWeek(subject, ageRange);
   const capped = cap !== null && calendar > cap.weekIndex;
   const index = chosen ? chosen.weekIndex : capped ? cap.weekIndex : calendar;

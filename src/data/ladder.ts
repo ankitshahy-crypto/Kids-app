@@ -6,6 +6,7 @@ import { themedEntries, themedWordCatalog } from "./themeWords";
 import { isUnit, lettersOnly, soundMet, soundUnit } from "./units";
 import { letterWord } from "./letterWords";
 import { letterTile, made, phonemeOf } from "./wordBuild";
+import { allNestWords, nestLabel } from "./nest";
 
 /** 1 is a one-letter word. 5 is phonics for ages 5 to 7. */
 export const LADDER_STEPS = [1, 2, 3, 4, 5] as const;
@@ -105,7 +106,7 @@ export function ladderTitle(step: LadderStep): string {
 }
 
 export function ladderDetail(step: LadderStep): string {
-  if (step === 1) return "m, a, then am";
+  if (step === 1) return "a, m, t, s, then at";
   if (step === 2) return "at, in, it";
   if (step === 3) return "cat, sun, dog";
   if (step === 4) return "frog, jump, fish";
@@ -183,10 +184,10 @@ const step2: DeckWord[] = [
  * words now have their own drawing or none.
  */
 const step3: DeckWord[] = [
-  // m a s t
+  // Week 1: a m t s
   made("mat", "mat", "mat"),
   made("sat", "sat"),
-  // p i
+  // Week 2: i p n
   made("map", "map", "map"),
   made("tap", "tap", "tap"),
   made("pat", "pat"),
@@ -194,16 +195,22 @@ const step3: DeckWord[] = [
   made("sip", "sip"),
   made("sit", "sit"),
   made("tip", "tip"),
-  // n d
   made("pan", "pan", "pan"),
   made("pin", "pin", "pin"),
   made("man", "man"),
   made("nap", "nap"),
+  made("tin", "tin"),
+  made("ant", "ant", "ant"),
+  // Week 3: o d c
   made("mad", "mad"),
   made("sad", "sad", "sad"),
-  made("ant", "ant", "ant"),
   made("and", "and"),
-  // o c
+  made("dad", "dad"),
+  made("pad", "pad"),
+  made("did", "did"),
+  made("dip", "dip"),
+  made("not", "not"),
+  made("nod", "nod"),
   fromDeck("cat"),
   made("cot", "cot"),
   made("dot", "dot"),
@@ -212,29 +219,37 @@ const step3: DeckWord[] = [
   made("mop", "mop", "mop"),
   made("cap", "cap", "cap"),
   made("can", "can", "can"),
-  // u b
-  fromDeck("bus"),
+  // Week 4: u g h
   fromDeck("sun"),
   fromDeck("cup"),
+  made("nut", "nut", "nut"),
+  made("mud", "mud"),
+  made("cut", "cut"),
+  made("pup", "pup"),
+  made("dug", "dug"),
+  made("hum", "hum"),
+  made("hut", "hut"),
+  made("hot", "hot"),
+  made("hid", "hid"),
+  made("hit", "hit"),
+  made("gum", "gum"),
+  fromDeck("hat"),
+  fromDeck("dog"),
+  fromDeck("pig"),
+  made("hug", "hug"),
+  made("dig", "dig", "dig"),
+  made("hog", "hog"),
+  made("hop", "hop"),
+  // Week 5: b e r
+  fromDeck("bus"),
   made("cub", "cub", "cub"),
   made("cab", "cab", "cab"),
   made("bat", "bat", "bat"),
   made("bun", "bun", "bun"),
   made("tub", "tub"),
-  made("nut", "nut", "nut"),
-  made("mud", "mud"),
   made("sub", "sub", "sub"),
-  // g h
-  fromDeck("hat"),
-  fromDeck("dog"),
-  fromDeck("pig"),
   made("bag", "bag", "bag"),
   made("bug", "bug", "bug"),
-  made("hug", "hug"),
-  made("dig", "dig", "dig"),
-  made("hog", "hog"),
-  made("hop", "hop"),
-  // e r
   fromDeck("bed"),
   made("hen", "hen", "hen"),
   made("net", "net", "net"),
@@ -245,14 +260,13 @@ const step3: DeckWord[] = [
   made("rat", "rat"),
   made("run", "run"),
   made("rug", "rug", "rug"),
-  // f l
+  // Week 6: f l k
   made("log", "log", "log"),
   made("fog", "fog"),
   made("fun", "fun"),
   made("elf", "elf"),
-  // k
   made("kid", "kid"),
-  // j w
+  // Week 7: j w v
   made("jet", "jet", "jet"),
   made("jam", "jam"),
   made("jug", "jug", "jug"),
@@ -260,25 +274,28 @@ const step3: DeckWord[] = [
   made("web", "web", "web"),
   made("wig", "wig"),
   made("win", "win"),
-  // v y
   made("van", "van", "van"),
   made("vet", "vet"),
+  // Week 8: y z x q
   made("yam", "yam"),
   made("yak", "yak"),
   made("yes", "yes"),
-  // z
   made("zip", "zip"),
   made("zap", "zap"),
-  // x q
   fromDeck("fox"),
   made("box", "box", "box"),
   made("six", "six"),
   made("mix", "mix"),
 ];
 
-/** Step 4. Four-letter CCVC and CVCC words. */
+/** Step 4. Four-letter CCVC and CVCC words, from week 2 (mint, snap, spin) and week 3 (sand, pond, stop). */
 const step4: DeckWord[] = [
+  made("mint", "mint"),
+  made("snap", "snap"),
+  made("spin", "spin"),
   made("sand", "sand", "sand"),
+  made("pond", "pond", "pond"),
+  made("hunt", "hunt"),
   made("hand", "hand", "hand"),
   made("nest", "nest", "nest"),
   made("tent", "tent", "tent"),
@@ -599,7 +616,7 @@ export function ladderCap(introduced: readonly string[]): LadderStep {
  * now means three words of that step's length, read on different tries.
  */
 export function countsForLadder(word: DeckWord, step: LadderStep): boolean {
-  if (word.letterCard || word.sentenceId) return false;
+  if (word.letterCard || word.sentenceId || word.nestCard) return false;
   const tiles = word.letters.filter((tile) => !tile.silent).length;
   return tiles >= Math.max(2, Math.min(step, 4));
 }
@@ -617,9 +634,54 @@ export function lessonWordCount(step: LadderStep): number {
   return step === 1 ? 2 : 6;
 }
 
-/** The longest word a lesson on this step shows. Step 1 already blends two letters (m, a, then "am"). */
+/**
+ * The longest word a lesson on this step shows. From the first lesson that is
+ * three letters: week 1 teaches a, m, t and s, so it ends with "mat" or "sat"
+ * to slide under, not only "am".
+ */
 export function lessonMaxLetters(step: LadderStep): number {
-  return Math.max(2, ladderMaxLetters(step));
+  return Math.max(3, ladderMaxLetters(step));
+}
+
+/** At most this many letter cards open a lesson, so a Friday review (new and older letters) stays short. */
+export const LESSON_CARDS = 4;
+
+/**
+ * One card for the week's new Nest words ("I", "a", "the"): each is tapped
+ * and read whole. It is not slid across, and it does not count toward the
+ * next step. See nest.ts.
+ */
+export function nestCard(words: readonly string[]): DeckWord | null {
+  const list = words.map((word) => word.toLowerCase()).filter((word) => /^[a-z]+$/.test(word));
+  if (list.length === 0) return null;
+  return {
+    id: `nest-${list.join("-")}`,
+    word: list.map(nestLabel).join(" "),
+    nestCard: true,
+    letters: list.map((word) => ({ char: nestLabel(word), phoneme: "m", wordId: word })),
+  };
+}
+
+/**
+ * Words in turn by the week's sounds: within each word length, the first word
+ * for each new sound, then the second for each, and so on. A word goes with
+ * the first of the week's sounds it uses.
+ */
+function bySound(words: readonly DeckWord[], sounds: readonly string[], level: ReadonlyMap<DeckWord, number>): DeckWord[] {
+  const out: DeckWord[] = [];
+  const levels = [...new Set(words.map((word) => level.get(word) ?? 0))];
+  for (const at of levels) {
+    const groups = sounds.map((sound) => words.filter((word) => (level.get(word) ?? 0) === at && firstSound(word, sounds) === sound));
+    const longest = Math.max(0, ...groups.map((group) => group.length));
+    for (let index = 0; index < longest; index += 1) {
+      for (const group of groups) if (group[index]) out.push(group[index]);
+    }
+  }
+  return out;
+}
+
+function firstSound(word: DeckWord, sounds: readonly string[]): string | undefined {
+  return sounds.find((sound) => word.letters.some((tile) => !tile.silent && !tile.wordId && tileSound(tile) === sound));
 }
 
 /** `count` items starting `turn` places in, wrapping round, so a list moves on a little each day. */
@@ -635,8 +697,9 @@ function turnTo<T>(items: readonly T[], turn: number, count: number): T[] {
  * Rebuilt after the first phone test, which showed four faults in the old list:
  *
  *  1. Sliding under a word is the point of the step, and week 1 had no word.
- *     Its cards were M, A and the one-letter words "a" and "I". Now the first
- *     lesson is M, A, then "am".
+ *     Its cards were M, A and the one-letter words "a" and "I". Now week 1
+ *     teaches a, m, t and s and ends with words like "mat" and "sat"; "I" and
+ *     "a" are Nest words, read whole on their own card.
  *  2. The letter cards showed on step 1 only, so a child who had moved up a
  *     step never met the week's new letters here. Now they lead every lesson.
  *  3. The words were not ones the child could sound out. The list was the
@@ -659,8 +722,10 @@ export function blendList(
   themes: readonly ThemeId[] = [],
   introduced?: readonly string[],
   turn = 0,
+  nest: readonly string[] = [],
 ): DeckWord[] {
-  const cards = letterCards(letters);
+  const cards = letterCards(letters).slice(0, LESSON_CARDS);
+  const nestWords = nestCard(nest);
   const today = new Set(letters.map((id) => id.toLowerCase()));
   const known = introduced ? new Set([...introduced, ...letters].map((id) => id.toLowerCase())) : null;
   const longest = lessonMaxLetters(step);
@@ -671,7 +736,8 @@ export function blendList(
   // Which step's list a word came from: its length, in effect (2 to 5).
   const level = new Map<DeckWord, number>();
   for (const current of LADDER_STEPS) {
-    if (current > step && !(step === 1 && current === 2)) continue;
+    // Steps 1 and 2 also take three-letter words: week 1 already reads mat and sat.
+    if (current > step && !(step <= 2 && current <= 3)) continue;
     for (const entry of themedEntries(themes, current)) {
       const word = "use" in entry ? ladderWord(entry.use) : entry;
       if (word && fits(word) && !themed.includes(word)) themed.push(word);
@@ -685,14 +751,25 @@ export function blendList(
 
   const total = lessonWordCount(step);
   const picked: DeckWord[] = turnTo(themed, turn, Math.min(2, total));
+  // A word that is a letter card's picture ("bus" on the B card) goes to the back of the list, so it is not
+  // read again straight after its card while there are other words to read.
+  const cardWords = new Set(cards.map((card) => card.word.toLowerCase()));
+  const isCardWord = (word: DeckWord) => cardWords.has(word.word.toLowerCase());
   const rest = regular.filter((word) => !picked.includes(word));
   // Longest first, so a child reads at their own word length: "sit" before "it" on step 3.
   const longestFirst = (a: DeckWord, b: DeckWord) => (level.get(b) ?? 0) - (level.get(a) ?? 0);
   // Words that use this week's letters.
-  const fresh = rest.filter((word) => usesAny(word, today)).sort(longestFirst);
+  // Taken in turn by sound ("dad", "cot", "mop", then the next of each), so each of the week's three or four
+  // new sounds is in the day's list, not only the first one in the word list.
+  const freshAll = rest.filter((word) => usesAny(word, today)).sort(longestFirst);
+  const fresh = [
+    ...bySound(freshAll.filter((word) => !isCardWord(word)), [...today], level),
+    ...freshAll.filter(isCardWord),
+  ];
   // Older words, so earlier letters stay in practice ("mat", not "am", on step 3).
   const older = rest.filter((word) => !fresh.includes(word)).sort(longestFirst);
-  // Most of the list is this week's letters; a third is kept for older words when there are any.
+  // About two thirds of the list is this week's letters and a third older ones, so every sound met so far
+  // stays in practice while the week's own sounds lead.
   const olderShare = older.length > 0 ? Math.max(1, Math.floor(total / 3)) : 0;
   const freshPick = turnTo(fresh, turn, Math.max(0, total - picked.length - olderShare));
   const olderWant = Math.max(0, total - picked.length - freshPick.length);
@@ -710,7 +787,7 @@ export function blendList(
       return SIGHT_WORDS.has(id) || (word ? decodable(word, known) : false);
     });
   const lines = step === 5 ? turnTo(sentencesForStep(step).filter(readable), turn, 2) : [];
-  return [...cards, ...words, ...lines];
+  return [...cards, ...(nestWords ? [nestWords] : []), ...words, ...lines];
 }
 
 /** Words the child has already blended, at this step or an earlier one, themed words included. */
@@ -740,6 +817,8 @@ export function ladderClips(): LadderClip[] {
   }
   pushWord("the", "the");
   pushWord("see", "see");
+  // A Nest word is read whole on a tap: its own clip ("I", not the short i of "pig").
+  for (const word of allNestWords()) pushWord(word, nestLabel(word));
   for (const line of step5Sentences) {
     clips.push({ kind: "sentences", id: line.id, say: line.word.endsWith(".") ? line.word : `${line.word}.` });
     for (const piece of line.letters) {

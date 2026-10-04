@@ -60,7 +60,7 @@ test("a teacher places the word ladder and the egg uses that step", async ({ pag
   // The egg's picture is the question, so its word is one with a drawing. (A two-letter word has none:
   // "at" cannot be drawn.) The first egg asks for the first sound, a letter this child has been taught.
   const word = (await board.getAttribute("data-word")) ?? "";
-  expect(["m", "a"]).toContain(word[0]);
+  expect(["a", "m", "t", "s"]).toContain(word[0]);
   await expect(board.locator(".hatch-picture svg")).toBeVisible();
   await expect(board.locator('[data-letter][data-needed="true"]')).toHaveCount(1);
   await expect(board.locator("[data-letter]")).toHaveCount(3);
@@ -69,7 +69,7 @@ test("a teacher places the word ladder and the egg uses that step", async ({ pag
   }
 });
 
-/** Week 0 of the letter plan: m and a. The longest word they spell has two letters, so the ladder stops at step 2. */
+/** Week 0 of the letter plan: a, m, t and s. The longest word they spell has three letters, so the ladder stops at step 3. */
 const weekOne = {
   version: 1,
   origin: "device",
@@ -85,9 +85,10 @@ async function savedLadder(page: Page): Promise<{ step: number; successes: numbe
 }
 
 test("a week-one child does not climb the ladder by playing games", async ({ page }) => {
-  // One success short of moving up, on the last step m and a can support. The lesson held the child
-  // here; a hatched egg or a rhyme match did not, and moved them on to words they cannot sound out.
-  const child = { ...profile, profiles: [{ ...profile.profiles[0], ladder: { step: 2, successes: 2 } }] };
+  // One success short of moving up, on the last step a, m, t and s can support (three letters: mat, sat).
+  // The lesson held the child here; a hatched egg or a rhyme match did not, and moved them on to words
+  // they cannot sound out.
+  const child = { ...profile, profiles: [{ ...profile.profiles[0], ladder: { step: 3, successes: 2 } }] };
   await page.addInitScript(
     ({ saved, placed }) => {
       if (sessionStorage.getItem("ladder-test-seeded")) return;
@@ -103,7 +104,7 @@ test("a week-one child does not climb the ladder by playing games", async ({ pag
   );
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
-  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", "ma");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-letters", "amts");
 
   // Hatch the Egg counts toward the ladder. A new child is on its first level, where one letter,
   // the word's first sound, finishes each word; the egg hatches after the last one.
@@ -119,7 +120,7 @@ test("a week-one child does not climb the ladder by playing games", async ({ pag
   }
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
-  expect((await savedLadder(page)).step).toBe(2);
+  expect((await savedLadder(page)).step).toBe(3);
 
   // So does Rhyme Match.
   await page.locator("[data-game-tile=rhyme]").click();
@@ -133,7 +134,7 @@ test("a week-one child does not climb the ladder by playing games", async ({ pag
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "2");
   const ladder = await savedLadder(page);
-  expect(ladder.step).toBe(2);
+  expect(ladder.step).toBe(3);
   // The tries are counted, so the child moves up as soon as the letters allow it.
   expect(ladder.successes).toBe(3);
 });
@@ -141,7 +142,7 @@ test("a week-one child does not climb the ladder by playing games", async ({ pag
 test("a week-one child does not climb the ladder by tracing a word", async ({ page }) => {
   const child = {
     ...profile,
-    profiles: [{ ...profile.profiles[0], ladder: { step: 2, successes: 2 }, stickers: [{ subject: "reading", kind: "word", label: "am" }] }],
+    profiles: [{ ...profile.profiles[0], ladder: { step: 3, successes: 2 }, stickers: [{ subject: "reading", kind: "word", label: "am" }] }],
   };
   await page.addInitScript(
     ({ saved, placed }) => {
@@ -162,6 +163,6 @@ test("a week-one child does not climb the ladder by tracing a word", async ({ pa
   await finishPathTrace(page, "word");
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
   const ladder = await savedLadder(page);
-  expect(ladder.step).toBe(2);
+  expect(ladder.step).toBe(3);
   expect(ladder.successes).toBe(3);
 });

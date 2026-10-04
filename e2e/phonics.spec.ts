@@ -104,20 +104,25 @@ test("week 15 leads with the sh card, and its story sounds out sh as one sound",
   const heard = (await playedClips(page)).length;
   const lines = (await spokenLines(page)).length;
   await ship.click();
-  // Three pieces light up in turn: sh, i, p.
-  await expect(ship.locator("span")).toHaveCount(3);
-  await expect(ship.locator("span").first()).toHaveText("sh");
+  // A tap opens the word on its own slider: three tiles, sh, i, p.
+  const slider = page.locator("[data-story-slider=ship]");
+  await expect(slider.locator(".tile-wrap")).toHaveCount(3);
+  await expect(slider.locator(".tile").first()).toHaveText("sh");
+  // Sliding to the end says each sound, then the word.
+  await slider.getByRole("slider", { name: "Slide across the letters" }).focus();
+  await page.keyboard.press("End");
+  await expect(slider).toHaveAttribute("data-joined", "true");
   await expect
     .poll(async () => (await spokenLines(page)).slice(lines), { timeout: 20000 })
     .toEqual(expect.arrayContaining(["sh, as in ship", "i, as in igloo", "p, as in pig", "ship"]));
   if (clipShipped("sounds/sh.mp3")) {
     expect((await playedClips(page)).slice(heard)).toEqual(expect.arrayContaining(["sounds/sh.mp3", "sounds/i.mp3", "sounds/p.mp3"]));
   }
-  // "the" is read whole: th is a sound of its own, and it is not taught until week 16.
+  // "the" is read whole, as a Nest word (th is not taught until week 16).
   await page.getByRole("button", { name: "Next page" }).click();
   await page.getByRole("button", { name: "Next page" }).click();
   await expect(story).toHaveAttribute("data-page", "3");
-  await expect(page.locator(".story-word[data-word=the]").first()).toHaveAttribute("data-role", "glue");
+  await expect(page.locator(".story-word[data-word=the]").first()).toHaveAttribute("data-role", "nest");
   await expect(page.locator(".story-word[data-word=dash]")).toHaveAttribute("data-role", "target");
 });
 

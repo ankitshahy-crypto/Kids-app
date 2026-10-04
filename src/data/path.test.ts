@@ -26,6 +26,7 @@ describe("learning path", () => {
     const place = placeForChild("2026-09-07T15:00:00.000Z", new Date("2026-09-07T18:00:00.000Z"), "UTC");
     expect(place.subject).toBe(READING);
     expect(place.currentId).toBe("letters");
-    expect(place.introduced).toBe(2);
+    // Week 1 teaches a, m, t and s.
+    expect(place.introduced).toBe(4);
   });
 });

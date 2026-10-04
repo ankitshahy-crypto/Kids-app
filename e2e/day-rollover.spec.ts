@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 /**
  * A device left open overnight rolls to the new day without a reload: the
  * Today screen picks up the new date, and a Thursday night becomes Friday's
- * review with its sound game.
+ * review with its Friday Challenge.
  */
 test.use({ timezoneId: "America/New_York" });
 
@@ -12,7 +12,7 @@ const mia = {
   name: "Mia",
   ageRange: "4",
   animal: "fox",
-  // Three weeks in, so the sound game has sounds to ask about.
+  // Three weeks in, so the Friday Challenge has sounds to ask about.
   createdAt: "2026-09-14T12:00:00.000Z",
   stars: 0,
   days: {},

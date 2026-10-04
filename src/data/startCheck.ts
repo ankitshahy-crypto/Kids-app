@@ -1,7 +1,7 @@
 import type { IllustrationName } from "../illustrations";
 import { ladderTitle, type LadderStep } from "./ladder";
 import { placeForWeek, type LessonPlace } from "./placement";
-import { planForWeek } from "./schedule";
+import { planForWeek, type WeekPlan } from "./schedule";
 import { READING } from "./subject";
 
 /**
@@ -137,19 +137,28 @@ export function needsGrownupConfirm(result: CheckResult): boolean {
   return result.place.weekIndex >= CONFIRM_PAST_WEEK;
 }
 
+/** "letters i, p and n", or "review e, i and u" on a week with no new sounds. */
+function weekSounds(plan: WeekPlan): string {
+  const list = (items: readonly string[]) => (items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`);
+  if (plan.newLetters.length === 0) return `${plan.kind ?? "review"} ${list(plan.reviewLetters)}`;
+  return `${plan.newLetters.length > 1 ? "letters" : "letter"} ${list(plan.newLetters)}`;
+}
+
 /** Turn the tally into a start. Each part passed moves the start further along. */
 export function placeFromCheck(tally: CheckTally): CheckResult {
   const sounds = partSettled(tally, "sound") === "pass";
   const words = sounds && partSettled(tally, "word") === "pass";
   const long = words && partSettled(tally, "long") === "pass";
-  const weekIndex = long ? 9 : words ? 6 : sounds ? 2 : 0;
+  // Knows the sounds: week 2 (a, m, t and s already met). Reads words: week 5 (a to h met). Reads longer
+  // words: week 9, the review after the whole alphabet.
+  const weekIndex = long ? 8 : words ? 4 : sounds ? 1 : 0;
   const ladderStep: LadderStep = long ? 4 : words ? 3 : sounds ? 2 : 1;
   const place = placeForWeek(weekIndex, READING);
   const plan = planForWeek(weekIndex);
   return {
     place,
     ladderStep,
-    summary: `Week ${weekIndex + 1} · ${plan.newLetters.length > 1 ? "letters" : "letter"} ${plan.newLetters.join(" and ")} · ${ladderTitle(ladderStep)}`,
+    summary: `Week ${weekIndex + 1} · ${weekSounds(plan)} · ${ladderTitle(ladderStep)}`,
     cheer: long ? "You can read so much already!" : words ? "You can read words!" : sounds ? "You know your sounds!" : "Great start!",
     cheerId: long ? "check-read" : words ? "check-words" : sounds ? "check-sounds" : "check-great",
   };
