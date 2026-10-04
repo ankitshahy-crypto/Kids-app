@@ -11,6 +11,15 @@ export const MATH = "math";
 export const mathSteps = ["count", "know", "trace", "shape", "more", "add"] as const;
 export type MathStep = (typeof mathSteps)[number];
 
+/**
+ * Numbers games added by the STEM plan (Peek: how many at a glance). They are on the Numbers page
+ * and earn a star like the others, but are not part of the day's six steps, so a day's lesson is
+ * finished by the same games as before.
+ */
+export const mathExtras = ["peek"] as const;
+export type MathExtra = (typeof mathExtras)[number];
+export type MathGame = MathStep | MathExtra;
+
 export const mathStages = [
   { id: "counting", title: "Counting", detail: "Count things from 1 to 10. Each says its number when tapped.", size: 10 },
   { id: "numbers", title: "Numbers", detail: "Hear a number and tap it. Trace 0 to 9.", size: 10 },

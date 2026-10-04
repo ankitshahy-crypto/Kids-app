@@ -10725,3 +10725,117 @@ a.unlock-buy {
     width: min(64px, calc((100vw - 64px) / 5));
   }
 }
+
+/* ---- Numbers: Peek (src/components/MathMore.tsx) ---------------------------------------
+   Movement is transform and opacity only, with the plan's curves: enter cubic-bezier(0.2, 0.8, 0.2, 1),
+   bouncy cubic-bezier(0.34, 1.56, 0.64, 1). Reduced motion keeps the changes and drops the movement. */
+
+/* The Numbers page: a last row that is not full sits in the middle, not against the left. */
+.math-board.is-even {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.math-board.is-even > * {
+  grid-column: span 2;
+}
+
+.math-board.is-even > :nth-last-child(2):nth-child(3n + 1) {
+  grid-column: 2 / span 2;
+}
+
+.math-board.is-even > :last-child:nth-child(3n + 1) {
+  grid-column: 3 / span 2;
+}
+
+.math-activity-art .ladybug-art {
+  width: 40px;
+  height: 40px;
+}
+
+/* Peek: a leaf pad in the scene with ladybugs on it, and a leaf that drops over them. */
+.game-frame[data-screen="peek"] .game-stage {
+  align-items: center;
+}
+
+.peek-pad {
+  position: relative;
+  width: min(100%, 280px);
+  aspect-ratio: 5 / 4;
+}
+
+.peek-leaf,
+.peek-cover-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.peek-bug {
+  position: absolute;
+  width: 22%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  animation: peek-land 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.peek-bug .ladybug-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.peek-bug .count-badge {
+  top: -8px;
+  right: -8px;
+}
+
+.peek-cover {
+  position: absolute;
+  inset: -6%;
+  z-index: 2;
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform: translateY(-120%) rotate(-8deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.peek-cover[data-on="true"] {
+  transform: translateY(0) rotate(0);
+  opacity: 1;
+}
+
+@keyframes peek-land {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -120%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.peek-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.peek-dots {
+  display: block;
+  height: auto;
+  max-width: 84px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peek-bug {
+    animation: none !important;
+  }
+
+  .peek-cover {
+    transition: opacity 0.12s linear;
+    transform: none;
+  }
+}

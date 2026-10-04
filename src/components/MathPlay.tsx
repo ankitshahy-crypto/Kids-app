@@ -9,7 +9,7 @@ import { GameFrame, newSalt, Pick, useCoach, useFinish, useRounds, useRoundState
 import { Illustration, illustrations } from "../illustrations";
 import { themeArt } from "../themeArt";
 import { PathTrace } from "./PathTrace";
-import { shapeTitles, tracePoints, type MathLesson, type MathStep, type ShapeId } from "../data/math";
+import { shapeTitles, tracePoints, type MathGame, type MathLesson, type ShapeId } from "../data/math";
 import {
   addLineId,
   addRounds,
@@ -27,6 +27,7 @@ import { shapeStrokes } from "../data/shapeStrokes";
 import { useSpeaker } from "../hooks/useSpeaker";
 import type { Settings } from "../settings";
 import { LockBadge } from "./LockBadge";
+import { Ladybug } from "./mathArt";
 
 /**
  * LittleNest Numbers, rebuilt on the game kit (src/game/kit.tsx).
@@ -124,14 +125,44 @@ export function ShapeGlyph({ id, tint }: { id: ShapeId; tint?: string }) {
   );
 }
 
-const board: { id: MathStep; label: string; name: string }[] = [
+/**
+ * The Numbers page, in the order a child meets the skills: count, see a few at a glance, then
+ * numerals, shapes, comparing and adding. Count stays first: it is the free one.
+ */
+const board: { id: MathGame; label: string; name: string }[] = [
   { id: "count", label: "Count", name: "Count objects" },
+  { id: "peek", label: "Peek", name: "How many did you see" },
   { id: "know", label: "Numbers", name: "Hear a number" },
-  { id: "trace", label: "Trace", name: "Trace a number" },
   { id: "shape", label: "Shapes", name: "Match a shape" },
   { id: "more", label: "More", name: "Which has more" },
   { id: "add", label: "Add", name: "Add the groups" },
+  { id: "trace", label: "Trace", name: "Trace a number" },
 ];
+
+/** Two plates, one fuller: the More tile. */
+function MoreTileArt() {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <ellipse cx="15" cy="52" rx="13" ry="5" fill="#e6dccf" />
+      <circle cx="15" cy="42" r="8" fill="#e07a5f" />
+      <ellipse cx="46" cy="52" rx="17" ry="5" fill="#e6dccf" />
+      <circle cx="38" cy="42" r="8" fill="#e07a5f" />
+      <circle cx="54" cy="42" r="8" fill="#e07a5f" />
+      <circle cx="46" cy="28" r="8" fill="#e07a5f" />
+    </svg>
+  );
+}
+
+/** One and one with a plus: the Add tile. */
+function AddTileArt() {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <circle cx="11" cy="32" r="10" fill="#e07a5f" />
+      <path d="M32 22v20M22 32h20" stroke="#3d6b86" strokeWidth="6" strokeLinecap="round" />
+      <circle cx="53" cy="32" r="10" fill="#e07a5f" />
+    </svg>
+  );
+}
 
 export function MathBoard({
   lesson,
@@ -143,10 +174,10 @@ export function MathBoard({
   done: Record<string, boolean>;
   /** Tiles that open with the full app. */
   locked?: (id: string) => boolean;
-  onOpen: (step: MathStep) => void;
+  onOpen: (step: MathGame) => void;
 }) {
   return (
-    <div className="math-board" data-stage={lesson.stageId} data-week={lesson.weekIndex}>
+    <div className="math-board is-even" data-stage={lesson.stageId} data-week={lesson.weekIndex}>
       {board.map((stop) => (
         <button
           key={stop.id}
@@ -159,7 +190,10 @@ export function MathBoard({
         >
           {locked?.(stop.id) ? <LockBadge /> : null}
           <span className="math-activity-art" aria-hidden="true">
-            {stop.id === "count" || stop.id === "more" || stop.id === "add" ? <Apple /> : null}
+            {stop.id === "count" ? <Apple /> : null}
+            {stop.id === "more" ? <MoreTileArt /> : null}
+            {stop.id === "add" ? <AddTileArt /> : null}
+            {stop.id === "peek" ? <Ladybug /> : null}
             {stop.id === "know" || stop.id === "trace" ? <span className="math-numeral">{stop.id === "trace" ? lesson.digit : lesson.hear}</span> : null}
             {stop.id === "shape" ? <ShapeGlyph id={lesson.shape} /> : null}
           </span>
