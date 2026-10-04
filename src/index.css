@@ -7857,7 +7857,9 @@ input.is-pressed,
    row at most: three and two, side by side with the plus, still fit a phone. */
 .add-row .count-group {
   --gap: 4px;
-  width: calc(var(--cols, 2) * 40px + (var(--cols, 2) - 1) * 4px + 14px);
+  /* Each thing is 64px, big enough to tap and count with a finger (it was 40px). Two columns of two
+     groups still fit a phone's scene: 2 x (2 x 64 + 4 + 14) + the plus = about 310px. */
+  width: calc(var(--cols, 2) * 64px + (var(--cols, 2) - 1) * 4px + 14px);
   padding: 7px;
   border-radius: 18px;
   background: #fffdfb;
@@ -7865,7 +7867,7 @@ input.is-pressed,
 }
 
 .add-row .count-group .count-thing {
-  width: 40px;
+  width: 64px;
 }
 
 .add-plus {
@@ -10613,4 +10615,67 @@ a.unlock-buy {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--paper);
+}
+
+/* ------------------------------------------------------------------ primary buttons and child text
+   From the design review of every screen (r15).
+   - The main action on a child's screen (Play sound, Read it, Read, Say it again, Use this start,
+     All done, coding Play) was pale peach with sage text: the same look as a button that is off.
+     It is now one solid dark green with white type of at least 18px. Pale is kept for disabled.
+   - A child's own labels were 12-13px (Explore names, the dock, Trace my name, the coding blocks).
+     They are 16px or more now. */
+.app.mode-kid :is(.play-button, .start-button, .done-button):not(:disabled) {
+  background: var(--action);
+  color: var(--text-on-action);
+  box-shadow: 0 8px 20px rgba(47, 74, 60, 0.22);
+}
+
+@media (max-width: 767px) {
+  .app.mode-kid .play-button {
+    font-size: 18px;
+  }
+}
+
+.app.mode-kid :is(.play-button, .start-button, .done-button):disabled {
+  background: var(--peach);
+  color: var(--text-muted);
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+.app.mode-kid :is(.play-button, .start-button):not(:disabled) .play-icon {
+  background: rgba(255, 253, 251, 0.2);
+  color: var(--text-on-action);
+}
+
+/* Labels with no larger size of their own on a wide screen. */
+.app.mode-kid :is(.build-name, .explore-tag, .letter-hear, .trace-practice button, .pilot-label, .today-focus, .chunk-strip, .hear-again-text, .break-text, .code-section h2) {
+  font-size: 16px;
+}
+
+.app.mode-kid .today-dock .dock-button {
+  font-size: 16px;
+}
+
+/* The Explore tiles and the dock shrink their names on a phone and in iPad landscape; not below 16px. */
+@media (max-width: 767px) {
+  .app.mode-kid .course-button,
+  .app.mode-kid .course-name span:last-child,
+  .app.mode-kid .dock-button {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 768px) and (orientation: landscape) {
+  .app.mode-kid .dock-button {
+    font-size: 16px;
+  }
+}
+
+.app.mode-kid .pilot-label {
+  min-height: 44px;
+}
+
+.grownup-tip-hide {
+  font-size: 15px;
 }

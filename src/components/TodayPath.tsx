@@ -351,7 +351,6 @@ export function TodayPath({
                     <ModuleMark name="numbers" />
                   </span>
                   <span className="course-name">
-                    <span className="course-brand">LittleNest</span>
                     <span>Numbers</span>
                   </span>
                 </button>
@@ -368,7 +367,6 @@ export function TodayPath({
                     <ModuleMark name="colors" />
                   </span>
                   <span className="course-name">
-                    <span className="course-brand">LittleNest</span>
                     <span>Colors</span>
                   </span>
                 </button>
@@ -385,7 +383,6 @@ export function TodayPath({
                     <ModuleMark name="time" />
                   </span>
                   <span className="course-name">
-                    <span className="course-brand">LittleNest</span>
                     <span>Time & Money</span>
                   </span>
                 </button>
@@ -402,7 +399,6 @@ export function TodayPath({
                     <ModuleMark name="build" />
                   </span>
                   <span className="course-name">
-                    <span className="course-brand">LittleNest</span>
                     <span>Build</span>
                   </span>
                 </button>
@@ -419,7 +415,6 @@ export function TodayPath({
                     <ModuleMark name="science" />
                   </span>
                   <span className="course-name">
-                    <span className="course-brand">LittleNest</span>
                     <span>Science</span>
                   </span>
                 </button>
@@ -432,7 +427,6 @@ export function TodayPath({
                     <ModuleMark name="code" />
                   </span>
                   <span className="course-name">
-                    <span className="course-brand">LittleNest</span>
                     <span>Coding</span>
                   </span>
                 </button>

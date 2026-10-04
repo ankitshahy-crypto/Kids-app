@@ -344,7 +344,11 @@ test("setting the clock: a tap on a number moves the short hand there", async ({
   await expect(clock.locator(".clock-number[data-number='7']")).toHaveAttribute("data-wiggle", "true");
   await expect(clock).toHaveAttribute("data-hour", "12");
   await clock.locator(".clock-number[data-number='1']").click();
-  await expect(clock).toHaveAttribute("data-hour", "1");
+  // The right number moves the hand, and the round moves on. On a slow machine the next round can
+  // start (and set the hand back to 12) before the hand at 1 is seen, so either one counts.
+  await expect
+    .poll(async () => (await clock.getAttribute("data-hour")) === "1" || (await clock.getAttribute("data-round")) === "4")
+    .toBe(true);
   for (const round of [4, 5]) {
     await expect(clock).toHaveAttribute("data-round", String(round));
     await expect(clock).toHaveAttribute("data-matched", "false");

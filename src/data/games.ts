@@ -468,17 +468,25 @@ export function spinTurn(index: number): SpinKind {
   return SPIN_KINDS[safe];
 }
 
-/** Degrees clockwise from the top to the middle of this segment when the wheel has not turned. */
+/**
+ * Degrees clockwise from the top to the middle of this segment when the wheel has not turned.
+ * The first segment is centred on the top, so a wheel that has not spun shows a picture under
+ * the pointer rather than the line between two, and every landing leaves that picture upright.
+ */
 function segmentCenter(index: number): number {
-  return index * SEGMENT + SEGMENT / 2;
+  return index * SEGMENT;
+}
+
+/** The segment under the pointer, from the clockwise angle of the top on the unturned wheel. */
+function segmentAt(atTop: number): number {
+  return Math.floor((atTop + SEGMENT / 2) / SEGMENT) % SPIN_KINDS.length;
 }
 
 /** Which segment sits under the pointer after this clockwise rotation. */
 export function kindAtRotation(rotation: number): SpinKind {
   const normalized = ((rotation % 360) + 360) % 360;
   const atTop = (360 - normalized) % 360;
-  const index = Math.floor(atTop / SEGMENT) % SPIN_KINDS.length;
-  return SPIN_KINDS[index];
+  return SPIN_KINDS[segmentAt(atTop)];
 }
 
 /**
@@ -497,7 +505,7 @@ export function wheelRotation(index: number, from = 0, turns = 4): number {
 export function snapForward(raw: number, from: number): number {
   const normalized = ((raw % 360) + 360) % 360;
   const atTop = (360 - normalized) % 360;
-  const segment = Math.floor(atTop / SEGMENT) % SPIN_KINDS.length;
+  const segment = segmentAt(atTop);
   const landing = (360 - segmentCenter(segment) + 360) % 360;
   let target = Math.floor(raw / 360) * 360 + landing;
   if (target < from) target += 360;

@@ -563,3 +563,17 @@ test("each game's speaker is in the corner of its scene, clear of the buttons at
     await expect(page.locator("[data-game=home]")).toBeVisible();
   }
 });
+
+test("before the first spin, the pointer sits over the middle of a picture, not the line between two", async ({ page }) => {
+  await install(page);
+  await openGames(page);
+  await page.locator("[data-game-tile=spin]").click();
+  const pointer = await page.locator(".spin-pointer").boundingBox();
+  // The Sound slice: a slice whose middle is under the pointer is mirror-even about it.
+  const icon = await page.locator("[data-wheel] svg > g").first().locator("path").first().boundingBox();
+  const wheel = await page.locator("[data-wheel]").boundingBox();
+  const pointerX = pointer!.x + pointer!.width / 2;
+  const iconX = icon!.x + icon!.width / 2;
+  expect(Math.abs(iconX - pointerX)).toBeLessThan(3);
+  expect(icon!.y + icon!.height / 2).toBeLessThan(wheel!.y + wheel!.height / 2);
+});
