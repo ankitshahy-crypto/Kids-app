@@ -1283,8 +1283,12 @@ button:focus-visible {
   color: #a15b4a;
 }
 
+/* .save-child is in this list for the grown-up check and the PIN sheet, which open over a
+   child's screen. It was sized only inside the grown-up pages (further down), so on the check
+   itself the Check button had no height, corners or type size: a thin grey strip. */
 .remove-child,
 .add-child,
+.save-child,
 .age-grid button,
 .text-button {
   min-height: 64px;
