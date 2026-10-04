@@ -59,16 +59,25 @@ describe("decodable readers", () => {
   it("shows a picture of the thing a page names, when the app has a drawing of it", () => {
     // "The vet has a plum" showed grapes and "three sheep" a hen. A page that names one of these
     // things shows that thing.
-    const named = ["map", "pot", "bun", "rug", "mask", "plum", "yak", "tree", "sheep", "owl", "yam"];
+    const named = ["map", "pot", "bun", "rug", "mask", "plum", "yak", "tree", "sheep", "owl", "yam", "flag"];
     for (const story of STORIES) {
       for (const page of story.pages) {
         const words = new Set((page.text.toLowerCase().match(/[a-z]+/g) ?? []).map((word) => word.replace(/s$/, "")));
         for (const thing of named) {
           if (thing === "owl" || !words.has(thing)) continue;
+          // "Is it a flag? No, it is a lamp!" names a flag to say it is not one.
+          if (thing === "flag" && words.has("lamp")) continue;
           expect(page.props.includes(thing as never), `${story.id}: "${page.text}" names a ${thing}`).toBe(true);
         }
       }
     }
+  });
+
+  it("the bath, beach and flag pages show what their words say", () => {
+    const page = (text: string) => STORIES.flatMap((story) => story.pages).find((each) => each.text.includes(text))!;
+    expect(page("Long, long, long bath").props).toEqual(["bath"]);
+    expect(page("Round the sand, up the mound").props).toEqual(["sand", "seal"]);
+    expect(page("and the flag. The end!").props).toEqual(["flag"]);
   });
 
   it("marks words the child can blend and reads the rest", () => {
