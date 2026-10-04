@@ -444,12 +444,15 @@ function Bird({ onPart, wiggle, reveal, found }: { onPart: (part: BodyPart) => v
         <path d="M76 100c10-22 44-26 70-10-6 30-40 44-70 30Z" fill="#4f8fc0" />
         <path d="M92 108c12-6 28-6 40 0M96 120c10-4 22-4 30 0" fill="none" stroke="#7fb8de" strokeWidth="4" strokeLinecap="round" />
       </g>
+      {/* The beak and the eye are small on the drawing, so each has a wider tap area than it looks
+          (about 64 px on a phone). They were 51x42 and 35x35 px, too small for a young child's finger.
+          The eye comes after the beak, so where the two areas meet, a tap goes to the eye. */}
       <g {...part("beak")}>
-        <rect x="192" y="46" width="44" height="36" fill="transparent" />
+        <rect x="194" y="26" width="56" height="64" fill="transparent" />
         <path d="M198 52l34 12-34 12Z" fill="#f2c14e" />
       </g>
       <g {...part("eye")}>
-        <circle cx="176" cy="52" r="15" fill="transparent" />
+        <circle cx="172" cy="50" r="28" fill="transparent" />
         <circle cx="176" cy="52" r="9" fill="#fffdfb" />
         <circle cx="178" cy="52" r="5" fill="#2c3a4f" />
       </g>
