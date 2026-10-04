@@ -321,7 +321,8 @@ function WheelFace() {
   return (
     <svg viewBox="0 0 200 200" aria-hidden="true">
       {SPIN_KINDS.map((kind, index) => {
-        const start = ((index * 60 - 90) * Math.PI) / 180;
+        // Each slice is centred on its angle (the first on the top), the same as segmentCenter in games.ts.
+        const start = ((index * 60 - 90 - 30) * Math.PI) / 180;
         const end = start + (60 * Math.PI) / 180;
         const radius = 92;
         const x1 = 100 + radius * Math.cos(start);
@@ -334,7 +335,7 @@ function WheelFace() {
         return (
           <g key={kind}>
             <path d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`} fill={pastel[index]} stroke="#fffdfb" strokeWidth="2" />
-            <g transform={`translate(${lx} ${ly})`} data-wheel-part={kind}>
+            <g transform={`translate(${lx} ${ly}) rotate(${index * 60})`} data-wheel-part={kind}>
               <WheelIcon kind={kind} />
             </g>
           </g>

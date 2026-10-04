@@ -192,6 +192,18 @@ describe("the other games", () => {
     }
   });
 
+  it("rests with a picture under the pointer, not the line between two, and lands in the middle of one", () => {
+    expect(kindAtRotation(0)).toBe("sound");
+    expect(kindAtRotation(29)).toBe("sound");
+    expect(kindAtRotation(-29)).toBe("sound");
+    for (let spin = 0; spin < 6; spin += 1) {
+      const landed = wheelRotation(spin, 0);
+      // A landing is a whole number of slices, so the picture under the pointer is centred and upright.
+      expect(landed % 60).toBe(0);
+      expect(kindAtRotation(landed)).toBe(spinTurn(spin));
+    }
+  });
+
   it("spins onto the next learned challenge and keeps a bonus kind", () => {
     expect(spinTurn(0)).toBe("sound");
     expect(spinTurn(5)).toBe("bonus");
