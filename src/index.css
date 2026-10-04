@@ -4158,11 +4158,16 @@ button:focus-visible {
 }
 
 @media (min-width: 768px) {
+  /* On a wide screen the child's pages sit in a centered 560px column (the section tiles, the
+     path): the chip and the card line up with it instead of hugging the screen's edge. */
   .grownup-tip.is-under-corner.is-chip {
     max-width: calc(100% - 220px);
+    margin-left: max(0px, calc((100% - 560px) / 2));
   }
 
   .grownup-tip.is-under-corner:not(.is-chip) {
+    align-self: center;
+    width: min(100%, 560px);
     margin-top: 64px;
   }
 }
