@@ -15,6 +15,9 @@ export async function showWordCard(page: Page, tiles = 2): Promise<Locator> {
     const count = await page.locator(".letters .tile-wrap").count();
     if (word === "false" && sentence === "false" && count >= tiles) return activity;
     const before = await activity.getAttribute("data-word");
+    // The "is your sound on?" hint can come up while stepping through the cards; it sits over the arrows.
+    const hint = page.getByRole("status").getByRole("button", { name: "OK" });
+    if (await hint.isVisible().catch(() => false)) await hint.click();
     await page.getByRole("button", { name: "Next word" }).click();
     await expect(activity).not.toHaveAttribute("data-word", before ?? "");
   }

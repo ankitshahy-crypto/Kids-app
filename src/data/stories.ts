@@ -622,7 +622,7 @@ export const STORIES: Story[] = [
       { text: "The king has a big, big hat. Tap, tap.", setting: "castle", props: ["castles"], parent: "That big hat is a crown." },
       { text: "The gem is for the king. Tap, tap. Step, step.", setting: "castle", props: ["gem", "castles"], parent: "Ask: what would you give a king?" },
       { text: "The king is glad. He hands {hero} a flag.", setting: "castle", props: ["flag"] },
-      { text: "Flap, flap. {hero} and the flag. The end!", setting: "castle", props: ["flag", "gem"] },
+      { text: "Flap, flap. {hero} and the flag. The end!", setting: "castle", props: ["flag"] },
     ],
     before: "Ask: what does a king wear?",
     after: "Ask: what did the king give {hero}?",

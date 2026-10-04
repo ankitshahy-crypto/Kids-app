@@ -10680,6 +10680,52 @@ a.unlock-buy {
   font-size: 15px;
 }
 
+/* ---------------------------------------------------------------------------
+   Games fill the screen they are on.
+   On a phone the scene takes the free height (up to a square), so the tray is not
+   left hanging in the top half with empty paper below. On an iPad the whole game
+   (scene, animal, dots and pictures) is drawn larger as one piece with zoom, so every
+   picture, tap area and gap keeps its proportions. Pointer maths in the games works
+   from each element's box, which zoom scales the same way in WebKit and Blink.
+   --------------------------------------------------------------------------- */
+.game-scene {
+  height: clamp(210px, max(33svh, 100svh - 470px), 360px);
+}
+
+/* Games whose choices take two rows keep the shorter scene, so the second row stays on screen. */
+.game-frame[data-screen="memory"] .game-scene,
+.game-frame[data-screen="hatch"]:not([data-level="1"]) .game-scene {
+  height: clamp(210px, 33svh, 300px);
+}
+
+@media (min-width: 768px) and (orientation: portrait) {
+  .game-frame {
+    zoom: 1.45;
+  }
+}
+
+@media (min-width: 768px) and (orientation: landscape) {
+  .game-frame {
+    zoom: 1.2;
+  }
+}
+
+/* Choices keep to one row on a 375 px phone (iPhone mini, SE), where three 110 px pictures, or four
+   82 px ones, used to wrap onto a second row. Memory and Hatch keep their three-to-a-row grid. */
+@media (max-width: 389px) {
+  .pick {
+    width: min(110px, calc((100vw - 48px) / 3));
+  }
+
+  .game-frame:not([data-screen="memory"]):not([data-screen="hatch"]) .pick.is-mid {
+    width: min(82px, calc((100vw - 56px) / 4));
+  }
+
+  .pick.is-small {
+    width: min(64px, calc((100vw - 64px) / 5));
+  }
+}
+
 /* ---------- Reading redesign: sound shapes, Nest words, shared readers ---------- */
 
 /*
@@ -11121,7 +11167,7 @@ a.unlock-buy {
   }
 
   .story-word.is-child {
-    min-height: 54px;
+    min-height: 60px;
   }
 
   .story-hear {

@@ -106,8 +106,8 @@ describe("decodable readers", () => {
   it("shows a picture of the thing a page names, when the app has a drawing of it", () => {
     // "The vet has a plum" showed grapes and "three sheep" a hen. A page that names one of these
     // things shows that thing, in its grown-up line or its child line.
-    const OLDER_NAMED = ["map", "pot", "bun", "rug", "mask", "plum", "yak", "tree", "sheep", "owl", "yam"];
-    const named = ["map", "pot", "bun", "rug", "mask", "plum", "yak", "tree", "sheep", "owl", "yam", "mat", "pan", "cap", "cup", "nut", "hat", "tent", "lamp", "mop", "bus", "wave", "cloud", "frog", "duck", "goat", "hen", "pig", "cat"];
+    const OLDER_NAMED = ["map", "pot", "bun", "rug", "mask", "plum", "yak", "tree", "sheep", "owl", "yam", "flag"];
+    const named = ["map", "pot", "bun", "rug", "mask", "plum", "yak", "tree", "sheep", "owl", "yam", "flag", "mat", "pan", "cap", "cup", "nut", "hat", "tent", "lamp", "mop", "bus", "wave", "cloud", "frog", "duck", "goat", "hen", "pig", "cat"];
     for (const story of STORIES) {
       for (const page of story.pages) {
         // "a duck mask" names a mask, not a duck.
@@ -117,12 +117,21 @@ describe("decodable readers", () => {
           // The shared readers are held to the longer list; older readers to the list they were written against.
           if (!isShared(page) && !OLDER_NAMED.includes(thing)) continue;
           if (!words.has(thing)) continue;
+          // "Is it a flag? No, it is a lamp!" names a flag to say it is not one.
+          if (thing === "flag" && words.has("lamp")) continue;
           // An animal is named in passing on older readers; the shared readers draw every animal they name.
           if (["duck", "goat", "hen", "pig", "cat", "frog"].includes(thing) && !isShared(page)) continue;
           expect(page.props.includes(thing as never), `${story.id}: "${page.text}" names a ${thing}`).toBe(true);
         }
       }
     }
+  });
+
+  it("the bath, beach and flag pages show what their words say", () => {
+    const page = (text: string) => STORIES.flatMap((story) => story.pages).find((each) => each.text.includes(text))!;
+    expect(page("Long, long, long bath").props).toEqual(["bath"]);
+    expect(page("Round the sand, up the mound").props).toEqual(["sand", "seal"]);
+    expect(page("and the flag. The end!").props).toEqual(["flag"]);
   });
 
   it("marks words the child can blend and reads the rest", () => {
