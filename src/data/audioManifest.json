@@ -1256,7 +1256,21 @@
     "play-rhyme-yes": { "file": "prompts/play-rhyme-yes.mp3", "say": "They rhyme!", "source": "neural" },
     "play-rhyme-no": { "file": "prompts/play-rhyme-no.mp3", "say": "They do not rhyme.", "source": "neural" },
     "play-bonus": { "file": "prompts/play-bonus.mp3", "say": "A present for you! Tap the check.", "source": "neural" },
-    "play-trace": { "file": "prompts/play-trace.mp3", "say": "Trace the letter.", "source": "neural" }
+    "play-trace": { "file": "prompts/play-trace.mp3", "say": "Trace the letter.", "source": "neural" },
+    "num-peek": { "file": "prompts/num-peek.mp3", "say": "How many ladybugs did you see?", "source": "neural" },
+    "num-peek-again": { "file": "prompts/num-peek-again.mp3", "say": "Look again!", "source": "neural" },
+    "num-bake-bell": { "file": "prompts/num-bake-bell.mp3", "say": "Ring the bell when it is ready.", "source": "neural" },
+    "num-bake-more": { "file": "prompts/num-bake-more.mp3", "say": "I need more, please.", "source": "neural" },
+    "num-bake-less": { "file": "prompts/num-bake-less.mp3", "say": "Oops, too many! Tap the plate to take one back.", "source": "neural" },
+    "num-bake-yum": { "file": "prompts/num-bake-yum.mp3", "say": "Yum! Thank you!", "source": "neural" },
+    "num-bake-1": { "file": "prompts/num-bake-1.mp3", "say": "One strawberry, please!", "source": "neural" },
+    "num-bake-2": { "file": "prompts/num-bake-2.mp3", "say": "Two strawberries, please!", "source": "neural" },
+    "num-bake-3": { "file": "prompts/num-bake-3.mp3", "say": "Three strawberries, please!", "source": "neural" },
+    "num-bake-4": { "file": "prompts/num-bake-4.mp3", "say": "Four strawberries, please!", "source": "neural" },
+    "num-bake-5": { "file": "prompts/num-bake-5.mp3", "say": "Five strawberries, please!", "source": "neural" },
+    "num-bake-6": { "file": "prompts/num-bake-6.mp3", "say": "Six strawberries, please!", "source": "neural" },
+    "num-bake-7": { "file": "prompts/num-bake-7.mp3", "say": "Seven strawberries, please!", "source": "neural" },
+    "num-bake-8": { "file": "prompts/num-bake-8.mp3", "say": "Eight strawberries, please!", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },

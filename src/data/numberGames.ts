@@ -171,6 +171,121 @@ export function addLineId(left: number, right: number): string {
   return `num-add-${left}-${right}`;
 }
 
+// ---------------------------------------------------------------- peek
+
+/**
+ * Peek: a few ladybugs land on a leaf for a moment, a leaf covers them, and the child says how many
+ * they saw. Seeing a small group at a glance, without counting, is the first number skill (Head Start
+ * ELOF P-MATH 2, "recognizes the number of objects in a small set", up to 5 by age 5).
+ */
+
+/** Where the ladybugs sit, in a 0–100 box. The first layouts are dice faces; the `scatter` ones are for ages 5 to 7. */
+const PEEK_DICE: Record<number, [number, number][]> = {
+  1: [[50, 50]],
+  2: [[30, 30], [70, 70]],
+  3: [[25, 25], [50, 50], [75, 75]],
+  4: [[30, 30], [70, 30], [30, 70], [70, 70]],
+  5: [[26, 26], [74, 26], [50, 50], [26, 74], [74, 74]],
+};
+const PEEK_SCATTER: Record<number, [number, number][]> = {
+  1: [[38, 60]],
+  2: [[28, 58], [66, 34]],
+  3: [[24, 40], [56, 22], [64, 66]],
+  4: [[22, 32], [52, 22], [76, 52], [40, 70]],
+  5: [[20, 30], [48, 20], [78, 34], [32, 70], [66, 72]],
+};
+
+export type PeekRound = { count: number; spots: { x: number; y: number }[]; choices: number[]; look: number };
+
+/** How long the ladybugs show before the leaf covers them: longer for the youngest. */
+export const PEEK_LOOK_MS = { early: 2200, later: 1600 } as const;
+
+/**
+ * Groups to see at a glance: four at ages 3–4 (1 to 4, dice faces), five at 5–7 (1 to 5, scattered).
+ * No group comes twice in a row, the layout is turned each play, and the answer is not in the same
+ * place two rounds running.
+ */
+export function peekRounds(level: LogicLevel, salt = 0): PeekRound[] {
+  const top = level === "later" ? 5 : 4;
+  const total = level === "later" ? 5 : 4;
+  const pool = Array.from({ length: top }, (_, index) => index + 1);
+  const counts: number[] = [];
+  let deck = shuffle(pool, salt);
+  for (let index = 0; counts.length < total; index += 1) {
+    if (deck.length === 0) deck = shuffle(pool, salt + 31 * index);
+    const next = deck.shift() as number;
+    if (counts[counts.length - 1] === next) {
+      deck.push(next);
+      continue;
+    }
+    counts.push(next);
+  }
+  let lastAt = -1;
+  return counts.map((count, index) => {
+    const layout = (level === "later" ? PEEK_SCATTER : PEEK_DICE)[count];
+    const flipX = mix(salt, index + 50) % 2 === 1;
+    const flipY = mix(salt, index + 60) % 2 === 1;
+    const spots = layout.map(([x, y]) => ({ x: flipX ? 100 - x : x, y: flipY ? 100 - y : y }));
+    const near = [count - 1, count + 1, count + 2, count - 2, count + 3].filter((value) => value >= 1 && value <= top + 1);
+    let choices = among(count, near, 3, salt + index * 13);
+    // The answer moves: if it would sit where it sat last round, the row turns by one.
+    if (choices.indexOf(count) === lastAt) choices = [...choices.slice(1), choices[0]];
+    lastAt = choices.indexOf(count);
+    return { count, spots, choices, look: PEEK_LOOK_MS[level] };
+  });
+}
+
+/** Dots in a row, for a choice: the same number shown a second way, so a child who does not read numerals yet can match it. */
+export function dotRow(value: number): { x: number; y: number }[] {
+  const perRow = value <= 3 ? value : Math.ceil(value / 2);
+  return Array.from({ length: value }, (_, index) => ({ x: index % perRow, y: Math.floor(index / perRow) }));
+}
+
+// ---------------------------------------------------------------- bakery
+
+/**
+ * Bakery: a customer asks for a number of strawberries and the child puts that many on the plate,
+ * then rings the bell. Counting out a set and knowing when to stop is cardinality, "the last number
+ * said is how many" (ELOF P-MATH 3; NCTM pre-K focal point: correspondence, counting, cardinality).
+ */
+export const BAKERY_CUSTOMERS = ["bear", "bunny", "owl", "pig", "duck", "koala", "penguin", "lion"] as const;
+export type BakeryCustomer = (typeof BAKERY_CUSTOMERS)[number];
+
+export type BakeryRound = { ask: number; customer: BakeryCustomer };
+
+/** The most a plate holds. */
+export const PLATE_MAX = 10;
+
+/** Three orders at ages 3–4 (1 to 5), four at 5–7 (2 to 8). No two orders alike, and no customer twice. */
+export function bakeryRounds(level: LogicLevel, salt = 0, child?: string): BakeryRound[] {
+  const total = roundCount(level);
+  const pool = level === "later" ? [2, 3, 4, 5, 6, 7, 8] : [1, 2, 3, 4, 5];
+  // The youngest start small: the first order is never more than three.
+  let asks = take(pool, total, salt);
+  if (level === "early" && asks[0] > 3) {
+    const small = asks.findIndex((value) => value <= 3);
+    if (small > 0) [asks[0], asks[small]] = [asks[small], asks[0]];
+    else asks = [1 + (mix(salt, 9) % 3), ...asks.slice(1)];
+  }
+  const customers = take(
+    BAKERY_CUSTOMERS.filter((id) => id !== child),
+    total,
+    salt + 5,
+  );
+  return asks.map((ask, index) => ({ ask, customer: customers[index] }));
+}
+
+/** What the customer says about the plate: it is right, too few, or too many. */
+export function bakeryVerdict(ask: number, onPlate: number): "right" | "more" | "less" {
+  if (onPlate === ask) return "right";
+  return onPlate < ask ? "more" : "less";
+}
+
+/** The id of the order: "Three strawberries, please!" */
+export function bakeryLineId(ask: number): string {
+  return `num-bake-${ask}`;
+}
+
 // ---------------------------------------------------------------- spoken lines
 
 const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
@@ -181,6 +296,12 @@ const LINES: Record<string, string> = {
   "num-fewer": "Which has fewer?",
   "num-is-more": "That is more.",
   "num-is-fewer": "That is fewer.",
+  "num-peek": "How many ladybugs did you see?",
+  "num-peek-again": "Look again!",
+  "num-bake-bell": "Ring the bell when it is ready.",
+  "num-bake-more": "I need more, please.",
+  "num-bake-less": "Oops, too many! Tap the plate to take one back.",
+  "num-bake-yum": "Yum! Thank you!",
 };
 
 function capital(text: string): string {
@@ -190,6 +311,11 @@ function capital(text: string): string {
 /** A line of these games, by id. */
 export function numberLine(id: string): string {
   if (LINES[id]) return LINES[id];
+  const order = /^num-bake-(\d+)$/.exec(id);
+  if (order) {
+    const ask = Number(order[1]);
+    return `${capital(WORDS[ask])} ${ask === 1 ? "strawberry" : "strawberries"}, please!`;
+  }
   const sum = /^num-add-(\d+)-(\d+)$/.exec(id);
   if (!sum) return "";
   const left = Number(sum[1]);
@@ -203,6 +329,7 @@ export function numberManifestEntries(): { id: string; say: string }[] {
   return [
     ...Object.entries(LINES).map(([id, say]) => ({ id, say })),
     ...ADD_PAIRS.map(([left, right]) => ({ id: addLineId(left, right), say: numberLine(addLineId(left, right)) })),
+    ...Array.from({ length: 8 }, (_, index) => bakeryLineId(index + 1)).map((id) => ({ id, say: numberLine(id) })),
   ];
 }
 

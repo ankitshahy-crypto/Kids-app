@@ -8,6 +8,8 @@ export const KnowActivity = lazy(() => import("../components/MathPlay").then((mo
 export const MoreActivity = lazy(() => import("../components/MathPlay").then((mod) => ({ default: mod.MoreActivity })));
 export const ShapeActivity = lazy(() => import("../components/MathPlay").then((mod) => ({ default: mod.ShapeActivity })));
 export const TraceActivity = lazy(() => import("../components/MathPlay").then((mod) => ({ default: mod.TraceActivity })));
+export const PeekActivity = lazy(() => import("../components/MathMore").then((mod) => ({ default: mod.PeekActivity })));
+export const BakeryActivity = lazy(() => import("../components/MathMore").then((mod) => ({ default: mod.BakeryActivity })));
 export const MixActivity = lazy(() => import("../components/ColorPlay").then((mod) => ({ default: mod.MixActivity })));
 export const NameActivity = lazy(() => import("../components/ColorPlay").then((mod) => ({ default: mod.NameActivity })));
 export const PaintActivity = lazy(() => import("../components/ColorPlay").then((mod) => ({ default: mod.PaintActivity })));

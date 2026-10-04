@@ -10,6 +10,8 @@ const BY_SCREEN: Record<string, ExploreSection> = {
   shape: "math",
   more: "math",
   add: "math",
+  peek: "math",
+  bakery: "math",
   name: "colors",
   mix: "colors",
   paint: "colors",

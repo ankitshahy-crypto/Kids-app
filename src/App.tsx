@@ -42,6 +42,7 @@ import type { DeckWord } from "./data/deck";
 import { ExploreFrame } from "./explore/frame";
 import {
   AddActivity,
+  BakeryActivity,
   CardsActivity,
   ChooseActivity,
   ClockActivity,
@@ -58,6 +59,7 @@ import {
   NameActivity,
   NeedsActivity,
   PaintActivity,
+  PeekActivity,
   RoutineActivity,
   ScienceActivity,
   ShapeActivity,
@@ -66,7 +68,7 @@ import {
 } from "./explore/lazy";
 import { sectionForScreen } from "./explore/sections";
 import { COLORS, colorFill, colorLessonForChild, type ColorStep } from "./data/colors";
-import { MATH, lessonForChild, type MathStep } from "./data/math";
+import { MATH, lessonForChild, type MathGame } from "./data/math";
 import { TIME, lessonForChild as timeLessonForChild, type MoneyGame, type TimeStep } from "./data/timeMoney";
 import { BUILD, type BuildActivity } from "./data/engineer";
 import { SCIENCE, type ScienceActivity as ScienceId } from "./data/science";
@@ -95,7 +97,7 @@ import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
 type Course = "reading" | "math" | "colors" | "time" | "build" | "science";
-type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "break" | "surprise" | "check" | LessonStep | MathStep | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name" | "sound-check";
+type Screen = "today" | "library" | "nest" | "closet" | "stickers" | "games" | "break" | "surprise" | "check" | LessonStep | MathGame | ColorStep | TimeStep | MoneyGame | BuildActivity | ScienceId | "word" | "my-name" | "sound-check";
 
 const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 
@@ -103,7 +105,7 @@ const lessonScreens: LessonStep[] = ["letter", "draw", "story", "moment"];
 function isChunkScreen(screen: Screen): boolean {
   return (
     lessonScreens.includes(screen as LessonStep) ||
-    mathScreens.includes(screen as MathStep) ||
+    mathScreens.includes(screen as MathGame) ||
     colorScreens.includes(screen as ColorStep) ||
     timeScreens.includes(screen as TimeStep) ||
     moneyScreens.includes(screen as MoneyGame) ||
@@ -136,7 +138,7 @@ function writeFlag(key: string, value: string): void {
 function reducedMotion(): boolean {
   return typeof window !== "undefined" && Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
 }
-const mathScreens: MathStep[] = ["count", "know", "trace", "shape", "more", "add"];
+const mathScreens: MathGame[] = ["count", "know", "trace", "shape", "more", "add", "peek", "bakery"];
 const colorScreens: ColorStep[] = ["name", "mix", "paint"];
 const timeScreens: TimeStep[] = ["day", "routine", "clock", "coins", "shop"];
 const buildScreens: BuildActivity[] = ["bridge", "tower", "ramp", "machines", "balance"];
@@ -488,7 +490,7 @@ export default function App() {
     },
   );
 
-  const finishMath = (step: MathStep, label: string) => {
+  const finishMath = (step: MathGame, label: string) => {
     if (!active) return;
     const kind = step === "shape" ? ("shape" as const) : ("number" as const);
     const learned: StickerInput[] = label ? [{ subject: MATH, kind, label }] : [];
@@ -505,7 +507,7 @@ export default function App() {
     presentTip(mathTip(step, "end"), "after");
   };
 
-  const openMath = (step: MathStep) => {
+  const openMath = (step: MathGame) => {
     if (lockedActivity("math", step)) {
       askGrownup();
       return;
@@ -1064,6 +1066,12 @@ export default function App() {
                   ) : null}
                   {screen === "add" ? (
                     <AddActivity lesson={mathLesson} ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMath("add", label)} />
+                  ) : null}
+                  {screen === "peek" ? (
+                    <PeekActivity ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMath("peek", label)} />
+                  ) : null}
+                  {screen === "bakery" ? (
+                    <BakeryActivity ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMath("bakery", label)} />
                   ) : null}
                   {screen === "name" ? (
                     <NameActivity lesson={colorLesson} ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishColor("name", label)} />
