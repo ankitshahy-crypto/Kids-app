@@ -9,9 +9,14 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request replaces that pull request's older run: only the latest matters.
+# A run on main is never cancelled. Each merge gets a group of its own (its commit), so merges
+# made one after another are all checked, each to the end. Before, the next merge cancelled the
+# run before it, which left a red mark on a commit that had nothing wrong with it, and the only
+# way to merge a stack cleanly was to skip the check on all but the last.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
