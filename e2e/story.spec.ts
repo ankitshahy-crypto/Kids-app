@@ -100,6 +100,8 @@ test("week one's reader stars the child's animal, blends the words it can, and e
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await expect(page.locator(".star-count").first()).toHaveAttribute("data-stars", "1");
   await expect(page.locator(".chunk-strip")).toHaveText("1 of 4 · 3 more!");
+  // The story's closing question arrives as a chip, since the child has just finished; a grown-up opens it.
+  await page.getByRole("button", { name: "For grown-ups: show tip" }).click();
   await expect(page.locator(".grownup-tip")).toContainText("what did Fox say");
 });
 

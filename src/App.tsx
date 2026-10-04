@@ -12,6 +12,7 @@ import { installReadableFont } from "./readableFont";
 import { Background } from "./components/Background";
 import { Closet } from "./components/Closet";
 import { GrownupTip } from "./components/GrownupTip";
+import { markTipSeen, tipSeen } from "./data/tipsSeen";
 import { GoalCheer } from "./components/GoalCheer";
 import { GoalRing } from "./components/GoalRing";
 import { GrownupsButton } from "./components/GrownupsButton";
@@ -153,6 +154,9 @@ export default function App() {
   const [cheer, setCheer] = useState<number | null>(null);
   const [goalMet, setGoalMet] = useState(false);
   const [tip, setTip] = useState<ReadTip | null>(null);
+  // A tip opens in full only the first time its activity opens for this child; after that it waits
+  // as a small "For grown-ups" chip. It used to open in full every time, on a third of the screens.
+  const [tipOpen, setTipOpen] = useState(false);
   const [course, setCourse] = useState<Course>("reading");
   // The games screen opens on one of two lists: the reading games (the dock's Games button) or the coding
   // games (the Coding tile under Explore). Coding had no door of its own: it was a heading at the bottom of
@@ -359,20 +363,43 @@ export default function App() {
   const phonicsReady = phonicsOpen(introducedLetters.length);
   const traceName = nameToTrace(active?.name ?? "");
 
-  const showTip = (step: LessonStep, when: "start" | "end", letter?: string) => {
-    if (!settingsRef.current.showTips) {
+  /**
+   * Every grown-up tip comes through here.
+   * - "open": an activity is opening. The tip opens in full the first time for this child, and
+   *   after that waits as a chip. It is drawn with the new screen, so nothing moves under a finger.
+   * - "after": the child has just finished something. The tip only ever arrives as a chip: a full
+   *   card dropped in after the child acts pushed the page down, mid-lesson even.
+   * - "in-place": the child stays on the same screen (the next word in the lesson). The new line
+   *   takes the old one's place as it is, open or closed, so nothing on the screen grows or shrinks.
+   */
+  const presentTip = (next: ReadTip | null, when: "open" | "after" | "in-place") => {
+    if (!next || !settingsRef.current.showTips) {
       setTip(null);
       return;
     }
-    setTip(readTip(step, when, letter));
+    setTip(next);
+    // In place, over a tip already showing: keep it open or closed as it is. (With none showing, it
+    // arrives closed, like "after".)
+    if (when === "in-place" && tip) return;
+    const childId = active?.id;
+    const first = when === "open" && childId !== undefined && !tipSeen(childId, next.id);
+    if (first && childId !== undefined) markTipSeen(childId, next.id);
+    setTipOpen(first);
+  };
+
+  const showTip = (step: LessonStep, when: "start" | "end", letter?: string) => {
+    presentTip(readTip(step, when, letter), when === "start" ? "open" : "after");
   };
 
   const openStep = (step: LessonStep) => {
     primeSpeech();
     if (step === "letter") setLessonLadderStep(ladderStep);
     setScreen(step);
-    // The letter track stays clear, and the story carries its own grown-up lines.
-    if (step === "letter" || step === "story") setTip(null);
+    // The story carries its own grown-up lines. The letter track stays clear: its tip is only ever
+    // a chip, there from the start, so each word's own line can take its place without moving the
+    // track (the full card used to drop in after every word and push the lesson down).
+    if (step === "story") setTip(null);
+    else if (step === "letter") presentTip(readTip("letter", "start"), "after");
     else showTip(step, "start");
   };
 
@@ -413,8 +440,7 @@ export default function App() {
   const finishStory = (after: string) => {
     reward("story");
     setScreen("today");
-    if (settingsRef.current.showTips && after) setTip({ id: "story-after", text: after });
-    else setTip(null);
+    presentTip(after ? { id: "story-after", text: after } : null, "after");
   };
 
   /** The color moment names a color; the sticker is a color, the star is a reading step. */
@@ -476,8 +502,7 @@ export default function App() {
       else playEffect("chime", settings);
     }
     setScreen("today");
-    if (settingsRef.current.showTips) setTip(mathTip(step, "end"));
-    else setTip(null);
+    presentTip(mathTip(step, "end"), "after");
   };
 
   const openMath = (step: MathStep) => {
@@ -487,8 +512,7 @@ export default function App() {
     }
     primeSpeech();
     setScreen(step);
-    if (settingsRef.current.showTips) setTip(mathTip(step, "start"));
-    else setTip(null);
+    presentTip(mathTip(step, "start"), "open");
   };
 
   /** `label` is what was learned: one color, or (from Mix) every color the child made, each kept as a sticker. */
@@ -506,8 +530,7 @@ export default function App() {
       else playEffect("chime", settings);
     }
     setScreen("today");
-    if (settingsRef.current.showTips) setTip(colorTip(step, "end"));
-    else setTip(null);
+    presentTip(colorTip(step, "end"), "after");
   };
 
   const openColor = (step: ColorStep) => {
@@ -517,8 +540,7 @@ export default function App() {
     }
     primeSpeech();
     setScreen(step);
-    if (settingsRef.current.showTips) setTip(colorTip(step, "start"));
-    else setTip(null);
+    presentTip(colorTip(step, "start"), "open");
   };
 
   const finishTime = (step: TimeStep, label: string) => {
@@ -535,8 +557,7 @@ export default function App() {
       else playEffect("chime", settings);
     }
     setScreen("today");
-    if (settingsRef.current.showTips) setTip(timeTip(step, "end"));
-    else setTip(null);
+    presentTip(timeTip(step, "end"), "after");
   };
 
   const openTime = (step: TimeStep) => {
@@ -546,8 +567,7 @@ export default function App() {
     }
     primeSpeech();
     setScreen(step);
-    if (settingsRef.current.showTips) setTip(timeTip(step, "start"));
-    else setTip(null);
+    presentTip(timeTip(step, "start"), "open");
   };
 
   const finishMoney = (step: MoneyGame, label: string, gift?: string) => {
@@ -563,8 +583,7 @@ export default function App() {
       } else playEffect("chime", settings);
     }
     setScreen("today");
-    if (settingsRef.current.showTips) setTip(timeTip(step, "end"));
-    else setTip(null);
+    presentTip(timeTip(step, "end"), "after");
   };
 
   const openMoney = (step: MoneyGame) => {
@@ -574,8 +593,7 @@ export default function App() {
     }
     primeSpeech();
     setScreen(step);
-    if (settingsRef.current.showTips) setTip(timeTip(step, "start"));
-    else setTip(null);
+    presentTip(timeTip(step, "start"), "open");
   };
 
   const finishBuild = (activity: BuildActivity) => {
@@ -590,8 +608,7 @@ export default function App() {
       } else playEffect("chime", settings);
     }
     setScreen("today");
-    if (settingsRef.current.showTips) setTip(engineerTip(activity, "end"));
-    else setTip(null);
+    presentTip(engineerTip(activity, "end"), "after");
   };
 
   const openBuild = (activity: BuildActivity) => {
@@ -601,8 +618,7 @@ export default function App() {
     }
     primeSpeech();
     setScreen(activity);
-    if (settingsRef.current.showTips) setTip(engineerTip(activity, "start"));
-    else setTip(null);
+    presentTip(engineerTip(activity, "start"), "open");
   };
 
   const finishScience = (activity: ScienceId) => {
@@ -617,8 +633,7 @@ export default function App() {
       } else playEffect("chime", settings);
     }
     setScreen("today");
-    if (settingsRef.current.showTips) setTip(scienceTip(activity, "end"));
-    else setTip(null);
+    presentTip(scienceTip(activity, "end"), "after");
   };
 
   const openScience = (activity: ScienceId) => {
@@ -628,8 +643,7 @@ export default function App() {
     }
     primeSpeech();
     setScreen(activity);
-    if (settingsRef.current.showTips) setTip(scienceTip(activity, "start"));
-    else setTip(null);
+    presentTip(scienceTip(activity, "start"), "open");
   };
 
   /**
@@ -655,8 +669,9 @@ export default function App() {
     // taught so far can spell. (A letter card used to count, so every first lesson was a step up.)
     if (active && countsForLadder(word, active.ladder.step)) creditLadder(word.word);
     reward("letter", learned);
-    // The letter's own tip follows its letter card; a word gets the step's line.
-    showTip("letter", "end", word.letterCard ? (word.letters[0]?.phraseId ?? "") : undefined);
+    // The letter's own tip follows its letter card; a word gets the step's line. It takes the place
+    // of the chip already there, as it is, so the track does not move.
+    presentTip(readTip("letter", "end", word.letterCard ? (word.letters[0]?.phraseId ?? "") : undefined), "in-place");
   };
 
   const inLesson = isChunkScreen(screen);
@@ -680,8 +695,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
-    if (settingsRef.current.showTips) setTip(gameTip(game, "end"));
-    else setTip(null);
+    presentTip(gameTip(game, "end"), "after");
   };
 
   /** The Friday sound game: a star for playing, whatever the taps were. */
@@ -800,7 +814,18 @@ export default function App() {
               </div>
             ) : null}
             <div className={`screen-body${screen === "today" ? " is-fit" : ""}`}>
-              {tip ? <GrownupTip tip={tip} onDismiss={() => setTip(null)} /> : null}
+              {tip ? (
+                <GrownupTip
+                  tip={tip}
+                  open={tipOpen}
+                  // On the child's own pages the Grown-ups button sits in the top corner, with no
+                  // top bar to keep it apart from the tip: its Hide button sat under the Grown-ups
+                  // button, so a tap aimed at Hide opened the grown-up check.
+                  underCorner={!inLesson}
+                  onOpen={() => setTipOpen(true)}
+                  onClose={() => setTipOpen(false)}
+                />
+              ) : null}
               {screen === "today" ? (
                 <TodayPath
                   profile={active}
@@ -1123,8 +1148,7 @@ export default function App() {
                       settingsRef={settingsRef}
                       showCode={settings.showCode}
                       onEnter={(game) => {
-                        if (settingsRef.current.showTips) setTip(gameTip(game, "start"));
-                        else setTip(null);
+                        presentTip(gameTip(game, "start"), "open");
                       }}
                       onDone={finishGame}
                       locked={(game) => lockedActivity("games", game)}

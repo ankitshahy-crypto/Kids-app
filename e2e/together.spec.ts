@@ -60,10 +60,12 @@ test("read-together tips can be dismissed and turned off", async ({ page }) => {
   await page.getByRole("button", { name: "Draw" }).click();
   const tip = page.locator(".grownup-tip");
   await expect(tip).toBeVisible();
-  await expect(tip).toContainText("Grown-up tip");
+  await expect(tip).toContainText("For grown-ups");
   await expect(page.locator("[data-screen=draw]")).toBeVisible();
-  await page.getByRole("button", { name: "Dismiss tip" }).click();
-  await expect(tip).toHaveCount(0);
+  // Hide closes it to a small chip, so nothing below it jumps up.
+  await page.getByRole("button", { name: "Hide tip" }).click();
+  await expect(tip).toHaveAttribute("data-tip-open", "false");
+  await expect(page.locator(".grownup-tip-text")).toHaveCount(0);
 
   await finishLetterTracing(page);
   await expect(page.locator("[data-screen=today]")).toBeVisible();
