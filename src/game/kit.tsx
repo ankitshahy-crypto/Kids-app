@@ -544,7 +544,9 @@ export function GameFrame({
         <div className="game-stage">{stage}</div>
         {mood === "cheer" ? <Sparkles /> : null}
       </div>
-      <div className="game-tray" data-nudge={coach.nudge ? "true" : "false"}>
+      {/* A named group: when a round's choices are replaced and none is there yet, the focus
+          waits here (src/input/focus.ts), and a screen reader has something to call it. */}
+      <div className="game-tray" role="group" aria-label="Choices" data-nudge={coach.nudge ? "true" : "false"}>
         {children}
       </div>
     </div>

@@ -187,9 +187,21 @@ input.is-pressed,
   }
 }
 
+/*
+ * The focus ring: where a keyboard or a switch is. Ink, because a ring has to be seen. It was
+ * the soft sage, which is 2.4 to 1 on the cream page; a ring needs 3 to 1 (src/palette.test.ts).
+ */
 button:focus-visible {
-  outline: 3px solid var(--sage-soft);
+  outline: 3px solid var(--ink);
   outline-offset: 3px;
+}
+
+/*
+ * A heading or a part of the page that the app has put the focus on (src/input/focus.ts). It
+ * is a place to start from, not a control, so it shows no ring.
+ */
+[data-focus-landing]:focus {
+  outline: none;
 }
 
 .app {
@@ -671,7 +683,7 @@ button:focus-visible {
 }
 
 .blend-track:focus-visible {
-  outline: 3px solid var(--sage-soft);
+  outline: 3px solid var(--ink);
   /* Inside the track, so the ring is not cut off at a phone's edge. */
   outline-offset: -3px;
   border-radius: 20px;
@@ -9430,6 +9442,15 @@ input.is-pressed,
 .app[data-contrast="high"] button:not(.tile):not(.trail-stop):not(.who-pick) {
   outline: 1.5px solid rgba(16, 24, 40, 0.28);
   outline-offset: -1.5px;
+}
+
+/*
+ * The firmer line above is an outline, and it outranks the focus ring: with high contrast on,
+ * a focused button looked like every other button. The ring is put back here.
+ */
+.app[data-contrast="high"] button:not(.tile):not(.trail-stop):not(.who-pick):focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
 }
 
 /* Today's surprise: a visitor, the same one all day. */

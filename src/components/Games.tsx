@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useScreenFocus } from "../input/focus";
 import type { Settings } from "../settings";
 import { Illustration } from "../illustrations";
 import { nextBaby } from "../data/games";
@@ -94,6 +95,8 @@ export function Games({
   onLocked?: (game: GameId) => void;
 }) {
   const [game, setGame] = useState<GameId | "home">("home");
+  // Opening a game, or going back to the list, moves focus there too.
+  useScreenFocus(game);
   // A number that is new each time a game is opened: it picks the round's word or letter and shuffles the
   // answers, so no two plays are alike. (Every game used to open on the same round, answer first.)
   const [plays, setPlays] = useState(() => Math.floor(Math.random() * 1000));

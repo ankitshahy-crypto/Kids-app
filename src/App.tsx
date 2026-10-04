@@ -90,6 +90,7 @@ import { useProfiles } from "./hooks/useProfiles";
 import { sharedChosen } from "./hooks/useSettings";
 import { useReadingTime } from "./hooks/useReadingTime";
 import { useSettings } from "./hooks/useSettings";
+import { useFocusNet, useScreenFocus } from "./input/focus";
 import { bindPressFeedback } from "./input/press";
 
 type Mode = "start" | "kid" | "parent" | "teacher" | "grownups";
@@ -222,6 +223,14 @@ export default function App() {
   useEffect(() => {
     clearLastCue(screenChangedAt);
   }, [screenChangedAt]);
+
+  // Focus goes with the screen, for a keyboard and for VoiceOver: to a new screen's heading, and
+  // on the way back to the tile that was opened. (The lists inside Games and the grown-up pages
+  // do the same for their own pages.) A child's screens are named by screen and section, since
+  // a section's page is the Today screen with another section showing.
+  useScreenFocus(mode === "kid" ? `kid/${screen}/${course}` : mode);
+  // And inside a screen, a button that goes away when it is pressed hands the focus on.
+  useFocusNet();
 
   useEffect(() => {
     // Each child starts the visit fresh. Today's "One more?" count is kept on the device.

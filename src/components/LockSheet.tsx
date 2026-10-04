@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useDialogFocus } from "../input/focus";
 import { ParentGate } from "./ParentGate";
 
 /**
@@ -9,8 +10,11 @@ import { ParentGate } from "./ParentGate";
  */
 export function LockSheet({ onGrownup, onClose }: { onGrownup: () => void; onClose: () => void }) {
   const [asking, setAsking] = useState(false);
+  // The sheet covers the screen, so focus opens inside it and stays there; Escape is Back.
+  const sheet = useRef<HTMLDivElement | null>(null);
+  useDialogFocus(sheet, onClose);
   return (
-    <div className="lock-sheet" role="dialog" aria-modal="true" aria-labelledby="lock-sheet-title" data-screen="locked">
+    <div className="lock-sheet" ref={sheet} role="dialog" aria-modal="true" aria-labelledby="lock-sheet-title" data-screen="locked">
       <div className="lock-card">
         <span className="lock-card-mark" aria-hidden="true">
           <svg viewBox="0 0 48 48">

@@ -213,6 +213,11 @@ export function TodayPath({
       <div className="today-body">
         <section className="lesson">
           <div className="lesson-head">
+            {/* The home screen had no heading of its own: the first one on it was "Explore", far
+                down the page. Focus goes to a screen's heading when the screen opens
+                (src/input/focus.ts), so this names the page for a screen reader. Sighted, it is
+                the trail itself. */}
+            {shown === "reading" ? <h1 className="sr-only">Today's lesson</h1> : null}
             {shown === "reading" ? (
               <button
                 type="button"

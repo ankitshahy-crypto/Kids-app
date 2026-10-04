@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useScreenFocus } from "../input/focus";
 import { Avatar } from "../avatars";
 import { RemoveChildSheet } from "./RemoveChildSheet";
 import { lessonName, type ChildInput, type ChildProfile } from "../data/profiles";
@@ -79,6 +80,8 @@ export function ParentView({
   onClose: () => void;
 }) {
   const [page, setPage] = useState<ParentPage>(profiles.length === 0 ? "children" : "home");
+  // Each page takes the focus when it opens.
+  useScreenFocus(page);
   const [adding, setAdding] = useState(profiles.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = profiles.find((profile) => profile.id === editingId) ?? null;
