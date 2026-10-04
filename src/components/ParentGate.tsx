@@ -1,6 +1,7 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createGrownupCheck, createPinRecovery, type GrownupCheck } from "../data/grownupCheck";
 import { hasGrownupPin, pinMatches, savePin } from "../data/grownupPin";
+import { useDialogFocus } from "../input/focus";
 import { clearPinAttempts, noteWrongPin, pinLocked, readPinAttempts, type PinAttempts } from "../data/pinAttempts";
 
 type GateMode = "math" | "pin" | "recover" | "newpin";
@@ -16,13 +17,10 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
   const [answer, setAnswer] = useState("");
   const locked = pinLocked(attempts);
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
+  // Focus stays inside the check while it is open, Escape cancels it, and focus goes back to
+  // what opened it (src/input/focus.ts).
+  const card = useRef<HTMLDivElement | null>(null);
+  useDialogFocus(card, onCancel);
 
   useEffect(() => {
     if (!pinLocked(attempts)) return;
@@ -83,6 +81,7 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
     <div className="gate-backdrop" onClick={onCancel}>
       <div
         className="gate-card"
+        ref={card}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

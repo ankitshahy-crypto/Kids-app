@@ -1,5 +1,6 @@
-import { useEffect, useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { savePin } from "../data/grownupPin";
+import { useDialogFocus } from "../input/focus";
 
 /**
  * Offered once, right after the first child is saved: a four-digit PIN turns
@@ -13,13 +14,9 @@ export function PinPromptSheet({ onDone }: { onDone: (saved: boolean) => void })
   const [again, setAgain] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onDone(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onDone]);
+  // Focus stays inside the sheet while it is open, and Escape skips it (src/input/focus.ts).
+  const card = useRef<HTMLDivElement | null>(null);
+  useDialogFocus(card, () => onDone(false));
 
   const submit = () => {
     if (pin.length !== 4) return;
@@ -37,7 +34,7 @@ export function PinPromptSheet({ onDone }: { onDone: (saved: boolean) => void })
 
   return (
     <div className="gate-backdrop" onClick={() => onDone(false)}>
-      <div className="gate-card pin-prompt" role="dialog" aria-modal="true" aria-labelledby={titleId} data-pin-prompt="true" onClick={(event) => event.stopPropagation()}>
+      <div className="gate-card pin-prompt" ref={card} role="dialog" aria-modal="true" aria-labelledby={titleId} data-pin-prompt="true" onClick={(event) => event.stopPropagation()}>
         <p className="gate-kicker">For a grown-up</p>
         <h2 id={titleId}>Set a grown-up PIN?</h2>
         <p className="adult-copy">

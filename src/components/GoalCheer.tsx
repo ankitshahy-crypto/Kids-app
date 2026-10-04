@@ -10,8 +10,11 @@ export function GoalCheer({ onDone }: { onDone: () => void }) {
     return () => window.clearTimeout(timer);
   }, []);
 
+  // A status, not a dialog. It leaves by itself after two seconds, so it does not take the focus
+  // and hand it back, and it does not claim to be the only thing on the screen, which is what a
+  // modal dialog tells a screen reader. (It said it was one, and took no focus.)
   return (
-    <div className="cheer cheer-goal" role="dialog" aria-modal="true" aria-label="Reading goal" data-goal-met="true">
+    <div className="cheer cheer-goal" role="status" aria-label="Reading goal met" data-goal-met="true">
       <p className="cheer-line">Yay</p>
       <button type="button" className="cheer-done" onClick={() => done.current()}>
         OK

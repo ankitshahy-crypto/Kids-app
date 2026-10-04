@@ -52,6 +52,23 @@ describe("pastel text tokens", () => {
   });
 });
 
+describe("the focus ring", () => {
+  const color = tokens();
+
+  it("can be seen on every surface a button sits on", () => {
+    // The ring was the soft sage, 2.4 to 1 on the cream page. Something that shows where the
+    // keyboard is needs 3 to 1 against what is around it.
+    const css = readFileSync(new URL("./index.css", import.meta.url), "utf8");
+    const token = css.match(/\nbutton:focus-visible\s*\{[^}]*outline:\s*3px solid var\((--[a-z-]+)\)/)?.[1] ?? "";
+    expect(color.has(token), `the ring's color is a palette token (found "${token}")`).toBe(true);
+    for (const surface of surfaces) {
+      expect(contrast(color.get(token)!, color.get(surface)!), `ring on ${surface}`).toBeGreaterThanOrEqual(3);
+    }
+    // The soft sage it was fails the same check, so this test would have caught it.
+    expect(contrast(color.get("--sage-soft")!, color.get("--cream")!)).toBeLessThan(3);
+  });
+});
+
 function saturation(hex: string): number {
   const channels = [0, 1, 2].map((index) => parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16) / 255);
   const max = Math.max(...channels);

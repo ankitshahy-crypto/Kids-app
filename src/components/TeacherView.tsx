@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useScreenFocus } from "../input/focus";
 import { Avatar } from "../avatars";
 import { COLORS, colorIntroduced } from "../data/colors";
 import { TIME, timeIntroduced } from "../data/timeMoney";
@@ -164,6 +165,8 @@ export function TeacherView({
   onClose: () => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  // A child's page, and the class list on the way back, take the focus when they open.
+  useScreenFocus(openId ?? "class");
   const open = profiles.find((profile) => profile.id === openId) ?? null;
 
   useEffect(() => {
@@ -201,6 +204,10 @@ export function TeacherView({
           />
         ) : (
           <>
+            {/* The page's name, for a screen reader: focus goes to a page's heading when it opens
+                (src/input/focus.ts), and this page's first one was a card's, "Class progress".
+                Sighted, the page is named by the button that led here. */}
+            <h1 className="sr-only">Teacher</h1>
             {sharedDevice ? (
               <p className="adult-copy teacher-shared" data-shared-note="on">
                 Shared class iPad is on: switching children asks for the grown-up check. Change it in Settings.

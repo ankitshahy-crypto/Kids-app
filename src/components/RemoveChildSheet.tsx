@@ -1,5 +1,6 @@
-import { useEffect, useId } from "react";
+import { useId, useRef } from "react";
 import { lessonName, type ChildProfile } from "../data/profiles";
+import { useDialogFocus } from "../input/focus";
 
 /**
  * Removing a child is a real decision: their stars, stickers, and place in
@@ -9,17 +10,16 @@ import { lessonName, type ChildProfile } from "../data/profiles";
  */
 export function RemoveChildSheet({ profile, onConfirm, onCancel }: { profile: ChildProfile; onConfirm: () => void; onCancel: () => void }) {
   const titleId = useId();
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
+  // Focus opens on Cancel, the first button, and stays in the sheet. Escape cancels, and only
+  // that: the page underneath has its own Escape (Back), which used to hear the same key and
+  // close the whole page as well (src/input/focus.ts).
+  const card = useRef<HTMLDivElement | null>(null);
+  useDialogFocus(card, onCancel);
   return (
     <div className="gate-backdrop" onClick={onCancel}>
       <div
         className="gate-card remove-sheet"
+        ref={card}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

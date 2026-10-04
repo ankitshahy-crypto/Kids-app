@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useScreenFocus } from "../input/focus";
 import { FamilyProgress } from "./ProgressViews";
 import type { LadderStep } from "../data/ladder";
 import type { TeacherLink } from "../data/profileExtras";
@@ -146,6 +147,8 @@ export function GrownupsMenu({
   initialPage?: GrownupsPage;
 }) {
   const [page, setPage] = useState<GrownupsPage>(initialPage);
+  // Each page of the menu takes the focus when it opens.
+  useScreenFocus(page);
   const [shareStatus, setShareStatus] = useState<ShareResult | "idle">("idle");
   const [adding, setAdding] = useState(profiles.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
