@@ -93,7 +93,10 @@ test("the letters of the week are the first cards in Sound it out, then the word
     await expect.poll(async () => (await playedClips(page)).slice(before), { timeout: 20000 }).toEqual(["sounds/m.mp3", "words/moon.mp3"]);
   }
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
-  // After a letter card, the grown-up's tip asks about the letter's own word.
+  // After a letter card, the grown-up's tip asks about the letter's own word. It waits as a chip,
+  // closed, so the lesson does not move; a grown-up opens it.
+  await expect(page.locator("[data-tip=letter-m-end]")).toHaveAttribute("data-tip-open", "false");
+  await page.getByRole("button", { name: "For grown-ups: show tip" }).click();
   await expect(page.getByText("Ask: what else starts like moon?")).toBeVisible();
 
   // The second card is the week's other letter, drawn as an apple.
