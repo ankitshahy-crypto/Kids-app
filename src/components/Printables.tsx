@@ -20,7 +20,7 @@ import { heldBack } from "../explore/flags";
 function weekLettersFor(placement: PlacementDocument, child: ChildProfile | null): string[] {
   if (!child) return traceLetters(practiceLetters(planForWeek(0), isReviewDay()));
   // A sound-unit week (sh, ch) prints the letters inside its units.
-  return traceLetters(resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange).letters);
+  return traceLetters(resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange, child.readingPace).letters);
 }
 
 function TraceGlyph({ char, casing }: { char: string; casing: "upper" | "lower" }) {
@@ -151,7 +151,7 @@ export function Printables({
   // The blending and word sheets hold only words the child can sound out: the letters taught up to their
   // week, and the ones picked here. (They used to list the step's first words whatever letters were known.)
   const taught = child
-    ? lettersIntroduced(resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange).weekIndex)
+    ? lettersIntroduced(resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange, child.readingPace).weekIndex)
     : [];
   const blends = showBlending ? blendingWords(letters.length > 0 ? letters : picked, child?.ladder.step ?? 1, [...taught, ...picked]) : [];
 

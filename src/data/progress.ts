@@ -136,7 +136,7 @@ export function byNudge<T extends { completion: Completion }>(rows: readonly T[]
 }
 
 /* ---------------------------------------------------------------------------
- * Quiet check-ins. The Friday sound game and the "where to start" check note
+ * Quiet check-ins. The Friday Challenge and the "where to start" check note
  * whether each sound was picked on the first try. Grown-ups see "Knows" and
  * "Still practicing"; the child only ever sees stars for trying.
  * ------------------------------------------------------------------------- */
@@ -263,7 +263,7 @@ export function soundSummary(profile: ChildProfile): { knows: string[]; practici
 }
 
 /**
- * What the latest Friday sound game suggests about who says the sounds in
+ * What the latest Friday Challenge suggests about who says the sounds in
  * Sound It Out, for a grown-up to decide on. The app never switches on its
  * own. The Where to start check does not count: a child who aces it on day
  * one has not sounded out a word here yet.
@@ -292,16 +292,40 @@ export function saysSoundsHint(profile: Pick<ChildProfile, "soundChecks" | "says
   return { kind: "none" };
 }
 
-/** Sounds for this Friday's check-in: this week's and the week before's, newest first, at most five. */
-export function checkInSounds(weekLetters: readonly string[], introduced: readonly string[], limit = 5): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const sound of [...weekLetters, ...[...introduced].reverse()]) {
-    const key = sound.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(key);
-    if (out.length >= limit) break;
-  }
-  return out;
+/**
+ * Sounds for this Friday Challenge: mostly this week's, plus a few from
+ * earlier weeks so nothing is left behind (spaced review). At most `limit`.
+ *
+ * Earlier sounds take at least two places (more when the week has few new
+ * ones), and the ones picked are those most worth another look: a sound
+ * missed on its last try first, then one never tried in a game, then the
+ * least sure (fewest first-try picks for the times asked), then the one tried
+ * longest ago. With no history, the most recently taught come first.
+ */
+export function checkInSounds(
+  weekLetters: readonly string[],
+  introduced: readonly string[],
+  limit = 5,
+  checks?: Readonly<Record<string, { firstTry: boolean; date: string; got?: number; asked?: number }>>,
+): string[] {
+  const current = [...new Set(weekLetters.map((sound) => sound.toLowerCase()))];
+  const earlier = [...new Set([...introduced].reverse().map((sound) => sound.toLowerCase()))].filter((sound) => !current.includes(sound));
+  if (earlier.length === 0) return current.slice(0, limit);
+  const review = Math.min(earlier.length, Math.max(2, limit - current.length));
+  const rank = (sound: string) => {
+    const check = checks?.[sound];
+    if (!check) return { tier: 1, sure: 0, date: "" };
+    const asked = check.asked && check.asked > 0 ? check.asked : 1;
+    const got = typeof check.got === "number" ? check.got : check.firstTry ? 1 : 0;
+    return { tier: check.firstTry ? 2 : 0, sure: got / asked, date: check.date };
+  };
+  const order = (list: string[]) =>
+    list
+      .map((sound, at) => ({ sound, at, ...rank(sound) }))
+      .sort((a, b) => a.tier - b.tier || a.sure - b.sure || a.date.localeCompare(b.date) || a.at - b.at)
+      .map((item) => item.sound);
+  // This week's sounds lead; when there are more than fit, the least sure of them are kept.
+  const fresh = current.length > limit - review ? order(current).slice(0, limit - review) : current;
+  const keptFresh = current.filter((sound) => fresh.includes(sound));
+  return [...keptFresh, ...order(earlier).slice(0, review)];
 }

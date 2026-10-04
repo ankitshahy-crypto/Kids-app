@@ -10679,3 +10679,888 @@ a.unlock-buy {
 .grownup-tip-hide {
   font-size: 15px;
 }
+
+/* ---------- Reading redesign: sound shapes, Nest words, shared readers ---------- */
+
+/*
+ * Stretchy and quick sounds. A stretchy sound (mmm, sss, aaa) has a longer
+ * tile and a long line under its letter; a quick one (t, p, d) a shorter tile
+ * and a dot. Each tile's width and its aspect ratio grow together, so every
+ * tile in a word stays the same height and the row stays level.
+ */
+.letters {
+  --tile-max: 88px;
+}
+
+.tile {
+  position: relative;
+}
+
+.tile-wrap.is-stretchy {
+  flex-grow: 1.3;
+  aspect-ratio: 1.3;
+  max-width: calc(var(--tile-max) * 1.3);
+}
+
+.tile-wrap.is-quick {
+  flex-grow: 0.85;
+  aspect-ratio: 0.85;
+  max-width: calc(var(--tile-max) * 0.85);
+}
+
+.tile-wrap.is-stretchy .tile::after,
+.tile-wrap.is-quick .tile::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 11%;
+  height: 6px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  transition: opacity 0.35s ease, background-color 0.35s ease;
+}
+
+.tile-wrap.is-stretchy .tile::after {
+  width: 52%;
+  background: #8fb8de;
+}
+
+.tile-wrap.is-quick .tile::after {
+  width: 8px;
+  height: 8px;
+  background: #e9a07f;
+}
+
+.tile-wrap.is-dim .tile::after {
+  opacity: 0.4;
+}
+
+/* While its sound plays, a stretchy line stretches and a quick dot pops. */
+.tile-wrap.is-stretchy.is-active .tile::after {
+  animation: sound-stretch 0.6s ease-out;
+}
+
+.tile-wrap.is-quick.is-active .tile::after {
+  animation: sound-pop 0.3s ease-out;
+}
+
+@keyframes sound-stretch {
+  0% { width: 18%; }
+  100% { width: 52%; }
+}
+
+@keyframes sound-pop {
+  0% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.6); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+/* A letter or unit new this week: a small sun dot in the tile's corner. */
+.tile-wrap.is-new::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 2;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f4c95d;
+  box-shadow: 0 0 0 2px #fff;
+  pointer-events: none;
+}
+
+/* Your turn: a little speech bubble over the animal on the track. */
+.say-cue {
+  position: absolute;
+  top: -10px;
+  right: -14px;
+  z-index: 2;
+  min-width: 34px;
+  height: 22px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(90, 70, 50, 0.16);
+}
+
+.say-cue::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  bottom: -5px;
+  width: 9px;
+  height: 9px;
+  background: #fff;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.say-cue span {
+  position: relative;
+  z-index: 1;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sage-deep, #4f7a5e);
+  animation: say-dot 1.2s ease-in-out infinite;
+}
+
+.say-cue span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.say-cue span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes say-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.55; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+.feather-icon {
+  color: #c99a5b;
+}
+
+/* The Nest card: words read whole, each a big button with a feather. */
+.nest-card {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 16px 16px;
+  text-align: center;
+}
+
+.nest-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.nest-card-title .icon {
+  width: 40px;
+  height: 40px;
+}
+
+.nest-card-hint {
+  font-size: 17px;
+  color: var(--text-muted);
+}
+
+.nest-words {
+  width: 100%;
+  min-height: 84px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.nest-word {
+  position: relative;
+  min-width: 96px;
+  height: 84px;
+  padding: 0 22px;
+  border-radius: 22px;
+  border: 3px solid transparent;
+  background: var(--tile);
+  color: var(--ink);
+  font-size: 40px;
+  font-weight: 700;
+  box-shadow: 0 8px 16px rgba(90, 70, 50, 0.05);
+  transition: transform 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.nest-word .icon {
+  position: absolute;
+  top: 7px;
+  left: 8px;
+  width: 18px;
+  height: 18px;
+}
+
+.nest-word.is-heard {
+  background: #e7f6ea;
+  border-color: #b7e0c2;
+  color: #3f7a52;
+}
+
+.nest-word.is-active {
+  transform: scale(1.06);
+}
+
+/* ---------- Shared readers ---------- */
+
+/* The grown-up's line: smaller, plain, with the word being read marked. */
+.story-grown {
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-warm, #5b4632);
+  max-width: 560px;
+}
+
+.story-grown-word {
+  border-radius: 6px;
+  transition: background-color 0.12s ease;
+}
+
+.story-grown-word.is-reading {
+  background: #ffe39a;
+  box-shadow: 0 0 0 2px #ffe39a;
+}
+
+/* The child's line: big words in a soft panel, the child's animal at the start, a speaker at the end. */
+.story-child {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 48px 1fr 56px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 24px;
+  background: #fffaf0;
+  border: 3px solid #f1e3c8;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.story[data-page] .story-page[data-turn="narrating"] .story-child {
+  opacity: 0.75;
+}
+
+.story-child.is-read {
+  border-color: #b7e0c2;
+  background: #f3fbf4;
+}
+
+.story-child.is-nudging {
+  animation: child-nudge 1.4s ease-in-out 2;
+}
+
+@keyframes child-nudge {
+  0%, 100% { border-color: #f1e3c8; transform: scale(1); }
+  50% { border-color: #f4c95d; transform: scale(1.02); }
+}
+
+.story-child-who {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+}
+
+.story-child-who .avatar-art {
+  width: 46px;
+  height: 46px;
+}
+
+.story-child-line {
+  margin: 0;
+  text-align: center;
+  font-size: 34px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.story-word.is-child {
+  min-height: 60px;
+  gap: 4px;
+}
+
+.story-word.is-nest .icon {
+  width: 16px;
+  height: 16px;
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+.story-word.is-sliding {
+  background: var(--mint-card, #e7f6ea);
+  box-shadow: inset 0 0 0 3px #b7e0c2;
+  color: #3f7a52;
+}
+
+.story-word.is-read {
+  box-shadow: inset 0 -5px 0 #8fcf9f;
+}
+
+.story-word.is-target.is-read {
+  background: #e7f6ea;
+  color: #3f7a52;
+}
+
+.story-hear {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--tile);
+  color: var(--sage-deep, #4f7a5e);
+  box-shadow: 0 6px 12px rgba(90, 70, 50, 0.08);
+}
+
+.story-hear .icon {
+  width: 28px;
+  height: 28px;
+}
+
+/* A word's small slider under the line: lesson tiles, a little smaller. */
+.story-slider .letters {
+  --tile-max: 68px;
+  --tile-gap: 8px;
+  min-height: 64px;
+}
+
+.story-slider .tile {
+  font-size: 32px;
+  border-radius: 18px;
+}
+
+.story-slider .blend-track {
+  min-height: 64px;
+}
+
+.story-slider .blend-token,
+.story-slider .blend-token .avatar-art {
+  width: 56px;
+  height: 56px;
+}
+
+/* The page's surprise, once the child line is read. Transform only. */
+.story-page.is-payoff .story-scene .story-prop,
+.story-page.is-payoff .story-scene .story-hero {
+  animation-duration: 1.1s;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+}
+
+.story-page.payoff-topple .story-scene .story-prop { animation-name: payoff-topple; }
+.story-page.payoff-splash .story-scene .story-prop { animation-name: payoff-splash; }
+.story-page.payoff-wiggle .story-scene .story-prop { animation-name: payoff-wiggle; }
+.story-page.payoff-spin .story-scene .story-prop { animation-name: payoff-spin; }
+.story-page.payoff-bounce .story-scene .story-prop { animation-name: payoff-bounce; }
+.story-page.payoff-fly .story-scene .story-prop { animation-name: payoff-fly; }
+
+@keyframes payoff-topple {
+  0% { transform: rotate(0); }
+  35% { transform: rotate(-12deg); }
+  70% { transform: rotate(18deg) translateY(6%); }
+  100% { transform: rotate(0); }
+}
+
+@keyframes payoff-splash {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-14%) scale(1.05); }
+  60% { transform: translateY(4%) scale(0.98); }
+}
+
+@keyframes payoff-wiggle {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(8deg); }
+  60% { transform: rotate(-6deg); }
+  80% { transform: rotate(6deg); }
+}
+
+@keyframes payoff-spin {
+  0% { transform: rotate(0); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes payoff-bounce {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-18%); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(-8%); }
+}
+
+@keyframes payoff-fly {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-22%) rotate(-4deg); }
+  100% { transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .story-page.is-shared .story-scene {
+    max-height: 30vh;
+  }
+
+  .story-grown {
+    font-size: 17px;
+  }
+
+  .story-child {
+    grid-template-columns: 40px 1fr 48px;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .story-child-who,
+  .story-child-who .avatar-art {
+    width: 40px;
+    height: 40px;
+  }
+
+  .story-child-line {
+    font-size: 28px;
+  }
+
+  .story-word.is-child {
+    min-height: 54px;
+  }
+
+  .story-hear {
+    width: 48px;
+    height: 48px;
+  }
+
+  .nest-card-title {
+    font-size: 26px;
+  }
+
+  .nest-word {
+    min-width: 84px;
+    height: 76px;
+    font-size: 34px;
+  }
+}
+
+@media (min-width: 768px) {
+  .letters {
+    --tile-max: 128px;
+  }
+
+  .story-grown {
+    font-size: 22px;
+  }
+
+  .story-child {
+    grid-template-columns: 64px 1fr 68px;
+    padding: 10px 14px;
+  }
+
+  .story-child-who,
+  .story-child-who .avatar-art {
+    width: 60px;
+    height: 60px;
+  }
+
+  .story-child-line {
+    font-size: 44px;
+  }
+
+  .story-word.is-child {
+    min-height: 72px;
+  }
+
+  .story-hear {
+    width: 64px;
+    height: 64px;
+  }
+
+  .story-slider .letters {
+    --tile-max: 96px;
+    min-height: 88px;
+  }
+
+  .story-slider .tile {
+    font-size: 42px;
+  }
+
+  .story-slider .blend-track {
+    min-height: 80px;
+  }
+
+  .story-slider .blend-token,
+  .story-slider .blend-token .avatar-art {
+    width: 72px;
+    height: 72px;
+  }
+
+  .say-cue {
+    top: -12px;
+    right: -18px;
+    min-width: 42px;
+    height: 26px;
+  }
+
+  .tile-wrap.is-new::before {
+    top: 10px;
+    right: 10px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .tile-wrap.is-stretchy .tile::after,
+  .tile-wrap.is-quick .tile::after {
+    height: 8px;
+  }
+
+  .tile-wrap.is-quick .tile::after {
+    width: 11px;
+    height: 11px;
+  }
+
+  .nest-card-title {
+    font-size: 40px;
+  }
+
+  .nest-card-title .icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .nest-card-hint {
+    font-size: 21px;
+  }
+
+  .nest-words {
+    min-height: 120px;
+    gap: 18px;
+  }
+
+  .nest-word {
+    min-width: 132px;
+    height: 116px;
+    font-size: 54px;
+    border-radius: 28px;
+  }
+}
+
+@media (min-width: 1000px) and (orientation: portrait) {
+  .letters {
+    --tile-max: 140px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .say-cue span,
+  .story-child.is-nudging,
+  .tile-wrap.is-stretchy.is-active .tile::after,
+  .tile-wrap.is-quick.is-active .tile::after,
+  .story-page.is-payoff .story-scene .story-prop {
+    animation: none;
+  }
+}
+
+.story-page.is-payoff .story-scene .story-prop {
+  transform-origin: 50% 100%;
+}
+
+/* ---------- Friday Challenge: feed your animal ---------- */
+.challenge .challenge-name {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-sage, #5f7a68);
+  letter-spacing: 0.02em;
+}
+
+.challenge .check-hero:not(.is-full) .hero {
+  width: 104px;
+  height: 104px;
+}
+
+.challenge .check-hero.is-cheer .hero {
+  animation: challenge-hop 0.7s ease;
+}
+
+.challenge .check-hero.is-full .hero {
+  animation: challenge-hop 0.9s ease 0.2s;
+}
+
+@keyframes challenge-hop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-14px) scale(1.04); }
+  70% { transform: translateY(0) scale(0.98); }
+}
+
+/* One berry a round. An eaten berry shrinks into a soft outline: progress, not a score. */
+.challenge-berries {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  min-height: 22px;
+}
+
+.challenge-berries span {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f6b8c4, #e58fa3);
+  box-shadow: 0 2px 4px rgba(150, 70, 90, 0.18);
+  transition: transform 0.4s ease, opacity 0.4s ease, background-color 0.4s ease;
+}
+
+.challenge-berries span::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 8px;
+  height: 6px;
+  margin-left: -4px;
+  border-radius: 6px 6px 0 0;
+  background: #9cc9a5;
+}
+
+.challenge-berries span.is-eaten {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px #f1d3da;
+  transform: scale(0.8);
+}
+
+.challenge-berries span.is-eaten::after {
+  opacity: 0;
+}
+
+.challenge-sub {
+  margin: 0;
+  font-size: 19px;
+  color: var(--text-muted);
+}
+
+/* Gentle help after a miss: the right letter glows softly. Nothing is marked wrong. */
+.check-choice.is-hint {
+  animation: challenge-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes challenge-glow {
+  0%, 100% { box-shadow: var(--shadow); }
+  50% { box-shadow: 0 0 0 5px rgba(244, 201, 93, 0.55), var(--shadow); }
+}
+
+@media (min-width: 768px) {
+  .challenge .check-hero:not(.is-full) .hero {
+    width: 140px;
+    height: 140px;
+  }
+
+  .challenge-berries {
+    gap: 14px;
+    min-height: 30px;
+  }
+
+  .challenge-berries span {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .challenge .check-hero .hero,
+  .check-choice.is-hint {
+    animation: none;
+  }
+
+  .check-choice.is-hint {
+    box-shadow: 0 0 0 5px rgba(244, 201, 93, 0.55), var(--shadow);
+  }
+}
+
+.nest-card-art {
+  width: min(70%, 300px);
+  display: block;
+}
+
+.nest-card-art .art {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .nest-card-art {
+    width: min(56%, 360px);
+  }
+}
+
+.story-slider .tile {
+  display: grid;
+  place-items: center;
+  padding-bottom: 8%;
+}
+
+.story-word.is-nest {
+  position: relative;
+}
+
+.story-word.is-child.is-nest .icon {
+  position: absolute;
+  top: 6px;
+  left: 2px;
+  margin: 0;
+}
+
+.story-word.is-child.is-nest {
+  padding-left: 16px;
+}
+
+/* ---------- Reward motion: bursts, squash and stretch (see the art and animation plan) ---------- */
+.burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.burst-piece {
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  animation: burst-out 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.burst.is-big .burst-piece {
+  animation-duration: 1.4s;
+}
+
+/* Petals, dots and little stars, in the palette's colours. */
+.burst-piece.kind-0 {
+  border-radius: 60% 0 60% 0;
+}
+
+.burst-piece.kind-1 {
+  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+}
+
+.burst-piece.kind-2 {
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  width: 12px;
+  height: 12px;
+}
+
+.burst-piece.tone-0 { background: #f4c95d; }
+.burst-piece.tone-1 { background: #e58fa3; }
+.burst-piece.tone-2 { background: #8fcf9f; }
+.burst-piece.tone-3 { background: #8fb8de; }
+
+@keyframes burst-out {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(0.6); }
+  60% { opacity: 1; transform: translate(var(--dx), var(--dy)) rotate(calc(var(--spin) * 0.7)) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 18px)) rotate(var(--spin)) scale(0.8); }
+}
+
+/* Squash and stretch on a press: down in 80 ms, back with a little overshoot. */
+.check-choice {
+  position: relative;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.check-choice:active:not(:disabled) {
+  transform: scale(1.04, 0.92);
+  transition-duration: 0.08s;
+}
+
+.check-choice.is-right {
+  animation: answer-stretch 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes answer-stretch {
+  0% { transform: scale(1.04, 0.92); }
+  45% { transform: scale(0.98, 1.05); }
+  100% { transform: scale(1); }
+}
+
+/* The animal's cheer: squash at take-off, stretch at the top, squash on landing. */
+.challenge .check-hero.is-cheer .hero,
+.challenge .check-hero.is-full .hero {
+  transform-origin: 50% 100%;
+  animation-name: hero-cheer;
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes hero-cheer {
+  0% { transform: translateY(0) scale(1, 1); }
+  15% { transform: translateY(0) scale(1.08, 0.9); }
+  45% { transform: translateY(-18px) scale(0.94, 1.08); }
+  75% { transform: translateY(0) scale(1.06, 0.94); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .burst {
+    display: none;
+  }
+
+  .check-choice,
+  .check-choice:active:not(:disabled),
+  .check-choice.is-right {
+    transform: none;
+    animation: none;
+    transition: background-color 0.12s ease;
+  }
+}
+
+.app[data-calm="true"] .burst {
+  display: none !important;
+}
+
+.story-child {
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .start-check.challenge {
+    justify-content: safe center;
+    gap: 18px;
+    padding-bottom: 48px;
+  }
+
+  .challenge .check-choices {
+    gap: 18px;
+  }
+
+  .challenge .check-choice {
+    min-height: 180px;
+    border-radius: 30px;
+  }
+
+  .challenge .check-letter {
+    font-size: 84px;
+  }
+
+  .challenge .check-prompt {
+    font-size: 32px;
+  }
+
+  .challenge .burst-piece {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Room for the hint glow and the right-answer stretch so they are never cut off at the screen edge. */
+.challenge .check-choices {
+  padding: 8px 8px 12px;
+}
+
+@media (min-width: 768px) {
+  .challenge .check-hero:not(.is-full) .hero {
+    width: 176px;
+    height: 176px;
+  }
+}

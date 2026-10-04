@@ -151,10 +151,11 @@ describe("word ladder progression", () => {
     expect(countsForLadder(mat, 4)).toBe(false);
     expect(countsForLadder(sand, 4)).toBe(true);
 
-    // Week 1 knows m and a: the only word is "am", so step 2 is as far as the ladder goes.
-    expect(ladderCap(lettersIntroduced(0))).toBe(2);
-    expect(ladderCap(lettersIntroduced(1))).toBe(3);
-    expect(ladderCap(lettersIntroduced(2))).toBe(3);
+    // Week 1 knows a, m, t and s: "mat" and "sat" are three letters, so step 3 is as far as the ladder goes.
+    expect(ladderCap(lettersIntroduced(0))).toBe(3);
+    // Week 2 adds i, p and n: "mint", "snap" and "spin" are four.
+    expect(ladderCap(lettersIntroduced(1))).toBe(4);
+    expect(ladderCap(lettersIntroduced(2))).toBe(4);
     expect(ladderCap(lettersIntroduced(3))).toBe(4);
     expect(ladderCap(lettersIntroduced(13))).toBe(5);
     const held = recordLadderSuccess({ step: 2, successes: 2 }, { cap: 2 });
@@ -187,12 +188,21 @@ describe("today's lesson list", () => {
   const week = (index: number) => letterSchedule[index].newLetters;
 
   // The first phone test: week 1 had nothing to slide under but single letters and "a" and "I".
-  it("is M, A, then am in the first week, on every step", () => {
-    for (const step of [1, 2, 3, 4] as const) {
-      expect(ids(blendList(step, week(0), [], lettersIntroduced(0), 0))).toEqual(["letter-m", "letter-a", "am"]);
+  it("is A, M, T and S, then mat and sat, in the first week, on every step", () => {
+    const cards = ["letter-a", "letter-m", "letter-t", "letter-s"];
+    expect(ids(blendList(1, week(0), [], lettersIntroduced(0), 0))).toEqual([...cards, "mat", "sat"]);
+    for (const step of [2, 3, 4] as const) {
+      expect(ids(blendList(step, week(0), [], lettersIntroduced(0), 0))).toEqual([...cards, "mat", "sat", "am", "at"]);
     }
-    // A child placed on step 5 also gets the one sentence m and a can make. "A cat." waits for c and t.
-    expect(ids(blendList(5, week(0), [], lettersIntroduced(0), 0))).toEqual(["letter-m", "letter-a", "am", "i-am"]);
+    // The week's Nest words come on one card straight after the letter cards.
+    const withNest = blendList(2, week(0), [], lettersIntroduced(0), 0, ["i", "a", "the"]);
+    expect(ids(withNest).slice(0, 5)).toEqual([...cards, "nest-i-a-the"]);
+    expect(withNest[4].nestCard).toBe(true);
+    expect(withNest[4].letters.map((tile) => tile.wordId)).toEqual(["i", "a", "the"]);
+    expect(withNest[4].letters.map((tile) => tile.char)).toEqual(["I", "a", "the"]);
+    expect(countsForLadder(withNest[4], 2)).toBe(false);
+    // A child placed on step 5 also gets the one sentence these letters can make. "A cat." waits for c.
+    expect(ids(blendList(5, week(0), [], lettersIntroduced(0), 0))).toEqual([...cards, "mat", "sat", "am", "at", "i-am"]);
     expect(ids(blendList(5, week(4), [], lettersIntroduced(4), 0))).toEqual(expect.arrayContaining(["i-am", "a-cat"]));
   });
 
@@ -228,9 +238,10 @@ describe("today's lesson list", () => {
 
   it("keeps to the step's word length, and to a short list", () => {
     const week7 = lettersIntroduced(6);
-    expect(blendList(1, week(6), [], week7, 0).filter((word) => !word.letterCard).every((word) => word.word.length <= 2)).toBe(true);
+    // Steps 1 and 2 take three-letter words too: from week 1 there is "mat" to slide under.
+    expect(blendList(1, week(6), [], week7, 0).filter((word) => !word.letterCard).every((word) => word.word.length <= 3)).toBe(true);
     expect(blendList(1, week(6), [], week7, 0).filter((word) => !word.letterCard).length).toBe(2);
-    expect(blendList(2, week(6), [], week7, 0).filter((word) => !word.letterCard).every((word) => word.word.length <= 2)).toBe(true);
+    expect(blendList(2, week(6), [], week7, 0).filter((word) => !word.letterCard).every((word) => word.word.length <= 3)).toBe(true);
     const three = blendList(3, week(6), [], week7, 0).filter((word) => !word.letterCard);
     expect(three.length).toBe(6);
     expect(three.every((word) => word.word.length <= 3)).toBe(true);
@@ -241,10 +252,14 @@ describe("today's lesson list", () => {
   });
 
   it("mostly uses this week's letters, with a few older words kept in practice", () => {
-    const list = blendList(3, week(4), [], lettersIntroduced(4), 0).filter((word) => !word.letterCard);
-    const fresh = list.filter((word) => word.letters.some((tile) => tile.char === "o" || tile.char === "c"));
-    expect(fresh.length).toBeGreaterThanOrEqual(3);
+    const list = blendList(3, week(2), [], lettersIntroduced(2), 0).filter((word) => !word.letterCard);
+    const fresh = list.filter((word) => word.letters.some((tile) => ["o", "d", "c"].includes(tile.char)));
+    expect(fresh.length).toBeGreaterThanOrEqual(4);
     expect(list.length - fresh.length).toBeGreaterThanOrEqual(1);
+    // Each of the week's new sounds is in the day's list, not only the first.
+    for (const sound of ["o", "d", "c"]) expect(fresh.some((word) => word.letters.some((tile) => tile.char === sound)), sound).toBe(true);
+    // A letter card's picture word is not read again straight after its card ("dog" on the D card).
+    expect(list.some((word) => word.word === "dog" || word.word === "cat")).toBe(false);
   });
 
   // The first phone test: the same words every day.
@@ -336,7 +351,7 @@ describe("letter of the week cards", () => {
     expect(week15.slice(0, 2).map((word) => word.id)).toEqual(["letter-sh", "letter-ch"]);
     const words = week15.slice(2);
     expect(words.length).toBeGreaterThanOrEqual(4);
-    expect(words.slice(0, 4).every((word) => word.letters.some((tile) => tile.char === "sh" || tile.char === "ch"))).toBe(true);
+    expect(words.slice(0, 3).every((word) => word.letters.some((tile) => tile.char === "sh" || tile.char === "ch"))).toBe(true);
     // A letter week on step 5 leads with its cards too: the week's letters are met on every step.
     expect(blendList(5, ["x", "q"], [], lettersIntroduced(13), 0).slice(0, 2).map((word) => word.id)).toEqual(["letter-x", "letter-q"]);
   });

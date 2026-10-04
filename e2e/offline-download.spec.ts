@@ -133,7 +133,7 @@ test("with the service worker, one child's whole pack stays saved and a clip pla
       audio: audio.length,
       runtime: runtime.length,
       clipsInRuntime: runtime.filter((request) => /\/audio\/.*\.mp3$/.test(new URL(request.url).pathname)).length,
-      has: ["audio/letters/m.mp3", "audio/sounds/m.mp3", "audio/prompts/know.mp3", "audio/stories/w01-i-am/p1-fox.mp3"].map((file) =>
+      has: ["audio/letters/m.mp3", "audio/sounds/m.mp3", "audio/prompts/know.mp3", "audio/stories/w01-who-sat/p1.mp3"].map((file) =>
         paths.some((path) => path.endsWith(`/${file}`)),
       ),
     };

@@ -24,6 +24,8 @@ import { ReadingChart } from "./ReadingChart";
 import { ChildClassDetail, ClassProgress } from "./ProgressViews";
 import { Chevron } from "./icons";
 import { heldBack } from "../explore/flags";
+import type { SoundingMode } from "../data/sounding";
+import type { ReadingPace } from "../data/schedule";
 
 /**
  * One child's page on the class iPad: what they finished, a note and codes for
@@ -40,6 +42,7 @@ function ChildSheet({
   onHatchLevel,
   onLadderStep,
   onSaysSounds,
+  onReadingPace,
   onNote,
   onHomeReport,
 }: {
@@ -51,11 +54,12 @@ function ChildSheet({
   onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
   onHatchLevel: (childId: string, level: HatchLevel) => void;
   onLadderStep: (childId: string, step: LadderStep) => void;
-  onSaysSounds: (childId: string, on: boolean) => void;
+  onSaysSounds: (childId: string, mode: SoundingMode) => void;
+  onReadingPace?: (childId: string, pace: ReadingPace) => void;
   onNote: (childId: string, note: number) => void;
   onHomeReport: (childId: string, report: HomeReport | undefined) => void;
 }) {
-  const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange);
+  const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange, profile.readingPace);
   const placedIntroduced = resolved.source === "calendar" ? undefined : lettersIntroduced(resolved.weekIndex).length;
   const mathResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, MATH, profile.ageRange);
   const colorResolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, COLORS, profile.ageRange);
@@ -99,7 +103,11 @@ function ChildSheet({
       />
       <HatchLevelControl games={profile.games} editable onSetLevel={(level) => onHatchLevel(profile.id, level)} />
       <WordLadder ladder={profile.ladder} editable onSetStep={(step) => onLadderStep(profile.id, step)} />
-      <SaysSoundsControl profile={profile} onChange={(on) => onSaysSounds(profile.id, on)} />
+      <SaysSoundsControl
+        profile={profile}
+        onChange={(mode) => onSaysSounds(profile.id, mode)}
+        onPace={onReadingPace ? (pace) => onReadingPace(profile.id, pace) : undefined}
+      />
       <LearningPath profile={profile} name={name} placedIntroduced={placedIntroduced} />
       <LearningPath
         profile={profile}
@@ -142,6 +150,7 @@ export function TeacherView({
   onHatchLevel,
   onLadderStep,
   onSaysSounds,
+  onReadingPace,
   onNote,
   onHomeReport,
   sharedDevice = false,
@@ -156,7 +165,8 @@ export function TeacherView({
   onWritingLevel: (childId: string, itemId: string, level: ScaffoldLevel) => void;
   onHatchLevel: (childId: string, level: HatchLevel) => void;
   onLadderStep: (childId: string, step: LadderStep) => void;
-  onSaysSounds: (childId: string, on: boolean) => void;
+  onSaysSounds: (childId: string, mode: SoundingMode) => void;
+  onReadingPace?: (childId: string, pace: ReadingPace) => void;
   onNote: (childId: string, note: number) => void;
   onHomeReport: (childId: string, report: HomeReport | undefined) => void;
   /** Shared class iPad is on: say so, since the Teacher screen turns it on by itself. */
@@ -196,6 +206,7 @@ export function TeacherView({
             onHatchLevel={onHatchLevel}
             onLadderStep={onLadderStep}
             onSaysSounds={onSaysSounds}
+            onReadingPace={onReadingPace}
             onNote={onNote}
             onHomeReport={onHomeReport}
           />

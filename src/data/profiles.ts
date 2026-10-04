@@ -1,3 +1,5 @@
+import { isSoundingMode, type SoundingMode } from "./sounding";
+import type { ReadingPace } from "./schedule";
 import { PROFILES_KEY, corruptKey, readStored, stashCorrupt, writeStored, type KeyValueStore } from "../storage";
 import { animalById, isAnimalId, type AnimalId } from "./animals";
 import { normalizeThemes, type ThemeId } from "./themes";
@@ -96,6 +98,17 @@ export type ChildProfile = {
    * says the sounds.
    */
   saysSounds?: boolean;
+  /**
+   * Who says the sounds while the child slides across a word (see sounding.ts).
+   * "auto", the default: the app says them for a word's first two slides, then
+   * the child does. "app" and "child" are a grown-up's override. Missing means
+   * "child" when `saysSounds` is on, else "auto".
+   */
+  sounding?: SoundingMode;
+  /** Words this child has slid with the app saying the sounds, and how often (up to 2). */
+  slidWithApp?: Record<string, number>;
+  /** Steady (3 or 4 new sounds a week) or gentle (two calendar weeks a plan week). Missing is steady. */
+  readingPace?: ReadingPace;
   /** Family device: the last family code from the teacher. */
   fromTeacher?: TeacherLink;
   /** Class iPad: the preset note the teacher picked for this child's family. */
@@ -362,10 +375,23 @@ function withRewards(profile: ChildProfile): ChildProfile {
     themes: normalizeThemes((profile as { themes?: unknown }).themes),
     soundChecks: nonEmpty(normalizeSoundChecks((profile as { soundChecks?: unknown }).soundChecks)),
     saysSounds: (profile as { saysSounds?: unknown }).saysSounds === true ? true : undefined,
+    sounding: isSoundingMode((profile as { sounding?: unknown }).sounding) ? (profile as { sounding: SoundingMode }).sounding : undefined,
+    slidWithApp: normalizeSlid((profile as { slidWithApp?: unknown }).slidWithApp),
+    readingPace: (profile as { readingPace?: unknown }).readingPace === "gentle" ? "gentle" : undefined,
     fromTeacher: normalizeTeacherLink((profile as { fromTeacher?: unknown }).fromTeacher),
     noteForHome: normalizeNote((profile as { noteForHome?: unknown }).noteForHome),
     fromHome: normalizeHomeReport((profile as { fromHome?: unknown }).fromHome),
   };
+}
+
+function normalizeSlid(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const out: Record<string, number> = {};
+  for (const [word, count] of Object.entries(value as Record<string, unknown>)) {
+    if (!/^[a-z]{1,16}$/.test(word) || typeof count !== "number" || !Number.isFinite(count) || count < 1) continue;
+    out[word] = Math.min(2, Math.floor(count));
+  }
+  return nonEmpty(out);
 }
 
 function nonEmpty<T extends object>(value: T): T | undefined {

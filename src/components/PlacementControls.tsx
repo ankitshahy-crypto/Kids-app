@@ -155,7 +155,7 @@ export function PlacementControls({
       {showClass && profiles.length === 0 ? <p className="adult-copy">Tap a child in Class progress to set a different lesson for them.</p> : null}
       {profiles.map((profile) => {
         const override = reading.byChildId[profile.id] ?? null;
-        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange);
+        const resolved = resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange, profile.readingPace);
         return (
           <div
             key={profile.id}

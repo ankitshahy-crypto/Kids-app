@@ -58,58 +58,67 @@ async function openReader(page: Page, id: string) {
   return story;
 }
 
-test("week one's reader stars the child's animal, blends the words it can, and earns the story star", async ({ page }) => {
+test("week one's reader is shared: the narrator reads the grown-up line, the child slides the words of theirs, and it earns the story star", async ({ page }) => {
   await install(page, child(), 0);
-  const story = await openReader(page, "w01-i-am");
+  const story = await openReader(page, "w01-who-sat");
   // The cover offers the week's other readers: week one has four in all.
   await expect(page.locator(".story-shelf-book")).toHaveCount(3);
-  await expect(page.getByRole("heading", { name: "I Am Fox" })).toBeVisible();
-  await expect(page.locator(".story-parent")).toContainText("who is this");
+  await expect(page.getByRole("heading", { name: "Who Sat on the Mat?" })).toBeVisible();
+  await expect(page.locator(".story-parent")).toContainText("what do you like to sit on");
   await page.getByRole("button", { name: "Read", exact: true }).click();
 
   await expect(story).toHaveAttribute("data-page", "1");
-  await expect(page.locator(".story-line")).toHaveAttribute("data-page-text", "Hi! I am Fox.");
-  await expect(page.locator(".story-line")).toHaveText("Hi! I am Fox.");
-  await expect(page.locator(".story-word[data-role=target]")).toHaveText(["am"]);
-  await expect(page.locator(".story-word[data-role=hero]")).toHaveText("Fox");
-  for (const word of await page.locator(".story-word").all()) {
+  // The grown-up line tells the story; the child's line is built from a, m, t, s and the Nest words.
+  await expect(page.locator(".story-grown")).toHaveAttribute("data-page-text", "A little mat lies in the sunshine. Who will sit on it?");
+  const childLine = page.locator(".story-child");
+  await expect(childLine).toHaveAttribute("data-child-line", "A mat!");
+  await expect(childLine.locator(".story-word[data-role=target]")).toHaveText(["mat"]);
+  // "A" is a Nest word, read whole.
+  await expect(childLine.locator(".story-word[data-role=nest]")).toHaveText(["A"]);
+  for (const word of await childLine.locator(".story-word").all()) {
     const box = await word.boundingBox();
-    expect(box!.height).toBeGreaterThanOrEqual(64);
+    expect(box!.height).toBeGreaterThanOrEqual(56);
   }
 
-  // Sounding out "am" plays a, then m, then the word.
+  // Tapping "mat" opens it on a slider: m, a, t. Sliding to the end sounds it out, then says the word.
   const heard = (await playedClips(page)).length;
-  await page.locator(".story-word[data-word=am]").click();
-  await expect(page.locator(".story-word[data-word=am]")).toHaveClass(/is-speaking/);
-  // Two letter sounds and the word, each a recorded clip with a short gap between.
-  await expect.poll(() => spokenLines(page), { timeout: 20000 }).toEqual(expect.arrayContaining(["m, as in moon", "a, as in apple", "am"]));
+  await childLine.locator(".story-word[data-word=mat]").click();
+  const slider = page.locator("[data-story-slider=mat]");
+  await expect(slider.locator(".tile-wrap")).toHaveCount(3);
+  await slider.getByRole("slider", { name: "Slide across the letters" }).focus();
+  await page.keyboard.press("End");
+  await expect(slider).toHaveAttribute("data-joined", "true");
+  await expect.poll(() => spokenLines(page), { timeout: 20000 }).toEqual(expect.arrayContaining(["m, as in moon", "a, as in apple", "mat"]));
   if (clipShipped("sounds/a.mp3")) {
-    // With bare sound clips on the device, a word is sounded out as "a", "m", not "a, as in apple".
+    // With bare sound clips on the device, a word is sounded out as "m", "a", "t", not "a, as in apple".
     const clips = (await playedClips(page)).slice(heard);
-    expect(clips).toEqual(expect.arrayContaining(["sounds/a.mp3", "sounds/m.mp3", "words/am.mp3"]));
+    expect(clips).toEqual(expect.arrayContaining(["sounds/m.mp3", "sounds/a.mp3", "sounds/t.mp3"]));
     expect(clips.filter((clip) => clip.startsWith("letters/"))).toEqual([]);
   }
 
-  for (let turn = 0; turn < 4; turn += 1) await page.getByRole("button", { name: "Next page" }).click();
-  await expect(story).toHaveAttribute("data-page", "5");
-  await expect(page.locator(".chunk-strip-word")).toHaveText("Page 5 of 5");
+  const done = page.getByRole("button", { name: "All done" });
+  for (let turn = 0; turn < 5; turn += 1) await page.getByRole("button", { name: "Next page" }).click();
+  await expect(story).toHaveAttribute("data-page", "6");
+  await expect(page.locator(".chunk-strip-word")).toHaveText("Page 6 of 6");
   await page.getByRole("button", { name: "Next page" }).click();
   await expect(page.getByRole("heading", { name: "The end" })).toBeVisible();
-  await page.getByRole("button", { name: "All done" }).click();
+  await done.click();
 
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await expect(page.locator(".star-count").first()).toHaveAttribute("data-stars", "1");
   await expect(page.locator(".chunk-strip")).toHaveText("1 of 4 · 3 more!");
   // The story's closing question arrives as a chip, since the child has just finished; a grown-up opens it.
   await page.getByRole("button", { name: "For grown-ups: show tip" }).click();
-  await expect(page.locator(".grownup-tip")).toContainText("what did Fox say");
+  await expect(page.locator(".grownup-tip")).toContainText("why did everyone fall down");
 });
 
 test("later weeks read harder words, and the reader is read aloud page by page", async ({ page }) => {
-  await install(page, child(), 6);
+  await install(page, child(), 11);
   await openReader(page, "w07-the-hat");
   await page.getByRole("button", { name: "Read", exact: true }).click();
-  await expect(page.locator(".story-word[data-role=target]")).toHaveText(["has", "a", "big", "hat"]);
+  await expect(page.locator(".story-word[data-role=target]")).toHaveText(["has", "big", "hat"]);
+  // "a" is a Nest word, read whole.
+  await expect(page.locator(".story-word[data-role=nest]")).toHaveText(["a"]);
   await expect.poll(() => spokenLines(page)).toContain("fox has a big hat.");
   await page.getByRole("button", { name: "Next page" }).click();
   await expect.poll(() => spokenLines(page)).toContain("a bug got in the hat.");
@@ -118,7 +127,7 @@ test("later weeks read harder words, and the reader is read aloud page by page",
 });
 
 test("a picked theme brings its own reader once its letters are taught, and tips can hide the grown-up lines", async ({ page }) => {
-  await install(page, child({ themes: ["space"] }), 9, { showTips: false });
+  await install(page, child({ themes: ["space"] }), 10, { showTips: false });
   await page.getByRole("button", { name: "Story" }).click();
   const id = await page.locator("[data-screen=story]").getAttribute("data-story");
   expect(["w10-milk", "w10-the-mask", "w10-the-sink", "t-space-rocket"]).toContain(id);
@@ -193,8 +202,8 @@ test("the where-to-start check places a reader further along, and a grown-up acc
   expect(answered).toBe(7);
   await expect(check).toHaveAttribute("data-answers", "7");
   await expect(check).toContainText("Based on 7 answers");
-  await expect(check).toHaveAttribute("data-week", "9");
-  await expect(check).toContainText("Week 10 · letter k · Four letters");
+  await expect(check).toHaveAttribute("data-week", "8");
+  await expect(check).toContainText("Week 9 · ");
   // A start this far along is confirmed by a grown-up, not by the child's taps alone.
   await expect(check).toHaveAttribute("data-confirm", "grownup");
   await page.getByRole("button", { name: "Use this start" }).click();
@@ -202,7 +211,7 @@ test("the where-to-start check places a reader further along, and a grown-up acc
   await passGate(page);
   await expect(page.locator("[data-screen=grownups]")).toBeVisible();
   const placed = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-placement-v1") ?? "{}"));
-  expect(placed.subjects.reading.byChildId.mia).toMatchObject({ subject: "reading", weekIndex: 9 });
+  expect(placed.subjects.reading.byChildId.mia).toMatchObject({ subject: "reading", weekIndex: 8 });
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-profiles-v1") ?? "{}"));
   expect(saved.profiles[0].ladder.step).toBe(4);
 });
@@ -269,7 +278,7 @@ test("the check never hands a child the Grown-ups menu: stopping, or a start wit
 });
 
 test("each word lights up as the narrator reads it, in order, and lets go at the end", async ({ page }) => {
-  await install(page, child(), 6);
+  await install(page, child(), 11);
   await openReader(page, "w07-the-hat");
   // Note every word the page lights, in order, from the moment the page opens.
   await page.evaluate(() => {
@@ -297,10 +306,11 @@ test("each word lights up as the narrator reads it, in order, and lets go at the
   for (let index = 1; index < words.length; index += 1) expect(words[index]).toBeGreaterThanOrEqual(words[index - 1]);
   expect(seen.at(-1)).toBe("");
 
-  // Tapping a word to hear it takes over: the read-along lets go at once.
+  // Tapping a word to slide it takes over: the read-along lets go at once, and the word opens on its slider.
   await page.getByRole("button", { name: "Read it" }).click();
   await expect(page.locator(".story-word.is-reading")).toHaveCount(1, { timeout: 5000 });
   await page.locator(".story-word[data-word=big]").click();
   await expect(page.locator(".story-word.is-reading")).toHaveCount(0);
-  await expect(page.locator(".story-word[data-word=big]")).toHaveClass(/is-speaking/);
+  await expect(page.locator(".story-word[data-word=big]")).toHaveClass(/is-sliding/);
+  await expect(page.locator("[data-story-slider=big]")).toBeVisible();
 });

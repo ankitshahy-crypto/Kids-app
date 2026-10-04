@@ -10,6 +10,7 @@ import {
   isReviewDay,
   letterPlanSize,
   lettersIntroduced,
+  paceWeek,
   weekIndex,
 } from "../data/schedule";
 import type { Settings } from "../settings";
@@ -33,6 +34,8 @@ import type { LessonPlace } from "../data/placement";
 import type { LadderStep } from "../data/ladder";
 import type { TeacherLink } from "../data/profileExtras";
 import { heldBack } from "../explore/flags";
+import type { SoundingMode } from "../data/sounding";
+import type { ReadingPace } from "../data/schedule";
 
 
 type ParentPage = "home" | "children" | "progress" | "teacher" | "rewards" | "settings" | "privacy";
@@ -60,6 +63,7 @@ export function ParentView({
   onLadderStep,
   onTeacherLink,
   onSaysSounds,
+  onReadingPace,
   onClose,
 }: {
   settings: Settings;
@@ -75,7 +79,8 @@ export function ParentView({
   onLadderStep: (childId: string, step: LadderStep) => void;
   onTeacherLink: (childId: string, link: TeacherLink | undefined) => void;
   /** Who says the letter sounds in Sound It Out, per child. */
-  onSaysSounds: (childId: string, on: boolean) => void;
+  onSaysSounds: (childId: string, mode: SoundingMode) => void;
+  onReadingPace?: (childId: string, pace: ReadingPace) => void;
   onClose: () => void;
 }) {
   const [page, setPage] = useState<ParentPage>(profiles.length === 0 ? "children" : "home");
@@ -145,6 +150,7 @@ export function ParentView({
           placement={placement}
           onOpen={setPage}
           onSaysSounds={onSaysSounds}
+            onReadingPace={onReadingPace}
         />
       ) : null}
       {page === "home" && !child ? (
@@ -230,6 +236,7 @@ export function ParentView({
             onLadderStep={onLadderStep}
             onTeacherLink={onTeacherLink}
             onSaysSounds={onSaysSounds}
+            onReadingPace={onReadingPace}
           />
         </section>
       ) : null}
@@ -295,7 +302,7 @@ export function ParentView({
 }
 
 function PlacementSummary({ child, placement }: { child: ChildProfile; placement: PlacementDocument }) {
-  const resolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange);
+  const resolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange, child.readingPace);
   const mathResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, MATH, child.ageRange);
   const colorResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, COLORS, child.ageRange);
   const timeResolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, TIME, child.ageRange);
@@ -348,6 +355,7 @@ function ParentHome({
   placement,
   onOpen,
   onSaysSounds,
+  onReadingPace,
 }: {
   child: ChildProfile;
   profiles: ChildProfile[];
@@ -355,14 +363,15 @@ function ParentHome({
   goalMinutes: number;
   placement: PlacementDocument;
   onOpen: (page: ParentPage) => void;
-  onSaysSounds: (childId: string, on: boolean) => void;
+  onSaysSounds: (childId: string, mode: SoundingMode) => void;
+  onReadingPace?: (childId: string, pace: ReadingPace) => void;
 }) {
   const now = new Date();
-  const resolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange);
+  const resolved = resolvePlacement(placement, child.id, child.createdAt, new Date(), undefined, READING, child.ageRange, child.readingPace);
   const mathResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, MATH, child.ageRange);
   const colorResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, COLORS, child.ageRange);
   const timeResolved = resolvePlacement(placement, child.id, child.createdAt, now, undefined, TIME, child.ageRange);
-  const introduced = lettersIntroduced(resolved.source === "calendar" ? weekIndex(child.createdAt, now) : resolved.weekIndex);
+  const introduced = lettersIntroduced(resolved.source === "calendar" ? paceWeek(weekIndex(child.createdAt, now), child.readingPace) : resolved.weekIndex);
   const total = letterPlanSize();
   const pct = total === 0 ? 0 : Math.round((introduced.length / total) * 100);
   const review = isReviewDay(now);
@@ -463,7 +472,11 @@ function ParentHome({
       <WritingLevels writing={child.writing} weekLetters={weekLetters} childName={child.name} stickers={child.stickers} />
       <HatchLevelControl games={child.games} />
       <WordLadder ladder={child.ladder} />
-      <SaysSoundsControl profile={child} onChange={(on) => onSaysSounds(child.id, on)} />
+      <SaysSoundsControl
+        profile={child}
+        onChange={(mode) => onSaysSounds(child.id, mode)}
+        onPace={onReadingPace ? (pace) => onReadingPace(child.id, pace) : undefined}
+      />
 
       <div className="dash-split">
         <section className="dash-card" data-section="lessons">

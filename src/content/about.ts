@@ -160,7 +160,7 @@ const FEATURES = [
   {
     id: "hero",
     title: "Your child is the hero",
-    body: "A short reader every week stars the animal they chose, read aloud page by page, with words they can sound out themselves and a line for you to read along.",
+    body: "Short readers every week star the animal they chose. You read the small line, and your child reads the big one, built only from sounds they know.",
   },
   {
     id: "voice",
@@ -180,7 +180,7 @@ const FEATURES = [
   {
     id: "blend",
     title: "Drag to blend",
-    body: "Slide across a word and hear each sound join into the whole word. Words grow on a ladder: one letter, then two, then short words, then four-letter words.",
+    body: "Slide under a word and hear each sound join into the whole word. The app says a word's sounds the first two times, then your child says them. Words grow on a ladder: sounds, then short words, then four-letter words.",
   },
   {
     id: "lesson",
@@ -322,6 +322,6 @@ export function dailyLessonHelp(hidden: Hidden = heldBack): string {
     ...kept(HELP_LINES, hidden),
     "A star is for trying.",
     explore.length > 0 ? "The daily goal counts time on all of them." : "The daily goal counts the time spent on it.",
-    "On Friday the letters from that week come back for a short review.",
+    "On Fridays, the Friday Challenge brings back that week's sounds, with a few earlier ones, as a little game.",
   ].join(" ");
 }

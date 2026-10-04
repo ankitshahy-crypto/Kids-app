@@ -93,3 +93,22 @@ export function PlayGlyph() {
     </svg>
   );
 }
+
+/** A Nest word (read whole, not sounded out) wears this little feather. */
+export function FeatherIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon feather-icon">
+      <path
+        fill="currentColor"
+        d="M19.6 3.6c-5.4.3-9.6 3.4-11.4 8.4l-1.5 4.3 1.2.4 1.1-1.6c.6.2 1.6.2 2.6-.2 3.3-1.2 6.6-5.6 8-11.3Z"
+      />
+      <path
+        d="M4.4 20.4 13.6 9.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { answerGate, openTeacherChild } from "./gate";
+import { showWordCard } from "./lesson";
 import { finishLetterTracing } from "./traceFlow";
 import { createdThisWeek } from "./clock";
 
@@ -114,12 +115,8 @@ test("blending a word adds a sticker", async ({ page }, testInfo) => {
   await page.getByRole("button", { name: "Letters" }).click();
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
-  // Step 1 leads with the week's letter cards; move on to a word.
-  for (let tries = 0; tries < 6; tries += 1) {
-    if ((await page.locator(".activity").getAttribute("data-letter-card")) !== "true") break;
-    await page.getByRole("button", { name: "Next word" }).click();
-  }
-  await expect(page.locator(".activity")).toHaveAttribute("data-letter-card", "false");
+  // Step 1 leads with the week's letter cards and the Nest words; move on to a word.
+  await showWordCard(page);
   await dragAcross(page, page.locator(".blend-track"));
   await expect(page.locator(".activity")).toHaveAttribute("data-blended", "true");
   await page.getByRole("button", { name: "Back" }).click();

@@ -9,9 +9,11 @@ import { useSpeaker } from "../hooks/useSpeaker";
 import type { Settings } from "../settings";
 import { Illustration } from "../illustrations";
 import { Hero } from "./Hero";
-import { Chevron, SpeakerIcon, StarIcon } from "./icons";
+import { Chevron, FeatherIcon, SpeakerIcon, StarIcon } from "./icons";
 import { PictureCard } from "./PictureCard";
 import { SoundLabel } from "./SoundLabel";
+import { childSaysSounds, type SoundingMode } from "../data/sounding";
+import { soundLength } from "../data/soundLength";
 
 /** Clear a pending timeout kept in a ref. */
 function clearTimer(timer: { current: number | null }) {
@@ -27,6 +29,10 @@ export function SoundItOut({
   outfit = emptyOutfit(),
   ladderStep = 1,
   saysSounds = false,
+  sounding,
+  slid,
+  onSlid,
+  newSounds = [],
   focus,
   onFinished,
 }: {
@@ -45,9 +51,21 @@ export function SoundItOut({
    */
   saysSounds?: boolean;
   /**
+   * Who says the sounds (sounding.ts). With "auto", the default once given,
+   * the app says a word's sounds for its first two slides and the child says
+   * them after that. Wins over `saysSounds` when set.
+   */
+  sounding?: SoundingMode;
+  /** Words already slid with the app's sounds, and how often. */
+  slid?: Readonly<Record<string, number>>;
+  /** A slide finished with the app saying the sounds: count it toward the child's turn. */
+  onSlid?: (word: string) => void;
+  /** The week's new sounds: their tiles wear a small dot, so a grown-up sees the week's focus. */
+  newSounds?: readonly string[];
+  /**
    * What this lesson is about, for the grown-up beside the child: "This week:
-   * M and A". Shown above every card, because the first phone test asked for
-   * it to be clear that a week is about its two letters.
+   * A, M, T and S". Shown above every card, because the first phone test asked
+   * for it to be clear what a week's sounds are.
    */
   focus?: string;
   onFinished?: (word: DeckWord) => void;
@@ -57,7 +75,12 @@ export function SoundItOut({
   const word = deck[index % deck.length];
   const finish = () => onFinished?.(word);
   const { revealed, active, replay, autoplay, replayLetter, soundLetter, soundWord, stop: stopPlayback } = usePlayback(word, settingsRef, paused, finish);
-  const quiet = saysSounds && !word.letterCard && !word.sentenceId;
+  const mode: SoundingMode = sounding ?? (saysSounds ? "child" : "app");
+  const quiet = !word.letterCard && !word.sentenceId && !word.nestCard && childSaysSounds(mode, slid, word.word);
+  const fresh = new Set(newSounds.map((id) => id.toLowerCase()));
+  // The nest card: each whole word tapped once finishes it.
+  const [heardNest, setHeardNest] = useState<number[]>([]);
+  const lastFinish = useRef(0);
   const speak = useSpeaker(settingsRef);
   const [lit, setLit] = useState<boolean[]>(() => word.letters.map(() => false));
   const [litOrder, setLitOrder] = useState<number[]>([]);
@@ -97,6 +120,7 @@ export function SoundItOut({
     clearTimer(celebrationTimer);
     setCelebrating(false);
     setProgress(0.06);
+    setHeardNest([]);
   }, [word]);
 
   // A letter card says its line once when it appears, so a child who cannot
@@ -113,17 +137,32 @@ export function SoundItOut({
     return () => window.clearTimeout(timer);
   }, [word, paused, autoplay]);
 
+  // A Nest card says what it is once a lesson: these words are known whole, tap each one.
+  const toldNest = useRef(false);
+  useEffect(() => {
+    if (!word.nestCard || paused || toldNest.current) return undefined;
+    const timer = window.setTimeout(() => {
+      speak.prompt("nest-card", "Nest words. We know these. Tap each one.", () => {
+        toldNest.current = true;
+      });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [word, paused, speak]);
+
   // The first word the child sounds out on their own starts with what to do. It counts as heard once it
   // has been said all the way through: cut off by a step, a tap or a new card, the next word says it again.
   // (The timer keeps StrictMode's second run of the effect from saying it twice.)
   const heardSay = useRef(false);
   useEffect(() => {
     if (!quiet || paused || heardSay.current) return undefined;
+    // A word that has just gone quiet (its third slide in "auto") waits for the whole word to be said first.
+    const since = Date.now() - lastFinish.current;
+    const wait = since < 1800 ? 1800 - since : 200;
     const timer = window.setTimeout(() => {
       speak.prompt("blend-say", "Say each sound as you slide.", () => {
         heardSay.current = true;
       });
-    }, 200);
+    }, wait);
     return () => window.clearTimeout(timer);
   }, [quiet, paused, speak, word]);
 
@@ -199,6 +238,9 @@ export function SoundItOut({
     const allSounded = word.letters.every((_, tileIndex) => sounded.current.has(tileIndex));
     if (!allSounded || blendedPass.current) return;
     blendedPass.current = true;
+    lastFinish.current = Date.now();
+    // Hear first, then say: a slide the app voiced counts toward the child's turn with this word.
+    if (!quiet && mode === "auto" && !word.letterCard && !word.sentenceId && !word.nestCard) onSlid?.(word.word);
     setBlended(true);
     // Single letters and sound units join; a sentence's word chunks wrap onto rows and stay put.
     setJoined(!word.sentenceId);
@@ -372,6 +414,86 @@ export function SoundItOut({
     replayLetter(letterIndex);
   };
 
+  /** A Nest word is read whole: a tap says it, and once every word has been heard the card is done. */
+  const tapNest = (wordIndex: number) => {
+    unlockAudio();
+    resumeSpeech();
+    speak.stop();
+    replayLetter(wordIndex);
+    const heard = heardNest.includes(wordIndex) ? heardNest : [...heardNest, wordIndex];
+    setHeardNest(heard);
+    if (heard.length === word.letters.length && !rewarded.current) {
+      rewarded.current = true;
+      setBlended(true);
+      onFinished?.(word);
+    }
+  };
+
+  if (word.nestCard) {
+    return (
+      <div className="activity" data-word={word.id} data-nest-card="true" data-blended={blended ? "true" : "false"}>
+        <PictureCard label={`Nest words: ${word.word}`}>
+          {focus ? (
+            <span className="lesson-focus" data-lesson-focus>
+              {focus}
+            </span>
+          ) : null}
+          <span className="nest-card" aria-hidden="true">
+            <span className="nest-card-art">
+              <Illustration name="nest" />
+            </span>
+            <span className="nest-card-title">
+              <FeatherIcon />
+              Nest words
+            </span>
+            <span className="nest-card-hint">We just know these. Tap each one.</span>
+          </span>
+        </PictureCard>
+        <div className="nest-words" role="group" aria-label="Nest words">
+          {word.letters.map((tile, wordIndex) => (
+            <button
+              key={`${word.id}-${wordIndex}`}
+              type="button"
+              className={`nest-word${heardNest.includes(wordIndex) ? " is-heard" : ""}${active === wordIndex || active === "all" ? " is-active" : ""}`}
+              data-nest-word={tile.wordId}
+              data-heard={heardNest.includes(wordIndex) ? "true" : "false"}
+              onClick={() => tapNest(wordIndex)}
+            >
+              <FeatherIcon />
+              <span className="nest-word-text">{tile.char}</span>
+            </button>
+          ))}
+        </div>
+        <p className="chunk-strip chunk-strip-word" data-word-index={index % deck.length} data-word-count={deck.length}>
+          Word {(index % deck.length) + 1} of {deck.length}
+        </p>
+        <div className="controls">
+          <button type="button" className="nav-button" aria-label="Previous word" onClick={() => go(-1)}>
+            <Chevron direction="left" />
+          </button>
+          <button
+            type="button"
+            className="play-button"
+            onClick={() => {
+              unlockAudio();
+              resumeSpeech();
+              speak.stop();
+              replay(false);
+            }}
+          >
+            <span className="play-icon" aria-hidden="true">
+              <SpeakerIcon />
+            </span>
+            <span>Play sound</span>
+          </button>
+          <button type="button" className="nav-button" aria-label="Next word" onClick={() => go(1)}>
+            <Chevron direction="right" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="activity"
@@ -450,17 +572,22 @@ export function SoundItOut({
             const label = chunk ? letter.char : word.letterCard && single ? `${letter.char.toUpperCase()}${letter.char.toLowerCase()}` : letter.char.toLowerCase();
             // How many gaps this tile crosses toward the middle when the word joins: +1.5, +0.5, -0.5, -1.5 for four tiles.
             const joinSteps = (word.letters.length - 1) / 2 - letterIndex;
+            // Stretchy sounds (mmm, sss, aaa) get a longer tile with a line; quick ones (t, p) a shorter one with a dot.
+            const length = word.sentenceId || word.letterCard ? null : soundLength(letter);
+            const isNew = !chunk && !letter.silent && !word.letterCard && fresh.has(letter.char.toLowerCase());
             return (
               <div
                 key={`${word.id}-${letterIndex}`}
                 ref={(element) => {
                   tileRefs.current[letterIndex] = element;
                 }}
-                className={`tile-wrap${chunk ? " is-chunk" : ""}${unit ? " is-unit" : ""}${letter.silent ? " is-silent" : ""}${shown ? " is-lit" : " is-dim"}${highlighted ? " is-active" : ""}`}
+                className={`tile-wrap${chunk ? " is-chunk" : ""}${unit ? " is-unit" : ""}${letter.silent ? " is-silent" : ""}${shown ? " is-lit" : " is-dim"}${highlighted ? " is-active" : ""}${length ? ` is-${length}` : ""}${isNew ? " is-new" : ""}`}
                 style={{ "--join-steps": joinSteps } as React.CSSProperties}
                 data-letter={letterIndex}
                 data-lit={shown ? "true" : "false"}
                 data-sound={chunk ? undefined : letter.silent ? "silent" : letter.phoneme}
+                data-stretch={length ?? undefined}
+                data-new-sound={isNew ? "true" : undefined}
               >
                 {sounding && !letter.silent ? <SoundWaves /> : null}
                 <button
@@ -538,6 +665,14 @@ export function SoundItOut({
             <path d="M86 5 L97 12 L86 19" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>
           <div className="blend-token" ref={tokenRef} style={{ left: `${progress * 100}%` }} data-blend-token>
+            {quiet && !blended ? (
+              // Your turn: a little speech bubble over the hero says the child makes the sounds now.
+              <span className="say-cue" data-say-cue aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+            ) : null}
             {animal ? <Hero animal={animal} outfit={outfit} /> : <StarIcon />}
           </div>
         </div>

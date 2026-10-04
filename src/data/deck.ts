@@ -42,6 +42,8 @@ export type DeckWord = {
   sentenceId?: string;
   /** A letter-sound card: one tile, the letter's sound, then its example word. */
   letterCard?: boolean;
+  /** The week's new Nest words: each tile is a whole word, tapped and read whole, never slid across. */
+  nestCard?: boolean;
   /** Shown as a big letter on the picture card when the example word has no drawing. */
   glyph?: string;
 };

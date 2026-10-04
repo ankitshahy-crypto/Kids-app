@@ -84,6 +84,8 @@ import { READING } from "./data/subject";
 import { lettersOnly, traceLetters } from "./data/units";
 import { blendList, countsForLadder, ladderCap, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
 import { isReviewDay, lettersIntroduced, planForWeek, weekFocus } from "./data/schedule";
+import { nestWordsForWeek, nestWordsThrough } from "./data/nest";
+import { soundingMode } from "./data/sounding";
 import { nameToTrace } from "./data/tracePractice";
 import { usePlacement } from "./hooks/usePlacement";
 import { useDayKey } from "./hooks/useDayKey";
@@ -145,7 +147,7 @@ const moneyScreens: MoneyGame[] = ["jars", "lemonade", "choose", "needs", "cards
 
 export default function App() {
   const { settings, update, settingsRef } = useSettings();
-  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteLadder, setLadderStep, setSaysSounds, noteSpin, giveGift, noteSoundCheck, setNoteForHome, setFromTeacher, setFromHome } = useProfiles();
+  const { profiles, active, select, addChild, updateChild, removeChild, giveStar, wear, recordReading, recordWriting, setWritingLevel, noteHatch, setHatchLevel, noteLadder, setLadderStep, setSounding, noteSlid, setReadingPace, noteSpin, giveGift, noteSoundCheck, setNoteForHome, setFromTeacher, setFromHome } = useProfiles();
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
@@ -267,7 +269,7 @@ export default function App() {
   const unlocked = !unlock.paywall || unlock.unlocked || !unlock.ready;
   const placedLesson = useMemo(() => {
     if (!active) return null;
-    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, READING, active.ageRange);
+    return resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, READING, active.ageRange, active.readingPace);
     // dayKey: a new day may mean a new week or Friday's review.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, placement, dayKey]);
@@ -329,7 +331,9 @@ export default function App() {
   const introducedLetters = useMemo(() => lettersIntroduced(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
   const introducedAlphabet = useMemo(() => lettersOnly(introducedLetters), [introducedLetters]);
   const checkIn = useMemo(
-    () => checkInRounds(checkInSounds(lessonLetters, introducedLetters), introducedLetters, `${active?.id ?? ""}:${dayKey}`),
+    () => checkInRounds(checkInSounds(lessonLetters, introducedLetters, 5, active?.soundChecks), introducedLetters, `${active?.id ?? ""}:${dayKey}`),
+    // The day's sounds are picked once: a tap in the game (which updates soundChecks) does not swap them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [lessonLetters, introducedLetters, active?.id, dayKey],
   );
   const ladderStep = active?.ladder.step ?? 1;
@@ -345,16 +349,28 @@ export default function App() {
   const openStory = storyShelf.find((story) => story.id === pickedStoryId) ?? todayStory;
   // The day as a number, so the lesson's words move on each day instead of being the same six all week.
   const lessonTurn = useMemo(() => Math.floor(Date.parse(`${dayKey}T00:00:00Z`) / 86_400_000) || 0, [dayKey]);
+  // The week's new Nest words ("I", "a", "the") get one card after the letter cards.
+  const lessonNest = useMemo(() => nestWordsForWeek(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
+  // Nest words met so far: a story reads them whole.
+  const storyNest = useMemo(() => nestWordsThrough(lessonPlace?.weekIndex ?? 0), [lessonPlace]);
+  // The week's new sounds wear a small dot on their tiles.
+  // (Not in the first week, when every sound is new and a dot on every tile would say nothing.)
+  const lessonNew = useMemo(() => {
+    const fresh = planForWeek(lessonPlace?.weekIndex ?? 0).newLetters;
+    return introducedLetters.some((sound) => !fresh.includes(sound)) ? fresh : [];
+  }, [lessonPlace, introducedLetters]);
   const lessonWords = useMemo(
-    () => blendList(lessonLadderStep, lessonLetters, themes, introducedLetters, lessonTurn),
-    [lessonLadderStep, lessonLetters, themes, introducedLetters, lessonTurn],
+    () => blendList(lessonLadderStep, lessonLetters, themes, introducedLetters, lessonTurn, lessonNest),
+    [lessonLadderStep, lessonLetters, themes, introducedLetters, lessonTurn, lessonNest],
   );
-  // "This week: M and A", shown on the path and above each lesson card. A Friday is a review day only
-  // when there are earlier letters to review: in the first week it is still "This week".
+  // "This week: A, M, T and S", shown on the path and above each lesson card. A Friday is a review day only
+  // when there are earlier letters to review: in the first week it is still "This week". A week with no new
+  // sounds says so: "Review week: E, I and U".
   const lessonFocus = useMemo(
     () => {
-      const fresh = planForWeek(lessonPlace?.weekIndex ?? 0).newLetters;
-      return weekFocus(lessonLetters, isReviewDay(new Date()) && lessonLetters.some((letter) => !fresh.includes(letter)));
+      const plan = planForWeek(lessonPlace?.weekIndex ?? 0);
+      const fresh = plan.newLetters;
+      return weekFocus(lessonLetters, isReviewDay(new Date()) && lessonLetters.some((letter) => !fresh.includes(letter)), plan.kind);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lessonLetters, lessonPlace, dayKey],
@@ -698,7 +714,7 @@ export default function App() {
     presentTip(gameTip(game, "end"), "after");
   };
 
-  /** The Friday sound game: a star for playing, whatever the taps were. */
+  /** The Friday Challenge: a star for playing, whatever the taps were. */
   const finishCheckIn = () => {
     if (!active) return;
     const result = giveStar(active.id, "check-in");
@@ -977,7 +993,10 @@ export default function App() {
                   animal={active.animal}
                   outfit={active.outfit}
                   ladderStep={lessonLadderStep}
-                  saysSounds={active.saysSounds === true}
+                  sounding={soundingMode(active)}
+                  slid={active.slidWithApp}
+                  onSlid={(word) => noteSlid(active.id, word)}
+                  newSounds={lessonNew}
                   focus={lessonFocus}
                   onFinished={finishLetter}
                 />
@@ -1027,6 +1046,10 @@ export default function App() {
                   animal={active.animal}
                   outfit={active.outfit}
                   letters={introducedLetters}
+                  nest={storyNest}
+                  sounding={soundingMode(active)}
+                  slid={active.slidWithApp}
+                  onSlid={(word) => noteSlid(active.id, word)}
                   showTips={settings.showTips}
                   settingsRef={settingsRef}
                   onDone={finishStory}
@@ -1176,7 +1199,8 @@ export default function App() {
               onChildPlace={setChildPlace}
               onLadderStep={setLadderStep}
               onTeacherLink={setFromTeacher}
-              onSaysSounds={setSaysSounds}
+              onSaysSounds={setSounding}
+              onReadingPace={setReadingPace}
               onClose={() => setMode("start")}
             />
           </div>
@@ -1193,7 +1217,8 @@ export default function App() {
             onWritingLevel={setWritingLevel}
             onHatchLevel={setHatchLevel}
             onLadderStep={setLadderStep}
-            onSaysSounds={setSaysSounds}
+            onSaysSounds={setSounding}
+            onReadingPace={setReadingPace}
             onNote={setNoteForHome}
             onHomeReport={setFromHome}
             sharedDevice={settings.sharedDevice}
@@ -1254,7 +1279,8 @@ export default function App() {
               onChildPlace={setChildPlace}
               onLadderStep={setLadderStep}
               onTeacherLink={setFromTeacher}
-              onSaysSounds={setSaysSounds}
+              onSaysSounds={setSounding}
+              onReadingPace={setReadingPace}
               onClose={() => setMode(grownupsReturn)}
             />
           </div>

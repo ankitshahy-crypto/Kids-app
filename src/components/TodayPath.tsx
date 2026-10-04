@@ -83,7 +83,7 @@ export function TodayPath({
 }: {
   profile: ChildProfile;
   letters: string[];
-  /** "This week: M and A": what the reading lesson is about, in words for a grown-up. */
+  /** "This week: A, M, T and S": what the reading lesson is about, in words for a grown-up. */
   focus?: string;
   placementSource: PlacementSource;
   stageId: string;
@@ -101,7 +101,7 @@ export function TodayPath({
   dayKey?: string;
   /** A shared class iPad: the avatar opens the grown-up check on a tap instead of a long press. */
   switchNeedsGrownup?: boolean;
-  /** Fridays: the sound game. Absent when there are too few sounds yet. */
+  /** Fridays: the Friday Challenge. Absent when there are too few sounds yet. */
   onSoundGame?: () => void;
   onSurprise: () => void;
   goalMinutes: number;
@@ -303,7 +303,7 @@ export function TodayPath({
               ) : null}
               {review && onSoundGame ? (
                 <button type="button" data-practice="sounds" onClick={onSoundGame}>
-                  Sound game
+                  Friday Challenge
                 </button>
               ) : null}
             </div>

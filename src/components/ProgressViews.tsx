@@ -9,6 +9,8 @@ import { byNudge, completion, EXPLORE_LABELS, lastActiveLabel, soundSummary, WEE
 import { READING } from "../data/subject";
 import { unitLabel } from "../data/units";
 import { SaysSoundsControl } from "./SaysSounds";
+import type { SoundingMode } from "../data/sounding";
+import type { ReadingPace } from "../data/schedule";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -26,7 +28,7 @@ function DayDots({ days }: { days: boolean[] }) {
 }
 
 function place(profile: ChildProfile, placement: PlacementDocument) {
-  return resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange);
+  return resolvePlacement(placement, profile.id, profile.createdAt, new Date(), undefined, READING, profile.ageRange, profile.readingPace);
 }
 
 function soundList(sounds: string[]): string {
@@ -99,7 +101,7 @@ export function CompletionSummary({ profile, placement, done }: { profile: Child
           </p>
         </div>
       ) : (
-        <p className="adult-copy completion-hint">The Friday sound game shows which sounds they know.</p>
+        <p className="adult-copy completion-hint">The Friday Challenge shows which sounds they know, this week's and earlier ones.</p>
       )}
     </div>
   );
@@ -213,6 +215,7 @@ export function FamilyProgress({
   onLadderStep,
   onTeacherLink,
   onSaysSounds,
+  onReadingPace,
 }: {
   profiles: ChildProfile[];
   placement: PlacementDocument;
@@ -220,7 +223,8 @@ export function FamilyProgress({
   onLadderStep: (childId: string, step: LadderStep) => void;
   onTeacherLink: (childId: string, link: TeacherLink | undefined) => void;
   /** Who says the letter sounds in Sound It Out, per child. */
-  onSaysSounds?: (childId: string, on: boolean) => void;
+  onSaysSounds?: (childId: string, mode: SoundingMode) => void;
+  onReadingPace?: (childId: string, pace: ReadingPace) => void;
 }) {
   if (profiles.length === 0) return <p className="adult-copy">Add a child to see their progress.</p>;
   return (
@@ -233,7 +237,13 @@ export function FamilyProgress({
           </header>
           <TeacherNote link={profile.fromTeacher} />
           <CompletionSummary profile={profile} placement={placement} />
-          {onSaysSounds ? <SaysSoundsControl profile={profile} onChange={(on) => onSaysSounds(profile.id, on)} /> : null}
+          {onSaysSounds ? (
+            <SaysSoundsControl
+              profile={profile}
+              onChange={(mode) => onSaysSounds(profile.id, mode)}
+              onPace={onReadingPace ? (pace) => onReadingPace(profile.id, pace) : undefined}
+            />
+          ) : null}
           <details className="code-details" data-section="share-code">
             <summary>Share progress with the teacher</summary>
             <p className="adult-copy">

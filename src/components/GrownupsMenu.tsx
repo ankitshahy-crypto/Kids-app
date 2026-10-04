@@ -24,6 +24,8 @@ import { OfflinePanel } from "./OfflinePanel";
 import { UnlockPanel } from "./UnlockPanel";
 import { Printables } from "./Printables";
 import { SettingsFields } from "./SettingsFields";
+import type { SoundingMode } from "../data/sounding";
+import type { ReadingPace } from "../data/schedule";
 
 export type GrownupsPage =
   | "menu"
@@ -122,6 +124,7 @@ export function GrownupsMenu({
   onLadderStep,
   onTeacherLink,
   onSaysSounds,
+  onReadingPace,
   onClose,
   initialPage = "menu",
 }: {
@@ -140,7 +143,8 @@ export function GrownupsMenu({
   onLadderStep: (childId: string, step: LadderStep) => void;
   onTeacherLink: (childId: string, link: TeacherLink | undefined) => void;
   /** Who says the letter sounds in Sound It Out, per child. */
-  onSaysSounds: (childId: string, on: boolean) => void;
+  onSaysSounds: (childId: string, mode: SoundingMode) => void;
+  onReadingPace?: (childId: string, pace: ReadingPace) => void;
   onClose: () => void;
   /** Open on a page, as when a child's "ask a grown-up" leads here. */
   initialPage?: GrownupsPage;
@@ -220,6 +224,7 @@ export function GrownupsMenu({
             onLadderStep={onLadderStep}
             onTeacherLink={onTeacherLink}
             onSaysSounds={onSaysSounds}
+            onReadingPace={onReadingPace}
           />
         </section>
       ) : null}
@@ -308,7 +313,7 @@ export function GrownupsMenu({
             <li>Add a child: a first name or initial, an age range, and the animal they pick.</li>
             <li>Pick a lesson length in Settings. Five minutes is a good start.</li>
             <li>Not sure where to start? Choose Where to start in Child profiles for a two-minute check.</li>
-            <li>Tap the child's animal to begin. On Fridays, the week comes back with a sound game.</li>
+            <li>Tap the child's animal to begin. On Fridays, the week comes back as the Friday Challenge, with a few earlier sounds mixed in.</li>
             <li>Open Progress here to see lessons finished, practice days, and the sounds they know.</li>
           </ol>
           <h3>Setting up in a classroom</h3>
@@ -340,7 +345,7 @@ export function GrownupsMenu({
             child's Teacher page, choose the child's name. The letters then light without their sounds, the child says
             each one out loud, and the app says the whole word at the end. Tapping a letter or Play sound still plays
             the sounds, and only the child's own slide finishes the word. New letters and sentences are always said by
-            the app. The Friday sound game suggests when a child may be ready.
+            the app. The Friday Challenge suggests when a child may be ready.
           </p>
           <h3>If an iPhone is quiet</h3>
           <p className="adult-copy">
@@ -379,7 +384,7 @@ export function GrownupsMenu({
                 className="text-button feedback-link"
                 href={feedbackMailto({
                   version: aboutContent.version,
-                  week: active ? resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, READING, active.ageRange).weekIndex + 1 : undefined,
+                  week: active ? resolvePlacement(placement, active.id, active.createdAt, new Date(), undefined, READING, active.ageRange, active.readingPace).weekIndex + 1 : undefined,
                   ...deviceLine(),
                 })}
                 data-action="feedback"

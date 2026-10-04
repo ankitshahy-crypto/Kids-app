@@ -60,7 +60,7 @@ test("a class place and a child override stay on this device", async ({ page }, 
   const classPlace = page.locator("[data-place=class]");
   await classPlace.getByRole("button", { name: "Blending", exact: true }).click();
   await expect(classPlace).toHaveAttribute("data-stage", "blending");
-  await expect(classPlace).toHaveAttribute("data-week", "4");
+  await expect(classPlace).toHaveAttribute("data-week", "2");
   await openTeacherChild(page, "mia");
   await expect(page.locator("[data-place=child][data-child=mia]")).toHaveAttribute("data-source", "class");
 
@@ -69,7 +69,7 @@ test("a class place and a child override stay on this device", async ({ page }, 
   expect(JSON.parse(saved ?? "{}").subjects.reading.classDefault).toMatchObject({
     subject: "reading",
     stageId: "blending",
-    weekIndex: 4,
+    weekIndex: 2,
   });
   await openTeacher(page);
   await openClassPlace(page);

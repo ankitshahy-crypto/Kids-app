@@ -4,46 +4,118 @@ import { isUnit, lettersOnly, unitLabel } from "./units";
 
 export type WeekPlan = {
   week: number;
-  /** One or two new letters this week. From week 15, sound units such as "sh" or "a_e" (see units.ts). */
+  /**
+   * New sounds this week: 3 or 4 letters a week from week 1 (a, m, t, s), then
+   * from week 15 sound units such as "sh" or "a_e" (see units.ts). A review or
+   * practice week teaches none.
+   */
   newLetters: string[];
-  /** Letters from earlier weeks to keep in view. */
+  /** Sounds from earlier weeks to keep in view. On a review or practice week, the sounds it goes over. */
   reviewLetters: string[];
+  /**
+   * Nest words: the few tricky words a child reads whole (I, a, the), at most
+   * three new a week. See nest.ts.
+   */
+  nestWords: string[];
+  /** Which phase of the reading path this week belongs to (curriculum.ts). */
+  phase: number;
+  /** A week with no new sounds: "review" closes a phase, "practice" builds speed on what is known. */
+  kind?: "review" | "practice";
 };
 
 /**
- * Early-reading order, not alphabetical. Each week adds one or two letters
- * and keeps a short review set. Weeks 15 to 26 add the sound units a child
- * meets next: digraphs, vowel teams, magic e, and r-controlled vowels.
- * After the last week the plan repeats.
+ * The reading plan, written as packs of about eight weeks, so a new pack of
+ * weeks, stories, words and clips slots in after the last one without
+ * touching the weeks before it (see curriculum.ts for the full 78-week path).
+ *
+ * Weeks 1 to 8 teach every single letter at 3 or 4 a week. The first group
+ * (a, m, t, s) already makes words (am, at, mat, sat, Sam), so week 1 has real
+ * words to slide under, not only "am". Week 9 reviews, weeks 10 to 14 practise
+ * the letters in longer words, and weeks 15 to 26 are the sound units.
+ *
+ * Why: the first phone test found week 1 taught m and a only, so the slide and
+ * the stories had one word ("am") to work with. Every phonics program teaches
+ * several common sounds before or as blending starts; the groups here are our own.
  */
-export const letterSchedule: WeekPlan[] = [
-  { week: 1, newLetters: ["m", "a"], reviewLetters: [] },
-  { week: 2, newLetters: ["s", "t"], reviewLetters: ["m", "a"] },
-  { week: 3, newLetters: ["p", "i"], reviewLetters: ["s", "t"] },
-  { week: 4, newLetters: ["n", "d"], reviewLetters: ["p", "i"] },
-  { week: 5, newLetters: ["o", "c"], reviewLetters: ["n", "d"] },
-  { week: 6, newLetters: ["u", "b"], reviewLetters: ["o", "c"] },
-  { week: 7, newLetters: ["g", "h"], reviewLetters: ["u", "b"] },
-  { week: 8, newLetters: ["e", "r"], reviewLetters: ["g", "h"] },
-  { week: 9, newLetters: ["f", "l"], reviewLetters: ["e", "r"] },
-  { week: 10, newLetters: ["k"], reviewLetters: ["f", "l"] },
-  { week: 11, newLetters: ["j", "w"], reviewLetters: ["k"] },
-  { week: 12, newLetters: ["v", "y"], reviewLetters: ["j", "w"] },
-  { week: 13, newLetters: ["z"], reviewLetters: ["v", "y"] },
-  { week: 14, newLetters: ["x", "q"], reviewLetters: ["z"] },
-  { week: 15, newLetters: ["sh", "ch"], reviewLetters: ["x", "q"] },
-  { week: 16, newLetters: ["th", "ng"], reviewLetters: ["sh", "ch"] },
-  { week: 17, newLetters: ["ck", "ee"], reviewLetters: ["th", "ng"] },
-  { week: 18, newLetters: ["oo"], reviewLetters: ["ck", "ee"] },
-  { week: 19, newLetters: ["ai", "ay"], reviewLetters: ["oo"] },
-  { week: 20, newLetters: ["oa", "igh"], reviewLetters: ["ai", "ay"] },
-  { week: 21, newLetters: ["a_e", "i_e"], reviewLetters: ["oa", "igh"] },
-  { week: 22, newLetters: ["o_e", "u_e"], reviewLetters: ["a_e", "i_e"] },
-  { week: 23, newLetters: ["ar", "or"], reviewLetters: ["o_e", "u_e"] },
-  { week: 24, newLetters: ["er", "ir"], reviewLetters: ["ar", "or"] },
-  { week: 25, newLetters: ["ea", "ou"], reviewLetters: ["er", "ir"] },
-  { week: 26, newLetters: ["oi", "wh"], reviewLetters: ["ea", "ou"] },
+export type ReadingPack = {
+  id: number;
+  title: string;
+  weeks: WeekPlan[];
+};
+
+const w = (week: number, phase: number, newLetters: string[], reviewLetters: string[], nestWords: string[] = [], kind?: WeekPlan["kind"]): WeekPlan =>
+  kind ? { week, phase, newLetters, reviewLetters, nestWords, kind } : { week, phase, newLetters, reviewLetters, nestWords };
+
+export const READING_PACKS: ReadingPack[] = [
+  {
+    id: 1,
+    title: "Letter sounds and first words",
+    weeks: [
+      w(1, 1, ["a", "m", "t", "s"], [], ["i", "a", "the"]),
+      w(2, 1, ["i", "p", "n"], ["a", "m", "t", "s"], ["is", "to"]),
+      w(3, 1, ["o", "d", "c"], ["i", "p", "n"], ["go", "no", "he"]),
+      w(4, 1, ["u", "g", "h"], ["o", "d", "c"], ["we", "my", "see"]),
+      w(5, 1, ["b", "e", "r"], ["u", "g", "h"], ["you", "said"]),
+      w(6, 1, ["f", "l", "k"], ["b", "e", "r"], ["was", "of"]),
+      w(7, 1, ["j", "w", "v"], ["f", "l", "k"], ["are", "they"]),
+      w(8, 1, ["y", "z", "x", "q"], ["j", "w", "v"], ["do", "come"]),
+    ],
+  },
+  {
+    id: 2,
+    title: "Review, then longer words",
+    weeks: [
+      w(9, 1, [], ["e", "i", "u"], [], "review"),
+      w(10, 2, [], ["b", "d", "p"], [], "practice"),
+      w(11, 2, [], ["a", "o", "c", "k"], [], "practice"),
+      w(12, 2, [], ["m", "n", "h"], [], "practice"),
+      w(13, 2, [], ["w", "y", "j"], [], "practice"),
+      w(14, 2, [], ["x", "q", "z"], [], "practice"),
+      w(15, 3, ["sh", "ch"], ["x", "q", "z"]),
+      w(16, 3, ["th", "ng"], ["sh", "ch"]),
+    ],
+  },
+  {
+    id: 3,
+    title: "Two letters, one sound",
+    weeks: [
+      w(17, 3, ["ck", "ee"], ["th", "ng"]),
+      w(18, 5, ["oo"], ["ck", "ee"]),
+      w(19, 5, ["ai", "ay"], ["oo"]),
+      w(20, 5, ["oa", "igh"], ["ai", "ay"]),
+      w(21, 5, ["a_e", "i_e"], ["oa", "igh"]),
+      w(22, 5, ["o_e", "u_e"], ["a_e", "i_e"]),
+      w(23, 6, ["ar", "or"], ["o_e", "u_e"]),
+      w(24, 6, ["er", "ir"], ["ar", "or"]),
+    ],
+  },
+  {
+    id: 4,
+    title: "More vowel sounds",
+    weeks: [w(25, 6, ["ea", "ou"], ["er", "ir"]), w(26, 6, ["oi", "wh"], ["ea", "ou"])],
+  },
 ];
+
+/** Every written week in order. After the last one the plan starts over. */
+export const letterSchedule: WeekPlan[] = READING_PACKS.flatMap((pack) => pack.weeks);
+
+/** How fast a child moves through the plan. "gentle" spends two calendar weeks on each plan week. */
+export type ReadingPace = "steady" | "gentle";
+
+export function isReadingPace(value: unknown): value is ReadingPace {
+  return value === "steady" || value === "gentle";
+}
+
+/**
+ * The plan week a calendar week reaches at this pace. Steady is one plan week
+ * a calendar week (3 or 4 new sounds). Gentle takes two calendar weeks for
+ * each, about two new sounds a week: the pace the app had before, for a
+ * three-year-old.
+ */
+export function paceWeek(calendarWeek: number, pace: ReadingPace | undefined): number {
+  const week = Math.max(0, Math.floor(calendarWeek));
+  return pace === "gentle" ? Math.floor(week / 2) : week;
+}
 
 /**
  * Lesson weeks are Monday–Sunday in `timeZone` (the device zone by default).
@@ -99,21 +171,27 @@ export function isReviewDay(now = new Date(), timeZone = deviceTimeZone()): bool
 
 /**
  * What the lesson is about, in words for the grown-up beside the child:
- * "This week: M and A", or on the Friday review "Review day: S, T, M and A".
- * A sound unit reads as it is written: "sh", "a-e".
+ * "This week: A, M, T and S", on the Friday review "Review day: I, P, N, A,
+ * M, T and S", and on a week with no new sounds "Review week: E, I and U" or
+ * "Practice week: B, D and P". A sound unit reads as it is written: "sh", "a-e".
  *
  * Shown on the Today path and above every lesson card. The first phone test
- * asked for it to be plain that a week is about its two letters.
+ * asked for it to be plain what a week is about.
  */
-export function weekFocus(letters: readonly string[], reviewDay = false): string {
+export function weekFocus(letters: readonly string[], reviewDay = false, kind?: WeekPlan["kind"]): string {
   const names = letters.map((id) => (isUnit(id) ? unitLabel(id) : id.toUpperCase()));
   if (names.length === 0) return "";
   const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-  return `${reviewDay ? "Review day" : "This week"}: ${list}`;
+  const label = kind === "review" ? "Review week" : kind === "practice" ? "Practice week" : reviewDay ? "Review day" : "This week";
+  return `${label}: ${list}`;
 }
 
+/**
+ * The letters a lesson practises: the week's new sounds, with the review set
+ * added on a Friday. A week with no new sounds practises its review set every day.
+ */
 export function practiceLetters(plan: WeekPlan, reviewDay: boolean): string[] {
-  const source = reviewDay ? [...plan.newLetters, ...plan.reviewLetters] : [...plan.newLetters];
+  const source = plan.newLetters.length === 0 || reviewDay ? [...plan.newLetters, ...plan.reviewLetters] : [...plan.newLetters];
   const seen = new Set<string>();
   const letters: string[] = [];
   for (const letter of source) {

@@ -29,14 +29,15 @@ const placement = {
   },
 };
 
-async function install(page: Page) {
+async function install(page: Page, week?: number) {
+  const placed = week === undefined ? placement : JSON.parse(JSON.stringify(placement).replace(/"weekIndex":\d+/, `"weekIndex":${week}`));
   await page.addInitScript(
     ({ saved, placed }) => {
       localStorage.setItem("littlenest-profiles-v1", JSON.stringify(saved));
       localStorage.setItem("littlenest-placement-v1", JSON.stringify(placed));
       localStorage.setItem("littlenest-silent-hint-v1", "1");
     },
-    { saved: profile, placed: placement },
+    { saved: profile, placed },
   );
   await page.goto("./");
 }
@@ -92,7 +93,8 @@ test("leaving a lesson with Back clears its grown-up tip", async ({ page }) => {
 });
 
 test("stroke numbers on Big M do not overlap", async ({ page }) => {
-  await install(page);
+  // Week 12 practises m, n and h, so Draw opens on Big M.
+  await install(page, 11);
   await page.getByRole("button", { name: "Mia" }).click();
   await page.getByRole("button", { name: "Draw" }).click();
   await expect(page.getByRole("heading", { name: /Big M/ })).toBeVisible();

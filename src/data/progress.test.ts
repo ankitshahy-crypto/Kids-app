@@ -115,6 +115,28 @@ describe("quiet check-ins", () => {
   it("pick this week's sounds first, then recent ones", () => {
     expect(checkInSounds(["p", "n"], ["m", "s", "a", "t", "p", "n"])).toEqual(["p", "n", "t", "a", "s"]);
   });
+
+  it("mixes in earlier sounds, weighted to ones missed, never tried, or tried long ago", () => {
+    const taught = ["a", "m", "t", "s", "i", "p", "n", "o", "d", "c"];
+    // Week 1 has nothing earlier: its four sounds.
+    expect(checkInSounds(["a", "m", "t", "s"], ["a", "m", "t", "s"])).toEqual(["a", "m", "t", "s"]);
+    // Week 3: its three, then two earlier, most recently taught first when there is no history.
+    expect(checkInSounds(["o", "d", "c"], taught)).toEqual(["o", "d", "c", "n", "p"]);
+    const checks = {
+      n: { firstTry: true, date: "2026-09-25", got: 1, asked: 1 },
+      p: { firstTry: true, date: "2026-09-25", got: 1, asked: 1 },
+      i: { firstTry: true, date: "2026-09-25", got: 1, asked: 1 },
+      m: { firstTry: false, date: "2026-09-18", got: 0, asked: 1 },
+      a: { firstTry: true, date: "2026-09-11", got: 1, asked: 1 },
+      t: { firstTry: true, date: "2026-09-18", got: 1, asked: 2 },
+    };
+    // m was missed last time; s has never been in a game. Both come before the sure ones.
+    expect(checkInSounds(["o", "d", "c"], taught, 5, checks)).toEqual(["o", "d", "c", "m", "s"]);
+    // With only m to catch up on, the next is the least sure (t: one of two), not the newest.
+    expect(checkInSounds(["o", "d", "c"], taught, 5, { ...checks, s: { firstTry: true, date: "2026-09-25", got: 1, asked: 1 } })).toEqual(["o", "d", "c", "m", "t"]);
+    // A week of four new sounds keeps three of them, so two earlier ones still fit.
+    expect(checkInSounds(["y", "z", "x", "q"], ["a", "m", "y", "z", "x", "q"])).toHaveLength(5);
+  });
 });
 
 describe("who says the sounds in Sound It Out", () => {

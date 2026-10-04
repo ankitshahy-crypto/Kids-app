@@ -71,8 +71,10 @@ async function dragAcross(page: Page, track: Locator) {
 /** Read today's story to the end and tap All done. */
 async function finishStory(page: Page) {
   await page.getByRole("button", { name: "Read", exact: true }).click();
-  for (let turn = 0; turn < 5; turn += 1) await page.getByRole("button", { name: "Next page" }).click();
-  await page.getByRole("button", { name: "All done" }).click();
+  // Page by page to the end, however many pages the week's story has.
+  const done = page.getByRole("button", { name: "All done" });
+  for (let turn = 0; turn < 12 && !(await done.count()); turn += 1) await page.getByRole("button", { name: "Next page" }).click();
+  await done.click();
 }
 
 async function openSettings(page: Page) {
@@ -141,11 +143,12 @@ test("a theme never changes a letter card: A is for apple with or without one", 
     await install(page, child({ ladder: { step: 1, successes: 0 }, themes }));
     await page.getByRole("button", { name: "Mia" }).click();
     await page.getByRole("button", { name: "Letters" }).click();
-    await expect(page.locator(".activity")).toHaveAttribute("data-word", "letter-m");
-    await expect(page.locator(".picture-card")).toHaveAttribute("aria-label", "moon");
-    await page.getByRole("button", { name: "Next word" }).click();
+    // Week one opens on A, then M (A, M, T and S this week).
     await expect(page.locator(".activity")).toHaveAttribute("data-word", "letter-a");
     await expect(page.locator(".picture-card")).toHaveAttribute("aria-label", "apple");
+    await page.getByRole("button", { name: "Next word" }).click();
+    await expect(page.locator(".activity")).toHaveAttribute("data-word", "letter-m");
+    await expect(page.locator(".picture-card")).toHaveAttribute("aria-label", "moon");
     await page.goto("./");
   }
 });

@@ -119,13 +119,16 @@ test("the sound game plays the bare sound from the sound clips, never the letter
   expect(await playedClips(page)).not.toContain(`letters/${answer}.mp3`);
 });
 
-test("the Friday sound game notes first tries quietly and shows grown-ups what they know", async ({ page }) => {
+test("the Friday Challenge notes first tries quietly and shows grown-ups what they know", async ({ page }) => {
   await openApp(page);
   await page.getByRole("button", { name: "Mia" }).click();
   await page.locator("[data-practice=sounds]").click();
   const game = page.locator("[data-screen=sound-check]");
   await expect(game).toBeVisible();
-  const rounds = Number((await game.locator(".chunk-strip").innerText()).match(/of (\d+)/)?.[1] ?? 0);
+  // The Friday Challenge: feed the animal one berry a round. Progress is berries, never a score.
+  await expect(game.locator(".challenge-name")).toHaveText("Friday Challenge");
+  const rounds = Number(await game.getAttribute("data-rounds"));
+  await expect(game.locator(".challenge-berries span")).toHaveCount(rounds);
   expect(rounds).toBeGreaterThanOrEqual(2);
   let missed = "";
   for (let round = 0; round < rounds; round += 1) {

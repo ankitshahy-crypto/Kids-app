@@ -45,7 +45,9 @@ describe("themed words", () => {
   it("falls back to the regular list when a theme has nothing for the step", () => {
     expect(themedEntries(["castles"], 5)).toEqual([]);
     expect(words([])).toEqual(words(["castles"]).length === 6 ? words([]) : []);
-    expect(blendList(2, ["m", "a"], ["dinosaurs", "ocean"], lettersIntroduced(0), 0).map((word) => word.id)).toEqual(["letter-m", "letter-a", "am"]);
+    expect(blendList(2, ["a", "m", "t", "s"], ["dinosaurs", "ocean"], lettersIntroduced(0), 0).map((word) => word.id)).toEqual(
+      blendList(2, ["a", "m", "t", "s"], [], lettersIntroduced(0), 0).map((word) => word.id),
+    );
   });
 
   it("reuses the regular card for a regular word that fits the theme", () => {
