@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { playPrompt, playWordId } from "../audio/player";
+import { playPrompt, playWordId, promptCue, type Cue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import {
   birdRounds,
+  checkPlan,
   logicLevel,
+  logicManifestEntries,
   onGrid,
   orderFits,
   orderRounds,
   patternRounds,
   program,
-  reachesNest,
   ruleRounds,
   sameCell,
   stepCell,
@@ -20,6 +21,7 @@ import {
   type LogicLevel,
   type PictureCard,
 } from "../data/logic";
+import { GameFrame, Hand, Pick, useCoach, useFinish, useRoundState, useRounds, useWiggle, type SceneKind } from "../game/kit";
 import { Illustration, type IllustrationName } from "../illustrations";
 import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
@@ -44,6 +46,10 @@ const DIRS: Dir[] = ["up", "down", "left", "right"];
 
 /** How long the animal takes over one step of a plan. */
 const STEP_MS = 480;
+/** How long the animal rests where a wrong plan took it, before walking back. */
+const BACK_MS = 1400;
+/** How long the animal cheers at the nest before the next round. */
+const HOME_MS = 1300;
 /** How long a solved round stays on screen before the next one. */
 const SOLVED_MS = 1100;
 
@@ -65,13 +71,6 @@ function useSpeaker(settingsRef: { current: Settings }) {
       run((signal) => playWordId(name, name, settingsRef.current, signal));
     },
   };
-}
-
-function promptFor(round: BirdRound): [string, string] {
-  if (round.mode === "plan") return ["code-plan", "Line up the arrows, then press go."];
-  if (round.mode === "loop") return ["code-loop", "Do this move three times."];
-  if (round.mode === "bug") return ["code-bug", "One arrow is wrong. Tap it, then press go."];
-  return ["code-bird", "Take your animal home to the nest."];
 }
 
 function sleep(ms: number) {
@@ -133,7 +132,39 @@ export function ThinkGame({
   return <RuleGame level={level} salt={salt} animal={animal} outfit={outfit} settingsRef={settingsRef} onDone={onDone} />;
 }
 
-/** Take me home: move the animal to its nest, first by taps, then by a plan made before it moves. */
+/**
+ * Take me home: move the animal to its nest, first by taps, then by a plan made
+ * before it moves.
+ *
+ * Built on the game kit, like the other Explore games: a drawn place with the
+ * child's animal in it, the instruction spoken and said again on request, help
+ * that steps in, dots for the rounds, and the kit's ending.
+ *
+ * What a child sees when a plan runs is the lesson: the animal takes one step
+ * for each arrow, and the arrow it is on lights up as it goes. A wrong plan is
+ * walked too, as far as the wrong arrow: the animal stops right there, looks
+ * puzzled, and that arrow is marked so the child can tap it off. A plan that
+ * stops short leaves the animal where it stopped and shows the empty place
+ * the next arrow belongs in. Nothing is scored and nothing ends: the animal
+ * walks back and the plan is tried again.
+ */
+const PLACES: SceneKind[] = ["garden", "field", "pond", "morning"];
+
+function codeSay(id: string): Cue {
+  return promptCue(id, CODE_LINES[id] ?? "");
+}
+
+const CODE_LINES: Record<string, string> = Object.fromEntries(logicManifestEntries().map((entry) => [entry.id, entry.say]));
+
+function lineFor(round: BirdRound): Cue[] {
+  if (round.mode === "plan") return [codeSay("code-plan")];
+  if (round.mode === "loop") return [codeSay("code-loop")];
+  if (round.mode === "bug") return [codeSay("code-bug")];
+  return [codeSay("code-bird")];
+}
+
+type Walk = { step: number; cell: Cell };
+
 function BirdGame({
   level,
   salt,
@@ -149,66 +180,55 @@ function BirdGame({
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const rounds = useMemo(() => birdRounds(level, salt), [level, salt]);
-  const speak = useSpeaker(settingsRef);
-  const [index, setIndex] = useState(0);
-  const round = rounds[index] ?? rounds[0];
-  const [pos, setPos] = useState(round.start);
-  const [queue, setQueue] = useState<Dir[]>([]);
-  const [fixed, setFixed] = useState(false);
-  const [home, setHome] = useState(false);
-  const [wiggle, setWiggle] = useState("");
-  const [again, setAgain] = useState(false);
-  /** Which arrow of the plan is being walked, and the cells walked so far. */
-  const [running, setRunning] = useState(-1);
-  const [walked, setWalked] = useState<Cell[]>([]);
+  const list = useMemo(() => birdRounds(level, salt), [level, salt]);
+  const rounds = useRounds(list);
+  const round = rounds.round;
+  const coach = useCoach(settingsRef, lineFor(round), rounds.index);
+  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const [pos, setPos] = useRoundState<Cell>(rounds.index, round.start);
+  const [queue, setQueue] = useRoundState<Dir[]>(rounds.index, []);
+  const [fixed, setFixed] = useRoundState(rounds.index, false);
+  const [home, setHome] = useRoundState(rounds.index, false);
+  /** Where the last run went wrong: the arrow's place and why, until the plan is changed. */
+  const [wrong, setWrong] = useRoundState<{ at: number; why: "off" | "away" | "short" } | null>(rounds.index, null);
+  /** The step being walked (its arrow lights), and the cells walked so far. */
+  const [walking, setWalking] = useRoundState<Walk | null>(rounds.index, null);
+  const [trailCells, setTrail] = useRoundState<Cell[]>(rounds.index, []);
+  const wiggle = useWiggle();
   const runId = useRef(0);
+  const later = useLater();
+  useEffect(() => () => void (runId.current += 1), []);
 
-  useEffect(() => {
-    const next = rounds[index] ?? rounds[0];
-    setPos(next.start);
-    setQueue([]);
-    setFixed(false);
-    setHome(false);
-    setAgain(false);
-    setWiggle("");
-    setRunning(-1);
-    setWalked([]);
-    runId.current += 1;
-    const [id, fallback] = promptFor(next);
-    speak.prompt(id, fallback);
-  }, [index]);
-
-  const miss = (which: string) => {
-    setWiggle(which);
-    setAgain(true);
-    speak.prompt("code-again", "Try again.");
-  };
+  // The tests' quick setting walks fast, but not so fast that a step cannot be seen.
+  const pace = () => (quickRounds() ? 160 : reducedMotion() ? 0 : STEP_MS);
 
   const arrive = () => {
-    setAgain(false);
     setHome(true);
-    playEffect("chime", settingsRef.current);
+    setWalking(null);
+    coach.right([codeSay("code-home")], rounds.next, HOME_MS);
   };
 
+  /** A tap moves the animal one step: the first rounds at ages 3–4, before any plan. */
   const tapMove = (dir: Dir) => {
     if (home) return;
     const next = stepCell(pos, dir);
     if (!onGrid(next, round.width, round.height)) {
-      miss(dir);
+      wiggle.shake(dir);
+      coach.miss([codeSay("code-off")]);
       return;
     }
-    setWiggle("");
-    setAgain(false);
-    setWalked((cells) => [...cells, pos]);
+    wiggle.still();
+    coach.touch();
+    setTrail((cells) => [...cells, pos]);
     setPos(next);
     if (sameCell(next, round.nest)) arrive();
   };
 
   const queueDir = (dir: Dir) => {
-    if (home || running >= 0) return;
-    setAgain(false);
-    setWiggle("");
+    if (home || walking) return;
+    wiggle.still();
+    setWrong(null);
+    coach.touch();
     if (round.mode === "loop") {
       setQueue([dir]);
       return;
@@ -217,50 +237,76 @@ function BirdGame({
     setQueue((current) => (current.length >= round.path.length + 2 ? current : [...current, dir]));
   };
 
-  const go = () => {
-    if (home || running >= 0) return;
-    const dirs = program(round, queue, fixed);
-    if (dirs.length === 0) {
-      miss("go");
+  /** Tapping an arrow in the plan takes it off, and every arrow after it. In a bug round it mends the wrong one. */
+  const tapChip = (place: number) => {
+    if (walking || home) return;
+    if (round.mode === "bug") {
+      if (place === round.bugIndex) {
+        setFixed(true);
+        setWrong(null);
+        coach.touch();
+      }
       return;
     }
+    setWrong(null);
+    coach.touch();
+    setQueue((current) => current.slice(0, place));
+  };
+
+  const go = () => {
+    if (home || walking) return;
+    const dirs = program(round, queue, fixed);
+    if (dirs.length === 0) {
+      wiggle.shake("go");
+      coach.miss();
+      return;
+    }
+    const check = checkPlan(round, dirs);
     const id = ++runId.current;
-    const pace = reducedMotion() ? 0 : STEP_MS;
-    setAgain(false);
-    setWiggle("");
+    wiggle.still();
+    setWrong(null);
     void (async () => {
       let cell = round.start;
       setPos(cell);
-      setWalked([]);
-      for (const [step, dir] of dirs.entries()) {
+      setTrail([]);
+      // Walk every step up to and including the wrong one, so the child sees where it goes.
+      const steps = check.ok ? dirs.length : check.why === "short" ? dirs.length : check.at + 1;
+      for (let step = 0; step < steps; step += 1) {
         if (runId.current !== id) return;
+        const dir = dirs[step];
         // A loop has one arrow on the page, walked three times.
-        setRunning(round.mode === "loop" ? 0 : step);
+        setWalking({ step: round.mode === "loop" ? 0 : step, cell });
         const next = stepCell(cell, dir);
         if (!onGrid(next, round.width, round.height)) {
-          if (pace) await sleep(pace);
-          if (runId.current !== id) return;
-          setRunning(-1);
-          setWalked([]);
-          setPos(round.start);
-          miss("go");
-          return;
+          // The edge: the animal bumps and stays.
+          if (pace()) await sleep(pace());
+          break;
         }
-        const from = cell;
+        setTrail((cells) => [...cells, cell]);
         cell = next;
-        setWalked((cells) => [...cells, from]);
         setPos(cell);
-        if (pace) await sleep(pace);
+        if (pace()) await sleep(pace());
       }
       if (runId.current !== id) return;
-      setRunning(-1);
-      if (reachesNest(round, dirs)) {
+      if (check.ok) {
         arrive();
         return;
       }
-      setWalked([]);
-      setPos(round.start);
-      miss("go");
+      setWalking(null);
+      // Which arrow to point at: the wrong one, or the empty place after a plan that stops short. In a
+      // bug round the arrow that is wrong is the one hidden in it, so it is the one pointed at.
+      const at = round.mode === "bug" && !fixed ? (round.bugIndex ?? check.at) : round.mode === "loop" ? 0 : check.at;
+      setWrong({ at, why: check.why });
+      wiggle.shake(`chip-${at}`);
+      coach.miss([codeSay(`code-${check.why}`)]);
+      // Then the animal walks back to the start, and the plan is there to be mended.
+      later.run(
+        () => {
+          setTrail([]);
+          setPos(round.start);
+        },
+        quickRounds() ? 500 : reducedMotion() ? 300 : BACK_MS,
+      );
     })();
   };
 
@@ -268,81 +314,116 @@ function BirdGame({
   const arrows = round.mode === "bug" ? program(round, [], fixed) : queue;
   // Empty places show how long the plan is: one for each step it takes to get home.
   const places = round.mode === "loop" ? 1 : Math.max(round.path.length, arrows.length);
-  const last = index >= rounds.length - 1;
+  // The hand, after three misses: on the wrong arrow, or on the next arrow of the drawn path when
+  // the plan so far follows it, or on the first arrow that strays from it.
+  const hint = (() => {
+    if (!coach.reveal || home) return null;
+    if (round.mode === "bug") return fixed ? null : { chip: round.bugIndex ?? 0 };
+    if (round.mode === "loop") return queue[0] === round.path[0] ? null : { arrow: round.path[0] };
+    const strays = queue.findIndex((dir, index) => dir !== round.path[index]);
+    if (strays >= 0) return { chip: strays };
+    return queue.length < round.path.length ? { arrow: round.path[queue.length] } : null;
+  })();
+  const place = PLACES[(rounds.index + Math.abs(salt)) % PLACES.length];
+  const cols = round.width;
+  const rowsCount = round.height;
 
   return (
-    <div
-      className="game-board code-board"
-      data-level={level}
-      data-mode={round.mode}
-      data-path={round.path.join(",")}
-      data-home={home ? "true" : "false"}
-      data-again={again ? "true" : "false"}
-      data-repeat={round.repeat}
-      data-fixed={round.mode === "bug" && fixed ? "true" : "false"}
-      data-running={running >= 0 ? "true" : "false"}
-      data-x={pos.x}
-      data-y={pos.y}
+    <GameFrame
+      screen="bird"
+      title="Take me home"
+      animal={animal}
+      outfit={outfit}
+      coach={coach}
+      rounds={rounds}
+      scene={place}
+      attrs={{
+        "data-level": level,
+        "data-mode": round.mode,
+        "data-path": round.path.join(","),
+        "data-home": home ? "true" : "false",
+        "data-solved": home ? "true" : "false",
+        "data-again": wrong ? "true" : "false",
+        "data-wrong-at": wrong ? wrong.at : undefined,
+        "data-wrong-why": wrong ? wrong.why : undefined,
+        "data-repeat": round.repeat,
+        "data-fixed": round.mode === "bug" && fixed ? "true" : "false",
+        "data-running": walking ? "true" : "false",
+        "data-x": pos.x,
+        "data-y": pos.y,
+      }}
+      stage={
+        <div
+          className="code-field"
+          style={{ "--cols": cols, "--rows": rowsCount } as React.CSSProperties}
+          data-width={cols}
+          data-height={rowsCount}
+        >
+          {Array.from({ length: cols * rowsCount }, (_, index) => {
+            const x = index % cols;
+            const y = Math.floor(index / cols);
+            const nest = round.nest.x === x && round.nest.y === y;
+            const here = pos.x === x && pos.y === y;
+            const passed = trailCells.some((step) => step.x === x && step.y === y);
+            return (
+              <div
+                key={`${x}-${y}`}
+                className="code-cell"
+                data-cell={`${x}-${y}`}
+                data-animal={here ? "true" : "false"}
+                data-nest={nest ? "true" : "false"}
+                data-walked={passed && !here ? "true" : "false"}
+              >
+                {nest ? <NestMark /> : null}
+              </div>
+            );
+          })}
+          {/* The animal glides from cell to cell; a tiny hop on each step, like the kit's host. */}
+          <span
+            className="game-host code-pet"
+            data-mood={home ? "cheer" : coach.mood}
+            data-walking={walking ? "true" : "false"}
+            style={{ left: `${(pos.x * 100) / cols}%`, top: `${(pos.y * 100) / rowsCount}%` }}
+          >
+            <span className="game-host-body">
+              <Hero animal={animal} outfit={outfit} />
+            </span>
+          </span>
+        </div>
+      }
     >
-      <h1>Take me home</h1>
-      <div
-        className="code-grid"
-        style={{ gridTemplateColumns: `repeat(${round.width}, minmax(0, 1fr))` }}
-        data-width={round.width}
-        data-height={round.height}
-      >
-        {Array.from({ length: round.width * round.height }, (_, cell) => {
-          const x = cell % round.width;
-          const y = Math.floor(cell / round.width);
-          const here = pos.x === x && pos.y === y;
-          const nest = round.nest.x === x && round.nest.y === y;
-          const passed = walked.some((step) => step.x === x && step.y === y);
-          return (
-            <div
-              key={`${x}-${y}`}
-              className="code-cell"
-              data-cell={`${x}-${y}`}
-              data-animal={here ? "true" : "false"}
-              data-nest={nest ? "true" : "false"}
-              data-walked={passed && !here ? "true" : "false"}
-            >
-              {nest ? <NestMark /> : null}
-              {here ? <Hero animal={animal} outfit={outfit} /> : null}
-            </div>
-          );
-        })}
-      </div>
       {planned ? (
-        <div className="code-plan" data-plan={round.mode}>
+        <div className="code-plan" data-plan={round.mode} data-places={places}>
           <div className="code-queue" aria-label="Your plan">
-            {Array.from({ length: places }, (_, place) => {
-              const dir = arrows[place];
+            {Array.from({ length: places }, (_, at) => {
+              const dir = arrows[at];
               if (!dir) {
+                const next = wrong?.why === "short" && wrong.at === at;
                 return (
-                  <span key={`place-${place}`} className="code-place" data-place={place}>
-                    {place + 1}
+                  <span key={`place-${at}`} className="code-place" data-place={at} data-next={next ? "true" : "false"}>
+                    {at + 1}
                   </span>
                 );
               }
-              const bug = round.mode === "bug" && place === round.bugIndex;
+              const bug = round.mode === "bug" && at === round.bugIndex;
+              const marked = wrong !== null && wrong.why !== "short" && wrong.at === at;
               return (
                 <button
-                  key={`${dir}-${place}`}
+                  key={`${dir}-${at}`}
                   type="button"
                   className="code-chip"
-                  data-queued={place}
+                  data-queued={at}
                   data-dir={dir}
-                  data-on={running === place ? "true" : "false"}
+                  data-on={walking && walking.step === at ? "true" : "false"}
+                  data-wrong={marked ? "true" : "false"}
+                  data-wiggle={wiggle.id === `chip-${at}` ? (wiggle.count % 2 === 1 ? "a" : "b") : "false"}
                   data-bug={bug ? "true" : "false"}
                   data-mended={bug && fixed ? "true" : "false"}
-                  aria-label={bug && !fixed ? "Wrong arrow" : dir}
-                  onClick={() => {
-                    if (running >= 0) return;
-                    if (bug) setFixed(true);
-                    else if (round.mode !== "bug" && place === arrows.length - 1) setQueue((current) => current.slice(0, -1));
-                  }}
+                  aria-label={bug && !fixed ? "Wrong arrow" : marked ? `${dir}, wrong` : dir}
+                  onClick={() => tapChip(at)}
                 >
                   <ArrowIcon dir={dir} />
+                  {hint && "chip" in hint && hint.chip === at ? <Hand /> : null}
                 </button>
               );
             })}
@@ -354,36 +435,71 @@ function BirdGame({
           </div>
         </div>
       ) : null}
-      {round.mode !== "bug" ? (
-        <div className="code-arrows" role="group" aria-label="Move">
-          {DIRS.map((dir) => (
-            <button
+      {round.mode !== "bug"
+        ? DIRS.map((dir) => (
+            <Pick
               key={dir}
-              type="button"
-              className="code-arrow"
-              data-arrow={dir}
-              data-wiggle={wiggle === dir ? "true" : "false"}
-              aria-label={dir}
-              onClick={() => (round.mode === "tap" ? tapMove(dir) : queueDir(dir))}
-            >
-              <ArrowIcon dir={dir} />
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {planned && !home ? (
-        <button type="button" className="start-button" data-go="run" data-wiggle={wiggle === "go" ? "true" : "false"} onClick={go}>
-          Go
+              id={dir}
+              name={dir}
+              size="mid"
+              art={<ArrowIcon dir={dir} />}
+              wiggle={wiggle.id === dir ? wiggle.count : 0}
+              demo={hint !== null && "arrow" in hint && hint.arrow === dir}
+              onPick={() => (round.mode === "tap" ? tapMove(dir) : queueDir(dir))}
+              attrs={{ "data-arrow": dir }}
+            />
+          ))
+        : null}
+      {planned ? (
+        <button
+          type="button"
+          className="start-button code-go"
+          data-go="run"
+          data-wiggle={wiggle.id === "go" ? "true" : "false"}
+          disabled={home || walking !== null}
+          onClick={go}
+        >
+          <span className="play-icon" aria-hidden="true">
+            <GoIcon />
+          </span>
+          <span>Go</span>
         </button>
       ) : null}
-      {home && !last ? (
-        <button type="button" className="start-button" data-next="round" onClick={() => setIndex((current) => current + 1)}>
-          Next
-        </button>
-      ) : null}
-      {home && last ? <FinishButton id="bird" onDone={onDone} /> : null}
-    </div>
+    </GameFrame>
   );
+}
+
+function GoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="22" height="22">
+      <path d="M7 4.5v15l12-7.5Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** For the tests only, in a development build: the animal walks fast. The kit's switch. */
+function quickRounds(): boolean {
+  try {
+    return import.meta.env.DEV && window.localStorage.getItem("littlenest-quick-rounds") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function useLater() {
+  const timer = useRef<number | null>(null);
+  const cancel = () => {
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = null;
+  };
+  useEffect(() => cancel, []);
+  return {
+    run(fn: () => void, ms: number) {
+      cancel();
+      timer.current = window.setTimeout(fn, ms);
+    },
+    cancel,
+  };
 }
 
 /** What comes next: a row of pictures follows a rule, and the child picks the picture that continues it. */

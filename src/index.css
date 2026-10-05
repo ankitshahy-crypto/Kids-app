@@ -6430,6 +6430,184 @@ input.is-pressed,
   }
 }
 
+/* ------------------------------------------------------------------ Take me home, on the kit
+   The board is drawn over the scene: a grid of soft tiles with the nest in one, and the child's
+   animal gliding from tile to tile as its plan runs. The kit's own animal is hidden here, since
+   the one on the board is the host. */
+.game-frame[data-screen="bird"] .game-scene > .game-host:not(.code-pet) {
+  display: none;
+}
+
+.game-frame[data-screen="bird"] .game-stage {
+  /* Room on the left for the speaker button; the rest is the board. */
+  inset: 10px 12px 10px 66px;
+  display: block;
+}
+
+.code-field {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: 0;
+}
+
+.code-field .code-cell {
+  min-height: 0;
+  aspect-ratio: auto;
+  border-radius: 12px;
+  margin: 3px;
+  background: rgba(255, 253, 251, 0.62);
+  box-shadow: inset 0 0 0 2px rgba(255, 253, 251, 0.5);
+}
+
+.code-field .code-cell[data-nest="true"] {
+  background: rgba(246, 227, 180, 0.9);
+}
+
+.code-field .nest-mark {
+  width: 70%;
+  bottom: 6%;
+}
+
+/* The animal sits in a cell: as wide as one cell, drawn from its bottom edge. It takes a step's
+   time to glide to the next one, which is the time its arrow stays lit. */
+.code-pet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: auto;
+  width: calc(100% / var(--cols));
+  height: calc(100% / var(--rows));
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 2;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  transition: left 0.42s ease-in-out, top 0.42s ease-in-out;
+  pointer-events: none;
+}
+
+/* As tall as the cell allows, and never wider than it: the cells are taller than they are wide on a
+   phone, and wider than tall on an iPad in landscape. */
+.code-pet .game-host-body {
+  display: flex;
+  justify-content: center;
+  height: 86%;
+  max-width: 92%;
+}
+
+.code-pet .hero {
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+}
+
+.code-pet .hero .avatar-art {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+}
+
+/* A hop with each step, so the walk reads as steps and not a slide. */
+.code-pet[data-walking="true"] .game-host-body {
+  animation: code-hop 0.42s ease infinite;
+}
+
+@keyframes code-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  40% {
+    transform: translateY(-9%) scale(0.96, 1.05);
+  }
+  80% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .code-pet {
+    transition: none;
+  }
+
+  .code-pet[data-walking="true"] .game-host-body {
+    animation: none;
+  }
+}
+
+/* The plan under the board: one place for each step home, filled by arrows as they are tapped.
+   The arrows are a child's tap targets, so each is 64px; six places shrink only as far as a
+   375px phone makes them. */
+.game-frame[data-screen="bird"] .code-plan {
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.game-frame[data-screen="bird"] .code-chip,
+.game-frame[data-screen="bird"] .code-place {
+  width: 64px;
+  height: 64px;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 18px;
+}
+
+.game-frame[data-screen="bird"] .code-plan[data-places="6"] .code-chip,
+.game-frame[data-screen="bird"] .code-plan[data-places="6"] .code-place {
+  width: min(64px, calc((100vw - 32px - 16px - 5 * 6px) / 6));
+  height: min(64px, calc((100vw - 32px - 16px - 5 * 6px) / 6));
+}
+
+.game-frame[data-screen="bird"] .code-chip svg {
+  width: 42px;
+  height: 42px;
+}
+
+.game-frame[data-screen="bird"] .code-chip {
+  position: relative;
+}
+
+/* The arrow a plan went wrong at stays marked until it is tapped off or mended. */
+.code-chip[data-wrong="true"] {
+  background: #fde7d4;
+  box-shadow: 0 0 0 4px #e9a07d;
+}
+
+.code-chip[data-wiggle="a"] {
+  animation: game-wiggle-a 0.4s ease;
+}
+
+.code-chip[data-wiggle="b"] {
+  animation: game-wiggle-b 0.4s ease;
+}
+
+/* A plan that stopped short: the place the next arrow belongs in breathes. */
+.code-place[data-next="true"] {
+  border-color: #e9a07d;
+  color: #c47956;
+  animation: game-pulse 1s ease 3;
+}
+
+/* Go: the main action, in the row with the arrows. */
+.game-frame[data-screen="bird"] .code-go {
+  height: 72px;
+  width: min(100%, 300px);
+  margin-top: 4px;
+  font-size: 22px;
+}
+
+.game-frame[data-screen="bird"] .pick-art svg {
+  width: 100%;
+  height: 100%;
+}
+
 @keyframes game-wiggle-a {
   0%,
   100% {
