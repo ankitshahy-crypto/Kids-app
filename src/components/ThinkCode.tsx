@@ -343,27 +343,31 @@ function BirdGame({
     setQueue((current) => current.slice(0, place));
   };
 
-  /** Bug: the arrows of the plan as they run (empty places left out), and each one's place in the plan. */
   const planned = round.mode !== "tap";
+  /**
+   * The plan as it is on the page, one entry per place: a bug round's plan (with its empty places),
+   * a predict round's given start and picked ending, or the queue. Go runs it only with no empty
+   * place in it, so a step's number is its chip's.
+   */
   const steps = round.mode === "bug" ? plan : round.mode === "predict" ? [...round.shown, ...queue] : queue;
-  const stepPlace = steps.map((step, at) => (step === null ? -1 : at)).filter((at) => at >= 0);
 
   const go = () => {
     if (home || running) return;
+    const gap = steps.indexOf(null);
+    if (gap >= 0) {
+      // A plan with an empty place in it is not run (even one with every place empty): the first
+      // empty place is pointed at, and the line says what goes there.
+      wiggle.shake("go");
+      setWrong({ at: gap, why: "short" });
+      coach.miss([codeSay("code-bug-missing")]);
+      return;
+    }
     // (A predict round's given start is in `steps` for the page; `program` puts it before the ending.)
     const dirs = program(round, round.mode === "predict" ? queue : steps);
     if (dirs.length === 0) {
       // Nothing to run yet: the instruction again, with the wiggle.
       wiggle.shake("go");
       coach.miss(lineFor(round));
-      return;
-    }
-    const gap = steps.indexOf(null);
-    if (gap >= 0) {
-      // A plan with an empty place in it is not run: the place is pointed at, and the line says what goes there.
-      wiggle.shake("go");
-      setWrong({ at: gap, why: "short" });
-      coach.miss([codeSay("code-bug-missing")]);
       return;
     }
     const check = checkPlan(round, dirs);
@@ -378,12 +382,12 @@ function BirdGame({
       setPos(cell);
       setTrail([]);
       // Walk every step up to and including the wrong one, so the child sees where it goes.
-      const steps = check.ok || check.why === "short" ? dirs.length : check.at + 1;
-      for (let step = 0; step < steps; step += 1) {
+      const walkedSteps = check.ok || check.why === "short" ? dirs.length : check.at + 1;
+      for (let step = 0; step < walkedSteps; step += 1) {
         if (runId.current !== id) return;
         const dir = dirs[step];
         // A loop has one arrow on the page, walked three times.
-        setWalking({ step: round.mode === "loop" ? 0 : (stepPlace[step] ?? step), cell });
+        setWalking({ step: round.mode === "loop" ? 0 : step, cell });
         const next = stepCell(cell, dir);
         if (!onGrid(next, round.width, round.height)) {
           // The edge: the animal bumps and stays.
@@ -404,7 +408,7 @@ function BirdGame({
       }
       setWalking(null);
       // Which arrow to point at: the wrong one, or the empty place after a plan that stops short.
-      const at = round.mode === "loop" ? 0 : (stepPlace[check.at] ?? check.at);
+      const at = round.mode === "loop" ? 0 : check.at;
       setWrong({ at, why: check.why });
       wiggle.shake(`chip-${at}`);
       coach.miss([codeSay(`code-${check.why}`)]);
@@ -442,7 +446,8 @@ function BirdGame({
   const places = round.mode === "loop" ? 1 : Math.max(round.path.length, steps.length);
   /** Bug: the plan is as it was first shown, so the arrow (or the empty place) put in it is still there. */
   const untouched = round.mode === "bug" && plan.join() === bugPlan(round).join();
-  const mended = round.mode === "bug" && program(round, plan).join() === round.path.join();
+  /** Bug: the plan as the child has it gets home (by any shortest way, as `checkPlan` has it, not only the drawn one). */
+  const mended = round.mode === "bug" && checkPlan(round, program(round, plan)).ok;
   // The hand, after three misses: on the arrow a plan goes wrong at, else on an arrow that brings
   // the animal nearer the nest from where the plan so far leaves it (from where it stands, in a tap
   // round). Any shortest way home is right, as checkPlan has it, not only the drawn one.
@@ -460,7 +465,7 @@ function BirdGame({
       }
       const check = checkPlan(round, program(round, plan));
       if (check.ok) return null;
-      if (check.why !== "short") return { chip: stepPlace[check.at] ?? check.at };
+      if (check.why !== "short") return { chip: check.at };
       const way = nextStepHome(round, walkTo(round, program(round, plan)));
       return way ? { arrow: way } : null;
     }
@@ -577,12 +582,21 @@ function BirdGame({
               const dir = arrows[at];
               if (!dir) {
                 const next = wrong?.why === "short" && wrong.at === at;
-                // Bug: the empty place in the middle of the plan, where an arrow is missing.
+                // Bug: an empty place in the middle of the plan, where an arrow is missing. An arrow
+                // key fills the first one, so that is the one the hand sits in.
                 const gap = round.mode === "bug" && at < arrows.length;
+                const first = gap && arrows.indexOf(null) === at;
                 return (
-                  <span key={`place-${at}`} className="code-place" data-place={at} data-next={next ? "true" : "false"} data-gap={gap ? "true" : "false"}>
-                    {at + 1}
-                    {hint && "arrow" in hint && gap ? <Hand /> : null}
+                  <span
+                    key={`place-${at}`}
+                    className="code-place"
+                    data-place={at}
+                    data-next={next ? "true" : "false"}
+                    data-gap={gap ? "true" : "false"}
+                    aria-label={`place ${at + 1}, empty${next ? ", next" : ""}`}
+                  >
+                    <span aria-hidden="true">{at + 1}</span>
+                    {hint && "arrow" in hint && first ? <Hand /> : null}
                   </span>
                 );
               }

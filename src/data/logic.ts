@@ -626,7 +626,7 @@ export function logicManifestEntries(): { id: string; say: string }[] {
     { id: "code-bird", say: "Take your animal home to the nest." },
     { id: "code-plan", say: "Line up the arrows, then press go." },
     { id: "code-loop", say: "Do this move three times." },
-    { id: "code-bug", say: "One arrow is wrong. Tap it, then press go." },
+    { id: "code-bug", say: "One arrow is wrong. Tap it off, then fill the empty place." },
     { id: "code-bug-extra", say: "One arrow too many. Tap it off, then press go." },
     { id: "code-bug-missing", say: "One arrow is missing. Fill the empty place, then press go." },
     { id: "code-predict", say: "Which arrows take it home? Pick one, then press go." },

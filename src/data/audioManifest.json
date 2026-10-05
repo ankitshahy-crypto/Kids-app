@@ -1073,7 +1073,7 @@
     "code-bird": { "file": "prompts/code-bird.mp3", "say": "Take your animal home to the nest.", "source": "neural" },
     "code-plan": { "file": "prompts/code-plan.mp3", "say": "Line up the arrows, then press go.", "source": "neural" },
     "code-loop": { "file": "prompts/code-loop.mp3", "say": "Do this move three times.", "source": "neural" },
-    "code-bug": { "file": "prompts/code-bug.mp3", "say": "One arrow is wrong. Tap it, then press go.", "source": "neural" },
+    "code-bug": { "file": "prompts/code-bug.mp3", "say": "One arrow is wrong. Tap it off, then fill the empty place.", "source": "neural" },
     "code-pattern": { "file": "prompts/code-pattern.mp3", "say": "What comes next?", "source": "neural" },
     "code-again": { "file": "prompts/code-again.mp3", "say": "Try again.", "source": "neural" },
     "game-again": { "file": "prompts/code-again.mp3", "say": "Try again.", "source": "neural" },

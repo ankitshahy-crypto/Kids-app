@@ -69,6 +69,7 @@ async function mendPlan(board: Locator) {
       await expect(slots.nth(at)).toHaveAttribute("data-gap", "true");
     }
     await board.locator(`[data-arrow=${path[at]}]`).click();
+    await expect(slots.nth(at)).toHaveAttribute("data-dir", path[at]);
   }
   await expect(board).toHaveAttribute("data-fixed", "true");
 }
@@ -678,10 +679,27 @@ test("fix it: a wrong arrow is tapped off, leaving its place for the right one",
   await board.locator(".code-chip").nth(1).click();
   const gap = board.locator(".code-place[data-gap=true]");
   await expect(gap).toHaveAttribute("data-place", "1");
+  await expect(gap).toHaveAttribute("aria-label", "place 2, empty");
   await expect(board.locator(".code-chip")).toHaveCount(3);
   // Still four places on the row: the hole holds its place.
   await expect(board.locator(".code-queue > *")).toHaveCount(4);
+  // A second hole (the last arrow tapped off too), and Go three times: the hand sits in the first
+  // hole only, on the arrow that goes there, since that is the one an arrow key fills.
+  await board.locator(".code-chip").last().click();
+  await expect(gap).toHaveCount(2);
+  // (The wrong run was the first miss.)
+  for (let miss = 2; miss <= 4; miss += 1) {
+    await board.locator("[data-go=run]").click();
+    await expect(board).toHaveAttribute("data-misses", String(miss));
+  }
+  await expect(gap.first()).toHaveAttribute("data-next", "true");
+  await expect(board.locator(".code-place .game-hand")).toHaveCount(1);
+  await expect(gap.first().locator(".game-hand")).toBeVisible();
+  await expect(board.locator("[data-arrow=up] .game-hand")).toBeVisible();
   await board.locator("[data-arrow=up]").click();
+  await expect(gap).toHaveCount(1);
+  await expect(board.locator("[data-arrow=left] .game-hand")).toBeVisible();
+  await board.locator("[data-arrow=left]").click();
   await expect(gap).toHaveCount(0);
   await expect(board).toHaveAttribute("data-fixed", "true");
   await board.locator("[data-go=run]").click();

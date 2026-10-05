@@ -195,6 +195,8 @@ describe("guide the bird home", () => {
       const shown = bugPlan(bug);
       const mended = mend(bug);
       expect(mended, `${bug.id} salt ${salt}`).toEqual(bug.path);
+      // A wrong or an extra arrow is seen to be wrong at that very arrow, in every play.
+      if (bug.bugKind !== "missing") expect(checkPlan(bug, program(bug, shown)), `${bug.id} salt ${salt}`).toMatchObject({ ok: false, at: bug.bugIndex });
       // One change: the plans differ in one place (a turn or a fill), or by one arrow (an extra).
       if (bug.bugKind === "extra") {
         expect(shown).toHaveLength(mended.length + 1);
