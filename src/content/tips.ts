@@ -120,7 +120,8 @@ const gameTips: Record<string, { start: string; end: string }> = {
   // The coding tips are one short line each. The Build It tip was eleven lines on a phone and pushed the
   // game's Play button off the screen.
   bird: {
-    start: "They plan a path home with arrows. A wrong path just starts again.",
+    // The walk is the lesson: a wrong plan is walked to where it goes wrong, and mended from there.
+    start: "They plan a path home with arrows, then watch it walked. A wrong arrow is tapped off and tried again.",
     end: "Ask: which way did the animal go to get home?",
   },
   pattern: {

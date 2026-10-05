@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
 import { playPrompt, playWordId, promptCue, type Cue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
@@ -261,10 +261,11 @@ function BirdGame({
       return;
     }
     // The plan has one place for each step home, and no more: a plan can be wrong, but it
-    // cannot run past its places. A tap with every place full wiggles, so it is not a dead tap.
+    // cannot run past its places. A tap with every place full is not a dead tap: Go wiggles,
+    // since Go is what is left to press.
     if (queue.length >= round.path.length) {
-      wiggle.shake(dir);
-      coach.miss();
+      wiggle.shake("go");
+      coach.touch();
       return;
     }
     settle();
@@ -350,7 +351,10 @@ function BirdGame({
       later.run(
         () => {
           void (async () => {
-            const way = [...walked].reverse();
+            // Back the way it came: to the cells before the one it stands on. A plan that doubled
+            // back has left this cell before, and the way back starts from that first leaving.
+            const been = walked.findIndex((step) => sameCell(step, cell));
+            const way = (been >= 0 ? walked.slice(0, been) : walked).reverse();
             for (const [index, back] of way.entries()) {
               if (runId.current !== id) return;
               setWalking({ step: -1, cell: back });
@@ -372,7 +376,7 @@ function BirdGame({
   const planned = round.mode !== "tap";
   const arrows = round.mode === "bug" ? program(round, [], fixed) : queue;
   // Empty places show how long the plan is: one for each step it takes to get home.
-  const places = round.mode === "loop" ? 1 : Math.max(round.path.length, arrows.length);
+  const places = round.mode === "loop" ? 1 : round.path.length;
   // The hand, after three misses: on the arrow a plan goes wrong at, else on an arrow that brings
   // the animal nearer the nest from where the plan so far leaves it (from where it stands, in a tap
   // round). Any shortest way home is right, as checkPlan has it, not only the drawn one.
@@ -398,7 +402,8 @@ function BirdGame({
   // stage and were tall and thin on a phone).
   const stageRef = useRef<HTMLDivElement | null>(null);
   const [cell, setCell] = useState(0);
-  useEffect(() => {
+  // Before paint, so a board of a new shape is never drawn at the last board's size for a frame.
+  useLayoutEffect(() => {
     const stage = stageRef.current;
     if (!stage) return undefined;
     const measure = () => setCell(Math.floor(Math.min(stage.clientWidth / cols, stage.clientHeight / rowsCount)));
@@ -547,6 +552,7 @@ function BirdGame({
           data-go="run"
           data-wiggle={wiggle.id === "go" ? "true" : "false"}
           data-waiting={home || running ? "true" : "false"}
+          aria-disabled={home || running ? "true" : undefined}
           onClick={go}
         >
           <GoIcon />

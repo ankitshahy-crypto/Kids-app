@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { installAudioSpy, spokenLines } from "./audioSpy";
+import { installAudioSpy, requestedCues, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 
 const profile = {
@@ -229,7 +229,8 @@ test("a wrong plan is walked as far as the wrong arrow, and a short one stops sh
   // The plan is kept: the last arrow is all it needs.
   await board.locator(`[data-arrow=${steps[steps.length - 1]}]`).click();
   await board.locator("[data-go=run]").click();
-  await expect.poll(() => spokenLines(page), { timeout: 10_000 }).toContain("you made it home!");
+  // Asked for, not heard through: under the quick setting the next round opens before the line is done.
+  await expect.poll(() => requestedCues(page), { timeout: 10_000 }).toContain("prompts/code-home.mp3");
   await onRound(board, 1);
 });
 
@@ -403,9 +404,9 @@ test("a plan has exactly one place for each step home, on one line, on a phone",
   const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
   expect(steps).toHaveLength(5);
   for (const dir of steps) await board.locator(`[data-arrow=${dir}]`).click();
-  // A sixth arrow has nowhere to go: the arrow wiggles and the plan is unchanged.
+  // A sixth arrow has nowhere to go: Go wiggles (it is what is left to press) and the plan is unchanged.
   await board.locator(`[data-arrow=${steps[0]}]`).click();
-  await expect(board.locator(`[data-arrow=${steps[0]}]`)).toHaveAttribute("data-wiggle", /^(a|b)$/);
+  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
   await expect(board.locator(".code-chip")).toHaveCount(5);
   const tops = await board.locator(".code-chip").evaluateAll((chips) => chips.map((chip) => Math.round(chip.getBoundingClientRect().top)));
   expect(new Set(tops).size).toBe(1);

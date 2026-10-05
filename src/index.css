@@ -6622,9 +6622,11 @@ input.is-pressed,
 }
 
 /* The row of arrows and Go: five things across, each as wide as a fifth of the row allows (up to
-   82px, the kit's mid size). Go is the one solid green thing on the page. */
-.game-frame[data-screen="bird"] .game-tray .pick.is-mid,
-.game-frame[data-screen="bird"] .code-go {
+   82px, the kit's mid size). Go is the one solid green thing on the page. (The screen name twice:
+   this outranks the narrow-phone rule for mid picks in "Games fill the screen", which is as
+   specific and comes later.) */
+.game-frame[data-screen="bird"][data-screen] .game-tray .pick.is-mid,
+.game-frame[data-screen="bird"][data-screen] .code-go {
   width: min(82px, calc((100% - 32px) / 5));
   min-height: 82px;
 }
@@ -6668,11 +6670,23 @@ input.is-pressed,
   }
 }
 
-/* An iPad on its side: the whole game is drawn at 1.2 (see "Games fill the screen"), so the scene
-   gives back a share of the height, and board, plan and Go stay on one screen. */
+/* An iPad on its side: the whole game is drawn at 1.2 (see "Games fill the screen"), so the arrows
+   and the plan give back height (they do not need to be 98px on an iPad) and the scene a little,
+   and board, plan and Go stay on one screen with the tiles still the biggest thing. */
 @media (min-width: 768px) and (orientation: landscape) {
   .game-frame[data-screen="bird"] .game-scene {
-    height: clamp(170px, calc((100svh - 560px) / 1.2), 300px);
+    height: clamp(220px, calc((100svh - 470px) / 1.2), 300px);
+  }
+
+  .game-frame[data-screen="bird"] .code-chip,
+  .game-frame[data-screen="bird"] .code-place {
+    height: 54px;
+  }
+
+  .game-frame[data-screen="bird"][data-screen] .game-tray .pick.is-mid,
+  .game-frame[data-screen="bird"][data-screen] .code-go {
+    width: 64px;
+    min-height: 64px;
   }
 }
 
