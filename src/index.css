@@ -6654,10 +6654,16 @@ input.is-pressed,
 
 /* Predict: the given start of the plan is drawn quieter and does not take a tap; the endings to
    choose from are pictures of two or three arrows in a row. */
-.code-chip[data-given="true"] {
+.code-chip[data-given="true"]:not([data-on="true"]) {
   background: #f1efe9;
   box-shadow: none;
-  pointer-events: none;
+}
+
+/* A picked ending is filled green, so that it is never mistaken for the hand's gold ring on the
+   one that gets home, which can show at the same time. */
+.game-frame[data-screen="bird"] .pick[data-chosen="true"][data-reveal="false"] {
+  background: var(--mint);
+  box-shadow: 0 0 0 4px var(--action), var(--shadow);
 }
 
 .code-ending {
@@ -6703,9 +6709,24 @@ input.is-pressed,
     min-height: 66px;
   }
 
-  /* The endings to pick from give up a little height too. With the tip up, Go is a short scroll down. */
-  .game-frame[data-screen="bird"][data-mode="predict"] .pick[data-choice] {
-    min-height: 88px;
+  /* The endings to pick from share a row with Go, so Go is on the screen with them. */
+  .game-frame[data-screen="bird"][data-mode="predict"] .pick[data-choice],
+  .game-frame[data-screen="bird"][data-mode="predict"][data-screen] .code-go {
+    min-height: 76px;
+    margin: 0;
+    padding: 4px;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .game-frame[data-screen="bird"][data-choices="2"] .pick[data-choice],
+  .game-frame[data-screen="bird"][data-choices="2"][data-screen] .code-go {
+    width: calc((100% - 16px) / 3);
+  }
+
+  .game-frame[data-screen="bird"][data-choices="3"] .pick[data-choice],
+  .game-frame[data-screen="bird"][data-choices="3"][data-screen] .code-go {
+    width: calc((100% - 24px) / 4);
   }
 }
 

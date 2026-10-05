@@ -286,25 +286,30 @@ function bugged(round: BirdRound, salt: number): BirdRound {
 
 /**
  * Endings a child could pick for a plan whose start is given: the right one, and wrong ones made
- * from it by turning one arrow, each checked to miss the nest. Reading code before running it.
+ * from it by turning one arrow. Reading code before running it. A wrong ending goes wrong at the
+ * arrow that was changed, so when it is walked the arrow that is marked is the one that differs
+ * from the right ending (a changed arrow that only goes wrong later would mark an arrow the right
+ * ending has too). Straight back the other way always goes wrong at once, so there are always
+ * enough.
  */
 export function predictChoices(round: BirdRound, tail: number, count: number, salt: number): Dir[][] {
   const right = round.path.slice(round.path.length - tail);
   const given = round.path.slice(0, round.path.length - tail);
   const seen = new Set<string>([right.join(",")]);
   const wrong: Dir[][] = [];
-  // Every one-arrow change, in a salted order, until there are enough that miss.
-  const changes: Dir[][] = [];
+  const changes: { ending: Dir[]; at: number }[] = [];
   for (let at = 0; at < right.length; at += 1) {
     for (const dir of DIRS) {
       if (dir === right[at]) continue;
-      changes.push(right.map((step, index) => (index === at ? dir : step)));
+      changes.push({ ending: right.map((step, index) => (index === at ? dir : step)), at });
     }
   }
-  for (const ending of shuffle(changes, salt + 7)) {
+  for (const { ending, at } of shuffle(changes, salt + 7)) {
     if (wrong.length >= count - 1) break;
     const key = ending.join(",");
-    if (seen.has(key) || checkPlan(round, [...given, ...ending]).ok) continue;
+    if (seen.has(key)) continue;
+    const check = checkPlan(round, [...given, ...ending]);
+    if (check.ok || check.why === "short" || check.at !== given.length + at) continue;
     seen.add(key);
     wrong.push(ending);
   }
@@ -355,7 +360,7 @@ export function birdRounds(level: LogicLevel, salt = 0): BirdRound[] {
       { ...pick((round) => !straight(round) && round.path.length === TAP_STEPS[1], 2), mode: "tap" },
       pick((round) => round.path.length === 2, 3),
       pick((round) => round.path.length === 3, 4),
-      // One turn, so the two endings look different: a straight ending and a turned one.
+      // A board with a turn, so there is a turn to read in the plan.
       predicted(pick((round) => round.path.length === 3 && !straight(round), 7), 2, 2, salt),
     ];
   }

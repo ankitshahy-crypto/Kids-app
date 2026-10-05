@@ -251,10 +251,16 @@ function BirdGame({
   /** The animal is in the middle of running a plan (not walking back from one, which a tap may cut short). */
   const running = walking !== null && walking.step >= 0;
 
-  /** Predict: an ending is picked whole, and fills the empty places. Picking again changes it. */
+  /** Predict: an ending is picked whole, and fills the empty places. Picking another changes it. */
   const pickEnding = (ending: Dir[]) => {
     if (home || running) return;
     wiggle.still();
+    if (queue.join() === ending.join()) {
+      // Already picked: what is left is Go.
+      wiggle.shake("go");
+      coach.touch();
+      return;
+    }
     settle();
     coach.touch();
     setQueue(ending);
@@ -287,8 +293,13 @@ function BirdGame({
   const tapChip = (place: number) => {
     if (running || home) return;
     if (round.mode === "predict") {
-      // The given start stays; a tap on the picked ending puts it back among the choices.
-      if (place < round.shown.length) return;
+      // The given start stays: a tap on it wiggles it and asks the question again. A tap on the
+      // picked ending puts it back among the choices.
+      if (place < round.shown.length) {
+        wiggle.shake(`chip-${place}`);
+        coach.touch(lineFor(round));
+        return;
+      }
       settle();
       coach.touch();
       setQueue([]);
@@ -460,6 +471,7 @@ function BirdGame({
         "data-x": pos.x,
         "data-y": pos.y,
         "data-plan-full": full ? "true" : "false",
+        "data-choices": round.mode === "predict" ? round.choices.length : undefined,
       }}
       stage={
         <div className="code-stage" ref={stageRef}>
@@ -534,7 +546,6 @@ function BirdGame({
                   data-bug={bug ? "true" : "false"}
                   data-mended={bug && fixed ? "true" : "false"}
                   data-given={given ? "true" : "false"}
-                  tabIndex={given ? -1 : undefined}
                   // The wrong arrow in a bug round is for the child to find: it is not named as wrong
                   // until a run has shown it to be.
                   aria-label={marked ? `${dir}, wrong` : bug && fixed ? `${dir}, mended` : dir}

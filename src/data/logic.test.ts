@@ -92,17 +92,23 @@ describe("guide the bird home", () => {
         expect(right, `${level} ${salt}`).toHaveLength(1);
         for (const ending of round.choices) {
           expect(ending).toHaveLength(tail);
-          const differs = ending.filter((dir, index) => dir !== right[0][index]).length;
-          expect(differs).toBeLessThanOrEqual(1);
+          const differs = ending.map((dir, index) => (dir !== right[0][index] ? index : -1)).filter((index) => index >= 0);
+          expect(differs.length).toBeLessThanOrEqual(1);
+          // A wrong ending goes wrong at the arrow that differs, so that is the arrow marked when it is walked.
+          if (differs.length === 1) {
+            const check = checkPlan(round, program(round, ending, false));
+            expect(check.ok).toBe(false);
+            if (!check.ok) expect(check.at).toBe(round.shown.length + differs[0]);
+          }
         }
         expect(new Set(round.choices.map((ending) => ending.join())).size).toBe(round.choices.length);
         // Nothing runs until an ending is picked.
         expect(program(round, [], false)).toEqual([]);
       }
     }
-    // A board with no wrong one-arrow ending that misses still offers the right one.
+    // The ending to predict can be as short as one arrow.
     const board = boardLibrary("early")[0];
-    expect(predictChoices(board, 1, 2, 0).some((ending) => checkPlan(board, [...board.path.slice(0, -1), ...ending]).ok)).toBe(true);
+    expect(predictChoices(board, 1, 2, 0)).toHaveLength(2);
   });
 
   it("picks different boards from one play to the next, and every one can be solved", () => {
