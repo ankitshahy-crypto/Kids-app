@@ -10117,7 +10117,8 @@ input.is-pressed,
 }
 
 /* Less motion, not no lesson: the coding animal still glides tile to tile over a step's time (the
-   walk is what the child reads), with no hop, bounce or glow. */
+   walk is what the child reads), with no hop, bounce or glow. (Its transform is its only
+   transition; one added later would get the step's time here too, so keep it that way.) */
 .app[data-calm="true"] .code-pet {
   transition-duration: var(--step, 0.48s) !important;
 }

@@ -858,7 +858,10 @@ test("home is a cheer with happy eyes, a bigger one for a mended plan and the la
   expect(await page.evaluate(() => (window as Window & { __cheer?: string[] }).__cheer ?? [])).toContain("cheer");
 });
 
-/** What moves on the page right now: the class or tag of each element with a running animation or transition. */
+/**
+ * What moves on the page right now: the tag and classes of each element with a running animation
+ * or transition, marked "pet" when it is part of the coding animal.
+ */
 async function moving(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     document
@@ -866,7 +869,8 @@ async function moving(page: Page): Promise<string[]> {
       .filter((animation) => animation.playState === "running")
       .map((animation) => {
         const target = (animation.effect as KeyframeEffect | null)?.target as Element | null;
-        return target ? `${target.tagName.toLowerCase()}.${[...target.classList].join(".")}` : "?";
+        if (!target) return "?";
+        return `${target.closest(".code-pet") ? "pet " : ""}${target.tagName.toLowerCase()}.${[...target.classList].join(".")}`;
       }),
   );
 }
@@ -887,11 +891,16 @@ for (const [name, setup] of [
     expect(await moving(page)).toEqual([]);
     // The glide between tiles keeps a step's time (the quick setting's 160 ms step, less the 20 ms
     // the arrow has first), not the near-nothing every other transition gets; it is the one
-    // movement left.
+    // movement left, and it is seen to happen: the page notes how long the glide took.
     const pet = board.locator(".code-pet");
     expect(await pet.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe("0.14s");
+    await pet.evaluate((el) => {
+      el.addEventListener("transitionend", (event) => {
+        (window as Window & { __glide?: number }).__glide = (event as TransitionEvent).elapsedTime;
+      });
+    });
     await board.locator(`[data-arrow=${((await board.getAttribute("data-path")) ?? "").split(",")[0]}]`).click();
-    await expect(pet).toHaveAttribute("data-mood", "idle");
+    await expect.poll(() => page.evaluate(() => (window as Window & { __glide?: number }).__glide ?? null)).toBeCloseTo(0.14, 2);
   });
 }
 
@@ -902,8 +911,8 @@ test("the scene moves a little on its own, and the animal breathes and blinks", 
   await expect(page.locator(".game-frame[data-screen=bird]")).toHaveAttribute("data-mode", "tap");
   const now = await moving(page);
   expect(now.some((it) => it.startsWith("g.scene-") || it.startsWith("circle.scene-") || it.startsWith("path.scene-"))).toBe(true);
-  expect(now).toContain("g.avatar-eyes-open");
-  expect(now).toContain("span.game-host-body");
+  expect(now).toContain("pet g.avatar-eyes-open");
+  expect(now).toContain("pet span.game-host-body");
 });
 
 test("no two plays are alike: the boards turn and the pictures change", async ({ page }) => {
