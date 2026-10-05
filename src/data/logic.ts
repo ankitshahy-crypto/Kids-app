@@ -630,6 +630,7 @@ export function logicManifestEntries(): { id: string; say: string }[] {
     { id: "code-bug-extra", say: "One arrow too many. Tap it off, then press go." },
     { id: "code-bug-missing", say: "One arrow is missing. Fill the empty place, then press go." },
     { id: "code-predict", say: "Which arrows take it home? Pick one, then press go." },
+    { id: "code-go", say: "Now press go." },
     { id: "code-pattern", say: "What comes next?" },
     { id: "code-order", say: "What comes first? Put the pictures in order." },
     ...RULES.flatMap((rule) => [

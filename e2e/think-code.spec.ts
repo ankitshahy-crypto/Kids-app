@@ -471,7 +471,7 @@ test("a plan has exactly one place for each step home, on one line, on a phone",
   for (const dir of steps) await board.locator(`[data-arrow=${dir}]`).click();
   // A sixth arrow has nowhere to go: Go wiggles (it is what is left to press) and the plan is unchanged.
   await board.locator(`[data-arrow=${steps[0]}]`).click();
-  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
+  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", /^(a|b)$/);
   await expect(board.locator(".code-chip")).toHaveCount(5);
   const tops = await board.locator(".code-chip").evaluateAll((chips) => chips.map((chip) => Math.round(chip.getBoundingClientRect().top)));
   expect(new Set(tops).size).toBe(1);
@@ -504,7 +504,7 @@ test("Go with nothing planned says the instruction, and in the bug round the oth
   await page.locator("[data-game-tile=bird]").click();
   const board = page.locator(".game-frame[data-screen=bird]");
   await board.locator("[data-go=run]").click();
-  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
+  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", /^(a|b)$/);
   await expect.poll(() => spokenLines(page)).toContain("line up the arrows, then press go.");
   await expect(board).toHaveAttribute("data-misses", "1");
   // On to the bug round.
@@ -521,7 +521,7 @@ test("Go with nothing planned says the instruction, and in the bug round the oth
     // An empty place in the plan: Go does not run a plan with a hole in it, it points at the hole.
     await expect(board.locator(".code-place[data-gap=true]")).toHaveCount(1);
     await board.locator("[data-go=run]").click();
-    await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
+    await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", /^(a|b)$/);
     await expect(board.locator(".code-place[data-gap=true]")).toHaveAttribute("data-next", "true");
     await expect.poll(() => spokenLines(page)).toContain("one arrow is missing. fill the empty place, then press go.");
     await expect(board).toHaveAttribute("data-misses", "1");
@@ -529,7 +529,7 @@ test("Go with nothing planned says the instruction, and in the bug round the oth
     // Every place has an arrow: an arrow key wiggles Go, and a tapped arrow comes off (one too many)
     // or leaves an empty place (one wrong), with no miss counted for trying.
     await board.locator("[data-arrow=up]").click();
-    await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
+    await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", /^(a|b)$/);
     const chips = await board.locator(".code-chip").count();
     await board.locator(".code-chip").first().click();
     if (kind === "extra") await expect(board.locator(".code-chip")).toHaveCount(chips - 1);
@@ -611,6 +611,7 @@ async function toBugRound(page: Page, salt: number) {
 // Three kinds of bug, each a known board (the salt pins the play). The child reads the line, runs
 // the plan to see where it goes wrong, and mends it with one change.
 test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
+  await installAudioSpy(page);
   const board = await toBugRound(page, 1);
   await expect(board).toHaveAttribute("data-bug-kind", "extra");
   // up,left,down,left,up for a path of up,left,left,up: five arrows in five places, no hole.
@@ -621,10 +622,16 @@ test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
   // Walked as far as the extra arrow (down, after up and left: a step away from the nest).
   await expect(board).toHaveAttribute("data-wrong-at", "2");
   await expect(board.locator(".code-chip").nth(2)).toHaveAttribute("aria-label", "down, wrong");
-  await board.locator(".code-chip").nth(2).click();
+  // A double tap: the first takes the arrow off, the row closes up, and the arrow that was next to
+  // it is under the finger for the second, which is let go, so the mended plan stays mended.
+  await board.locator(".code-chip").nth(2).dblclick();
   await expect(board.locator(".code-chip")).toHaveCount(4);
+  await expect(board.locator(".code-place[data-gap=true]")).toHaveCount(0);
   await expect(board).toHaveAttribute("data-fixed", "true");
   await expect(board).toHaveAttribute("data-again", "false");
+  // The line follows the plan: mended, the speaker says to press go, not to tap an arrow off.
+  await board.locator("[data-hear=true]").click();
+  await expect.poll(() => spokenLines(page)).toContain("now press go.");
   await board.locator("[data-go=run]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
 });
@@ -639,14 +646,23 @@ test("fix it: a missing arrow has an empty place, which Go points at and an arro
   await expect(gap).toHaveCount(1);
   await expect(gap).toHaveAttribute("data-place", "1");
   await expect(board.locator("[data-arrow]")).toHaveCount(4);
-  // Go does not run a plan with a hole: the hole breathes and the line says so. Three times, and
+  // A tap on the hole: a miss, with the line that says what goes there. Then Go, twice: it does not
+  // run a plan with a hole, the hole breathes (anew each time) and the line is said, once each time
+  // (the instruction from the second miss is the same line, so not twice over). Three misses, and
   // the hand comes to the arrow that goes there.
-  for (let miss = 1; miss <= 3; miss += 1) {
-    await board.locator("[data-go=run]").click();
-    await expect(board).toHaveAttribute("data-misses", String(miss));
-  }
+  const missing = "one arrow is missing. fill the empty place, then press go.";
+  await gap.click();
+  await expect(gap).toHaveAttribute("data-wiggle", /^(a|b)$/);
+  await expect(board).toHaveAttribute("data-misses", "1");
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-misses", "2");
   await expect(gap).toHaveAttribute("data-next", "true");
-  await expect.poll(() => spokenLines(page)).toContain("one arrow is missing. fill the empty place, then press go.");
+  const pulse = await gap.getAttribute("data-pulse");
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-misses", "3");
+  await expect(gap).not.toHaveAttribute("data-pulse", pulse ?? "");
+  // Four: the round opened with it, then the three misses (six, were the instruction said twice over).
+  await expect.poll(async () => (await spokenLines(page)).filter((said) => said === missing)).toHaveLength(4);
   await expect(board.locator("[data-arrow=up] .game-hand")).toBeVisible();
   // The wrong arrow in the hole: the plan runs and goes wrong there; tapped, the hole is back.
   await board.locator("[data-arrow=left]").click();
@@ -670,7 +686,7 @@ test("fix it: a wrong arrow is tapped off, leaving its place for the right one",
   await expect(board.locator(".code-chip[data-bug=true]")).toHaveAttribute("data-dir", "right");
   // An arrow key with every place full: Go wiggles, nothing is added.
   await board.locator("[data-arrow=up]").click();
-  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
+  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", /^(a|b)$/);
   await expect(board.locator(".code-chip")).toHaveCount(4);
   await board.locator("[data-go=run]").click();
   await expect(board).toHaveAttribute("data-again", "true", { timeout: 5000 });
@@ -683,11 +699,17 @@ test("fix it: a wrong arrow is tapped off, leaving its place for the right one",
   await expect(board.locator(".code-chip")).toHaveCount(3);
   // Still four places on the row: the hole holds its place.
   await expect(board.locator(".code-queue > *")).toHaveCount(4);
-  // A second hole (the last arrow tapped off too), and Go three times: the hand sits in the first
-  // hole only, on the arrow that goes there, since that is the one an arrow key fills.
+  // A second hole (the last arrow tapped off too): the one just made is the one an arrow key fills,
+  // and is marked so. A tap on the other chooses it instead (no miss).
   await board.locator(".code-chip").last().click();
   await expect(gap).toHaveCount(2);
-  // (The wrong run was the first miss.)
+  await expect(board.locator(".code-place[data-target=true]")).toHaveAttribute("data-place", "3");
+  await gap.first().click();
+  await expect(board.locator(".code-place[data-target=true]")).toHaveAttribute("data-place", "1");
+  await expect(gap.first()).toHaveAttribute("aria-label", "place 2, empty, the arrow goes here");
+  await expect(board).toHaveAttribute("data-misses", "1");
+  // Go three times (the wrong run was the first miss): the chosen hole is the one pointed at, and
+  // the hand sits in it, on the arrow that goes there.
   for (let miss = 2; miss <= 4; miss += 1) {
     await board.locator("[data-go=run]").click();
     await expect(board).toHaveAttribute("data-misses", String(miss));
@@ -698,6 +720,7 @@ test("fix it: a wrong arrow is tapped off, leaving its place for the right one",
   await expect(board.locator("[data-arrow=up] .game-hand")).toBeVisible();
   await board.locator("[data-arrow=up]").click();
   await expect(gap).toHaveCount(1);
+  await expect(board.locator(".code-place[data-target=true]")).toHaveCount(0);
   await expect(board.locator("[data-arrow=left] .game-hand")).toBeVisible();
   await board.locator("[data-arrow=left]").click();
   await expect(gap).toHaveCount(0);

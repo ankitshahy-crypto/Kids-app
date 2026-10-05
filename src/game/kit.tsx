@@ -166,7 +166,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
     },
     /**
      * A wrong tap. It names what was tapped, so the miss still teaches. From the second miss it
-     * also says the instruction again.
+     * also says the instruction again (unless what was said is the instruction: not twice over).
      */
     miss(said: Cue[] = []) {
       missRef.current += 1;
@@ -174,7 +174,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
       setNudge(false);
       playEffect("boop", settingsRef.current);
       feel("think");
-      const again = missRef.current >= 2 ? lineRef.current : [];
+      const again = missRef.current >= 2 ? lineRef.current.filter((cue) => !said.some((it) => it.text === cue.text)) : [];
       if (said.length + again.length > 0) speak.line([...said, ...again]);
       arm();
     },
