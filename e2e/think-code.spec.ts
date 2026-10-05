@@ -498,6 +498,7 @@ test("with reduced motion the animal still walks a step at a time", async ({ pag
 });
 
 test("Go with nothing planned says the instruction, and in the bug round the other arrows are misses", async ({ page }) => {
+  test.slow();
   await installAudioSpy(page);
   await install(page, older, { quick: true });
   await openCoding(page);
@@ -542,6 +543,7 @@ test("Go with nothing planned says the instruction, and in the bug round the oth
 });
 
 test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", async ({ page }, testInfo) => {
+  test.slow();
   await install(page, older, { quick: true });
   await openCoding(page);
   await page.locator("[data-game-tile=bird]").click();
@@ -593,7 +595,10 @@ test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", as
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
 });
 
-/** Plays a known later-level game through to its bug round (the sixth), quick. */
+/**
+ * Plays a known later-level game through to its bug round (the sixth), quick. Six rounds take a
+ * while even so: a test that starts here is marked slow (three times the usual limit).
+ */
 async function toBugRound(page: Page, salt: number) {
   await install(page, older, { quick: true, salt });
   await openCoding(page);
@@ -611,6 +616,7 @@ async function toBugRound(page: Page, salt: number) {
 // Three kinds of bug, each a known board (the salt pins the play). The child reads the line, runs
 // the plan to see where it goes wrong, and mends it with one change.
 test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
+  test.slow();
   await installAudioSpy(page);
   const board = await toBugRound(page, 1);
   await expect(board).toHaveAttribute("data-bug-kind", "extra");
@@ -637,6 +643,7 @@ test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
 });
 
 test("fix it: a missing arrow has an empty place, which Go points at and an arrow fills", async ({ page }) => {
+  test.slow();
   await installAudioSpy(page);
   const board = await toBugRound(page, 3);
   await expect(board).toHaveAttribute("data-bug-kind", "missing");
@@ -679,6 +686,7 @@ test("fix it: a missing arrow has an empty place, which Go points at and an arro
 });
 
 test("fix it: a wrong arrow is tapped off, leaving its place for the right one", async ({ page }) => {
+  test.slow();
   const board = await toBugRound(page, 5);
   await expect(board).toHaveAttribute("data-bug-kind", "turn");
   // left,right,left,left for a path of left,up,left,left.
