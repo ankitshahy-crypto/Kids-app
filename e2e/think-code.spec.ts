@@ -729,6 +729,110 @@ test("fix it: a wrong arrow is tapped off, leaving its place for the right one",
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
 });
 
+/**
+ * Watches the board for the order of things as a plan runs: an arrow lighting (`on:<place>`), the
+ * animal moving (`at:<x>,<y>`), and its movement (`move:<hop|bump>`), as they happen on the page.
+ */
+async function watchWalk(board: Locator) {
+  await board.evaluate((frame) => {
+    const log: string[] = [];
+    (window as Window & { __walk?: string[] }).__walk = log;
+    const seen = { on: "", at: "", move: "", face: "" };
+    const round = frame.getAttribute("data-round");
+    const note = () => {
+      // This round's walk only: the next round opens with its own animal, facing its own way.
+      if (frame.getAttribute("data-round") !== round) return;
+      const on = frame.querySelector(".code-chip[data-on=true]")?.getAttribute("data-queued") ?? "";
+      const at = `${frame.getAttribute("data-x")},${frame.getAttribute("data-y")}`;
+      const move = frame.getAttribute("data-move") ?? "none";
+      const face = frame.getAttribute("data-facing") ?? "";
+      if (on !== seen.on && on !== "") log.push(`on:${on}`);
+      if (at !== seen.at) log.push(`at:${at}`);
+      // (A hop after a hop has the other name, a/b, so it counts.)
+      if (move !== seen.move && move !== "none") log.push(`move:${move.split("-")[0]}`);
+      if (face !== seen.face) log.push(`face:${face}`);
+      Object.assign(seen, { on, at, move, face });
+    };
+    note();
+    new MutationObserver(note).observe(frame, { attributes: true, subtree: true });
+  });
+}
+
+async function walkLog(board: Locator): Promise<string[]> {
+  return board.evaluate(() => (window as Window & { __walk?: string[] }).__walk ?? []);
+}
+
+test("the walk is one hop per step: the arrow lights first, then the animal hops; it faces the way it goes, and bumps at an edge", async ({ page }) => {
+  // A known play: its third board is walked right then down (so the animal turns to face right),
+  // and its fourth starts in a corner, so one arrow is a step off the board.
+  await install(page, profile, { quick: true, salt: 4 });
+  await openCoding(page);
+  await page.locator("[data-game-tile=bird]").click();
+  const board = page.locator(".game-frame[data-screen=bird]");
+  // Round 3 is the first plan round at ages 3–4.
+  for (let round = 0; round < 2; round += 1) {
+    await runPath(board);
+    await onRound(board, round + 1);
+  }
+  await expect(board).toHaveAttribute("data-mode", "plan");
+  // Not the last round, not a mended plan: the ordinary cheer.
+  await expect(board).toHaveAttribute("data-cheer", "small");
+  const path = ((await board.getAttribute("data-path")) ?? "").split(",");
+  for (const dir of path) await board.locator(`[data-arrow=${dir}]`).click();
+  await watchWalk(board);
+  const start = `${await board.getAttribute("data-x")},${await board.getAttribute("data-y")}`;
+  await board.locator("[data-go=run]").click();
+  await expect.poll(() => walkLog(board).then((log) => log.filter((it) => it.startsWith("at:")).length), { timeout: 10_000 }).toBe(path.length + 1);
+  const log = await walkLog(board);
+  // Each arrow lights before the move it makes; every move is a hop; the moves are the path's steps.
+  const moves = log.filter((it) => it.startsWith("at:"));
+  expect(moves[0]).toBe(`at:${start}`);
+  for (let step = 0; step < path.length; step += 1) {
+    const lit = log.indexOf(`on:${step}`);
+    const moved = log.indexOf(moves[step + 1]);
+    expect(lit, `arrow ${step} lights before its step: ${log.join(" ")}`).toBeGreaterThanOrEqual(0);
+    expect(lit).toBeLessThan(moved);
+  }
+  expect(log.filter((it) => it === "move:hop")).toHaveLength(path.length);
+  expect(log).not.toContain("move:bump");
+  // It faces the way it last went sideways (if it did), by the end of the walk (the next round may
+  // have opened by now, with its own animal, so the log has it).
+  const sideways = path.filter((dir) => dir === "left" || dir === "right");
+  const faces = log.filter((it) => it.startsWith("face:"));
+  if (sideways.length > 0) expect(faces[faces.length - 1]).toBe(`face:${sideways[sideways.length - 1]}`);
+  await onRound(board, 3);
+  // From the corner, one arrow off the board: the animal bumps (its own movement, not a hop) and
+  // stays where it is, and that arrow is the wrong one.
+  await expect(board).toHaveAttribute("data-mode", "plan");
+  await expect(board).toHaveAttribute("data-x", "0");
+  await expect(board).toHaveAttribute("data-y", "0");
+  await board.locator("[data-arrow=left]").click();
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-wrong-why", "off", { timeout: 5000 });
+  await expect(board).toHaveAttribute("data-wrong-at", "0");
+  await expect(board).toHaveAttribute("data-move", /^bump-(a|b)$/);
+  await expect(board).toHaveAttribute("data-x", "0");
+  await expect(board).toHaveAttribute("data-y", "0");
+});
+
+test("home is a cheer with happy eyes, a bigger one for a mended plan and the last round", async ({ page }) => {
+  const board = await toBugRound(page, 1);
+  await expect(board).toHaveAttribute("data-cheer", "big");
+  await mendPlan(board);
+  // Home lasts only a moment under the quick setting, so the page itself notes the cheer as it happens.
+  await board.evaluate((frame) => {
+    const seen: string[] = [];
+    (window as Window & { __cheer?: string[] }).__cheer = seen;
+    new MutationObserver(() => {
+      if (frame.querySelector(".code-pet[data-mood=cheer] .avatar-art[data-mood=cheer] .avatar-eyes-happy")) seen.push("cheer");
+    }).observe(frame, { attributes: true, subtree: true });
+  });
+  await board.locator("[data-go=run]").click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
+  // (The game has closed by now: the note is read from the window, not the board.)
+  expect(await page.evaluate(() => (window as Window & { __cheer?: string[] }).__cheer ?? [])).toContain("cheer");
+});
+
 test("no two plays are alike: the boards turn and the pictures change", async ({ page }) => {
   await install(page);
   await openCoding(page);

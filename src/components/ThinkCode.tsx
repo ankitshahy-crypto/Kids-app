@@ -23,7 +23,7 @@ import {
   type LogicLevel,
   type PictureCard,
 } from "../data/logic";
-import { GameFrame, Hand, Pick, useCoach, useFinish, useRoundState, useRounds, useWiggle, type SceneKind } from "../game/kit";
+import { GameFrame, Hand, Pick, useCoach, useFinish, useRoundState, useRounds, useWiggle, type Mood, type SceneKind } from "../game/kit";
 import { Illustration, type IllustrationName } from "../illustrations";
 import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
@@ -186,6 +186,18 @@ const REFLOW_MS = 400;
 
 type Walk = { step: number; cell: Cell };
 
+/**
+ * The animal's one movement at a time, for the CSS: a hop with a step, or a bump at the edge (with
+ * the way it bumped). The count gives each one a new name (a/b), so the same movement twice over
+ * is seen twice (an animation only starts over when its name changes).
+ */
+type Move = { kind: "hop" | "bump"; count: number; dir: Dir };
+
+/** The arrow chip lights this long before the hop it starts: the cause is seen before the effect. */
+const LEAD_MS = 80;
+/** A bump at the edge: a lean toward it and back, shorter than a step. */
+const BUMP_MS = 300;
+
 /** Where a plan leaves the animal, stopping at the edge. */
 function walkTo(round: BirdRound, dirs: Dir[]): Cell {
   let cell = round.start;
@@ -237,6 +249,14 @@ function BirdGame({
   /** The step being walked (its arrow lights), and the cells walked so far. */
   const [walking, setWalking] = useRoundState<Walk | null>(rounds.index, null);
   const [trailCells, setTrail] = useRoundState<Cell[]>(rounds.index, []);
+  /** The animal's last movement (see Move), and which way it faces (its last left or right). */
+  const [move, setMove] = useRoundState<Move | null>(rounds.index, null);
+  const [facing, setFacing] = useRoundState<"left" | "right">(rounds.index, "right");
+  /** One movement after another: `setMove` with a new count, keeping the kind's name fresh. */
+  const moveTo = (kind: Move["kind"], dir: Dir) => {
+    setMove((current) => ({ kind, count: (current?.count ?? 0) + 1, dir }));
+    if (dir === "left" || dir === "right") setFacing(dir);
+  };
   const wiggle = useWiggle();
   const runId = useRef(0);
   const later = useLater();
@@ -245,8 +265,9 @@ function BirdGame({
   useEffect(() => () => void (runId.current += 1), []);
 
   // The tests' quick setting walks fast, but not so fast that a step cannot be seen. Reduced motion
-  // keeps the step time: the walk is the lesson, and only the glide and the hop are left out (CSS).
+  // keeps the step time: the walk is the lesson, and only the hop is left out (CSS: a glide instead).
   const pace = () => (quickRounds() ? 160 : STEP_MS);
+  const lead = () => (quickRounds() ? 20 : LEAD_MS);
 
   const arrive = () => {
     setHome(true);
@@ -260,12 +281,14 @@ function BirdGame({
     const next = stepCell(pos, dir);
     if (!onGrid(next, round.width, round.height)) {
       wiggle.shake(dir);
+      moveTo("bump", dir);
       coach.miss([codeSay("code-off")]);
       return;
     }
     wiggle.still();
     coach.touch();
     setTrail((cells) => [...cells, pos]);
+    moveTo("hop", dir);
     setPos(next);
     if (sameCell(next, round.nest)) arrive();
   };
@@ -275,6 +298,7 @@ function BirdGame({
     later.cancel();
     runId.current += 1;
     setWalking(null);
+    setMove(null);
     setTrail([]);
     setPos(round.start);
     setWrong(null);
@@ -441,18 +465,23 @@ function BirdGame({
       for (let step = 0; step < walkedSteps; step += 1) {
         if (runId.current !== id) return;
         const dir = dirs[step];
-        // A loop has one arrow on the page, walked three times.
+        // The arrow lights first, a moment before the step it makes: the cause, then the effect. (A
+        // loop has one arrow on the page, walked three times.)
         setWalking({ step: round.mode === "loop" ? 0 : step, cell });
+        await sleep(lead());
+        if (runId.current !== id) return;
         const next = stepCell(cell, dir);
         if (!onGrid(next, round.width, round.height)) {
           // The edge: the animal bumps and stays.
-          await sleep(pace());
+          moveTo("bump", dir);
+          await sleep(Math.max(BUMP_MS, pace()));
           break;
         }
         // The cell being left gets a footprint. (`cell` is about to change, so the list is copied.)
         walked.push(cell);
         setTrail([...walked]);
         cell = next;
+        moveTo("hop", dir);
         setPos(cell);
         await sleep(pace());
       }
@@ -476,6 +505,8 @@ function BirdGame({
             // back has left this cell before, and the way back starts from that first leaving.
             const been = walked.findIndex((step) => sameCell(step, cell));
             const way = (been >= 0 ? walked.slice(0, been) : walked).reverse();
+            // Back is a quiet glide, no hops: a step back is not a step of the plan.
+            setMove(null);
             for (const [index, back] of way.entries()) {
               if (runId.current !== id) return;
               setWalking({ step: -1, cell: back });
@@ -537,6 +568,14 @@ function BirdGame({
     const way = nextStepHome(round, walkTo(round, queue));
     return way ? { arrow: way } : null;
   })();
+  /**
+   * How the animal looks (see Mood in the kit): cheering at the nest, hopping while the plan runs
+   * (not while it walks back), waiting with the child who is taking a while, else as the coach has
+   * it (a puzzled tilt after a miss, idle).
+   */
+  const petMood: Mood = home ? "cheer" : running ? "walk" : coach.mood === "idle" && coach.nudge ? "wait" : coach.mood;
+  // A bigger cheer for a mended plan (a bug round) and for the last round of the game.
+  const bigCheer = round.mode === "bug" || rounds.index === rounds.total - 1;
   const full =
     (round.mode === "plan" && queue.length >= round.path.length) || (round.mode === "predict" && queue.length > 0) || (round.mode === "bug" && !plan.includes(null));
   const place = PLACES[(rounds.index + Math.abs(salt)) % PLACES.length];
@@ -580,6 +619,9 @@ function BirdGame({
         "data-fixed": mended ? "true" : "false",
         "data-bug-kind": round.bugKind ?? undefined,
         "data-running": walking ? "true" : "false",
+        "data-cheer": bigCheer ? "big" : "small",
+        "data-facing": facing,
+        "data-move": move ? `${move.kind}-${move.count % 2 === 1 ? "a" : "b"}` : "none",
         "data-x": pos.x,
         "data-y": pos.y,
         "data-plan-full": full ? "true" : "false",
@@ -612,17 +654,31 @@ function BirdGame({
               </div>
             );
           })}
-          {/* The animal glides from cell to cell; a tiny hop on each step, like the kit's host. A new
-              round is a new animal (the key), so it does not glide across from the last board. */}
+          {/* The animal, one cell big, moved by a transform (never by layout: smooth on a tablet). It
+              glides from cell to cell with a hop on each step (the hop and the bump are on an inner
+              wrapper, the mood's bounce or tilt on the body, so none of them fight). A new round is a
+              new animal (the key), so it does not glide across from the last board. */}
           <span
             key={rounds.index}
             className="game-host code-pet"
-            data-mood={home ? "cheer" : coach.mood}
+            data-mood={petMood}
             data-walking={walking ? "true" : "false"}
-            style={{ left: `${(pos.x * 100) / cols}%`, top: `${(pos.y * 100) / rowsCount}%` }}
+            data-facing={facing}
+            style={
+              {
+                transform: `translate(${pos.x * 100}%, ${pos.y * 100}%)`,
+                "--step": `${walking?.step === -1 ? pace() / 2 : pace()}ms`,
+              } as React.CSSProperties
+            }
           >
             <span className="game-host-body">
-              <Hero animal={animal} outfit={outfit} />
+              <span
+                className="code-pet-move"
+                data-move={move ? `${move.kind}-${move.count % 2 === 1 ? "a" : "b"}` : "none"}
+                style={{ "--bx": move?.dir === "left" ? -1 : move?.dir === "right" ? 1 : 0, "--by": move?.dir === "up" ? -1 : move?.dir === "down" ? 1 : 0 } as React.CSSProperties}
+              >
+                <Hero animal={animal} outfit={outfit} mood={petMood} />
+              </span>
             </span>
           </span>
         </div>
