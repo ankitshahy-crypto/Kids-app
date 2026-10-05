@@ -193,7 +193,10 @@ type Walk = { step: number; cell: Cell };
  */
 type Move = { kind: "hop" | "bump"; count: number; dir: Dir };
 
-/** The arrow chip lights this long before the hop it starts: the cause is seen before the effect. */
+/**
+ * The arrow chip lights this long before the hop it starts: the cause is seen before the effect.
+ * It is part of the step (STEP_MS), not added to it: the chip lights, and the hop takes the rest.
+ */
 const LEAD_MS = 80;
 /** A bump at the edge: a lean toward it and back, shorter than a step. */
 const BUMP_MS = 300;
@@ -268,6 +271,8 @@ function BirdGame({
   // keeps the step time: the walk is the lesson, and only the hop is left out (CSS: a glide instead).
   const pace = () => (quickRounds() ? 160 : STEP_MS);
   const lead = () => (quickRounds() ? 20 : LEAD_MS);
+  /** How long the hop (and the glide with it) takes: the step less the moment the chip has first. */
+  const hop = () => pace() - lead();
 
   const arrive = () => {
     setHome(true);
@@ -490,7 +495,7 @@ function BirdGame({
         cell = next;
         moveTo("hop", dir);
         setPos(cell);
-        await sleep(pace());
+        await sleep(hop());
       }
       if (runId.current !== id) return;
       if (check.ok) {
@@ -673,7 +678,7 @@ function BirdGame({
             style={
               {
                 transform: `translate(${pos.x * 100}%, ${pos.y * 100}%)`,
-                "--step": `${walking?.step === -1 ? pace() / 2 : pace()}ms`,
+                "--step": `${walking?.step === -1 ? pace() / 2 : hop()}ms`,
                 "--bump": `${BUMP_MS}ms`,
               } as React.CSSProperties
             }
