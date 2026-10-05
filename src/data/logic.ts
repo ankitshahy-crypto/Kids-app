@@ -84,6 +84,8 @@ export type RuleRound = {
   rule: string;
 };
 
+const DIRS: Dir[] = ["up", "down", "left", "right"];
+
 const DELTA: Record<Dir, Cell> = {
   up: { x: 0, y: -1 },
   down: { x: 0, y: 1 },
@@ -148,18 +150,6 @@ export function trail(start: Cell, dirs: Dir[], width: number, height: number): 
   return cells;
 }
 
-const BASE_EARLY: BirdRound[] = [
-  { id: "tap-short", mode: "tap", width: 3, height: 3, start: { x: 0, y: 2 }, nest: { x: 2, y: 2 }, path: ["right", "right"], repeat: 1, shown: [], bugIndex: null, fix: null },
-  { id: "tap-turn", mode: "tap", width: 3, height: 3, start: { x: 0, y: 2 }, nest: { x: 2, y: 1 }, path: ["right", "right", "up"], repeat: 1, shown: [], bugIndex: null, fix: null },
-  { id: "plan-grow", mode: "plan", width: 4, height: 3, start: { x: 0, y: 2 }, nest: { x: 2, y: 0 }, path: ["right", "right", "up", "up"], repeat: 1, shown: [], bugIndex: null, fix: null },
-];
-
-const BASE_LATER: BirdRound[] = [
-  { id: "plan-long", mode: "plan", width: 4, height: 4, start: { x: 0, y: 3 }, nest: { x: 3, y: 0 }, path: ["right", "right", "right", "up", "up", "up"], repeat: 1, shown: [], bugIndex: null, fix: null },
-  { id: "loop-three", mode: "loop", width: 4, height: 2, start: { x: 0, y: 0 }, nest: { x: 3, y: 0 }, path: ["right"], repeat: 3, shown: [], bugIndex: null, fix: null },
-  { id: "bug-one", mode: "bug", width: 3, height: 3, start: { x: 0, y: 2 }, nest: { x: 2, y: 0 }, path: ["right", "right", "up", "up"], repeat: 1, shown: ["right", "up", "up", "up"], bugIndex: 1, fix: "right" },
-];
-
 const MIRROR: Record<Dir, Dir> = { left: "right", right: "left", up: "up", down: "down" };
 const FLIP: Record<Dir, Dir> = { up: "down", down: "up", left: "left", right: "right" };
 
@@ -181,17 +171,153 @@ function turned(round: BirdRound, mirror: boolean, flip: boolean): BirdRound {
 }
 
 /**
- * The path puzzles for one play. `salt` turns the boards (mirror, upside
- * down), so the nest is not in the same corner every time. Salt 0 is the
- * boards as drawn.
+ * The boards a child can be given. There were five, and every play showed the
+ * same three, so a child who had played twice had seen them all. Now every
+ * board with a straight path or one turn (ages 3–4), or one or two turns
+ * (ages 5–7), is made from the grid sizes below, and each play picks from
+ * them with the salt. That is dozens of boards a level before the mirror and
+ * upside-down turns of `turned`, which multiply them again.
+ */
+type BoardShape = { width: number; height: number; turns: number[]; steps: [number, number] };
+
+const SHAPES: Record<LogicLevel, BoardShape[]> = {
+  // Two or three steps, straight or with one turn, on small grids.
+  early: [
+    { width: 3, height: 3, turns: [0, 1], steps: [2, 3] },
+    { width: 4, height: 3, turns: [0, 1], steps: [2, 3] },
+  ],
+  // Four to six steps, one or two turns, on bigger grids. Two turns is a path a child
+  // has to look at twice, which is the point at five to seven.
+  later: [
+    { width: 4, height: 3, turns: [1, 2], steps: [4, 5] },
+    { width: 4, height: 4, turns: [1, 2], steps: [4, 6] },
+  ],
+};
+
+const PERPENDICULAR: Record<Dir, Dir[]> = {
+  up: ["left", "right"],
+  down: ["left", "right"],
+  left: ["up", "down"],
+  right: ["up", "down"],
+};
+
+/** Every way of walking `steps` moves with exactly `turns` turns, as runs of one direction. */
+function routes(steps: number, turns: number): Dir[][] {
+  const out: Dir[][] = [];
+  const grow = (path: Dir[], runs: number) => {
+    if (path.length === steps) {
+      if (runs === turns + 1) out.push(path);
+      return;
+    }
+    const last = path[path.length - 1];
+    // The first move starts the first run; a move the same way continues it; a sideways move starts
+    // another, as long as there are turns left.
+    if (!last) {
+      for (const dir of DIRS) grow([dir], 1);
+      return;
+    }
+    grow([...path, last], runs);
+    if (runs <= turns) for (const dir of PERPENDICULAR[last]) grow([...path, dir], runs + 1);
+  };
+  grow([], 0);
+  return out;
+}
+
+/** The plan boards for a level, each solved by its own path, the shortest first. */
+export function boardLibrary(level: LogicLevel): BirdRound[] {
+  const boards: BirdRound[] = [];
+  for (const shape of SHAPES[level]) {
+    for (let steps = shape.steps[0]; steps <= shape.steps[1]; steps += 1) {
+      for (const turns of shape.turns) {
+        for (const path of routes(steps, turns)) {
+          for (let y = 0; y < shape.height; y += 1) {
+            for (let x = 0; x < shape.width; x += 1) {
+              const start = { x, y };
+              const { end, blocked } = walk(start, path, shape.width, shape.height);
+              if (blocked) continue;
+              const board: BirdRound = { id: `plan-${shape.width}x${shape.height}-${x}${y}-${path.join("")}`, mode: "plan", width: shape.width, height: shape.height, start, nest: end, path, repeat: 1, shown: [], bugIndex: null, fix: null };
+              // Only a shortest way home is a board: a path that doubles back (up, right, down) is a
+              // detour, and the game would call the child's shorter plan wrong.
+              if (checkPlan(board, path).ok) boards.push(board);
+            }
+          }
+        }
+      }
+    }
+  }
+  return boards;
+}
+
+/** Boards that are the same as each other once mirrored or turned over are one board. */
+export function boardFamily(round: BirdRound): string {
+  const forms = [turned(round, false, false), turned(round, true, false), turned(round, false, true), turned(round, true, true)];
+  return forms.map((form) => `${form.width}x${form.height}:${form.start.x},${form.start.y}:${form.path.join("")}`).sort()[0];
+}
+
+const LOOP: BirdRound = { id: "loop-three", mode: "loop", width: 4, height: 2, start: { x: 0, y: 0 }, nest: { x: 3, y: 0 }, path: ["right"], repeat: 3, shown: [], bugIndex: null, fix: null };
+
+/** A plan with one wrong arrow in it. The bug is never the first or the last arrow, so there is a step before it and after it. */
+function bugged(round: BirdRound, salt: number): BirdRound {
+  const spots = round.path.map((_, index) => index).filter((index) => index > 0 && index < round.path.length - 1);
+  const bugIndex = spots[mix(salt, 3) % spots.length] ?? 1;
+  const right = round.path[bugIndex];
+  // The wrong arrow is one the animal is seen to go wrong on at that very step: off the edge, or a
+  // step away from the nest. A sideways arrow when one is wrong there, else straight back.
+  const back = { up: "down", down: "up", left: "right", right: "left" }[right] as Dir;
+  const sideways = shuffle(PERPENDICULAR[right], salt + 4);
+  let shown = round.path;
+  for (const wrong of [...sideways, back]) {
+    const tried = round.path.map((dir, index) => (index === bugIndex ? wrong : dir));
+    const check = checkPlan({ ...round, shown: tried }, tried);
+    if (!check.ok && check.at === bugIndex) {
+      shown = tried;
+      break;
+    }
+  }
+  return { ...round, id: `bug-${round.id}`, mode: "bug", shown, bugIndex, fix: right };
+}
+
+/** Steps a child can take by tapping, before any planning: the two shortest kinds of board. */
+const TAP_STEPS = [2, 3];
+
+/**
+ * The path puzzles for one play, picked from the library with `salt`:
+ *
+ *  - ages 3–4: two boards to walk by tapping (a straight one, then one with a turn),
+ *    then two to plan before pressing go;
+ *  - ages 5–7: three plans, longer each time, then a move to repeat three times,
+ *    then a plan with one wrong arrow to find.
+ *
+ * No two boards of a play are the same shape, and the salt also mirrors or turns
+ * the boards over, so the nest is not in the same corner every time.
  */
 export function birdRounds(level: LogicLevel, salt = 0): BirdRound[] {
-  const base = level === "early" ? BASE_EARLY : BASE_LATER;
-  const pick = salt === 0 ? 0 : mix(salt);
-  const mirror = (pick & 1) === 1;
-  // A row that is one cell high has no upside down.
-  const flip = (pick & 2) === 2;
-  return base.map((round) => turned(round, mirror, flip && round.height > 1));
+  const library = boardLibrary(level);
+  const seen = new Set<string>();
+  const pick = (filter: (round: BirdRound) => boolean, turn: number): BirdRound => {
+    const fitting = library.filter((round) => filter(round) && !seen.has(boardFamily(round)));
+    const pool = fitting.length > 0 ? fitting : library.filter(filter);
+    const chosen = pool[mix(salt, turn) % pool.length];
+    seen.add(boardFamily(chosen));
+    const spin = mix(salt, turn + 50);
+    return turned(chosen, salt !== 0 && (spin & 1) === 1, salt !== 0 && (spin & 2) === 2 && chosen.height > 1);
+  };
+  const straight = (round: BirdRound) => new Set(round.path).size === 1;
+  if (level === "early") {
+    return [
+      { ...pick((round) => straight(round) && round.path.length === TAP_STEPS[0], 1), mode: "tap" },
+      { ...pick((round) => !straight(round) && round.path.length === TAP_STEPS[1], 2), mode: "tap" },
+      pick((round) => round.path.length === 2, 3),
+      pick((round) => round.path.length === 3, 4),
+    ];
+  }
+  return [
+    pick((round) => round.path.length === 4, 1),
+    pick((round) => round.path.length === 5, 2),
+    pick((round) => round.path.length === 6, 3),
+    turned(LOOP, salt !== 0 && (mix(salt, 5) & 1) === 1, false),
+    bugged(pick((round) => round.path.length >= 4 && round.path.length <= 5, 6), salt),
+  ];
 }
 
 /** Arrows that will run: a queued plan, a move repeated three times, or a bug that was fixed. */
@@ -210,6 +336,65 @@ export function program(round: BirdRound, queued: Dir[], fixed: boolean): Dir[] 
 export function reachesNest(round: BirdRound, dirs: Dir[]): boolean {
   const result = walk(round.start, dirs, round.width, round.height);
   return !result.blocked && sameCell(result.end, round.nest);
+}
+
+/** How many steps each cell is from the nest, by the shortest way. */
+function stepsToNest(round: BirdRound): number[][] {
+  const far = Infinity;
+  const steps = Array.from({ length: round.height }, () => Array.from({ length: round.width }, () => far));
+  steps[round.nest.y][round.nest.x] = 0;
+  const queue: Cell[] = [round.nest];
+  while (queue.length > 0) {
+    const cell = queue.shift()!;
+    for (const dir of DIRS) {
+      const next = stepCell(cell, dir);
+      if (!onGrid(next, round.width, round.height) || steps[next.y][next.x] !== far) continue;
+      steps[next.y][next.x] = steps[cell.y][cell.x] + 1;
+      queue.push(next);
+    }
+  }
+  return steps;
+}
+
+/**
+ * A step from `cell` that brings the animal nearer the nest, for the hand that shows the way after
+ * three misses. The board's own path first, when it is one of them; null on the nest.
+ */
+export function nextStepHome(round: BirdRound, cell: Cell): Dir | null {
+  const steps = stepsToNest(round);
+  const nearer = DIRS.filter((dir) => {
+    const next = stepCell(cell, dir);
+    return onGrid(next, round.width, round.height) && steps[next.y][next.x] < steps[cell.y][cell.x];
+  });
+  const walked = trail(round.start, round.path, round.width, round.height);
+  const along = walked.findIndex((step) => sameCell(step, cell));
+  const drawn = along >= 0 ? round.path[along] : undefined;
+  return drawn && nearer.includes(drawn) ? drawn : (nearer[0] ?? null);
+}
+
+export type PlanCheck =
+  | { ok: true }
+  /** Step `at` leaves the grid ("off"), or walks away from the nest ("away"); or the plan ends short of it. */
+  | { ok: false; why: "off" | "away"; at: number }
+  | { ok: false; why: "short"; at: number };
+
+/**
+ * Where a plan goes wrong, if it does. A step is wrong when it leaves the grid or takes the animal
+ * farther from the nest than it was: the first such step is the one to point at, and the animal
+ * walks that far so the child sees it. A plan that keeps heading the right way but stops early is
+ * short, and `at` is the place the next arrow belongs in. Any way home counts, not only the one the
+ * board was drawn with: on a grid with no walls, "up, right" is as good as "right, up".
+ */
+export function checkPlan(round: BirdRound, dirs: Dir[]): PlanCheck {
+  const steps = stepsToNest(round);
+  let cell = round.start;
+  for (const [at, dir] of dirs.entries()) {
+    const next = stepCell(cell, dir);
+    if (!onGrid(next, round.width, round.height)) return { ok: false, why: "off", at };
+    if (steps[next.y][next.x] > steps[cell.y][cell.x]) return { ok: false, why: "away", at };
+    cell = next;
+  }
+  return sameCell(cell, round.nest) ? { ok: true } : { ok: false, why: "short", at: dirs.length };
 }
 
 function period<Token extends string>(rule: PatternRule, tokens: Token[]): Token[] {
@@ -350,5 +535,9 @@ export function logicManifestEntries(): { id: string; say: string }[] {
       { id: `code-then-${rule.id}`, say: rule.rule },
     ]),
     { id: "code-again", say: "Try again." },
+    { id: "code-off", say: "That way goes off the edge." },
+    { id: "code-away", say: "That way goes away from the nest." },
+    { id: "code-short", say: "Not home yet. Add one more arrow." },
+    { id: "code-home", say: "You made it home!" },
   ];
 }

@@ -6430,6 +6430,280 @@ input.is-pressed,
   }
 }
 
+/* ------------------------------------------------------------------ Take me home, on the kit
+   The board is drawn over the scene: a grid of soft tiles with the nest in one, and the child's
+   animal gliding from tile to tile as its plan runs. The kit's own animal is hidden here, since
+   the one on the board is the host. */
+.game-frame[data-screen="bird"] .game-scene > .game-host:not(.code-pet) {
+  display: none;
+}
+
+.game-frame[data-screen="bird"] .game-stage {
+  /* Room on the left for the speaker button; the rest is the board. */
+  inset: 10px 12px 10px 66px;
+}
+
+/* The scene is shorter here than in the other games: under it come the plan and the arrows, and all
+   three belong on one screen, so that a child can press Go and watch what it does. */
+.game-frame[data-screen="bird"] .game-scene {
+  height: clamp(190px, 100svh - 520px, 300px);
+}
+
+/* Square tiles, as many as the board has, as big as the stage allows, centered in it (the size is
+   measured in ThinkCode.tsx). Tiles that took the whole stage were tall and thin on a phone, and
+   the board read as a column chart. */
+.code-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.code-field {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: 0;
+}
+
+.game-frame[data-screen="bird"] .game-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.code-field .code-cell {
+  min-height: 0;
+  aspect-ratio: auto;
+  border-radius: 12px;
+  margin: 3px;
+  background: rgba(255, 253, 251, 0.62);
+  box-shadow: inset 0 0 0 2px rgba(255, 253, 251, 0.5);
+}
+
+.code-field .code-cell[data-nest="true"] {
+  background: rgba(246, 227, 180, 0.9);
+}
+
+.code-field .nest-mark {
+  width: 86%;
+  bottom: 8%;
+}
+
+/* The animal sits in a cell: as wide as one cell, drawn from its bottom edge. It takes a step's
+   time to glide to the next one, which is the time its arrow stays lit. */
+.code-pet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: auto;
+  width: calc(100% / var(--cols));
+  height: calc(100% / var(--rows));
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 2;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  transition: left 0.42s ease-in-out, top 0.42s ease-in-out;
+  pointer-events: none;
+}
+
+/* As tall as the cell allows, and never wider than it: the cells are taller than they are wide on a
+   phone, and wider than tall on an iPad in landscape. */
+.code-pet .game-host-body {
+  display: flex;
+  justify-content: center;
+  height: 86%;
+  max-width: 92%;
+}
+
+.code-pet .hero {
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+}
+
+.code-pet .hero .avatar-art {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+}
+
+/* A hop with each step, so the walk reads as steps and not a slide. */
+.code-pet[data-walking="true"] .game-host-body {
+  animation: code-hop 0.42s ease infinite;
+}
+
+@keyframes code-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  40% {
+    transform: translateY(-9%) scale(0.96, 1.05);
+  }
+  80% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+}
+
+/* Reduced motion: the animal still takes a step at a time (that is the lesson), without the glide
+   between tiles or the hop. */
+@media (prefers-reduced-motion: reduce) {
+  .code-pet {
+    transition: none;
+  }
+
+  .code-pet[data-walking="true"] .game-host-body {
+    animation: none;
+  }
+}
+
+/* The plan under the board: one place for each step home, filled by arrows as they are tapped.
+   The arrows are a child's tap targets, so each is 64px; six places shrink only as far as a
+   375px phone makes them. */
+.game-frame[data-screen="bird"] .code-plan {
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.game-frame[data-screen="bird"] .code-plan .code-queue {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+/* 64px each, or as wide as the row allows when the places would not all fit on it: six places
+   on a 375px phone are 50px. The width is the row's, not the screen's, so an iPad's zoom (which
+   draws the whole game larger) leaves the sizes in step. */
+.game-frame[data-screen="bird"] .code-chip,
+.game-frame[data-screen="bird"] .code-place {
+  --place: min(64px, calc((100% - (var(--places) - 1) * 6px) / var(--places)));
+  width: var(--place);
+  height: 64px;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 var(--place);
+  border-radius: 18px;
+}
+
+.game-frame[data-screen="bird"] .code-chip svg {
+  width: 42px;
+  height: 42px;
+}
+
+.game-frame[data-screen="bird"] .code-chip {
+  position: relative;
+}
+
+/* The arrow a plan went wrong at stays marked until it is tapped off or mended. */
+.code-chip[data-wrong="true"] {
+  background: #fde7d4;
+  box-shadow: 0 0 0 4px #e9a07d;
+}
+
+.code-chip[data-wiggle="a"] {
+  animation: game-wiggle-a 0.4s ease;
+}
+
+.code-chip[data-wiggle="b"] {
+  animation: game-wiggle-b 0.4s ease;
+}
+
+/* A plan that stopped short: the place the next arrow belongs in breathes. */
+.code-place[data-next="true"] {
+  border-color: #e9a07d;
+  color: #c47956;
+  animation: game-pulse 1s ease 3;
+}
+
+/* The row of arrows and Go: five things across, each as wide as a fifth of the row allows (up to
+   82px, the kit's mid size). Go is the one solid green thing on the page. (The screen name twice:
+   this outranks the narrow-phone rule for mid picks in "Games fill the screen", which is as
+   specific and comes later.) */
+.game-frame[data-screen="bird"][data-screen] .game-tray .pick.is-mid,
+.game-frame[data-screen="bird"][data-screen] .code-go {
+  width: min(82px, calc((100% - 32px) / 5));
+  min-height: 82px;
+}
+
+.game-frame[data-screen="bird"] .code-go {
+  height: auto;
+  margin: 0;
+  padding: 4px;
+  border-radius: 18px;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.game-frame[data-screen="bird"] .code-go svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Go waits while the animal walks: it looks the same, since the walk is short, but a tap does nothing. */
+.game-frame[data-screen="bird"] .code-go[data-waiting="true"] {
+  opacity: 0.85;
+}
+
+/* A short phone (iPhone SE, 667px): the tiles keep a size a finger can aim at, and the plan places
+   and the arrow row give up a little height instead. The page scrolls by a few px with the tip up. */
+@media (max-height: 700px) {
+  .game-frame[data-screen="bird"] .game-scene {
+    height: 222px;
+  }
+
+  .game-frame[data-screen="bird"] .code-chip,
+  .game-frame[data-screen="bird"] .code-place {
+    height: 56px;
+  }
+
+  .game-frame[data-screen="bird"] .game-tray .pick.is-mid,
+  .game-frame[data-screen="bird"] .code-go {
+    min-height: 66px;
+  }
+}
+
+/* An iPad on its side: the whole game is drawn at 1.2 (see "Games fill the screen"), so the arrows
+   and the plan give back height (they do not need to be 98px on an iPad) and the scene a little,
+   and board, plan and Go stay on one screen with the tiles still the biggest thing. */
+@media (min-width: 768px) and (orientation: landscape) {
+  .game-frame[data-screen="bird"] .game-scene {
+    height: clamp(220px, calc((100svh - 470px) / 1.2), 300px);
+  }
+
+  .game-frame[data-screen="bird"] .code-chip,
+  .game-frame[data-screen="bird"] .code-place {
+    height: 54px;
+  }
+
+  .game-frame[data-screen="bird"][data-screen] .game-tray .pick.is-mid,
+  .game-frame[data-screen="bird"][data-screen] .code-go {
+    width: 64px;
+    min-height: 64px;
+  }
+}
+
+/* The child has waited with a full plan: Go breathes, not the arrows, since Go is what is left. */
+.game-frame[data-screen="bird"][data-plan-full="true"] .game-tray[data-nudge="true"] .pick {
+  animation: none;
+}
+
+.game-frame[data-screen="bird"][data-plan-full="true"] .game-tray[data-nudge="true"] .code-go {
+  animation: game-pulse 1s ease 2;
+}
+
+.game-frame[data-screen="bird"] .pick-art svg {
+  width: 100%;
+  height: 100%;
+}
+
 @keyframes game-wiggle-a {
   0%,
   100% {
