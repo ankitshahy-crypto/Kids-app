@@ -166,7 +166,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
     },
     /**
      * A wrong tap. It names what was tapped, so the miss still teaches. From the second miss it
-     * also says the instruction again.
+     * also says the instruction again (unless what was said is the instruction: not twice over).
      */
     miss(said: Cue[] = []) {
       missRef.current += 1;
@@ -174,7 +174,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
       setNudge(false);
       playEffect("boop", settingsRef.current);
       feel("think");
-      const again = missRef.current >= 2 ? lineRef.current : [];
+      const again = missRef.current >= 2 ? lineRef.current.filter((cue) => !said.some((it) => it.text === cue.text)) : [];
       if (said.length + again.length > 0) speak.line([...said, ...again]);
       arm();
     },
@@ -242,8 +242,18 @@ export function useRoundState<T>(round: number, initial: T): [T, (next: T | ((cu
   return [value, set];
 }
 
-/** A number that is new each time a game opens: it picks the rounds, so no two plays are alike. */
+/**
+ * A number that is new each time a game opens: it picks the rounds, so no two plays are alike.
+ * For the tests only, in a development build, `littlenest-salt` pins it, so a test can play the
+ * one board it is about (one kind of bug, say).
+ */
 export function newSalt(): number {
+  try {
+    const pinned = import.meta.env.DEV ? window.localStorage.getItem("littlenest-salt") : null;
+    if (pinned !== null && /^\d+$/.test(pinned)) return Number(pinned);
+  } catch {
+    // No storage (a private window, say): a fresh number, as ever.
+  }
   return Math.floor(Math.random() * 100000);
 }
 

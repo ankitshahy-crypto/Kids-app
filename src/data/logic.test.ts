@@ -5,6 +5,7 @@ import {
   birdRounds,
   boardFamily,
   boardLibrary,
+  bugPlan,
   checkPlan,
   logicLevel,
   nextStepHome,
@@ -22,6 +23,15 @@ import {
   trail,
   walk,
 } from "./logic";
+import type { BirdRound, Dir } from "./logic";
+
+/** What the child does to a bug round's plan: fills the empty place, takes the extra arrow off, or turns the wrong one. */
+function mend(round: BirdRound): Dir[] {
+  const plan = bugPlan(round);
+  const at = round.bugIndex ?? 0;
+  if (round.bugKind === "extra") return [...plan.slice(0, at), ...plan.slice(at + 1)].filter((dir): dir is Dir => dir !== null);
+  return plan.map((dir, index) => (index === at ? round.fix : dir)).filter((dir): dir is Dir => dir !== null);
+}
 
 describe("think and code levels", () => {
   it("keeps ages 3 and 4 on short puzzles and ages 5 to 7 on the longer set", () => {
@@ -88,7 +98,7 @@ describe("guide the bird home", () => {
         const tail = round.path.length - round.shown.length;
         expect(round.shown).toEqual(round.path.slice(0, round.shown.length));
         expect(round.choices).toHaveLength(level === "early" ? 2 : 3);
-        const right = round.choices.filter((ending) => checkPlan(round, program(round, ending, false)).ok);
+        const right = round.choices.filter((ending) => checkPlan(round, program(round, ending)).ok);
         expect(right, `${level} ${salt}`).toHaveLength(1);
         for (const ending of round.choices) {
           expect(ending).toHaveLength(tail);
@@ -96,14 +106,14 @@ describe("guide the bird home", () => {
           expect(differs.length).toBeLessThanOrEqual(1);
           // A wrong ending goes wrong at the arrow that differs, so that is the arrow marked when it is walked.
           if (differs.length === 1) {
-            const check = checkPlan(round, program(round, ending, false));
+            const check = checkPlan(round, program(round, ending));
             expect(check.ok).toBe(false);
             if (!check.ok) expect(check.at).toBe(round.shown.length + differs[0]);
           }
         }
         expect(new Set(round.choices.map((ending) => ending.join())).size).toBe(round.choices.length);
         // Nothing runs until an ending is picked.
-        expect(program(round, [], false)).toEqual([]);
+        expect(program(round, [])).toEqual([]);
       }
     }
     // The ending to predict can be as short as one arrow.
@@ -119,11 +129,12 @@ describe("guide the bird home", () => {
         const rounds = birdRounds(level, salt);
         plays.add(`${level}:${rounds.map((round) => `${round.start.x}${round.start.y}${round.path.join("")}`).join("|")}`);
         for (const round of rounds) {
-          const dirs = round.mode === "loop" ? program(round, round.path, false) : round.path;
+          const dirs = round.mode === "loop" ? program(round, round.path) : round.path;
           expect(reachesNest(round, dirs), `${round.id} salt ${salt}`).toBe(true);
           if (round.mode === "bug") {
-            expect(reachesNest(round, program(round, [], false))).toBe(false);
-            expect(reachesNest(round, program(round, [], true))).toBe(true);
+            // As first shown it does not get home; mended (each kind its own way), it does.
+            expect(reachesNest(round, program(round, bugPlan(round)))).toBe(false);
+            expect(reachesNest(round, program(round, mend(round)))).toBe(true);
           }
         }
         // No two boards of one play are the same board, turned or not.
@@ -146,7 +157,7 @@ describe("guide the bird home", () => {
     for (const round of rounds.slice(0, 3)) expect(reachesNest(round, round.path)).toBe(true);
     expect(rounds[3].shown).toHaveLength(2);
     expect(rounds[3].choices).toHaveLength(3);
-    const loop = program(rounds[4], rounds[4].path, false);
+    const loop = program(rounds[4], rounds[4].path);
     expect(loop).toEqual(["right", "right", "right"]);
     expect(rounds[4].repeat).toBe(3);
     expect(reachesNest(rounds[4], loop)).toBe(true);
@@ -155,16 +166,46 @@ describe("guide the bird home", () => {
     // Never the first or the last arrow: there is a step to watch before it goes wrong.
     expect(bug.bugIndex).toBeGreaterThan(0);
     expect(bug.bugIndex).toBeLessThan(bug.path.length - 1);
-    const wrong = program(bug, [], false);
-    const fixed = program(bug, [], true);
-    expect(wrong).not.toEqual(fixed);
-    expect(wrong.filter((dir, index) => dir !== fixed[index])).toHaveLength(1);
+    const shown = bugPlan(bug);
+    const wrong = program(bug, shown);
     expect(reachesNest(bug, wrong)).toBe(false);
-    expect(reachesNest(bug, fixed)).toBe(true);
-    // The wrong arrow is seen to be wrong: the animal walks away from the nest, or off the edge, right there.
-    const check = checkPlan(bug, wrong);
-    expect(check.ok).toBe(false);
-    if (!check.ok) expect(check.at).toBe(bug.bugIndex);
+    expect(reachesNest(bug, bug.path)).toBe(true);
+    if (bug.bugKind === "missing") {
+      // One arrow is missing: an empty place where it goes, and the plan stops short.
+      expect(shown).toHaveLength(bug.path.length);
+      expect(shown[bug.bugIndex ?? -1]).toBeNull();
+      expect(bug.fix).toBe(bug.path[bug.bugIndex ?? -1]);
+      const check = checkPlan(bug, wrong);
+      expect(check.ok).toBe(false);
+    } else {
+      // A wrong or an extra arrow is seen to be wrong: the animal walks away from the nest, or off
+      // the edge, at that very arrow.
+      expect(shown).toHaveLength(bug.bugKind === "extra" ? bug.path.length + 1 : bug.path.length);
+      const check = checkPlan(bug, wrong);
+      expect(check.ok).toBe(false);
+      if (!check.ok) expect(check.at).toBe(bug.bugIndex);
+    }
+  });
+
+  it("has all three kinds of bug across plays, and each is mended by one change", () => {
+    const kinds = new Set<string>();
+    for (let salt = 0; salt < 60; salt += 1) {
+      const bug = birdRounds("later", salt)[5];
+      kinds.add(bug.bugKind ?? "none");
+      const shown = bugPlan(bug);
+      const mended = mend(bug);
+      expect(mended, `${bug.id} salt ${salt}`).toEqual(bug.path);
+      // A wrong or an extra arrow is seen to be wrong at that very arrow, in every play.
+      if (bug.bugKind !== "missing") expect(checkPlan(bug, program(bug, shown)), `${bug.id} salt ${salt}`).toMatchObject({ ok: false, at: bug.bugIndex });
+      // One change: the plans differ in one place (a turn or a fill), or by one arrow (an extra).
+      if (bug.bugKind === "extra") {
+        expect(shown).toHaveLength(mended.length + 1);
+        expect([...shown.slice(0, bug.bugIndex ?? 0), ...shown.slice((bug.bugIndex ?? 0) + 1)]).toEqual(mended);
+      } else {
+        expect(shown.filter((dir, index) => dir !== mended[index])).toHaveLength(1);
+      }
+    }
+    expect([...kinds].sort()).toEqual(["extra", "missing", "turn"]);
   });
 
   it("says where a plan goes wrong: off the edge, away from the nest, or short of it", () => {

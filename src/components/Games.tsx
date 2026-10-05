@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { newSalt } from "../game/kit";
 import type { Settings } from "../settings";
 import { Illustration } from "../illustrations";
 import { nextBaby } from "../data/games";
@@ -95,8 +96,9 @@ export function Games({
 }) {
   const [game, setGame] = useState<GameId | "home">("home");
   // A number that is new each time a game is opened: it picks the round's word or letter and shuffles the
-  // answers, so no two plays are alike. (Every game used to open on the same round, answer first.)
-  const [plays, setPlays] = useState(() => Math.floor(Math.random() * 1000));
+  // answers, so no two plays are alike. (Every game used to open on the same round, answer first.) The
+  // kit's, so the tests can pin it to play one known game.
+  const [plays, setPlays] = useState(newSalt);
   const [board, setBoard] = useState<BuildActivity>("move");
   const open = (next: GameId, build?: BuildActivity) => {
     if (locked?.(next)) {
@@ -104,7 +106,7 @@ export function Games({
       return;
     }
     onEnter(next);
-    setPlays((count) => count + 1);
+    setPlays(newSalt());
     if (build) setBoard(build);
     setGame(next);
   };

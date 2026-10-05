@@ -4,6 +4,7 @@ import { playPrompt, playWordId, promptCue, type Cue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import {
   birdRounds,
+  bugPlan,
   checkPlan,
   logicLevel,
   logicManifestEntries,
@@ -157,13 +158,31 @@ function codeSay(id: string): Cue {
 
 const CODE_LINES: Record<string, string> = Object.fromEntries(logicManifestEntries().map((entry) => [entry.id, entry.say]));
 
-function lineFor(round: BirdRound): Cue[] {
-  if (round.mode === "plan") return [codeSay("code-plan")];
-  if (round.mode === "predict") return [codeSay("code-predict")];
-  if (round.mode === "loop") return [codeSay("code-loop")];
-  if (round.mode === "bug") return [codeSay("code-bug")];
+/**
+ * What the round asks, as things stand: said when the round opens, again when the child waits or
+ * presses the speaker, and from the second miss. It follows the plan, so it never asks for what is
+ * already done: in a bug round an empty place is to be filled, one arrow too many is to be tapped
+ * off, else a wrong one is to be tapped off (and its place filled); a plan ready to run, in any
+ * round, is to be run.
+ */
+function lineFor(round: BirdRound, plan: (Dir | null)[], queue: Dir[]): Cue[] {
+  if (round.mode === "bug") {
+    if (plan.includes(null)) return [codeSay("code-bug-missing")];
+    if (plan.length > round.path.length) return [codeSay("code-bug-extra")];
+    return [codeSay(checkPlan(round, program(round, plan)).ok ? "code-go" : "code-bug")];
+  }
+  if (round.mode === "plan") return [codeSay(queue.length >= round.path.length ? "code-go" : "code-plan")];
+  if (round.mode === "predict") return [codeSay(queue.length > 0 ? "code-go" : "code-predict")];
+  if (round.mode === "loop") return [codeSay(queue.length > 0 ? "code-go" : "code-loop")];
   return [codeSay("code-bird")];
 }
+
+/**
+ * After an arrow comes off a bug round's plan the row closes up, and the arrow next to it slides
+ * under the finger: a second tap (a double tap, or a tap that was a touch late) would take that one
+ * too. Taps on the row are let go for this long after.
+ */
+const REFLOW_MS = 400;
 
 type Walk = { step: number; cell: Cell };
 
@@ -196,11 +215,22 @@ function BirdGame({
   const list = useMemo(() => birdRounds(level, salt), [level, salt]);
   const rounds = useRounds(list);
   const round = rounds.round;
-  const coach = useCoach(settingsRef, lineFor(round), rounds.index);
+  const [queue, setQueue] = useRoundState<Dir[]>(rounds.index, []);
+  /**
+   * Bug: the plan as the child has it, with `null` for an empty place. It starts as the plan shown
+   * (an arrow wrong, one too many, or one missing) and is mended on the page: a tapped arrow leaves
+   * an empty place, or comes off when there are too many, and a tapped arrow key fills an empty
+   * place.
+   */
+  const [plan, setPlan] = useRoundState<(Dir | null)[]>(rounds.index, bugPlan(round));
+  /** Bug: the empty place an arrow key fills, when the child has chosen one (by tapping it, or by making it). */
+  const [target, setTarget] = useRoundState<number | null>(rounds.index, null);
+  /** Bug: the empty place an arrow key fills: the chosen one while it is empty, else the first. */
+  const fillAt = round.mode === "bug" ? (target !== null && plan[target] === null ? target : plan.indexOf(null)) : -1;
+  const line = lineFor(round, plan, queue);
+  const coach = useCoach(settingsRef, line, rounds.index);
   useFinish(rounds.finished, settingsRef, coach, onDone);
   const [pos, setPos] = useRoundState<Cell>(rounds.index, round.start);
-  const [queue, setQueue] = useRoundState<Dir[]>(rounds.index, []);
-  const [fixed, setFixed] = useRoundState(rounds.index, false);
   const [home, setHome] = useRoundState(rounds.index, false);
   /** Where the last run went wrong: the arrow's place and why, until the plan is changed. */
   const [wrong, setWrong] = useRoundState<{ at: number; why: "off" | "away" | "short" } | null>(rounds.index, null);
@@ -210,6 +240,8 @@ function BirdGame({
   const wiggle = useWiggle();
   const runId = useRef(0);
   const later = useLater();
+  /** When an arrow last came off the plan and the row closed up (see REFLOW_MS). */
+  const reflowed = useRef(0);
   useEffect(() => () => void (runId.current += 1), []);
 
   // The tests' quick setting walks fast, but not so fast that a step cannot be seen. Reduced motion
@@ -269,7 +301,20 @@ function BirdGame({
   const queueDir = (dir: Dir) => {
     if (home || running) return;
     wiggle.still();
-    if (round.mode === "bug" || round.mode === "predict") return;
+    if (round.mode === "predict") return;
+    if (round.mode === "bug") {
+      if (fillAt < 0) {
+        // Every place has an arrow: what is left is Go (and, if there is one too many, the run
+        // shows which).
+        wiggle.shake("go");
+        coach.touch();
+        return;
+      }
+      settle();
+      coach.touch();
+      setPlan((current) => current.map((step, at) => (at === fillAt ? dir : step)));
+      return;
+    }
     if (round.mode === "loop") {
       settle();
       coach.touch();
@@ -289,7 +334,11 @@ function BirdGame({
     setQueue((current) => [...current, dir]);
   };
 
-  /** Tapping an arrow in the plan takes it off, and every arrow after it. In a bug round it mends the wrong one. */
+  /**
+   * Tapping an arrow in the plan takes it off, and every arrow after it. In a bug round only that
+   * arrow goes: it leaves an empty place to fill, or, when the plan has one arrow too many, comes
+   * off altogether.
+   */
   const tapChip = (place: number) => {
     if (running || home) return;
     if (round.mode === "predict") {
@@ -297,7 +346,7 @@ function BirdGame({
       // picked ending puts it back among the choices.
       if (place < round.shown.length) {
         wiggle.shake(`chip-${place}`);
-        coach.touch(lineFor(round));
+        coach.touch(line);
         return;
       }
       settle();
@@ -306,16 +355,18 @@ function BirdGame({
       return;
     }
     if (round.mode === "bug") {
-      if (fixed) return;
-      if (place === round.bugIndex) {
-        settle();
-        setFixed(true);
-        coach.touch();
+      if (Date.now() - reflowed.current < REFLOW_MS) return;
+      settle();
+      coach.touch();
+      if (plan.length > round.path.length) {
+        reflowed.current = Date.now();
+        setPlan((current) => current.filter((_, at) => at !== place));
+        // The chosen place, if it was after this arrow, has moved up one.
+        setTarget((current) => (current !== null && current > place ? current - 1 : current));
         return;
       }
-      // Not that one: a miss, so that the hand can come to the right one.
-      wiggle.shake(`chip-${place}`);
-      coach.miss();
+      setPlan((current) => current.map((step, at) => (at === place ? null : step)));
+      setTarget(place);
       return;
     }
     settle();
@@ -323,13 +374,47 @@ function BirdGame({
     setQueue((current) => current.slice(0, place));
   };
 
+  /**
+   * Bug: a tap on an empty place. Another empty place than the one an arrow key would fill: this
+   * one is chosen instead. The one it would fill (or the only one): a miss, with the line that says
+   * what goes there, so that the hand comes to the arrow after three.
+   */
+  const tapPlace = (place: number) => {
+    if (home || running) return;
+    if (Date.now() - reflowed.current < REFLOW_MS) return;
+    wiggle.shake(`place-${place}`);
+    if (place !== fillAt) {
+      setTarget(place);
+      coach.touch();
+      return;
+    }
+    coach.miss([codeSay("code-bug-missing")]);
+  };
+
+  const planned = round.mode !== "tap";
+  /**
+   * The plan as it is on the page, one entry per place: a bug round's plan (with its empty places),
+   * a predict round's given start and picked ending, or the queue. Go runs it only with no empty
+   * place in it, so a step's number is its chip's.
+   */
+  const steps = round.mode === "bug" ? plan : round.mode === "predict" ? [...round.shown, ...queue] : queue;
+
   const go = () => {
     if (home || running) return;
-    const dirs = program(round, queue, fixed);
+    if (fillAt >= 0) {
+      // A plan with an empty place in it is not run (even one with every place empty): the place an
+      // arrow key fills is pointed at, and the line says what goes there.
+      wiggle.shake("go");
+      setWrong({ at: fillAt, why: "short" });
+      coach.miss([codeSay("code-bug-missing")]);
+      return;
+    }
+    // (A predict round's given start is in `steps` for the page; `program` puts it before the ending.)
+    const dirs = program(round, round.mode === "predict" ? queue : steps);
     if (dirs.length === 0) {
       // Nothing to run yet: the instruction again, with the wiggle.
       wiggle.shake("go");
-      coach.miss(lineFor(round));
+      coach.miss(line);
       return;
     }
     const check = checkPlan(round, dirs);
@@ -338,14 +423,22 @@ function BirdGame({
     const id = ++runId.current;
     wiggle.still();
     setWrong(null);
+    // Pressed while the animal is still walking back from the last run: it goes to the start first,
+    // and is seen there for a step, so the walk is seen to begin at the beginning.
+    const away = !sameCell(pos, round.start);
     void (async () => {
       let cell = round.start;
       const walked: Cell[] = [];
       setPos(cell);
       setTrail([]);
+      if (away) {
+        setWalking(null);
+        await sleep(pace());
+        if (runId.current !== id) return;
+      }
       // Walk every step up to and including the wrong one, so the child sees where it goes.
-      const steps = check.ok || check.why === "short" ? dirs.length : check.at + 1;
-      for (let step = 0; step < steps; step += 1) {
+      const walkedSteps = check.ok || check.why === "short" ? dirs.length : check.at + 1;
+      for (let step = 0; step < walkedSteps; step += 1) {
         if (runId.current !== id) return;
         const dir = dirs[step];
         // A loop has one arrow on the page, walked three times.
@@ -369,9 +462,8 @@ function BirdGame({
         return;
       }
       setWalking(null);
-      // Which arrow to point at: the wrong one, or the empty place after a plan that stops short. In a
-      // bug round the arrow that is wrong is the one hidden in it, so it is the one pointed at.
-      const at = round.mode === "bug" && !fixed ? (round.bugIndex ?? check.at) : round.mode === "loop" ? 0 : check.at;
+      // Which arrow to point at: the wrong one, or the empty place after a plan that stops short.
+      const at = round.mode === "loop" ? 0 : check.at;
       setWrong({ at, why: check.why });
       wiggle.shake(`chip-${at}`);
       coach.miss([codeSay(`code-${check.why}`)]);
@@ -402,17 +494,35 @@ function BirdGame({
     })();
   };
 
-  const planned = round.mode !== "tap";
   // What is shown in the places: in a predict round the given start is there before anything is picked.
-  const arrows = round.mode === "bug" ? program(round, [], fixed) : round.mode === "predict" ? [...round.shown, ...queue] : queue;
-  // Empty places show how long the plan is: one for each step it takes to get home.
-  const places = round.mode === "loop" ? 1 : round.path.length;
+  const arrows = steps;
+  // Empty places show how long the plan is: one for each step it takes to get home (a bug round
+  // with one arrow too many shows them all).
+  const places = round.mode === "loop" ? 1 : Math.max(round.path.length, steps.length);
+  /** Bug: the plan is as it was first shown, so the arrow (or the empty place) put in it is still there. */
+  const untouched = round.mode === "bug" && plan.join() === bugPlan(round).join();
+  /** Bug: the plan as the child has it gets home (by any shortest way, as `checkPlan` has it, not only the drawn one). */
+  const mended = round.mode === "bug" && checkPlan(round, program(round, plan)).ok;
   // The hand, after three misses: on the arrow a plan goes wrong at, else on an arrow that brings
   // the animal nearer the nest from where the plan so far leaves it (from where it stands, in a tap
   // round). Any shortest way home is right, as checkPlan has it, not only the drawn one.
   const hint = (() => {
     if (!coach.reveal || home) return null;
-    if (round.mode === "bug") return fixed ? null : { chip: round.bugIndex ?? 0 };
+    if (round.mode === "bug") {
+      // The empty place first: the arrow that makes the plan work with the arrows after it, or, if
+      // those are wrong too, any step nearer the nest from where the arrows before it lead. Then the
+      // arrow the plan goes wrong at.
+      if (fillAt >= 0) {
+        const fills = DIRS.find((dir) => checkPlan(round, program(round, plan.map((step, at) => (at === fillAt ? dir : step)))).ok);
+        const way = fills ?? nextStepHome(round, walkTo(round, program(round, plan.slice(0, fillAt))));
+        return way ? { arrow: way } : null;
+      }
+      const check = checkPlan(round, program(round, plan));
+      if (check.ok) return null;
+      if (check.why !== "short") return { chip: check.at };
+      const way = nextStepHome(round, walkTo(round, program(round, plan)));
+      return way ? { arrow: way } : null;
+    }
     if (round.mode === "predict") {
       const right = round.choices.findIndex((ending) => checkPlan(round, [...round.shown, ...ending]).ok);
       return queue.length > 0 && queue.join() === round.choices[right]?.join() ? null : { choice: right };
@@ -427,7 +537,8 @@ function BirdGame({
     const way = nextStepHome(round, walkTo(round, queue));
     return way ? { arrow: way } : null;
   })();
-  const full = (round.mode === "plan" && queue.length >= round.path.length) || (round.mode === "predict" && queue.length > 0);
+  const full =
+    (round.mode === "plan" && queue.length >= round.path.length) || (round.mode === "predict" && queue.length > 0) || (round.mode === "bug" && !plan.includes(null));
   const place = PLACES[(rounds.index + Math.abs(salt)) % PLACES.length];
   const cols = round.width;
   const rowsCount = round.height;
@@ -466,7 +577,8 @@ function BirdGame({
         "data-wrong-at": wrong ? wrong.at : undefined,
         "data-wrong-why": wrong ? wrong.why : undefined,
         "data-repeat": round.repeat,
-        "data-fixed": round.mode === "bug" && fixed ? "true" : "false",
+        "data-fixed": mended ? "true" : "false",
+        "data-bug-kind": round.bugKind ?? undefined,
         "data-running": walking ? "true" : "false",
         "data-x": pos.x,
         "data-y": pos.y,
@@ -524,13 +636,39 @@ function BirdGame({
               const dir = arrows[at];
               if (!dir) {
                 const next = wrong?.why === "short" && wrong.at === at;
+                if (round.mode !== "bug") {
+                  return (
+                    <span key={`place-${at}`} className="code-place" data-place={at} data-next={next ? "true" : "false"}>
+                      {at + 1}
+                    </span>
+                  );
+                }
+                // Bug: an empty place in the plan, where an arrow is missing or one was tapped off. It
+                // can be tapped (to choose it, or to hear what goes there), and the one an arrow key
+                // fills is marked when there is more than one; that is the one the hand sits in. The
+                // pulse (after Go pointed at it) is keyed on the misses so that it is seen each time.
+                const fills = at === fillAt;
+                const several = arrows.filter((step) => step === null).length > 1;
                 return (
-                  <span key={`place-${at}`} className="code-place" data-place={at} data-next={next ? "true" : "false"}>
-                    {at + 1}
-                  </span>
+                  <button
+                    key={`place-${at}`}
+                    type="button"
+                    className="code-place"
+                    data-place={at}
+                    data-next={next ? "true" : "false"}
+                    data-pulse={next ? (coach.misses % 2 === 1 ? "a" : "b") : "false"}
+                    data-gap="true"
+                    data-target={fills && several ? "true" : "false"}
+                    data-wiggle={wiggle.id === `place-${at}` ? (wiggle.count % 2 === 1 ? "a" : "b") : "false"}
+                    aria-label={`place ${at + 1}, empty${fills && several ? ", the arrow goes here" : ""}${next ? ", next" : ""}`}
+                    onClick={() => tapPlace(at)}
+                  >
+                    <span aria-hidden="true">{at + 1}</span>
+                    {hint && "arrow" in hint && fills ? <Hand /> : null}
+                  </button>
                 );
               }
-              const bug = round.mode === "bug" && at === round.bugIndex;
+              const bug = untouched && at === round.bugIndex;
               const given = round.mode === "predict" && at < round.shown.length;
               const marked = wrong !== null && wrong.why !== "short" && wrong.at === at;
               return (
@@ -543,12 +681,12 @@ function BirdGame({
                   data-on={walking && walking.step === at ? "true" : "false"}
                   data-wrong={marked ? "true" : "false"}
                   data-wiggle={wiggle.id === `chip-${at}` ? (wiggle.count % 2 === 1 ? "a" : "b") : "false"}
+                  // For the tests: the arrow put in the plan wrong (or one too many), while the plan is as shown.
                   data-bug={bug ? "true" : "false"}
-                  data-mended={bug && fixed ? "true" : "false"}
                   data-given={given ? "true" : "false"}
                   // The wrong arrow in a bug round is for the child to find: it is not named as wrong
                   // until a run has shown it to be.
-                  aria-label={marked ? `${dir}, wrong` : bug && fixed ? `${dir}, mended` : dir}
+                  aria-label={marked ? `${dir}, wrong` : dir}
                   onClick={() => tapChip(at)}
                 >
                   <ArrowIcon dir={dir} />
@@ -585,7 +723,7 @@ function BirdGame({
             />
           ))
         : null}
-      {round.mode !== "bug" && round.mode !== "predict"
+      {round.mode !== "predict"
         ? DIRS.map((dir) => (
             <Pick
               key={dir}
@@ -608,7 +746,8 @@ function BirdGame({
           type="button"
           className="start-button code-go"
           data-go="run"
-          data-wiggle={wiggle.id === "go" ? "true" : "false"}
+          // a/b: a new name each time, so a second press is seen to wiggle too.
+          data-wiggle={wiggle.id === "go" ? (wiggle.count % 2 === 1 ? "a" : "b") : "false"}
           data-waiting={home || running ? "true" : "false"}
           aria-disabled={home || running ? "true" : undefined}
           onClick={go}

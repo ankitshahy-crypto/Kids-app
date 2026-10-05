@@ -5711,10 +5711,6 @@ input.is-pressed,
   transform: scale(1.08);
 }
 
-.code-chip[data-mended="true"] {
-  box-shadow: 0 0 0 4px #9bd1a8;
-}
-
 .code-loop {
   margin: 0 0 0 4px;
   font-size: 26px;
@@ -6614,12 +6610,55 @@ input.is-pressed,
   animation: game-wiggle-b 0.4s ease;
 }
 
-/* A plan that stopped short: the place the next arrow belongs in breathes. */
+/* Fix it: the empty place in the middle of the plan where an arrow is missing, or where one was
+   tapped off. Dashed, so it reads as a hole in the plan, and it holds the hand when the hint comes.
+   It is a button (a tap chooses it, or asks what goes there), so the button's own padding goes. */
+.code-place[data-gap="true"] {
+  position: relative;
+  padding: 0;
+  border-color: #c9a86a;
+  background: #fff8e8;
+  color: #b08a44;
+}
+
+/* With more than one empty place, the one an arrow key fills is the marked one. */
+.code-place[data-target="true"] {
+  border-color: #e9a07d;
+  color: #c47956;
+  box-shadow: 0 0 0 3px #fde7d4;
+}
+
+.code-place[data-wiggle="a"] {
+  animation: game-wiggle-a 0.4s ease;
+}
+
+.code-place[data-wiggle="b"] {
+  animation: game-wiggle-b 0.4s ease;
+}
+
+/* A plan that stopped short: the place the next arrow belongs in breathes (after the hole
+   rule, so a hole Go pointed at breathes in the warning colour). The pulse has two names so
+   that it is seen again on the next press (an animation only starts over when its name changes). */
 .code-place[data-next="true"] {
   border-color: #e9a07d;
   color: #c47956;
   animation: game-pulse 1s ease 3;
 }
+
+.code-place[data-next="true"][data-pulse="b"] {
+  animation-name: game-pulse-b;
+}
+
+@keyframes game-pulse-b {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
 
 /* The row of arrows and Go: five things across, each as wide as a fifth of the row allows (up to
    82px, the kit's mid size). Go is the one solid green thing on the page. (The screen name twice:
@@ -6648,6 +6687,34 @@ input.is-pressed,
 }
 
 /* Go waits while the animal walks: it looks the same, since the walk is short, but a tap does nothing. */
+/* Go's wiggle (a tap with nothing to run, or with every place full): two names, so the second
+   press wiggles too. */
+.code-go[data-wiggle="a"] {
+  animation: game-wiggle-a 0.45s ease;
+}
+
+.code-go[data-wiggle="b"] {
+  animation: game-wiggle-b 0.45s ease;
+}
+
+/* Reduced motion: a wiggle is a ring instead, as the kit's picks have it, and a breathing place
+   stays marked without the pulse. (After the wiggle rules: a media query adds no weight.) */
+@media (prefers-reduced-motion: reduce) {
+  .code-chip[data-wiggle="a"],
+  .code-chip[data-wiggle="b"],
+  .code-place[data-wiggle="a"],
+  .code-place[data-wiggle="b"],
+  .code-go[data-wiggle="a"],
+  .code-go[data-wiggle="b"] {
+    animation: none;
+    outline: 3px solid #c9846a;
+  }
+
+  .code-place[data-next="true"] {
+    animation: none;
+  }
+}
+
 .game-frame[data-screen="bird"] .code-go[data-waiting="true"] {
   opacity: 0.85;
 }

@@ -121,7 +121,7 @@ const gameTips: Record<string, { start: string; end: string }> = {
   // game's Play button off the screen.
   bird: {
     // The walk is the lesson: a wrong plan is walked to where it goes wrong, and mended from there.
-    start: "They plan a path home with arrows and watch it walked. A wrong arrow is tapped off and tried again.",
+    start: "They plan a path home with arrows and watch it walked. A wrong or missing arrow is put right and tried again.",
     end: "Ask: which way did the animal go to get home?",
   },
   pattern: {
