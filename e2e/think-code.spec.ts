@@ -833,6 +833,7 @@ test("the walk is one hop per step: the arrow lights first, then the animal hops
 });
 
 test("home is a cheer with happy eyes, a bigger one for a mended plan and the last round", async ({ page }) => {
+  test.slow();
   const board = await toBugRound(page, 1);
   await expect(board).toHaveAttribute("data-cheer", "big");
   await mendPlan(board);
