@@ -54,6 +54,10 @@ async function openCoding(page: Page) {
  */
 async function mendPlan(board: Locator) {
   const path = ((await board.getAttribute("data-path")) ?? "").split(",");
+  // After an arrow comes off, taps on the row are let go for a moment (the row has closed up under
+  // the finger): the test waits that moment out, here for a tap just before it and below for its own.
+  const settled = () => board.page().waitForTimeout(450);
+  await settled();
   for (let edits = 0; edits < 12; edits += 1) {
     const slots = board.locator(".code-queue > .code-chip, .code-queue > .code-place[data-gap=true]");
     const plan = await slots.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-dir")));
@@ -61,6 +65,8 @@ async function mendPlan(board: Locator) {
     if (plan.length > path.length) {
       const extra = plan.findIndex((_, at) => [...plan.slice(0, at), ...plan.slice(at + 1)].join() === path.join());
       await slots.nth(extra >= 0 ? extra : plan.length - 1).click();
+      await expect(slots).toHaveCount(plan.length - 1);
+      await settled();
       continue;
     }
     const at = plan.findIndex((dir, index) => dir !== path[index]);
