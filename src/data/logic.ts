@@ -35,9 +35,12 @@ export type Cell = { x: number; y: number };
 /**
  * tap: each arrow moves the animal a step. plan: arrows are lined up, then run. predict: the start
  * of a plan is given and the child picks which ending gets home, then runs it. loop: one arrow,
- * run three times. bug: a plan with one wrong arrow to find.
+ * run three times. bug: a plan with one thing wrong in it to find and mend.
  */
 export type BirdMode = "tap" | "plan" | "predict" | "loop" | "bug";
+
+/** What is wrong with a bug round's plan: an arrow that turns the wrong way, one too many, or one missing. */
+export type BugKind = "turn" | "extra" | "missing";
 
 export type BirdRound = {
   id: string;
@@ -49,9 +52,12 @@ export type BirdRound = {
   /** Moves that reach the nest. For a loop this is the move inside the repeat. */
   path: Dir[];
   repeat: number;
-  /** Arrows already on the page. A bug round hides one wrong turn here; a predict round gives the start of the plan. */
+  /** Arrows already on the page. A bug round's plan with its bug in it; a predict round's given start. */
   shown: Dir[];
+  /** Bug: where the bug is in `shown` (a wrong arrow, an extra one, or the place an arrow is missing from). */
   bugIndex: number | null;
+  bugKind: BugKind | null;
+  /** Bug: the arrow that belongs at `bugIndex`, for a wrong or a missing one. */
   fix: Dir | null;
   /** Predict: the endings to choose from. Exactly one of them gets home. */
   choices: Dir[][];
@@ -242,7 +248,7 @@ export function boardLibrary(level: LogicLevel): BirdRound[] {
               const start = { x, y };
               const { end, blocked } = walk(start, path, shape.width, shape.height);
               if (blocked) continue;
-              const board: BirdRound = { id: `plan-${shape.width}x${shape.height}-${x}${y}-${path.join("")}`, mode: "plan", width: shape.width, height: shape.height, start, nest: end, path, repeat: 1, shown: [], bugIndex: null, fix: null, choices: [] };
+              const board: BirdRound = { id: `plan-${shape.width}x${shape.height}-${x}${y}-${path.join("")}`, mode: "plan", width: shape.width, height: shape.height, start, nest: end, path, repeat: 1, shown: [], bugIndex: null, bugKind: null, fix: null, choices: [] };
               // Only a shortest way home is a board: a path that doubles back (up, right, down) is a
               // detour, and the game would call the child's shorter plan wrong.
               if (checkPlan(board, path).ok) boards.push(board);
@@ -261,27 +267,63 @@ export function boardFamily(round: BirdRound): string {
   return forms.map((form) => `${form.width}x${form.height}:${form.start.x},${form.start.y}:${form.path.join("")}`).sort()[0];
 }
 
-const LOOP: BirdRound = { id: "loop-three", mode: "loop", width: 4, height: 2, start: { x: 0, y: 0 }, nest: { x: 3, y: 0 }, path: ["right"], repeat: 3, shown: [], bugIndex: null, fix: null, choices: [] };
+const LOOP: BirdRound = { id: "loop-three", mode: "loop", width: 4, height: 2, start: { x: 0, y: 0 }, nest: { x: 3, y: 0 }, path: ["right"], repeat: 3, shown: [], bugIndex: null, bugKind: null, fix: null, choices: [] };
 
-/** A plan with one wrong arrow in it. The bug is never the first or the last arrow, so there is a step before it and after it. */
+/**
+ * A plan with one thing wrong in it, for the child to find and mend. Three kinds, by the salt:
+ *
+ *  - turn: one arrow turns the wrong way (tap it off, then put the right one in its place);
+ *  - extra: one arrow too many (tap it off);
+ *  - missing: one arrow is missing, and its place is empty (put the right one in).
+ *
+ * The bug is never the first arrow, so there is a step to watch before it goes wrong, and never
+ * the last, so there is a step after it. A wrong or extra arrow is one the animal is seen to go
+ * wrong on at that very step: off the edge, or a step away from the nest.
+ */
 function bugged(round: BirdRound, salt: number): BirdRound {
+  const kinds: BugKind[] = ["turn", "extra", "missing"];
+  const bugKind = kinds[mix(salt, 9) % kinds.length];
   const spots = round.path.map((_, index) => index).filter((index) => index > 0 && index < round.path.length - 1);
   const bugIndex = spots[mix(salt, 3) % spots.length] ?? 1;
+  const back = (dir: Dir): Dir => ({ up: "down", down: "up", left: "right", right: "left" })[dir] as Dir;
+  if (bugKind === "missing") {
+    const shown = round.path.filter((_, index) => index !== bugIndex);
+    return { ...round, id: `bug-missing-${round.id}`, mode: "bug", shown, bugIndex, bugKind, fix: round.path[bugIndex] };
+  }
+  if (bugKind === "extra") {
+    // An arrow put in before the one at bugIndex: sideways from the step before, when that goes
+    // wrong there, else straight back.
+    const before = round.path[bugIndex - 1];
+    let shown = round.path;
+    for (const extra of [...shuffle(PERPENDICULAR[before], salt + 4), back(before)]) {
+      const tried = [...round.path.slice(0, bugIndex), extra, ...round.path.slice(bugIndex)];
+      const check = checkPlan(round, tried);
+      if (!check.ok && check.why !== "short" && check.at === bugIndex) {
+        shown = tried;
+        break;
+      }
+    }
+    return { ...round, id: `bug-extra-${round.id}`, mode: "bug", shown, bugIndex, bugKind, fix: null };
+  }
   const right = round.path[bugIndex];
-  // The wrong arrow is one the animal is seen to go wrong on at that very step: off the edge, or a
-  // step away from the nest. A sideways arrow when one is wrong there, else straight back.
-  const back = { up: "down", down: "up", left: "right", right: "left" }[right] as Dir;
-  const sideways = shuffle(PERPENDICULAR[right], salt + 4);
   let shown = round.path;
-  for (const wrong of [...sideways, back]) {
+  for (const wrong of [...shuffle(PERPENDICULAR[right], salt + 4), back(right)]) {
     const tried = round.path.map((dir, index) => (index === bugIndex ? wrong : dir));
-    const check = checkPlan({ ...round, shown: tried }, tried);
-    if (!check.ok && check.at === bugIndex) {
+    const check = checkPlan(round, tried);
+    if (!check.ok && check.why !== "short" && check.at === bugIndex) {
       shown = tried;
       break;
     }
   }
-  return { ...round, id: `bug-${round.id}`, mode: "bug", shown, bugIndex, fix: right };
+  return { ...round, id: `bug-turn-${round.id}`, mode: "bug", shown, bugIndex, bugKind, fix: right };
+}
+
+/** A bug round's plan as it is first shown: the arrows, with an empty place where one is missing. */
+export function bugPlan(round: BirdRound): (Dir | null)[] {
+  if (round.bugKind === "missing" && round.bugIndex !== null) {
+    return [...round.shown.slice(0, round.bugIndex), null, ...round.shown.slice(round.bugIndex)];
+  }
+  return [...round.shown];
 }
 
 /**
@@ -375,20 +417,19 @@ export function birdRounds(level: LogicLevel, salt = 0): BirdRound[] {
 }
 
 /**
- * Arrows that will run: a queued plan, a move repeated three times, a bug that was fixed, or the
- * given start of a plan with the ending that was picked (`queued`).
+ * Arrows that will run: a queued plan, a move repeated three times, or the given start of a plan
+ * with the ending that was picked (`queued`). A bug round's plan is the child's (`queued`), with
+ * any empty place in it left out; it starts as `bugPlan` and is mended on the page.
  */
-export function program(round: BirdRound, queued: Dir[], fixed: boolean): Dir[] {
-  if (round.mode === "predict") return queued.length === 0 ? [] : [...round.shown, ...queued];
+export function program(round: BirdRound, queued: (Dir | null)[]): Dir[] {
+  const dirs = queued.filter((dir): dir is Dir => dir !== null);
+  if (round.mode === "predict") return dirs.length === 0 ? [] : [...round.shown, ...dirs];
   if (round.mode === "loop") {
-    const body = queued[0];
+    const body = dirs[0];
     if (!body) return [];
     return Array.from({ length: round.repeat }, () => body);
   }
-  if (round.mode === "bug") {
-    return round.shown.map((dir, index) => (fixed && index === round.bugIndex && round.fix ? round.fix : dir));
-  }
-  return queued;
+  return dirs;
 }
 
 export function reachesNest(round: BirdRound, dirs: Dir[]): boolean {
@@ -586,6 +627,8 @@ export function logicManifestEntries(): { id: string; say: string }[] {
     { id: "code-plan", say: "Line up the arrows, then press go." },
     { id: "code-loop", say: "Do this move three times." },
     { id: "code-bug", say: "One arrow is wrong. Tap it, then press go." },
+    { id: "code-bug-extra", say: "One arrow too many. Tap it off, then press go." },
+    { id: "code-bug-missing", say: "One arrow is missing. Fill the empty place, then press go." },
     { id: "code-predict", say: "Which arrows take it home? Pick one, then press go." },
     { id: "code-pattern", say: "What comes next?" },
     { id: "code-order", say: "What comes first? Put the pictures in order." },

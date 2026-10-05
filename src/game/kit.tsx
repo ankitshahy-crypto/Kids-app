@@ -242,8 +242,18 @@ export function useRoundState<T>(round: number, initial: T): [T, (next: T | ((cu
   return [value, set];
 }
 
-/** A number that is new each time a game opens: it picks the rounds, so no two plays are alike. */
+/**
+ * A number that is new each time a game opens: it picks the rounds, so no two plays are alike.
+ * For the tests only, in a development build, `littlenest-salt` pins it, so a test can play the
+ * one board it is about (one kind of bug, say).
+ */
 export function newSalt(): number {
+  try {
+    const pinned = import.meta.env.DEV ? window.localStorage.getItem("littlenest-salt") : null;
+    if (pinned !== null && /^\d+$/.test(pinned)) return Number(pinned);
+  } catch {
+    // No storage (a private window, say): a fresh number, as ever.
+  }
   return Math.floor(Math.random() * 100000);
 }
 

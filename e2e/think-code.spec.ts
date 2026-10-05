@@ -22,15 +22,17 @@ const older = {
   profiles: [{ ...profile.profiles[0], ageRange: "6-7" }],
 };
 
-async function install(page: Page, saved: unknown = profile, options: { quick?: boolean } = {}) {
+async function install(page: Page, saved: unknown = profile, options: { quick?: boolean; salt?: number } = {}) {
   await page.addInitScript(
-    ({ saved, quick }) => {
+    ({ saved, quick, salt }) => {
       localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
       localStorage.removeItem("kids-app-silent-hint-v1");
       // No wait for the praise between rounds (a development-build switch, see e2e/kit.ts).
       if (quick) localStorage.setItem("littlenest-quick-rounds", "1");
+      // The boards of one known play (the same kind of switch), when a test is about one of them.
+      if (salt !== undefined) localStorage.setItem("littlenest-salt", String(salt));
     },
-    { saved, quick: options.quick ?? false },
+    { saved, quick: options.quick ?? false, salt: options.salt },
   );
   await page.goto("./");
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
@@ -43,6 +45,32 @@ async function openCoding(page: Page) {
   await page.locator("[data-course=code]").click();
   await expect(page.locator("[data-screen=games]")).toHaveAttribute("data-lobby", "code");
   await expect(page.locator("[data-game=home]")).toBeVisible();
+}
+
+/**
+ * Mends a bug round the way a child who read the line would, whatever kind of bug it is: an arrow
+ * too many comes off; a wrong one is tapped off and the right one put in its empty place; a
+ * missing one is put in. Works from any state of the plan, so a test can first poke at it.
+ */
+async function mendPlan(board: Locator) {
+  const path = ((await board.getAttribute("data-path")) ?? "").split(",");
+  for (let edits = 0; edits < 12; edits += 1) {
+    const slots = board.locator(".code-queue > .code-chip, .code-queue > .code-place[data-gap=true]");
+    const plan = await slots.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-dir")));
+    if (plan.join() === path.join()) break;
+    if (plan.length > path.length) {
+      const extra = plan.findIndex((_, at) => [...plan.slice(0, at), ...plan.slice(at + 1)].join() === path.join());
+      await slots.nth(extra >= 0 ? extra : plan.length - 1).click();
+      continue;
+    }
+    const at = plan.findIndex((dir, index) => dir !== path[index]);
+    if (plan[at] !== null) {
+      await slots.nth(at).click();
+      await expect(slots.nth(at)).toHaveAttribute("data-gap", "true");
+    }
+    await board.locator(`[data-arrow=${path[at]}]`).click();
+  }
+  await expect(board).toHaveAttribute("data-fixed", "true");
 }
 
 /**
@@ -485,15 +513,31 @@ test("Go with nothing planned says the instruction, and in the bug round the oth
     await onRound(board, round + 1);
   }
   await expect(board).toHaveAttribute("data-mode", "bug");
-  // The wrong arrow is not named as wrong before it has been found.
-  await expect(board.locator("[data-bug=true]")).not.toHaveAttribute("aria-label", /wrong/i);
-  const other = board.locator(".code-chip[data-bug=false]").first();
-  await other.click();
-  await expect(other).toHaveAttribute("data-wiggle", /^(a|b)$/);
-  await expect(board).toHaveAttribute("data-misses", "1");
-  await board.locator("[data-bug=true]").click();
-  await expect(board).toHaveAttribute("data-fixed", "true");
-  await expect(board.locator("[data-bug=true]")).toHaveAttribute("aria-label", /mended/);
+  // The wrong arrow is not named as wrong before a run has found it.
+  await expect(board.locator(".code-chip[aria-label*=wrong]")).toHaveCount(0);
+  const kind = await board.getAttribute("data-bug-kind");
+  if (kind === "missing") {
+    // An empty place in the plan: Go does not run a plan with a hole in it, it points at the hole.
+    await expect(board.locator(".code-place[data-gap=true]")).toHaveCount(1);
+    await board.locator("[data-go=run]").click();
+    await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
+    await expect(board.locator(".code-place[data-gap=true]")).toHaveAttribute("data-next", "true");
+    await expect.poll(() => spokenLines(page)).toContain("one arrow is missing. fill the empty place, then press go.");
+    await expect(board).toHaveAttribute("data-misses", "1");
+  } else {
+    // Every place has an arrow: an arrow key wiggles Go, and a tapped arrow comes off (one too many)
+    // or leaves an empty place (one wrong), with no miss counted for trying.
+    await board.locator("[data-arrow=up]").click();
+    await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
+    const chips = await board.locator(".code-chip").count();
+    await board.locator(".code-chip").first().click();
+    if (kind === "extra") await expect(board.locator(".code-chip")).toHaveCount(chips - 1);
+    else await expect(board.locator(".code-place[data-gap=true]")).toHaveCount(1);
+    await expect(board).toHaveAttribute("data-misses", "0");
+  }
+  // Whatever was poked at, the plan can be mended from there.
+  await mendPlan(board);
+  await expect(board.locator(".code-place[data-gap=true]")).toHaveCount(0);
 });
 
 test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", async ({ page }, testInfo) => {
@@ -533,13 +577,113 @@ test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", as
     await board.screenshot({ path: "test-results/screenshots/code_bug.png" });
   }
   await board.locator("[data-go=run]").click();
-  // The plan is walked up to the wrong arrow, which is the one that is marked.
   await expect(board).toHaveAttribute("data-again", "true", { timeout: 5000 });
   await expect(board).toHaveAttribute("data-home", "false");
-  await expect(board.locator("[data-bug=true]")).toHaveAttribute("data-wrong", "true");
-  await board.locator("[data-bug=true]").click();
+  if ((await board.getAttribute("data-bug-kind")) === "missing") {
+    // The empty place is pointed at: a plan with a hole is not run.
+    await expect(board.locator(".code-place[data-gap=true]")).toHaveAttribute("data-next", "true");
+  } else {
+    // The plan is walked up to the wrong (or extra) arrow, which is the one that is marked.
+    await expect(board.locator("[data-bug=true]")).toHaveAttribute("data-wrong", "true");
+  }
+  await mendPlan(board);
+  await expect(board).toHaveAttribute("data-again", "false");
+  await board.locator("[data-go=run]").click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
+});
+
+/** Plays a known later-level game through to its bug round (the sixth), quick. */
+async function toBugRound(page: Page, salt: number) {
+  await install(page, older, { quick: true, salt });
+  await openCoding(page);
+  await page.locator("[data-game-tile=bird]").click();
+  const board = page.locator(".game-frame[data-screen=bird]");
+  for (let round = 0; round < 5; round += 1) {
+    if ((await board.getAttribute("data-mode")) === "predict") await solvePredict(board);
+    else await runPath(board);
+    await onRound(board, round + 1);
+  }
+  await expect(board).toHaveAttribute("data-mode", "bug");
+  return board;
+}
+
+// Three kinds of bug, each a known board (the salt pins the play). The child reads the line, runs
+// the plan to see where it goes wrong, and mends it with one change.
+test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
+  const board = await toBugRound(page, 1);
+  await expect(board).toHaveAttribute("data-bug-kind", "extra");
+  // up,left,down,left,up for a path of up,left,left,up: five arrows in five places, no hole.
+  await expect(board.locator(".code-chip")).toHaveCount(5);
+  await expect(board.locator(".code-place")).toHaveCount(0);
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-again", "true", { timeout: 5000 });
+  // Walked as far as the extra arrow (down, after up and left: a step away from the nest).
+  await expect(board).toHaveAttribute("data-wrong-at", "2");
+  await expect(board.locator(".code-chip").nth(2)).toHaveAttribute("aria-label", "down, wrong");
+  await board.locator(".code-chip").nth(2).click();
+  await expect(board.locator(".code-chip")).toHaveCount(4);
   await expect(board).toHaveAttribute("data-fixed", "true");
   await expect(board).toHaveAttribute("data-again", "false");
+  await board.locator("[data-go=run]").click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
+});
+
+test("fix it: a missing arrow has an empty place, which Go points at and an arrow fills", async ({ page }) => {
+  await installAudioSpy(page);
+  const board = await toBugRound(page, 3);
+  await expect(board).toHaveAttribute("data-bug-kind", "missing");
+  // up,_,right,right for a path of up,up,right,right: the hole is the second place, and the arrow
+  // keys are there to fill it.
+  const gap = board.locator(".code-place[data-gap=true]");
+  await expect(gap).toHaveCount(1);
+  await expect(gap).toHaveAttribute("data-place", "1");
+  await expect(board.locator("[data-arrow]")).toHaveCount(4);
+  // Go does not run a plan with a hole: the hole breathes and the line says so. Three times, and
+  // the hand comes to the arrow that goes there.
+  for (let miss = 1; miss <= 3; miss += 1) {
+    await board.locator("[data-go=run]").click();
+    await expect(board).toHaveAttribute("data-misses", String(miss));
+  }
+  await expect(gap).toHaveAttribute("data-next", "true");
+  await expect.poll(() => spokenLines(page)).toContain("one arrow is missing. fill the empty place, then press go.");
+  await expect(board.locator("[data-arrow=up] .game-hand")).toBeVisible();
+  // The wrong arrow in the hole: the plan runs and goes wrong there; tapped, the hole is back.
+  await board.locator("[data-arrow=left]").click();
+  await expect(board.locator(".code-chip")).toHaveCount(4);
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-again", "true", { timeout: 5000 });
+  await expect(board).toHaveAttribute("data-wrong-at", "1");
+  await board.locator(".code-chip").nth(1).click();
+  await expect(gap).toHaveCount(1);
+  await board.locator("[data-arrow=up]").click();
+  await expect(board).toHaveAttribute("data-fixed", "true");
+  await board.locator("[data-go=run]").click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
+});
+
+test("fix it: a wrong arrow is tapped off, leaving its place for the right one", async ({ page }) => {
+  const board = await toBugRound(page, 5);
+  await expect(board).toHaveAttribute("data-bug-kind", "turn");
+  // left,right,left,left for a path of left,up,left,left.
+  await expect(board.locator(".code-chip")).toHaveCount(4);
+  await expect(board.locator(".code-chip[data-bug=true]")).toHaveAttribute("data-dir", "right");
+  // An arrow key with every place full: Go wiggles, nothing is added.
+  await board.locator("[data-arrow=up]").click();
+  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
+  await expect(board.locator(".code-chip")).toHaveCount(4);
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-again", "true", { timeout: 5000 });
+  await expect(board).toHaveAttribute("data-wrong-at", "1");
+  await expect(board.locator(".code-chip").nth(1)).toHaveAttribute("data-wrong", "true");
+  await board.locator(".code-chip").nth(1).click();
+  const gap = board.locator(".code-place[data-gap=true]");
+  await expect(gap).toHaveAttribute("data-place", "1");
+  await expect(board.locator(".code-chip")).toHaveCount(3);
+  // Still four places on the row: the hole holds its place.
+  await expect(board.locator(".code-queue > *")).toHaveCount(4);
+  await board.locator("[data-arrow=up]").click();
+  await expect(gap).toHaveCount(0);
+  await expect(board).toHaveAttribute("data-fixed", "true");
   await board.locator("[data-go=run]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
 });

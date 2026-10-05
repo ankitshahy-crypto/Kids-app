@@ -5711,10 +5711,6 @@ input.is-pressed,
   transform: scale(1.08);
 }
 
-.code-chip[data-mended="true"] {
-  box-shadow: 0 0 0 4px #9bd1a8;
-}
-
 .code-loop {
   margin: 0 0 0 4px;
   font-size: 26px;
@@ -6614,12 +6610,24 @@ input.is-pressed,
   animation: game-wiggle-b 0.4s ease;
 }
 
-/* A plan that stopped short: the place the next arrow belongs in breathes. */
+/* Fix it: the empty place in the middle of the plan where an arrow is missing, or where one was
+   tapped off. Dashed, so it reads as a hole in the plan, and it holds the hand when the hint comes. */
+.code-place[data-gap="true"] {
+  position: relative;
+  border-style: dashed;
+  border-color: #c9a86a;
+  background: #fff8e8;
+  color: #b08a44;
+}
+
+/* A plan that stopped short: the place the next arrow belongs in breathes (after the hole
+   rule, so a hole Go pointed at breathes in the warning colour). */
 .code-place[data-next="true"] {
   border-color: #e9a07d;
   color: #c47956;
   animation: game-pulse 1s ease 3;
 }
+
 
 /* The row of arrows and Go: five things across, each as wide as a fifth of the row allows (up to
    82px, the kit's mid size). Go is the one solid green thing on the page. (The screen name twice:

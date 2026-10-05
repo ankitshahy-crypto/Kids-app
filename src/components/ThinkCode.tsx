@@ -4,6 +4,7 @@ import { playPrompt, playWordId, promptCue, type Cue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import {
   birdRounds,
+  bugPlan,
   checkPlan,
   logicLevel,
   logicManifestEntries,
@@ -161,7 +162,7 @@ function lineFor(round: BirdRound): Cue[] {
   if (round.mode === "plan") return [codeSay("code-plan")];
   if (round.mode === "predict") return [codeSay("code-predict")];
   if (round.mode === "loop") return [codeSay("code-loop")];
-  if (round.mode === "bug") return [codeSay("code-bug")];
+  if (round.mode === "bug") return [codeSay(round.bugKind === "extra" ? "code-bug-extra" : round.bugKind === "missing" ? "code-bug-missing" : "code-bug")];
   return [codeSay("code-bird")];
 }
 
@@ -200,7 +201,13 @@ function BirdGame({
   useFinish(rounds.finished, settingsRef, coach, onDone);
   const [pos, setPos] = useRoundState<Cell>(rounds.index, round.start);
   const [queue, setQueue] = useRoundState<Dir[]>(rounds.index, []);
-  const [fixed, setFixed] = useRoundState(rounds.index, false);
+  /**
+   * Bug: the plan as the child has it, with `null` for an empty place. It starts as the plan shown
+   * (an arrow wrong, one too many, or one missing) and is mended on the page: a tapped arrow leaves
+   * an empty place, or comes off when there are too many, and a tapped arrow key fills the first
+   * empty place.
+   */
+  const [plan, setPlan] = useRoundState<(Dir | null)[]>(rounds.index, bugPlan(round));
   const [home, setHome] = useRoundState(rounds.index, false);
   /** Where the last run went wrong: the arrow's place and why, until the plan is changed. */
   const [wrong, setWrong] = useRoundState<{ at: number; why: "off" | "away" | "short" } | null>(rounds.index, null);
@@ -269,7 +276,21 @@ function BirdGame({
   const queueDir = (dir: Dir) => {
     if (home || running) return;
     wiggle.still();
-    if (round.mode === "bug" || round.mode === "predict") return;
+    if (round.mode === "predict") return;
+    if (round.mode === "bug") {
+      const gap = plan.indexOf(null);
+      if (gap < 0) {
+        // Every place has an arrow: what is left is Go (and, if there is one too many, the run
+        // shows which).
+        wiggle.shake("go");
+        coach.touch();
+        return;
+      }
+      settle();
+      coach.touch();
+      setPlan((current) => current.map((step, at) => (at === gap ? dir : step)));
+      return;
+    }
     if (round.mode === "loop") {
       settle();
       coach.touch();
@@ -289,7 +310,11 @@ function BirdGame({
     setQueue((current) => [...current, dir]);
   };
 
-  /** Tapping an arrow in the plan takes it off, and every arrow after it. In a bug round it mends the wrong one. */
+  /**
+   * Tapping an arrow in the plan takes it off, and every arrow after it. In a bug round only that
+   * arrow goes: it leaves an empty place to fill, or, when the plan has one arrow too many, comes
+   * off altogether.
+   */
   const tapChip = (place: number) => {
     if (running || home) return;
     if (round.mode === "predict") {
@@ -306,16 +331,11 @@ function BirdGame({
       return;
     }
     if (round.mode === "bug") {
-      if (fixed) return;
-      if (place === round.bugIndex) {
-        settle();
-        setFixed(true);
-        coach.touch();
-        return;
-      }
-      // Not that one: a miss, so that the hand can come to the right one.
-      wiggle.shake(`chip-${place}`);
-      coach.miss();
+      settle();
+      coach.touch();
+      setPlan((current) =>
+        current.length > round.path.length ? current.filter((_, at) => at !== place) : current.map((step, at) => (at === place ? null : step)),
+      );
       return;
     }
     settle();
@@ -323,13 +343,27 @@ function BirdGame({
     setQueue((current) => current.slice(0, place));
   };
 
+  /** Bug: the arrows of the plan as they run (empty places left out), and each one's place in the plan. */
+  const planned = round.mode !== "tap";
+  const steps = round.mode === "bug" ? plan : round.mode === "predict" ? [...round.shown, ...queue] : queue;
+  const stepPlace = steps.map((step, at) => (step === null ? -1 : at)).filter((at) => at >= 0);
+
   const go = () => {
     if (home || running) return;
-    const dirs = program(round, queue, fixed);
+    // (A predict round's given start is in `steps` for the page; `program` puts it before the ending.)
+    const dirs = program(round, round.mode === "predict" ? queue : steps);
     if (dirs.length === 0) {
       // Nothing to run yet: the instruction again, with the wiggle.
       wiggle.shake("go");
       coach.miss(lineFor(round));
+      return;
+    }
+    const gap = steps.indexOf(null);
+    if (gap >= 0) {
+      // A plan with an empty place in it is not run: the place is pointed at, and the line says what goes there.
+      wiggle.shake("go");
+      setWrong({ at: gap, why: "short" });
+      coach.miss([codeSay("code-bug-missing")]);
       return;
     }
     const check = checkPlan(round, dirs);
@@ -349,7 +383,7 @@ function BirdGame({
         if (runId.current !== id) return;
         const dir = dirs[step];
         // A loop has one arrow on the page, walked three times.
-        setWalking({ step: round.mode === "loop" ? 0 : step, cell });
+        setWalking({ step: round.mode === "loop" ? 0 : (stepPlace[step] ?? step), cell });
         const next = stepCell(cell, dir);
         if (!onGrid(next, round.width, round.height)) {
           // The edge: the animal bumps and stays.
@@ -369,9 +403,8 @@ function BirdGame({
         return;
       }
       setWalking(null);
-      // Which arrow to point at: the wrong one, or the empty place after a plan that stops short. In a
-      // bug round the arrow that is wrong is the one hidden in it, so it is the one pointed at.
-      const at = round.mode === "bug" && !fixed ? (round.bugIndex ?? check.at) : round.mode === "loop" ? 0 : check.at;
+      // Which arrow to point at: the wrong one, or the empty place after a plan that stops short.
+      const at = round.mode === "loop" ? 0 : (stepPlace[check.at] ?? check.at);
       setWrong({ at, why: check.why });
       wiggle.shake(`chip-${at}`);
       coach.miss([codeSay(`code-${check.why}`)]);
@@ -402,17 +435,35 @@ function BirdGame({
     })();
   };
 
-  const planned = round.mode !== "tap";
   // What is shown in the places: in a predict round the given start is there before anything is picked.
-  const arrows = round.mode === "bug" ? program(round, [], fixed) : round.mode === "predict" ? [...round.shown, ...queue] : queue;
-  // Empty places show how long the plan is: one for each step it takes to get home.
-  const places = round.mode === "loop" ? 1 : round.path.length;
+  const arrows = steps;
+  // Empty places show how long the plan is: one for each step it takes to get home (a bug round
+  // with one arrow too many shows them all).
+  const places = round.mode === "loop" ? 1 : Math.max(round.path.length, steps.length);
+  /** Bug: the plan is as it was first shown, so the arrow (or the empty place) put in it is still there. */
+  const untouched = round.mode === "bug" && plan.join() === bugPlan(round).join();
+  const mended = round.mode === "bug" && program(round, plan).join() === round.path.join();
   // The hand, after three misses: on the arrow a plan goes wrong at, else on an arrow that brings
   // the animal nearer the nest from where the plan so far leaves it (from where it stands, in a tap
   // round). Any shortest way home is right, as checkPlan has it, not only the drawn one.
   const hint = (() => {
     if (!coach.reveal || home) return null;
-    if (round.mode === "bug") return fixed ? null : { chip: round.bugIndex ?? 0 };
+    if (round.mode === "bug") {
+      // The empty place first: the arrow that makes the plan work with the arrows after it, or, if
+      // those are wrong too, any step nearer the nest from where the arrows before it lead. Then the
+      // arrow the plan goes wrong at.
+      const gap = plan.indexOf(null);
+      if (gap >= 0) {
+        const fills = DIRS.find((dir) => checkPlan(round, program(round, plan.map((step, at) => (at === gap ? dir : step)))).ok);
+        const way = fills ?? nextStepHome(round, walkTo(round, program(round, plan.slice(0, gap))));
+        return way ? { arrow: way } : null;
+      }
+      const check = checkPlan(round, program(round, plan));
+      if (check.ok) return null;
+      if (check.why !== "short") return { chip: stepPlace[check.at] ?? check.at };
+      const way = nextStepHome(round, walkTo(round, program(round, plan)));
+      return way ? { arrow: way } : null;
+    }
     if (round.mode === "predict") {
       const right = round.choices.findIndex((ending) => checkPlan(round, [...round.shown, ...ending]).ok);
       return queue.length > 0 && queue.join() === round.choices[right]?.join() ? null : { choice: right };
@@ -427,7 +478,8 @@ function BirdGame({
     const way = nextStepHome(round, walkTo(round, queue));
     return way ? { arrow: way } : null;
   })();
-  const full = (round.mode === "plan" && queue.length >= round.path.length) || (round.mode === "predict" && queue.length > 0);
+  const full =
+    (round.mode === "plan" && queue.length >= round.path.length) || (round.mode === "predict" && queue.length > 0) || (round.mode === "bug" && !plan.includes(null));
   const place = PLACES[(rounds.index + Math.abs(salt)) % PLACES.length];
   const cols = round.width;
   const rowsCount = round.height;
@@ -466,7 +518,8 @@ function BirdGame({
         "data-wrong-at": wrong ? wrong.at : undefined,
         "data-wrong-why": wrong ? wrong.why : undefined,
         "data-repeat": round.repeat,
-        "data-fixed": round.mode === "bug" && fixed ? "true" : "false",
+        "data-fixed": mended ? "true" : "false",
+        "data-bug-kind": round.bugKind ?? undefined,
         "data-running": walking ? "true" : "false",
         "data-x": pos.x,
         "data-y": pos.y,
@@ -524,13 +577,16 @@ function BirdGame({
               const dir = arrows[at];
               if (!dir) {
                 const next = wrong?.why === "short" && wrong.at === at;
+                // Bug: the empty place in the middle of the plan, where an arrow is missing.
+                const gap = round.mode === "bug" && at < arrows.length;
                 return (
-                  <span key={`place-${at}`} className="code-place" data-place={at} data-next={next ? "true" : "false"}>
+                  <span key={`place-${at}`} className="code-place" data-place={at} data-next={next ? "true" : "false"} data-gap={gap ? "true" : "false"}>
                     {at + 1}
+                    {hint && "arrow" in hint && gap ? <Hand /> : null}
                   </span>
                 );
               }
-              const bug = round.mode === "bug" && at === round.bugIndex;
+              const bug = untouched && at === round.bugIndex;
               const given = round.mode === "predict" && at < round.shown.length;
               const marked = wrong !== null && wrong.why !== "short" && wrong.at === at;
               return (
@@ -543,12 +599,12 @@ function BirdGame({
                   data-on={walking && walking.step === at ? "true" : "false"}
                   data-wrong={marked ? "true" : "false"}
                   data-wiggle={wiggle.id === `chip-${at}` ? (wiggle.count % 2 === 1 ? "a" : "b") : "false"}
+                  // For the tests: the arrow put in the plan wrong (or one too many), while the plan is as shown.
                   data-bug={bug ? "true" : "false"}
-                  data-mended={bug && fixed ? "true" : "false"}
                   data-given={given ? "true" : "false"}
                   // The wrong arrow in a bug round is for the child to find: it is not named as wrong
                   // until a run has shown it to be.
-                  aria-label={marked ? `${dir}, wrong` : bug && fixed ? `${dir}, mended` : dir}
+                  aria-label={marked ? `${dir}, wrong` : dir}
                   onClick={() => tapChip(at)}
                 >
                   <ArrowIcon dir={dir} />
@@ -585,7 +641,7 @@ function BirdGame({
             />
           ))
         : null}
-      {round.mode !== "bug" && round.mode !== "predict"
+      {round.mode !== "predict"
         ? DIRS.map((dir) => (
             <Pick
               key={dir}
