@@ -23,7 +23,7 @@ import {
   type LogicLevel,
   type PictureCard,
 } from "../data/logic";
-import { GameFrame, Hand, Pick, useCoach, useFinish, useRoundState, useRounds, useWiggle, type Mood, type SceneKind } from "../game/kit";
+import { GameFrame, Hand, lookOf, Pick, useCoach, useFinish, useRoundState, useRounds, useWiggle, type Mood, type SceneKind } from "../game/kit";
 import { Illustration, type IllustrationName } from "../illustrations";
 import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
@@ -290,7 +290,14 @@ function BirdGame({
     setTrail((cells) => [...cells, pos]);
     moveTo("hop", dir);
     setPos(next);
-    if (sameCell(next, round.nest)) arrive();
+    if (sameCell(next, round.nest)) {
+      // Home, once the hop has landed there (not at push-off): until then no tap moves it on.
+      const id = ++runId.current;
+      setWalking({ step: -1, cell: next });
+      later.run(() => {
+        if (runId.current === id) arrive();
+      }, pace());
+    }
   };
 
   /** The plan is being changed: the animal comes back to the start right away, if it was away. */
@@ -573,7 +580,7 @@ function BirdGame({
    * (not while it walks back), waiting with the child who is taking a while, else as the coach has
    * it (a puzzled tilt after a miss, idle).
    */
-  const petMood: Mood = home ? "cheer" : running ? "walk" : coach.mood === "idle" && coach.nudge ? "wait" : coach.mood;
+  const petMood: Mood = home ? "cheer" : running ? "walk" : lookOf(coach);
   // A bigger cheer for a mended plan (a bug round) and for the last round of the game.
   const bigCheer = round.mode === "bug" || rounds.index === rounds.total - 1;
   const full =
@@ -662,12 +669,12 @@ function BirdGame({
             key={rounds.index}
             className="game-host code-pet"
             data-mood={petMood}
-            data-walking={walking ? "true" : "false"}
             data-facing={facing}
             style={
               {
                 transform: `translate(${pos.x * 100}%, ${pos.y * 100}%)`,
                 "--step": `${walking?.step === -1 ? pace() / 2 : pace()}ms`,
+                "--bump": `${BUMP_MS}ms`,
               } as React.CSSProperties
             }
           >

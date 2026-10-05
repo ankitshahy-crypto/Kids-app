@@ -231,6 +231,11 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
 
 export type Coach = ReturnType<typeof useCoach>;
 
+/** How the animal looks by the coach alone: waiting when the child is taking a while, else as the coach feels. */
+export function lookOf(coach: Pick<Coach, "mood" | "nudge">): Mood {
+  return coach.mood === "idle" && coach.nudge ? "wait" : coach.mood;
+}
+
 /** A wiggle for the thing just tapped wrongly. The count lets the same thing wiggle twice in a row. */
 export function useWiggle() {
   const [state, setState] = useState({ id: "", count: 0 });
@@ -536,7 +541,7 @@ export function GameFrame({
   children?: ReactNode;
   attrs?: Record<string, string | number | undefined>;
 }) {
-  const mood: Mood = rounds.finished ? "cheer" : coach.mood === "idle" && coach.nudge ? "wait" : coach.mood;
+  const mood: Mood = rounds.finished ? "cheer" : lookOf(coach);
   return (
     <div
       className="game-frame"

@@ -730,8 +730,11 @@ test("fix it: a wrong arrow is tapped off, leaving its place for the right one",
 });
 
 /**
- * Watches the board for the order of things as a plan runs: an arrow lighting (`on:<place>`), the
- * animal moving (`at:<x>,<y>`), and its movement (`move:<hop|bump>`), as they happen on the page.
+ * Watches the board for the order of things as a plan runs: an arrow lighting (`on:<place>@<x>,<y>`,
+ * with where the animal stands as it lights), the animal moving (`at:<x>,<y>`), and its movement
+ * (`move:<hop|bump>`), as they happen on the page. (The page is read when it changes, not the
+ * change records, so the cell noted with a lit arrow is the one the animal is on in that very
+ * frame: an arrow that lit in the same frame as its move would be noted on the next cell.)
  */
 async function watchWalk(board: Locator) {
   await board.evaluate((frame) => {
@@ -746,7 +749,7 @@ async function watchWalk(board: Locator) {
       const at = `${frame.getAttribute("data-x")},${frame.getAttribute("data-y")}`;
       const move = frame.getAttribute("data-move") ?? "none";
       const face = frame.getAttribute("data-facing") ?? "";
-      if (on !== seen.on && on !== "") log.push(`on:${on}`);
+      if (on !== seen.on && on !== "") log.push(`on:${on}@${at}`);
       if (at !== seen.at) log.push(`at:${at}`);
       // (A hop after a hop has the other name, a/b, so it counts.)
       if (move !== seen.move && move !== "none") log.push(`move:${move.split("-")[0]}`);
@@ -784,13 +787,14 @@ test("the walk is one hop per step: the arrow lights first, then the animal hops
   await board.locator("[data-go=run]").click();
   await expect.poll(() => walkLog(board).then((log) => log.filter((it) => it.startsWith("at:")).length), { timeout: 10_000 }).toBe(path.length + 1);
   const log = await walkLog(board);
-  // Each arrow lights before the move it makes; every move is a hop; the moves are the path's steps.
+  // Each arrow lights while the animal still stands on the cell before the step it makes, and the
+  // move comes after; every move is a hop; the moves are the path's steps.
   const moves = log.filter((it) => it.startsWith("at:"));
   expect(moves[0]).toBe(`at:${start}`);
   for (let step = 0; step < path.length; step += 1) {
-    const lit = log.indexOf(`on:${step}`);
+    const lit = log.indexOf(`on:${step}@${moves[step].slice(3)}`);
     const moved = log.indexOf(moves[step + 1]);
-    expect(lit, `arrow ${step} lights before its step: ${log.join(" ")}`).toBeGreaterThanOrEqual(0);
+    expect(lit, `arrow ${step} lights on the cell before its step: ${log.join(" ")}`).toBeGreaterThanOrEqual(0);
     expect(lit).toBeLessThan(moved);
   }
   expect(log.filter((it) => it === "move:hop")).toHaveLength(path.length);
@@ -807,12 +811,17 @@ test("the walk is one hop per step: the arrow lights first, then the animal hops
   await expect(board).toHaveAttribute("data-x", "0");
   await expect(board).toHaveAttribute("data-y", "0");
   await board.locator("[data-arrow=left]").click();
+  await watchWalk(board);
   await board.locator("[data-go=run]").click();
   await expect(board).toHaveAttribute("data-wrong-why", "off", { timeout: 5000 });
   await expect(board).toHaveAttribute("data-wrong-at", "0");
-  await expect(board).toHaveAttribute("data-move", /^bump-(a|b)$/);
   await expect(board).toHaveAttribute("data-x", "0");
   await expect(board).toHaveAttribute("data-y", "0");
+  // (The bump lasts a moment, so the page's own note of it is what is checked.)
+  const bumped = await walkLog(board);
+  expect(bumped).toContain("move:bump");
+  expect(bumped).not.toContain("move:hop");
+  expect(bumped.filter((it) => it.startsWith("at:"))).toEqual(["at:0,0"]);
 });
 
 test("home is a cheer with happy eyes, a bigger one for a mended plan and the last round", async ({ page }) => {

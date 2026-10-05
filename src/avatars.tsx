@@ -144,7 +144,7 @@ function DuckAvatar({ mood }: Face) {
       <circle cx="60" cy="64" r="34" fill="#F6C445" />
       <ellipse cx="78" cy="74" rx="18" ry="10" fill="#F09A3A" />
       <path d="M64 74h22" stroke="#C46B22" strokeWidth="2" strokeLinecap="round" />
-      <Eyes left={48} right={68} y={58} />
+      <Eyes left={48} right={68} y={56} />
     </svg>
   );
 }
