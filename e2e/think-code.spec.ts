@@ -354,6 +354,110 @@ test("if it rains, an umbrella: each picture calls for one thing", async ({ page
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
+test("a plan can be mended and run again straight away, and the animal does not jump back mid-walk", async ({ page }) => {
+  await install(page, older, { quick: true });
+  await openCoding(page);
+  await page.locator("[data-game-tile=bird]").click();
+  const board = page.locator(".game-frame[data-screen=bird]");
+  const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
+  const start = `${await board.getAttribute("data-x")},${await board.getAttribute("data-y")}`;
+  // One arrow short, Go, and the moment it stops: the last arrow and Go again, before the animal
+  // has walked back. (A rest from the wrong run used to fire into the new one and snap the animal
+  // to the start mid-walk.)
+  for (const dir of steps.slice(0, -1)) await board.locator(`[data-arrow=${dir}]`).click();
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-wrong-why", "short", { timeout: 5000 });
+  await board.locator(`[data-arrow=${steps[steps.length - 1]}]`).click();
+  // Mending the plan brings the animal home to the start at once.
+  await expect(board).toHaveAttribute("data-x", start.split(",")[0]);
+  await expect(board).toHaveAttribute("data-y", start.split(",")[1]);
+  await board.locator("[data-go=run]").click();
+  // The tile the animal leaves is marked, the start tile first.
+  await expect(board.locator(`[data-cell="${start.replace(",", "-")}"]`)).toHaveAttribute("data-walked", "true");
+  // Watch the walk: once the animal has left the start, it does not come back to it before the next round.
+  const seen: string[] = [];
+  await expect
+    .poll(
+      async () => {
+        if ((await board.getAttribute("data-round")) !== "0") return "next";
+        seen.push(`${await board.getAttribute("data-x")},${await board.getAttribute("data-y")}`);
+        return "walking";
+      },
+      { timeout: 10_000, intervals: [40] },
+    )
+    .toBe("next");
+  const left = seen.findIndex((cell) => cell !== start);
+  expect(left).toBeGreaterThanOrEqual(0);
+  expect(seen.slice(left)).not.toContain(start);
+});
+
+test("a plan has exactly one place for each step home, on one line, on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await install(page, older, { quick: true });
+  await openCoding(page);
+  await page.locator("[data-game-tile=bird]").click();
+  const board = page.locator(".game-frame[data-screen=bird]");
+  // The second plan of ages 5 to 7 has five steps.
+  await runPath(board);
+  await onRound(board, 1);
+  const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
+  expect(steps).toHaveLength(5);
+  for (const dir of steps) await board.locator(`[data-arrow=${dir}]`).click();
+  // A sixth arrow has nowhere to go: the arrow wiggles and the plan is unchanged.
+  await board.locator(`[data-arrow=${steps[0]}]`).click();
+  await expect(board.locator(`[data-arrow=${steps[0]}]`)).toHaveAttribute("data-wiggle", /^(a|b)$/);
+  await expect(board.locator(".code-chip")).toHaveCount(5);
+  const tops = await board.locator(".code-chip").evaluateAll((chips) => chips.map((chip) => Math.round(chip.getBoundingClientRect().top)));
+  expect(new Set(tops).size).toBe(1);
+  // Go is on the screen with the plan and the arrows, not below them.
+  const go = await board.locator("[data-go=run]").boundingBox();
+  expect(go).not.toBeNull();
+  expect(go!.y + go!.height).toBeLessThanOrEqual(667 + 24);
+  const scene = await board.locator(".game-scene").boundingBox();
+  expect(scene!.y).toBeGreaterThanOrEqual(0);
+});
+
+test("with reduced motion the animal still walks a step at a time", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await install(page, older, { quick: true });
+  await openCoding(page);
+  await page.locator("[data-game-tile=bird]").click();
+  const board = page.locator(".game-frame[data-screen=bird]");
+  const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
+  for (const dir of steps) await board.locator(`[data-arrow=${dir}]`).click();
+  await board.locator("[data-go=run]").click();
+  // The lit arrow is there to be seen: the walk is not over in an instant.
+  await expect(board.locator(".code-chip[data-on=true]")).toHaveCount(1);
+  await expect(board).toHaveAttribute("data-running", "true");
+});
+
+test("Go with nothing planned says the instruction, and in the bug round the other arrows are misses", async ({ page }) => {
+  await installAudioSpy(page);
+  await install(page, older, { quick: true });
+  await openCoding(page);
+  await page.locator("[data-game-tile=bird]").click();
+  const board = page.locator(".game-frame[data-screen=bird]");
+  await board.locator("[data-go=run]").click();
+  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", "true");
+  await expect.poll(() => spokenLines(page)).toContain("line up the arrows, then press go.");
+  await expect(board).toHaveAttribute("data-misses", "1");
+  // On to the bug round.
+  for (let round = 0; round < 4; round += 1) {
+    await runPath(board);
+    await onRound(board, round + 1);
+  }
+  await expect(board).toHaveAttribute("data-mode", "bug");
+  // The wrong arrow is not named as wrong before it has been found.
+  await expect(board.locator("[data-bug=true]")).not.toHaveAttribute("aria-label", /wrong/i);
+  const other = board.locator(".code-chip[data-bug=false]").first();
+  await other.click();
+  await expect(other).toHaveAttribute("data-wiggle", /^(a|b)$/);
+  await expect(board).toHaveAttribute("data-misses", "1");
+  await board.locator("[data-bug=true]").click();
+  await expect(board).toHaveAttribute("data-fixed", "true");
+  await expect(board.locator("[data-bug=true]")).toHaveAttribute("aria-label", /mended/);
+});
+
 test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", async ({ page }, testInfo) => {
   await install(page, older, { quick: true });
   await openCoding(page);
@@ -371,7 +475,7 @@ test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", as
     expect(new Set(tops).size).toBe(1);
     // Big enough for a finger: 64px, or as near as six of them fit on a phone.
     const box = await board.locator(".code-place").first().boundingBox();
-    expect(box?.width ?? 0).toBeGreaterThanOrEqual(length === 6 ? 52 : 64);
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(length === 6 ? 50 : 64);
     await runPath(board);
     await onRound(board, length - 3);
   }

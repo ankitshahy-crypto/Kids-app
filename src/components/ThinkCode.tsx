@@ -7,6 +7,7 @@ import {
   checkPlan,
   logicLevel,
   logicManifestEntries,
+  nextStepHome,
   onGrid,
   orderFits,
   orderRounds,
@@ -144,9 +145,9 @@ export function ThinkGame({
  * for each arrow, and the arrow it is on lights up as it goes. A wrong plan is
  * walked too, as far as the wrong arrow: the animal stops right there, looks
  * puzzled, and that arrow is marked so the child can tap it off. A plan that
- * stops short leaves the animal where it stopped and shows the empty place
- * the next arrow belongs in. Nothing is scored and nothing ends: the animal
- * walks back and the plan is tried again.
+ * stops short is walked to its end and the empty place the next arrow belongs
+ * in is shown. Nothing is scored and nothing ends: after a moment the animal
+ * walks back along its own trail, and the plan is there to try again.
  */
 const PLACES: SceneKind[] = ["garden", "field", "pond", "morning"];
 
@@ -164,6 +165,17 @@ function lineFor(round: BirdRound): Cue[] {
 }
 
 type Walk = { step: number; cell: Cell };
+
+/** Where a plan leaves the animal, stopping at the edge. */
+function walkTo(round: BirdRound, dirs: Dir[]): Cell {
+  let cell = round.start;
+  for (const dir of dirs) {
+    const next = stepCell(cell, dir);
+    if (!onGrid(next, round.width, round.height)) break;
+    cell = next;
+  }
+  return cell;
+}
 
 function BirdGame({
   level,
@@ -199,8 +211,9 @@ function BirdGame({
   const later = useLater();
   useEffect(() => () => void (runId.current += 1), []);
 
-  // The tests' quick setting walks fast, but not so fast that a step cannot be seen.
-  const pace = () => (quickRounds() ? 160 : reducedMotion() ? 0 : STEP_MS);
+  // The tests' quick setting walks fast, but not so fast that a step cannot be seen. Reduced motion
+  // keeps the step time: the walk is the lesson, and only the glide and the hop are left out (CSS).
+  const pace = () => (quickRounds() ? 160 : STEP_MS);
 
   const arrive = () => {
     setHome(true);
@@ -210,7 +223,7 @@ function BirdGame({
 
   /** A tap moves the animal one step: the first rounds at ages 3–4, before any plan. */
   const tapMove = (dir: Dir) => {
-    if (home) return;
+    if (home || walking) return;
     const next = stepCell(pos, dir);
     if (!onGrid(next, round.width, round.height)) {
       wiggle.shake(dir);
@@ -224,53 +237,84 @@ function BirdGame({
     if (sameCell(next, round.nest)) arrive();
   };
 
-  const queueDir = (dir: Dir) => {
-    if (home || walking) return;
-    wiggle.still();
+  /** The plan is being changed: the animal comes back to the start right away, if it was away. */
+  const settle = () => {
+    later.cancel();
+    runId.current += 1;
+    setWalking(null);
+    setTrail([]);
+    setPos(round.start);
     setWrong(null);
-    coach.touch();
+  };
+
+  /** The animal is in the middle of running a plan (not walking back from one, which a tap may cut short). */
+  const running = walking !== null && walking.step >= 0;
+
+  const queueDir = (dir: Dir) => {
+    if (home || running) return;
+    wiggle.still();
+    if (round.mode === "bug") return;
     if (round.mode === "loop") {
+      settle();
+      coach.touch();
       setQueue([dir]);
       return;
     }
-    if (round.mode === "bug") return;
-    setQueue((current) => (current.length >= round.path.length + 2 ? current : [...current, dir]));
+    // The plan has one place for each step home, and no more: a plan can be wrong, but it
+    // cannot run past its places. A tap with every place full wiggles, so it is not a dead tap.
+    if (queue.length >= round.path.length) {
+      wiggle.shake(dir);
+      coach.miss();
+      return;
+    }
+    settle();
+    coach.touch();
+    setQueue((current) => [...current, dir]);
   };
 
   /** Tapping an arrow in the plan takes it off, and every arrow after it. In a bug round it mends the wrong one. */
   const tapChip = (place: number) => {
-    if (walking || home) return;
+    if (running || home) return;
     if (round.mode === "bug") {
+      if (fixed) return;
       if (place === round.bugIndex) {
+        settle();
         setFixed(true);
-        setWrong(null);
         coach.touch();
+        return;
       }
+      // Not that one: a miss, so that the hand can come to the right one.
+      wiggle.shake(`chip-${place}`);
+      coach.miss();
       return;
     }
-    setWrong(null);
+    settle();
     coach.touch();
     setQueue((current) => current.slice(0, place));
   };
 
   const go = () => {
-    if (home || walking) return;
+    if (home || running) return;
     const dirs = program(round, queue, fixed);
     if (dirs.length === 0) {
+      // Nothing to run yet: the instruction again, with the wiggle.
       wiggle.shake("go");
-      coach.miss();
+      coach.miss(lineFor(round));
       return;
     }
     const check = checkPlan(round, dirs);
+    // A rest from the last wrong run may still be waiting to walk the animal back: this run takes over.
+    later.cancel();
     const id = ++runId.current;
     wiggle.still();
     setWrong(null);
     void (async () => {
       let cell = round.start;
+      const walked: Cell[] = [];
       setPos(cell);
       setTrail([]);
       // Walk every step up to and including the wrong one, so the child sees where it goes.
-      const steps = check.ok ? dirs.length : check.why === "short" ? dirs.length : check.at + 1;
+      const steps = check.ok || check.why === "short" ? dirs.length : check.at + 1;
       for (let step = 0; step < steps; step += 1) {
         if (runId.current !== id) return;
         const dir = dirs[step];
@@ -279,13 +323,15 @@ function BirdGame({
         const next = stepCell(cell, dir);
         if (!onGrid(next, round.width, round.height)) {
           // The edge: the animal bumps and stays.
-          if (pace()) await sleep(pace());
+          await sleep(pace());
           break;
         }
-        setTrail((cells) => [...cells, cell]);
+        // The cell being left gets a footprint. (`cell` is about to change, so the list is copied.)
+        walked.push(cell);
+        setTrail([...walked]);
         cell = next;
         setPos(cell);
-        if (pace()) await sleep(pace());
+        await sleep(pace());
       }
       if (runId.current !== id) return;
       if (check.ok) {
@@ -299,13 +345,26 @@ function BirdGame({
       setWrong({ at, why: check.why });
       wiggle.shake(`chip-${at}`);
       coach.miss([codeSay(`code-${check.why}`)]);
-      // Then the animal walks back to the start, and the plan is there to be mended.
+      // Then, after a moment to see where it got to, the animal walks back the way it came, and the
+      // plan is there to mend.
       later.run(
         () => {
-          setTrail([]);
-          setPos(round.start);
+          void (async () => {
+            const way = [...walked].reverse();
+            for (const [index, back] of way.entries()) {
+              if (runId.current !== id) return;
+              setWalking({ step: -1, cell: back });
+              setPos(back);
+              setTrail(way.slice(index + 1).reverse());
+              await sleep(pace() / 2);
+            }
+            if (runId.current !== id) return;
+            setWalking(null);
+            setTrail([]);
+            setPos(round.start);
+          })();
         },
-        quickRounds() ? 500 : reducedMotion() ? 300 : BACK_MS,
+        quickRounds() ? 500 : BACK_MS,
       );
     })();
   };
@@ -314,19 +373,40 @@ function BirdGame({
   const arrows = round.mode === "bug" ? program(round, [], fixed) : queue;
   // Empty places show how long the plan is: one for each step it takes to get home.
   const places = round.mode === "loop" ? 1 : Math.max(round.path.length, arrows.length);
-  // The hand, after three misses: on the wrong arrow, or on the next arrow of the drawn path when
-  // the plan so far follows it, or on the first arrow that strays from it.
+  // The hand, after three misses: on the arrow a plan goes wrong at, else on an arrow that brings
+  // the animal nearer the nest from where the plan so far leaves it (from where it stands, in a tap
+  // round). Any shortest way home is right, as checkPlan has it, not only the drawn one.
   const hint = (() => {
     if (!coach.reveal || home) return null;
     if (round.mode === "bug") return fixed ? null : { chip: round.bugIndex ?? 0 };
     if (round.mode === "loop") return queue[0] === round.path[0] ? null : { arrow: round.path[0] };
-    const strays = queue.findIndex((dir, index) => dir !== round.path[index]);
-    if (strays >= 0) return { chip: strays };
-    return queue.length < round.path.length ? { arrow: round.path[queue.length] } : null;
+    if (round.mode === "tap") {
+      const way = nextStepHome(round, pos);
+      return way ? { arrow: way } : null;
+    }
+    const check = checkPlan(round, queue);
+    if (!check.ok && check.why !== "short") return { chip: check.at };
+    const way = nextStepHome(round, walkTo(round, queue));
+    return way ? { arrow: way } : null;
   })();
+  const full = round.mode === "plan" && queue.length >= round.path.length;
   const place = PLACES[(rounds.index + Math.abs(salt)) % PLACES.length];
   const cols = round.width;
   const rowsCount = round.height;
+  // The tiles are square and as big as the stage allows: the stage is measured, since CSS alone
+  // cannot fit a grid of squares to both a width and a height (the old tiles stretched to the
+  // stage and were tall and thin on a phone).
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const [cell, setCell] = useState(0);
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return undefined;
+    const measure = () => setCell(Math.floor(Math.min(stage.clientWidth / cols, stage.clientHeight / rowsCount)));
+    measure();
+    const watch = new ResizeObserver(measure);
+    watch.observe(stage);
+    return () => watch.disconnect();
+  }, [cols, rowsCount]);
 
   return (
     <GameFrame
@@ -351,11 +431,13 @@ function BirdGame({
         "data-running": walking ? "true" : "false",
         "data-x": pos.x,
         "data-y": pos.y,
+        "data-plan-full": full ? "true" : "false",
       }}
       stage={
+        <div className="code-stage" ref={stageRef}>
         <div
           className="code-field"
-          style={{ "--cols": cols, "--rows": rowsCount } as React.CSSProperties}
+          style={{ "--cols": cols, "--rows": rowsCount, width: cell ? cell * cols : undefined, height: cell ? cell * rowsCount : undefined } as React.CSSProperties}
           data-width={cols}
           data-height={rowsCount}
         >
@@ -378,8 +460,10 @@ function BirdGame({
               </div>
             );
           })}
-          {/* The animal glides from cell to cell; a tiny hop on each step, like the kit's host. */}
+          {/* The animal glides from cell to cell; a tiny hop on each step, like the kit's host. A new
+              round is a new animal (the key), so it does not glide across from the last board. */}
           <span
+            key={rounds.index}
             className="game-host code-pet"
             data-mood={home ? "cheer" : coach.mood}
             data-walking={walking ? "true" : "false"}
@@ -390,10 +474,11 @@ function BirdGame({
             </span>
           </span>
         </div>
+        </div>
       }
     >
       {planned ? (
-        <div className="code-plan" data-plan={round.mode} data-places={places}>
+        <div className="code-plan" data-plan={round.mode} data-places={places} style={{ "--places": places } as React.CSSProperties}>
           <div className="code-queue" aria-label="Your plan">
             {Array.from({ length: places }, (_, at) => {
               const dir = arrows[at];
@@ -419,7 +504,9 @@ function BirdGame({
                   data-wiggle={wiggle.id === `chip-${at}` ? (wiggle.count % 2 === 1 ? "a" : "b") : "false"}
                   data-bug={bug ? "true" : "false"}
                   data-mended={bug && fixed ? "true" : "false"}
-                  aria-label={bug && !fixed ? "Wrong arrow" : marked ? `${dir}, wrong` : dir}
+                  // The wrong arrow in a bug round is for the child to find: it is not named as wrong
+                  // until a run has shown it to be.
+                  aria-label={marked ? `${dir}, wrong` : bug && fixed ? `${dir}, mended` : dir}
                   onClick={() => tapChip(at)}
                 >
                   <ArrowIcon dir={dir} />
@@ -451,17 +538,18 @@ function BirdGame({
           ))
         : null}
       {planned ? (
+        // Go sits at the end of the row of arrows, the same size as they are and the one solid green
+        // thing on the page, so the board, the plan and Go are on one phone screen together. It is
+        // not disabled while the animal walks, which would drop a keyboard's focus; it just waits.
         <button
           type="button"
           className="start-button code-go"
           data-go="run"
           data-wiggle={wiggle.id === "go" ? "true" : "false"}
-          disabled={home || walking !== null}
+          data-waiting={home || running ? "true" : "false"}
           onClick={go}
         >
-          <span className="play-icon" aria-hidden="true">
-            <GoIcon />
-          </span>
+          <GoIcon />
           <span>Go</span>
         </button>
       ) : null}

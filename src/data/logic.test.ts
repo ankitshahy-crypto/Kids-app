@@ -3,9 +3,11 @@ import manifest from "./audioManifest.json";
 import { readingSteps, isSubjectKey } from "./subject";
 import {
   birdRounds,
+  boardFamily,
   boardLibrary,
   checkPlan,
   logicLevel,
+  nextStepHome,
   logicManifestEntries,
   logicPictures,
   logicWords,
@@ -88,10 +90,9 @@ describe("guide the bird home", () => {
             expect(reachesNest(round, program(round, [], true))).toBe(true);
           }
         }
-        // No two boards of one play are the same board turned.
-        const shapes = rounds.filter((round) => round.mode !== "loop").map((round) => `${round.width}x${round.height}:${round.path.length}`);
-        expect(new Set(rounds.map((round) => round.id)).size).toBe(rounds.length);
-        expect(shapes.length).toBeGreaterThan(0);
+        // No two boards of one play are the same board, turned or not.
+        const families = rounds.filter((round) => round.mode !== "loop").map((round) => boardFamily(round));
+        expect(new Set(families).size).toBe(families.length);
       }
       const first = birdRounds("early", salt)[2];
       corners.add(`${first.nest.x},${first.nest.y}`);
@@ -143,6 +144,23 @@ describe("guide the bird home", () => {
     const past = checkPlan(board, [...path, path[path.length - 1]]);
     expect(past.ok).toBe(false);
     if (!past.ok) expect(past.at).toBe(path.length);
+  });
+
+  it("shows the way home from wherever the animal is", () => {
+    const board = birdRounds("later")[0];
+    // From the start, the board's own first step; from the nest, nothing.
+    expect(nextStepHome(board, board.start)).toBe(board.path[0]);
+    expect(nextStepHome(board, board.nest)).toBeNull();
+    // From anywhere, a step that brings the nest nearer, and never off the grid.
+    for (let y = 0; y < board.height; y += 1) {
+      for (let x = 0; x < board.width; x += 1) {
+        const way = nextStepHome(board, { x, y });
+        if (x === board.nest.x && y === board.nest.y) continue;
+        expect(way).not.toBeNull();
+        const check = checkPlan({ ...board, start: { x, y } }, [way!]);
+        expect(check.ok || check.why === "short", `${x},${y}`).toBe(true);
+      }
+    }
   });
 
   it("takes any shortest way home, not only the one the board was drawn with", () => {

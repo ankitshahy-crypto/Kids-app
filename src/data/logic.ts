@@ -249,7 +249,7 @@ export function boardLibrary(level: LogicLevel): BirdRound[] {
 }
 
 /** Boards that are the same as each other once mirrored or turned over are one board. */
-function family(round: BirdRound): string {
+export function boardFamily(round: BirdRound): string {
   const forms = [turned(round, false, false), turned(round, true, false), turned(round, false, true), turned(round, true, true)];
   return forms.map((form) => `${form.width}x${form.height}:${form.start.x},${form.start.y}:${form.path.join("")}`).sort()[0];
 }
@@ -295,10 +295,10 @@ export function birdRounds(level: LogicLevel, salt = 0): BirdRound[] {
   const library = boardLibrary(level);
   const seen = new Set<string>();
   const pick = (filter: (round: BirdRound) => boolean, turn: number): BirdRound => {
-    const fitting = library.filter((round) => filter(round) && !seen.has(family(round)));
+    const fitting = library.filter((round) => filter(round) && !seen.has(boardFamily(round)));
     const pool = fitting.length > 0 ? fitting : library.filter(filter);
     const chosen = pool[mix(salt, turn) % pool.length];
-    seen.add(family(chosen));
+    seen.add(boardFamily(chosen));
     const spin = mix(salt, turn + 50);
     return turned(chosen, salt !== 0 && (spin & 1) === 1, salt !== 0 && (spin & 2) === 2 && chosen.height > 1);
   };
@@ -354,6 +354,22 @@ function stepsToNest(round: BirdRound): number[][] {
     }
   }
   return steps;
+}
+
+/**
+ * A step from `cell` that brings the animal nearer the nest, for the hand that shows the way after
+ * three misses. The board's own path first, when it is one of them; null on the nest.
+ */
+export function nextStepHome(round: BirdRound, cell: Cell): Dir | null {
+  const steps = stepsToNest(round);
+  const nearer = DIRS.filter((dir) => {
+    const next = stepCell(cell, dir);
+    return onGrid(next, round.width, round.height) && steps[next.y][next.x] < steps[cell.y][cell.x];
+  });
+  const walked = trail(round.start, round.path, round.width, round.height);
+  const along = walked.findIndex((step) => sameCell(step, cell));
+  const drawn = along >= 0 ? round.path[along] : undefined;
+  return drawn && nearer.includes(drawn) ? drawn : (nearer[0] ?? null);
 }
 
 export type PlanCheck =

@@ -6441,17 +6441,37 @@ input.is-pressed,
 .game-frame[data-screen="bird"] .game-stage {
   /* Room on the left for the speaker button; the rest is the board. */
   inset: 10px 12px 10px 66px;
-  display: block;
+}
+
+/* The scene is shorter here than in the other games: under it come the plan and the arrows, and all
+   three belong on one screen, so that a child can press Go and watch what it does. */
+.game-frame[data-screen="bird"] .game-scene {
+  height: clamp(190px, 100svh - 520px, 300px);
+}
+
+/* Square tiles, as many as the board has, as big as the stage allows, centered in it (the size is
+   measured in ThinkCode.tsx). Tiles that took the whole stage were tall and thin on a phone, and
+   the board read as a column chart. */
+.code-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .code-field {
   position: relative;
-  width: 100%;
-  height: 100%;
   display: grid;
   grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
   grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
   gap: 0;
+}
+
+.game-frame[data-screen="bird"] .game-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .code-field .code-cell {
@@ -6468,8 +6488,8 @@ input.is-pressed,
 }
 
 .code-field .nest-mark {
-  width: 70%;
-  bottom: 6%;
+  width: 86%;
+  bottom: 8%;
 }
 
 /* The animal sits in a cell: as wide as one cell, drawn from its bottom edge. It takes a step's
@@ -6532,6 +6552,8 @@ input.is-pressed,
   }
 }
 
+/* Reduced motion: the animal still takes a step at a time (that is the lesson), without the glide
+   between tiles or the hop. */
 @media (prefers-reduced-motion: reduce) {
   .code-pet {
     transition: none;
@@ -6550,19 +6572,23 @@ input.is-pressed,
   margin-bottom: 2px;
 }
 
+.game-frame[data-screen="bird"] .code-plan .code-queue {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+/* 64px each, or as wide as the row allows when the places would not all fit on it: six places
+   on a 375px phone are 50px. The width is the row's, not the screen's, so an iPad's zoom (which
+   draws the whole game larger) leaves the sizes in step. */
 .game-frame[data-screen="bird"] .code-chip,
 .game-frame[data-screen="bird"] .code-place {
-  width: 64px;
+  --place: min(64px, calc((100% - (var(--places) - 1) * 6px) / var(--places)));
+  width: var(--place);
   height: 64px;
   min-width: 0;
   min-height: 0;
+  flex: 0 0 var(--place);
   border-radius: 18px;
-}
-
-.game-frame[data-screen="bird"] .code-plan[data-places="6"] .code-chip,
-.game-frame[data-screen="bird"] .code-plan[data-places="6"] .code-place {
-  width: min(64px, calc((100vw - 32px - 16px - 5 * 6px) / 6));
-  height: min(64px, calc((100vw - 32px - 16px - 5 * 6px) / 6));
 }
 
 .game-frame[data-screen="bird"] .code-chip svg {
@@ -6595,12 +6621,68 @@ input.is-pressed,
   animation: game-pulse 1s ease 3;
 }
 
-/* Go: the main action, in the row with the arrows. */
+/* The row of arrows and Go: five things across, each as wide as a fifth of the row allows (up to
+   82px, the kit's mid size). Go is the one solid green thing on the page. */
+.game-frame[data-screen="bird"] .game-tray .pick.is-mid,
 .game-frame[data-screen="bird"] .code-go {
-  height: 72px;
-  width: min(100%, 300px);
-  margin-top: 4px;
-  font-size: 22px;
+  width: min(82px, calc((100% - 32px) / 5));
+  min-height: 82px;
+}
+
+.game-frame[data-screen="bird"] .code-go {
+  height: auto;
+  margin: 0;
+  padding: 4px;
+  border-radius: 18px;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.game-frame[data-screen="bird"] .code-go svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Go waits while the animal walks: it looks the same, since the walk is short, but a tap does nothing. */
+.game-frame[data-screen="bird"] .code-go[data-waiting="true"] {
+  opacity: 0.85;
+}
+
+/* A short phone (iPhone SE, 667px): the tiles keep a size a finger can aim at, and the plan places
+   and the arrow row give up a little height instead. The page scrolls by a few px with the tip up. */
+@media (max-height: 700px) {
+  .game-frame[data-screen="bird"] .game-scene {
+    height: 222px;
+  }
+
+  .game-frame[data-screen="bird"] .code-chip,
+  .game-frame[data-screen="bird"] .code-place {
+    height: 56px;
+  }
+
+  .game-frame[data-screen="bird"] .game-tray .pick.is-mid,
+  .game-frame[data-screen="bird"] .code-go {
+    min-height: 66px;
+  }
+}
+
+/* An iPad on its side: the whole game is drawn at 1.2 (see "Games fill the screen"), so the scene
+   gives back a share of the height, and board, plan and Go stay on one screen. */
+@media (min-width: 768px) and (orientation: landscape) {
+  .game-frame[data-screen="bird"] .game-scene {
+    height: clamp(170px, calc((100svh - 560px) / 1.2), 300px);
+  }
+}
+
+/* The child has waited with a full plan: Go breathes, not the arrows, since Go is what is left. */
+.game-frame[data-screen="bird"][data-plan-full="true"] .game-tray[data-nudge="true"] .pick {
+  animation: none;
+}
+
+.game-frame[data-screen="bird"][data-plan-full="true"] .game-tray[data-nudge="true"] .code-go {
+  animation: game-pulse 1s ease 2;
 }
 
 .game-frame[data-screen="bird"] .pick-art svg {
