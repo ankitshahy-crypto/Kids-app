@@ -153,7 +153,9 @@ test("arrows take the animal home, then a plan is laid out and walked step by st
   await board.locator(`[data-arrow=${first}]`).click();
   // The cells the animal walked through are marked.
   await expect(board.locator("[data-walked=true]").first()).toBeVisible();
-  await runPath(board);
+  // The rest of the way home, one tap a step. (Not the whole path again: a tap past the nest would
+  // land on the next board.)
+  for (const dir of ((await board.getAttribute("data-path")) ?? "").split(",").slice(1)) await board.locator(`[data-arrow=${dir}]`).click();
 
   // The second tap board has a turn in it; the game moves on by itself.
   await onRound(board, 1);
