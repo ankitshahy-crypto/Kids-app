@@ -63,6 +63,20 @@ async function runPath(board: Locator) {
     .toBe(true);
 }
 
+/** Predict: pick the ending that matches the board's own path, then Go. */
+async function solvePredict(board: Locator) {
+  const path = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
+  const given = await board.locator(".code-chip[data-given=true]").count();
+  const right = path.slice(given).join(",");
+  await board.locator(`.pick [data-ending="${right}"]`).click();
+  await expect(board.locator(".code-chip")).toHaveCount(path.length);
+  const round = await board.getAttribute("data-round");
+  await board.locator("[data-go=run]").click();
+  await expect
+    .poll(async () => (await board.count()) === 0 || (await board.getAttribute("data-finished")) === "true" || (await board.getAttribute("data-round")) !== round, { timeout: 10_000 })
+    .toBe(true);
+}
+
 /** The round with this number (from 0) is the one being played. */
 async function onRound(board: Locator, round: number) {
   await expect(board).toHaveAttribute("data-round", String(round), { timeout: 10_000 });
@@ -121,7 +135,7 @@ test("arrows take the animal home, then a plan is laid out and walked step by st
   const board = page.locator(".game-frame[data-screen=bird]");
   await expect(board).toHaveAttribute("data-level", "early");
   await expect(board).toHaveAttribute("data-mode", "tap");
-  await expect(board).toHaveAttribute("data-rounds", "4");
+  await expect(board).toHaveAttribute("data-rounds", "5");
   await expect(page.getByRole("heading", { name: "Take me home" })).toBeVisible();
   await expect(page.locator("[data-tip=game-bird-start]")).toBeVisible();
   // The board is a place: the child's animal stands on it, in a drawn scene.
@@ -188,6 +202,26 @@ test("arrows take the animal home, then a plan is laid out and walked step by st
 
   await onRound(board, 3);
   await runPath(board);
+
+  // Last, a plan whose start is given: the child reads the two endings and picks the one that gets
+  // home, then watches it run.
+  await onRound(board, 4);
+  await expect(board).toHaveAttribute("data-mode", "predict");
+  await expect(board.locator(".code-chip[data-given=true]")).toHaveCount(1);
+  await expect(board.locator(".pick[data-choice]")).toHaveCount(2);
+  await expect(board.locator("[data-arrow]")).toHaveCount(0);
+  const tail = ((await board.getAttribute("data-path")) ?? "").split(",").slice(1).join(",");
+  const wrongEnding = board.locator(`.pick[data-choice]:not(:has([data-ending="${tail}"]))`).first();
+  await wrongEnding.click();
+  await expect(wrongEnding).toHaveAttribute("data-chosen", "true");
+  await expect(board.locator(".code-chip")).toHaveCount(3);
+  await board.locator("[data-go=run]").click();
+  // The wrong ending is walked to where it goes wrong, like any plan, and the arrow is marked.
+  await expect(board).toHaveAttribute("data-again", "true", { timeout: 5000 });
+  const wrongAt = Number(await board.getAttribute("data-wrong-at"));
+  expect(wrongAt).toBeGreaterThanOrEqual(1);
+  await expect(board.locator(`.code-chip[data-queued="${wrongAt}"]`)).toHaveAttribute("data-wrong", "true");
+  await solvePredict(board);
   // The last round done, the kit's ending plays and the star is given.
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
   await expect(page.locator("[data-game=home]")).toBeVisible();
@@ -445,8 +479,9 @@ test("Go with nothing planned says the instruction, and in the bug round the oth
   await expect.poll(() => spokenLines(page)).toContain("line up the arrows, then press go.");
   await expect(board).toHaveAttribute("data-misses", "1");
   // On to the bug round.
-  for (let round = 0; round < 4; round += 1) {
-    await runPath(board);
+  for (let round = 0; round < 5; round += 1) {
+    if ((await board.getAttribute("data-mode")) === "predict") await solvePredict(board);
+    else await runPath(board);
     await onRound(board, round + 1);
   }
   await expect(board).toHaveAttribute("data-mode", "bug");
@@ -467,7 +502,7 @@ test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", as
   await page.locator("[data-game-tile=bird]").click();
   const board = page.locator(".game-frame[data-screen=bird]");
   await expect(board).toHaveAttribute("data-level", "later");
-  await expect(board).toHaveAttribute("data-rounds", "5");
+  await expect(board).toHaveAttribute("data-rounds", "6");
   for (const length of [4, 5, 6]) {
     await expect(board).toHaveAttribute("data-mode", "plan");
     const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
@@ -482,11 +517,17 @@ test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", as
     await runPath(board);
     await onRound(board, length - 3);
   }
+  // Three endings to read, for a five-step plan with two given.
+  await expect(board).toHaveAttribute("data-mode", "predict");
+  await expect(board.locator(".code-chip[data-given=true]")).toHaveCount(2);
+  await expect(board.locator(".pick[data-choice]")).toHaveCount(3);
+  await solvePredict(board);
+  await onRound(board, 4);
   await expect(board).toHaveAttribute("data-mode", "loop");
   await expect(board).toHaveAttribute("data-repeat", "3");
   await expect(board.locator(".code-loop")).toHaveText("× 3");
   await runPath(board);
-  await onRound(board, 4);
+  await onRound(board, 5);
   await expect(board).toHaveAttribute("data-mode", "bug");
   if (testInfo.project.name === "chromium") {
     await board.screenshot({ path: "test-results/screenshots/code_bug.png" });

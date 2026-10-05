@@ -8,6 +8,7 @@ import {
   checkPlan,
   logicLevel,
   nextStepHome,
+  predictChoices,
   logicManifestEntries,
   logicPictures,
   logicWords,
@@ -65,7 +66,7 @@ describe("guide the bird home", () => {
 
   it("starts ages 3 and 4 with two taps, straight then with a turn, and then two plans", () => {
     const rounds = birdRounds("early");
-    expect(rounds.map((round) => round.mode)).toEqual(["tap", "tap", "plan", "plan"]);
+    expect(rounds.map((round) => round.mode)).toEqual(["tap", "tap", "plan", "plan", "predict"]);
     expect(rounds[0].path.length).toBe(2);
     expect(new Set(rounds[0].path).size).toBe(1);
     expect(rounds[1].path.length).toBe(3);
@@ -73,6 +74,41 @@ describe("guide the bird home", () => {
     expect(rounds[2].path.length).toBe(2);
     expect(rounds[3].path.length).toBe(3);
     for (const round of rounds) expect(reachesNest(round, round.path)).toBe(true);
+    // The ending to predict: one arrow given, two to pick, from two endings that look different.
+    const predict = rounds[4];
+    expect(predict.shown).toHaveLength(1);
+    expect(predict.choices).toHaveLength(2);
+    expect(new Set(predict.path).size).toBe(2);
+  });
+
+  it("offers endings to a plan of which exactly one gets home, each a one-arrow change of it", () => {
+    for (const level of ["early", "later"] as const) {
+      for (let salt = 0; salt < 40; salt += 1) {
+        const round = birdRounds(level, salt).find((item) => item.mode === "predict")!;
+        const tail = round.path.length - round.shown.length;
+        expect(round.shown).toEqual(round.path.slice(0, round.shown.length));
+        expect(round.choices).toHaveLength(level === "early" ? 2 : 3);
+        const right = round.choices.filter((ending) => checkPlan(round, program(round, ending, false)).ok);
+        expect(right, `${level} ${salt}`).toHaveLength(1);
+        for (const ending of round.choices) {
+          expect(ending).toHaveLength(tail);
+          const differs = ending.map((dir, index) => (dir !== right[0][index] ? index : -1)).filter((index) => index >= 0);
+          expect(differs.length).toBeLessThanOrEqual(1);
+          // A wrong ending goes wrong at the arrow that differs, so that is the arrow marked when it is walked.
+          if (differs.length === 1) {
+            const check = checkPlan(round, program(round, ending, false));
+            expect(check.ok).toBe(false);
+            if (!check.ok) expect(check.at).toBe(round.shown.length + differs[0]);
+          }
+        }
+        expect(new Set(round.choices.map((ending) => ending.join())).size).toBe(round.choices.length);
+        // Nothing runs until an ending is picked.
+        expect(program(round, [], false)).toEqual([]);
+      }
+    }
+    // The ending to predict can be as short as one arrow.
+    const board = boardLibrary("early")[0];
+    expect(predictChoices(board, 1, 2, 0)).toHaveLength(2);
   });
 
   it("picks different boards from one play to the next, and every one can be solved", () => {
@@ -105,14 +141,16 @@ describe("guide the bird home", () => {
 
   it("gives ages 5 to 7 three plans that grow, a repeat of three, and one wrong arrow", () => {
     const rounds = birdRounds("later");
-    expect(rounds.map((round) => round.mode)).toEqual(["plan", "plan", "plan", "loop", "bug"]);
+    expect(rounds.map((round) => round.mode)).toEqual(["plan", "plan", "plan", "predict", "loop", "bug"]);
     expect(rounds.slice(0, 3).map((round) => round.path.length)).toEqual([4, 5, 6]);
     for (const round of rounds.slice(0, 3)) expect(reachesNest(round, round.path)).toBe(true);
-    const loop = program(rounds[3], rounds[3].path, false);
+    expect(rounds[3].shown).toHaveLength(2);
+    expect(rounds[3].choices).toHaveLength(3);
+    const loop = program(rounds[4], rounds[4].path, false);
     expect(loop).toEqual(["right", "right", "right"]);
-    expect(rounds[3].repeat).toBe(3);
-    expect(reachesNest(rounds[3], loop)).toBe(true);
-    const bug = rounds[4];
+    expect(rounds[4].repeat).toBe(3);
+    expect(reachesNest(rounds[4], loop)).toBe(true);
+    const bug = rounds[5];
     expect(bug.bugIndex).not.toBeNull();
     // Never the first or the last arrow: there is a step to watch before it goes wrong.
     expect(bug.bugIndex).toBeGreaterThan(0);

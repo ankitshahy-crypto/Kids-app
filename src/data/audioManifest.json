@@ -1260,7 +1260,8 @@
     "code-off": { "file": "prompts/code-off.mp3", "say": "That way goes off the edge.", "source": "neural" },
     "code-away": { "file": "prompts/code-away.mp3", "say": "That way goes away from the nest.", "source": "neural" },
     "code-short": { "file": "prompts/code-short.mp3", "say": "Not home yet. Add one more arrow.", "source": "neural" },
-    "code-home": { "file": "prompts/code-home.mp3", "say": "You made it home!", "source": "neural" }
+    "code-home": { "file": "prompts/code-home.mp3", "say": "You made it home!", "source": "neural" },
+    "code-predict": { "file": "prompts/code-predict.mp3", "say": "Which arrows take it home? Pick one, then press go.", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },
