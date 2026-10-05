@@ -139,6 +139,7 @@
     "prompts/code-bug-extra.mp3",
     "prompts/code-bug-missing.mp3",
     "prompts/code-bug.mp3",
+    "prompts/code-go.mp3",
     "prompts/code-home.mp3",
     "prompts/code-if-dark.mp3",
     "prompts/code-if-dog.mp3",
@@ -3577,7 +3578,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 16882863,
+    "shared": 16889820,
     "byAnimal": {
       "bear": 4881909,
       "bunny": 4851573,
