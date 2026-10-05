@@ -148,6 +148,7 @@
  "prompts/code-order.mp3": "What comes first? Put the pictures in order.",
  "prompts/code-pattern.mp3": "What comes next?",
  "prompts/code-plan.mp3": "Line up the arrows, then press go.",
+ "prompts/code-predict.mp3": "Which arrows take it home? Pick one, then press go.",
  "prompts/code-read.mp3": "Listen to the code. Then build it.",
  "prompts/code-repeat.mp3": "Repeat three times.",
  "prompts/code-say-hello.mp3": "Say hello.",
