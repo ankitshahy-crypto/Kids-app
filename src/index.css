@@ -1007,6 +1007,68 @@ button:focus-visible {
   display: block;
 }
 
+/* ---- Eyes: one language for every animal (avatars.tsx), driven by the mood (kit.tsx) ----
+   Open eyes blink now and then, so no face is ever frozen; a cheer closes them into two happy arcs;
+   a miss (think) sends them to the side, with the puzzled tilt of the head; waiting sends them up.
+   The moves are transforms on the eye groups, in the drawing's own units. */
+.avatar-eyes,
+.avatar-eyes-open {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.avatar-eyes {
+  transition: transform 0.25s ease;
+}
+
+/* The animal in a game blinks (a face on a list or a sheet does not: twelve faces blinking in step
+   read as a machine, and a printed one could be caught mid-blink). */
+.game-host .avatar-eyes-open {
+  animation: avatar-blink 4.8s ease-in-out infinite;
+}
+
+.avatar-eyes-happy {
+  display: none;
+}
+
+.avatar-art[data-mood="cheer"] .avatar-eyes-open {
+  display: none;
+}
+
+.avatar-art[data-mood="cheer"] .avatar-eyes-happy {
+  display: block;
+}
+
+.avatar-art[data-mood="think"] .avatar-eyes {
+  transform: translate(-3.5px, -2px);
+}
+
+.avatar-art[data-mood="wait"] .avatar-eyes {
+  transform: translateY(-3px);
+}
+
+@keyframes avatar-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95%,
+  97% {
+    transform: scaleY(0.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-host .avatar-eyes-open {
+    animation: none;
+  }
+
+  .avatar-eyes {
+    transition: none;
+  }
+}
+
 .today {
   display: flex;
   flex-direction: column;
@@ -6235,6 +6297,35 @@ input.is-pressed,
   animation: game-think 0.7s ease;
 }
 
+/* Never frozen: a slow breath while idle, a slow sway while the child takes a while. */
+.game-host[data-mood="idle"] .game-host-body {
+  animation: game-breathe 3.4s ease-in-out infinite;
+}
+
+.game-host[data-mood="wait"] .game-host-body {
+  animation: game-wait 2.6s ease-in-out infinite;
+}
+
+@keyframes game-breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.015, 1.03);
+  }
+}
+
+@keyframes game-wait {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+
 .game-stage {
   position: absolute;
   inset: 8px 10px 8px 104px;
@@ -6489,8 +6580,9 @@ input.is-pressed,
 }
 
 /* The animal sits in a cell: as wide as one cell, drawn from its bottom edge. It takes a step's
-   time to glide to the next one, which is the time its arrow stays lit. */
+   time to glide to the next one; its arrow lights a moment before and stays lit until it lands. */
 .code-pet {
+  --calm: cubic-bezier(0.22, 0.9, 0.28, 1);
   position: absolute;
   left: 0;
   top: 0;
@@ -6503,8 +6595,24 @@ input.is-pressed,
   z-index: 2;
   padding: 4px 6px;
   box-sizing: border-box;
-  transition: left 0.42s ease-in-out, top 0.42s ease-in-out;
+  /* Moved by its transform (set inline, in cells), over a step's time (--step, set inline). */
+  transition: transform var(--step, 0.48s) var(--calm);
+  will-change: transform;
   pointer-events: none;
+}
+
+/* The hop and the bump live here, between the mood (on the body) and the face. */
+.code-pet-move {
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  max-width: 100%;
+  transform-origin: 50% 90%;
+}
+
+/* Faces the way it last went. */
+.code-pet[data-facing="left"] .hero {
+  transform: scaleX(-1);
 }
 
 /* As tall as the cell allows, and never wider than it: the cells are taller than they are wide on a
@@ -6530,32 +6638,150 @@ input.is-pressed,
   max-width: 100%;
 }
 
-/* A hop with each step, so the walk reads as steps and not a slide. */
-.code-pet[data-walking="true"] .game-host-body {
-  animation: code-hop 0.42s ease infinite;
+/* One hop with each step, a step's time long: a squash as it pushes off, a stretch at the top, a
+   settle as it lands. Two names, so a second hop starts over. */
+.code-pet-move[data-move="hop-a"] {
+  animation: code-hop-a var(--step, 0.48s) var(--calm);
 }
 
-@keyframes code-hop {
+.code-pet-move[data-move="hop-b"] {
+  animation: code-hop-b var(--step, 0.48s) var(--calm);
+}
+
+@keyframes code-hop-a {
+  0% {
+    transform: translateY(0) scale(1.12, 0.88);
+  }
+  35% {
+    transform: translateY(-18%) scale(0.94, 1.08);
+  }
+  70% {
+    transform: translateY(0) scale(1.06, 0.95);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+@keyframes code-hop-b {
+  0% {
+    transform: translateY(0) scale(1.12, 0.88);
+  }
+  35% {
+    transform: translateY(-18%) scale(0.94, 1.08);
+  }
+  70% {
+    transform: translateY(0) scale(1.06, 0.95);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+/* The edge: a lean toward it (--bx, --by: which way) and back, with a squash, and no cell change.
+   Its own shape, so it is not mistaken for a step. */
+.code-pet-move[data-move="bump-a"] {
+  animation: code-bump-a var(--bump, 0.3s) var(--calm);
+}
+
+.code-pet-move[data-move="bump-b"] {
+  animation: code-bump-b var(--bump, 0.3s) var(--calm);
+}
+
+@keyframes code-bump-a {
+  0% {
+    transform: translate(0, 0) scale(1, 1);
+  }
+  40% {
+    transform: translate(calc(var(--bx, 0) * 26%), calc(var(--by, 0) * 26%)) scale(1.1, 0.9);
+  }
+  100% {
+    transform: translate(0, 0) scale(1, 1);
+  }
+}
+
+@keyframes code-bump-b {
+  0% {
+    transform: translate(0, 0) scale(1, 1);
+  }
+  40% {
+    transform: translate(calc(var(--bx, 0) * 26%), calc(var(--by, 0) * 26%)) scale(1.1, 0.9);
+  }
+  100% {
+    transform: translate(0, 0) scale(1, 1);
+  }
+}
+
+/* Home: the animal cheers (the kit's bounce, twice), and the nest glows a moment after. A mended
+   plan and the last round get the bigger cheer: three bounces, higher, and a brighter glow. */
+.game-frame[data-screen="bird"][data-cheer="big"] .code-pet[data-mood="cheer"] .game-host-body {
+  animation: code-cheer-big 0.42s ease 3;
+}
+
+@keyframes code-cheer-big {
   0%,
   100% {
     transform: translateY(0) scale(1, 1);
   }
-  40% {
-    transform: translateY(-9%) scale(0.96, 1.05);
+  45% {
+    transform: translateY(-34%) scale(0.95, 1.08);
   }
   80% {
-    transform: translateY(0) scale(1.03, 0.97);
+    transform: translateY(0) scale(1.06, 0.95);
   }
 }
 
-/* Reduced motion: the animal still takes a step at a time (that is the lesson), without the glide
-   between tiles or the hop. */
-@media (prefers-reduced-motion: reduce) {
-  .code-pet {
-    transition: none;
-  }
+/* The glow is under the nest (::before, behind the mark; ::after is the footprint), and stays
+   inside the tile, which clips: the big one is brighter and fuller, not wider. */
+.code-field .code-cell[data-nest="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 102, 0.8), rgba(255, 214, 102, 0) 70%);
+  opacity: 0;
+  pointer-events: none;
+}
 
-  .code-pet[data-walking="true"] .game-host-body {
+.code-field .code-cell[data-nest="true"] .nest-mark {
+  z-index: 1;
+}
+
+.game-frame[data-screen="bird"][data-home="true"] .code-cell[data-nest="true"]::before {
+  animation: nest-glow 0.9s ease 0.3s forwards;
+}
+
+.game-frame[data-screen="bird"][data-home="true"][data-cheer="big"] .code-cell[data-nest="true"]::before {
+  background: radial-gradient(circle, rgba(255, 205, 80, 0.95), rgba(255, 214, 102, 0) 85%);
+  animation: nest-glow 1s ease 0.3s forwards;
+}
+
+/* One thing at the nest, not two: the glow is this board's, so the kit's sparkles stay away. */
+.game-frame[data-screen="bird"] .game-sparkles {
+  display: none;
+}
+
+@keyframes nest-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+
+/* Reduced motion: the animal still takes a step at a time (that is the lesson) and still glides to
+   the next tile, without the hop, the bump or the bounce (the kit's rule below, with !important,
+   stills the body and the move wrapper) or the glow; its happy eyes stay. */
+@media (prefers-reduced-motion: reduce) {
+  .game-frame[data-screen="bird"][data-home="true"] .code-cell[data-nest="true"]::before,
+  .game-frame[data-screen="bird"][data-home="true"][data-cheer="big"] .code-cell[data-nest="true"]::before {
     animation: none;
   }
 }
@@ -6870,6 +7096,7 @@ input.is-pressed,
 @media (prefers-reduced-motion: reduce) {
   .game-host,
   .game-host-body,
+  .code-pet-move,
   .game-sparkles svg,
   .game-tray .pick,
   .pick,

@@ -1,20 +1,43 @@
 import type { JSX } from "react";
 import type { AnimalId } from "./data/animals";
+import type { Mood } from "./game/kit";
 
-function Eyes({ left = 46, right = 74, y = 62 }: { left?: number; right?: number; y?: number }) {
+const INK = "#2C3A4F";
+
+/** What every face takes: the mood its eyes show. */
+type Face = { mood: Mood };
+
+/**
+ * Every animal's eyes, so that every animal has the same eye language and a mood reads the same on
+ * each (CSS on `data-mood`, see index.css "Eyes"): open eyes that blink now and then, eyes that
+ * look aside (puzzled) or up (waiting), and a happy pair, two arcs, for a cheer. Big enough to
+ * read at the size of a board tile. `round` draws round pupils of that radius (an owl's, a frog's)
+ * instead of the oval eyes.
+ */
+function Eyes({ left = 46, right = 74, y = 62, round }: { left?: number; right?: number; y?: number; round?: number }) {
+  const rx = round ?? 6;
+  const ry = round ?? 7.4;
+  const shine = Math.max(1.4, rx * 0.34);
+  const arc = rx + 1.5;
   return (
-    <>
-      <ellipse cx={left} cy={y} rx="5" ry="6.2" fill="#2C3A4F" />
-      <ellipse cx={right} cy={y} rx="5" ry="6.2" fill="#2C3A4F" />
-      <circle cx={left + 1.6} cy={y - 2} r="1.6" fill="#fff" />
-      <circle cx={right + 1.6} cy={y - 2} r="1.6" fill="#fff" />
-    </>
+    <g className="avatar-eyes">
+      <g className="avatar-eyes-open">
+        <ellipse cx={left} cy={y} rx={rx} ry={ry} fill={INK} />
+        <ellipse cx={right} cy={y} rx={rx} ry={ry} fill={INK} />
+        <circle cx={left + rx * 0.34} cy={y - ry * 0.36} r={shine} fill="#fff" />
+        <circle cx={right + rx * 0.34} cy={y - ry * 0.36} r={shine} fill="#fff" />
+      </g>
+      <g className="avatar-eyes-happy" fill="none" stroke={INK} strokeWidth="3.2" strokeLinecap="round">
+        <path d={`M${left - arc} ${y + 1.5} q${arc} ${-ry} ${arc * 2} 0`} />
+        <path d={`M${right - arc} ${y + 1.5} q${arc} ${-ry} ${arc * 2} 0`} />
+      </g>
+    </g>
   );
 }
 
-function CatAvatar() {
+function CatAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <path d="M34 58 28 22l26 28Z" fill="#F6B07A" />
       <path d="M86 58 92 22 66 50Z" fill="#F6B07A" />
       <path d="M38 54 34 32l16 18Z" fill="#F6C3CB" />
@@ -28,9 +51,9 @@ function CatAvatar() {
   );
 }
 
-function DogAvatar() {
+function DogAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <ellipse cx="28" cy="72" rx="12" ry="20" fill="#C9845A" />
       <ellipse cx="92" cy="70" rx="12" ry="18" fill="#C9845A" />
       <circle cx="60" cy="66" r="34" fill="#E0A06A" />
@@ -42,9 +65,9 @@ function DogAvatar() {
   );
 }
 
-function FoxAvatar() {
+function FoxAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <path d="M32 56 26 18l28 30Z" fill="#F09455" />
       <path d="M88 56 94 18 66 48Z" fill="#F09455" />
       <path d="M36 52 32 28l16 18Z" fill="#F6C9B0" />
@@ -57,9 +80,9 @@ function FoxAvatar() {
   );
 }
 
-function BearAvatar() {
+function BearAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <circle cx="30" cy="36" r="14" fill="#C4A484" />
       <circle cx="90" cy="36" r="14" fill="#C4A484" />
       <circle cx="30" cy="36" r="7" fill="#E7CDB4" />
@@ -72,9 +95,9 @@ function BearAvatar() {
   );
 }
 
-function BunnyAvatar() {
+function BunnyAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <ellipse cx="42" cy="28" rx="10" ry="24" fill="#F7D5E0" />
       <ellipse cx="78" cy="28" rx="10" ry="24" fill="#F7D5E0" />
       <ellipse cx="42" cy="30" rx="5" ry="16" fill="#F8C2D2" />
@@ -87,32 +110,26 @@ function BunnyAvatar() {
   );
 }
 
-function OwlAvatar() {
+function OwlAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <path d="M36 40 28 22l18 14Z" fill="#C9B27C" />
       <path d="M84 40 92 22 74 36Z" fill="#C9B27C" />
       <ellipse cx="60" cy="70" rx="34" ry="32" fill="#E6D7A8" />
       <circle cx="46" cy="66" r="14" fill="#FFF8EE" />
       <circle cx="74" cy="66" r="14" fill="#FFF8EE" />
-      <circle cx="46" cy="66" r="6" fill="#2C3A4F" />
-      <circle cx="74" cy="66" r="6" fill="#2C3A4F" />
-      <circle cx="48" cy="64" r="2" fill="#fff" />
-      <circle cx="76" cy="64" r="2" fill="#fff" />
+      <Eyes y={66} round={6.5} />
       <path d="M60 76 54 84h12Z" fill="#E0A15A" />
     </svg>
   );
 }
 
-function FrogAvatar() {
+function FrogAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <circle cx="38" cy="40" r="16" fill="#8FCB7A" />
       <circle cx="82" cy="40" r="16" fill="#8FCB7A" />
-      <circle cx="38" cy="40" r="7" fill="#2C3A4F" />
-      <circle cx="82" cy="40" r="7" fill="#2C3A4F" />
-      <circle cx="40" cy="38" r="2" fill="#fff" />
-      <circle cx="84" cy="38" r="2" fill="#fff" />
+      <Eyes left={38} right={82} y={40} round={7.5} />
       <ellipse cx="60" cy="78" rx="36" ry="28" fill="#A8D992" />
       <path d="M40 80c8 12 32 12 40 0" fill="none" stroke="#2C3A4F" strokeWidth="3" strokeLinecap="round" />
       <ellipse cx="46" cy="74" rx="6" ry="4" fill="#F4B0AE" opacity="0.8" />
@@ -121,20 +138,20 @@ function FrogAvatar() {
   );
 }
 
-function DuckAvatar() {
+function DuckAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <circle cx="60" cy="64" r="34" fill="#F6C445" />
       <ellipse cx="78" cy="74" rx="18" ry="10" fill="#F09A3A" />
       <path d="M64 74h22" stroke="#C46B22" strokeWidth="2" strokeLinecap="round" />
-      <Eyes left={48} right={68} y={58} />
+      <Eyes left={48} right={68} y={56} />
     </svg>
   );
 }
 
-function PigAvatar() {
+function PigAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <path d="M32 50 30 26l20 16Z" fill="#F4A9B8" />
       <path d="M88 50 90 26 70 42Z" fill="#F4A9B8" />
       <circle cx="60" cy="68" r="34" fill="#F8C4D0" />
@@ -146,25 +163,22 @@ function PigAvatar() {
   );
 }
 
-function PenguinAvatar() {
+function PenguinAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <ellipse cx="60" cy="68" rx="34" ry="36" fill="#2C3A4F" />
       <ellipse cx="60" cy="76" rx="24" ry="26" fill="#FFF8EE" />
       <circle cx="46" cy="60" r="10" fill="#FFF8EE" />
       <circle cx="74" cy="60" r="10" fill="#FFF8EE" />
-      <circle cx="47" cy="61" r="4.5" fill="#2C3A4F" />
-      <circle cx="75" cy="61" r="4.5" fill="#2C3A4F" />
-      <circle cx="48.5" cy="59.5" r="1.4" fill="#fff" />
-      <circle cx="76.5" cy="59.5" r="1.4" fill="#fff" />
+      <Eyes left={47} right={75} y={61} round={5} />
       <path d="M52 72h16l-8 10Z" fill="#F09A3A" />
     </svg>
   );
 }
 
-function LionAvatar() {
+function LionAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <circle cx="60" cy="66" r="44" fill="#D98B3E" />
       <circle cx="60" cy="66" r="32" fill="#F2C069" />
       <ellipse cx="60" cy="80" rx="16" ry="12" fill="#FBE4B8" />
@@ -175,9 +189,9 @@ function LionAvatar() {
   );
 }
 
-function KoalaAvatar() {
+function KoalaAvatar({ mood }: Face) {
   return (
-    <svg className="avatar-art" viewBox="0 0 120 120" aria-hidden="true">
+    <svg className="avatar-art" data-mood={mood} viewBox="0 0 120 120" aria-hidden="true">
       <circle cx="26" cy="52" r="18" fill="#A9A6AE" />
       <circle cx="94" cy="52" r="18" fill="#A9A6AE" />
       <circle cx="26" cy="52" r="9" fill="#E9C9CF" />
@@ -189,7 +203,7 @@ function KoalaAvatar() {
   );
 }
 
-const avatars: Record<AnimalId, () => JSX.Element> = {
+const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
   cat: CatAvatar,
   dog: DogAvatar,
   fox: FoxAvatar,
@@ -204,7 +218,8 @@ const avatars: Record<AnimalId, () => JSX.Element> = {
   koala: KoalaAvatar,
 };
 
-export function Avatar({ animal }: { animal: AnimalId }) {
+/** An animal's face. `mood` is how it looks (see kit.tsx): the eyes follow it, by CSS. */
+export function Avatar({ animal, mood }: { animal: AnimalId; mood?: Mood }) {
   const Art = avatars[animal];
-  return <Art />;
+  return <Art mood={mood ?? "idle"} />;
 }

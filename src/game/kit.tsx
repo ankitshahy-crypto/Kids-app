@@ -45,7 +45,19 @@ const SOLVED_MAX_MS = 3200;
 /** How long the ending plays before the star is given. */
 const FINISH_MS = 1700;
 
-export type Mood = "idle" | "cheer" | "think";
+/**
+ * How the animal looks, so that what happened can be read with the sound off:
+ *
+ *  - idle: open eyes that blink now and then, and a slow breath (never frozen);
+ *  - wait: the child is taking a while (the nudge): eyes up, a slow sway;
+ *  - think: a miss: a puzzled tilt of the head, eyes to the side (never sad);
+ *  - cheer: a right answer: a bounce, happy eyes;
+ *  - walk: on the way somewhere (the coding board): a hop with each step.
+ *
+ * The look is CSS on `data-mood`, on the host and on the avatar's eyes (one eye language for every
+ * animal, see avatars.tsx), so any game that shows the animal gets it by passing the mood down.
+ */
+export type Mood = "idle" | "wait" | "think" | "cheer" | "walk";
 
 /**
  * For the tests only, and only in a development build: do not wait for a line to be said before the
@@ -218,6 +230,11 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
 }
 
 export type Coach = ReturnType<typeof useCoach>;
+
+/** How the animal looks by the coach alone: waiting when the child is taking a while, else as the coach feels. */
+export function lookOf(coach: Pick<Coach, "mood" | "nudge">): Mood {
+  return coach.mood === "idle" && coach.nudge ? "wait" : coach.mood;
+}
 
 /** A wiggle for the thing just tapped wrongly. The count lets the same thing wiggle twice in a row. */
 export function useWiggle() {
@@ -524,7 +541,7 @@ export function GameFrame({
   children?: ReactNode;
   attrs?: Record<string, string | number | undefined>;
 }) {
-  const mood = rounds.finished ? "cheer" : coach.mood;
+  const mood: Mood = rounds.finished ? "cheer" : lookOf(coach);
   return (
     <div
       className="game-frame"
@@ -549,7 +566,7 @@ export function GameFrame({
         </button>
         <span className="game-host" data-mood={mood} data-walks={hostAt?.walk ? "true" : undefined} style={hostAt ? { left: `${hostAt.left}%`, bottom: `${hostAt.bottom}%` } : undefined}>
           {/* The jump and the tilt are on the inner one, so they do not fight with the walk. */}
-          <span className="game-host-body">{outfit ? <Hero animal={animal} outfit={outfit} /> : <Avatar animal={animal} />}</span>
+          <span className="game-host-body">{outfit ? <Hero animal={animal} outfit={outfit} mood={mood} /> : <Avatar animal={animal} mood={mood} />}</span>
         </span>
         <div className="game-stage">{stage}</div>
         {mood === "cheer" ? <Sparkles /> : null}
