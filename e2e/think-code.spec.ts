@@ -69,9 +69,23 @@ async function onRound(board: Locator, round: number) {
   await expect(board).toHaveAttribute("data-home", "false");
 }
 
-/** A way that leads off the board from the start: the opposite of the path's first step. */
+/** The opposite of a step: a way that goes away from the nest, or off the board. */
 function wrongWay(first: string): string {
   return { right: "left", left: "right", up: "down", down: "up" }[first] ?? "left";
+}
+
+/** The ways that lead off the board from where the animal stands. */
+async function offTheBoard(board: Locator): Promise<string[]> {
+  const x = Number(await board.getAttribute("data-x"));
+  const y = Number(await board.getAttribute("data-y"));
+  const width = Number(await board.locator(".code-field").getAttribute("data-width"));
+  const height = Number(await board.locator(".code-field").getAttribute("data-height"));
+  const ways: string[] = [];
+  if (x === 0) ways.push("left");
+  if (y === 0) ways.push("up");
+  if (x === width - 1) ways.push("right");
+  if (y === height - 1) ways.push("down");
+  return ways;
 }
 
 test("Coding is on the home screen, and its page goes start, think, build, code", async ({ page }) => {
@@ -116,15 +130,29 @@ test("arrows take the animal home, then a plan is laid out and walked step by st
     await board.screenshot({ path: "test-results/screenshots/code_bird.png" });
   }
   const first = ((await board.getAttribute("data-path")) ?? "").split(",")[0];
-  const wrong = wrongWay(first);
   const startX = await board.getAttribute("data-x");
-  await board.locator(`[data-arrow=${wrong}]`).click();
-  await expect(board.locator(`[data-arrow=${wrong}]`)).toHaveAttribute("data-wiggle", /^(a|b)$/);
-  await expect(board).toHaveAttribute("data-x", startX ?? "0");
+  const startY = await board.getAttribute("data-y");
+  const edges = await offTheBoard(board);
+  const back = wrongWay(first);
+  if (edges.includes(back)) {
+    // A step off the edge: the arrow wiggles and the animal stays where it is.
+    await board.locator(`[data-arrow=${back}]`).click();
+    await expect(board.locator(`[data-arrow=${back}]`)).toHaveAttribute("data-wiggle", /^(a|b)$/);
+    await expect(board).toHaveAttribute("data-x", startX ?? "0");
+    await expect(board).toHaveAttribute("data-y", startY ?? "0");
+  } else {
+    // The board has room behind the start: a step the wrong way is still a step, and one the
+    // right way brings the animal back. Every tap does something.
+    await board.locator(`[data-arrow=${back}]`).click();
+    await expect(board.locator("[data-walked=true]")).toHaveCount(1);
+    await board.locator(`[data-arrow=${first}]`).click();
+    await expect(board).toHaveAttribute("data-x", startX ?? "0");
+    await expect(board).toHaveAttribute("data-y", startY ?? "0");
+  }
   await expect(board).toHaveAttribute("data-home", "false");
   await board.locator(`[data-arrow=${first}]`).click();
   // The cells the animal walked through are marked.
-  await expect(board.locator("[data-walked=true]")).toHaveCount(1);
+  await expect(board.locator("[data-walked=true]").first()).toBeVisible();
   await runPath(board);
 
   // The second tap board has a turn in it; the game moves on by itself.
