@@ -32,7 +32,12 @@ export type Dir = "up" | "down" | "left" | "right";
 
 export type Cell = { x: number; y: number };
 
-export type BirdMode = "tap" | "plan" | "loop" | "bug";
+/**
+ * tap: each arrow moves the animal a step. plan: arrows are lined up, then run. predict: the start
+ * of a plan is given and the child picks which ending gets home, then runs it. loop: one arrow,
+ * run three times. bug: a plan with one wrong arrow to find.
+ */
+export type BirdMode = "tap" | "plan" | "predict" | "loop" | "bug";
 
 export type BirdRound = {
   id: string;
@@ -44,10 +49,12 @@ export type BirdRound = {
   /** Moves that reach the nest. For a loop this is the move inside the repeat. */
   path: Dir[];
   repeat: number;
-  /** Arrows already on the page. A bug round hides one wrong turn here. */
+  /** Arrows already on the page. A bug round hides one wrong turn here; a predict round gives the start of the plan. */
   shown: Dir[];
   bugIndex: number | null;
   fix: Dir | null;
+  /** Predict: the endings to choose from. Exactly one of them gets home. */
+  choices: Dir[][];
 };
 
 export type PatternRule = "AB" | "ABB" | "ABC";
@@ -235,7 +242,7 @@ export function boardLibrary(level: LogicLevel): BirdRound[] {
               const start = { x, y };
               const { end, blocked } = walk(start, path, shape.width, shape.height);
               if (blocked) continue;
-              const board: BirdRound = { id: `plan-${shape.width}x${shape.height}-${x}${y}-${path.join("")}`, mode: "plan", width: shape.width, height: shape.height, start, nest: end, path, repeat: 1, shown: [], bugIndex: null, fix: null };
+              const board: BirdRound = { id: `plan-${shape.width}x${shape.height}-${x}${y}-${path.join("")}`, mode: "plan", width: shape.width, height: shape.height, start, nest: end, path, repeat: 1, shown: [], bugIndex: null, fix: null, choices: [] };
               // Only a shortest way home is a board: a path that doubles back (up, right, down) is a
               // detour, and the game would call the child's shorter plan wrong.
               if (checkPlan(board, path).ok) boards.push(board);
@@ -254,7 +261,7 @@ export function boardFamily(round: BirdRound): string {
   return forms.map((form) => `${form.width}x${form.height}:${form.start.x},${form.start.y}:${form.path.join("")}`).sort()[0];
 }
 
-const LOOP: BirdRound = { id: "loop-three", mode: "loop", width: 4, height: 2, start: { x: 0, y: 0 }, nest: { x: 3, y: 0 }, path: ["right"], repeat: 3, shown: [], bugIndex: null, fix: null };
+const LOOP: BirdRound = { id: "loop-three", mode: "loop", width: 4, height: 2, start: { x: 0, y: 0 }, nest: { x: 3, y: 0 }, path: ["right"], repeat: 3, shown: [], bugIndex: null, fix: null, choices: [] };
 
 /** A plan with one wrong arrow in it. The bug is never the first or the last arrow, so there is a step before it and after it. */
 function bugged(round: BirdRound, salt: number): BirdRound {
@@ -277,6 +284,44 @@ function bugged(round: BirdRound, salt: number): BirdRound {
   return { ...round, id: `bug-${round.id}`, mode: "bug", shown, bugIndex, fix: right };
 }
 
+/**
+ * Endings a child could pick for a plan whose start is given: the right one, and wrong ones made
+ * from it by turning one arrow, each checked to miss the nest. Reading code before running it.
+ */
+export function predictChoices(round: BirdRound, tail: number, count: number, salt: number): Dir[][] {
+  const right = round.path.slice(round.path.length - tail);
+  const given = round.path.slice(0, round.path.length - tail);
+  const seen = new Set<string>([right.join(",")]);
+  const wrong: Dir[][] = [];
+  // Every one-arrow change, in a salted order, until there are enough that miss.
+  const changes: Dir[][] = [];
+  for (let at = 0; at < right.length; at += 1) {
+    for (const dir of DIRS) {
+      if (dir === right[at]) continue;
+      changes.push(right.map((step, index) => (index === at ? dir : step)));
+    }
+  }
+  for (const ending of shuffle(changes, salt + 7)) {
+    if (wrong.length >= count - 1) break;
+    const key = ending.join(",");
+    if (seen.has(key) || checkPlan(round, [...given, ...ending]).ok) continue;
+    seen.add(key);
+    wrong.push(ending);
+  }
+  return shuffle([right, ...wrong], salt + 11);
+}
+
+/** A plan round whose start is given, with `tail` arrows to predict from `count` endings. */
+function predicted(round: BirdRound, tail: number, count: number, salt: number): BirdRound {
+  return {
+    ...round,
+    id: `predict-${round.id}`,
+    mode: "predict",
+    shown: round.path.slice(0, round.path.length - tail),
+    choices: predictChoices(round, tail, count, salt),
+  };
+}
+
 /** Steps a child can take by tapping, before any planning: the two shortest kinds of board. */
 const TAP_STEPS = [2, 3];
 
@@ -284,9 +329,10 @@ const TAP_STEPS = [2, 3];
  * The path puzzles for one play, picked from the library with `salt`:
  *
  *  - ages 3–4: two boards to walk by tapping (a straight one, then one with a turn),
- *    then two to plan before pressing go;
- *  - ages 5–7: three plans, longer each time, then a move to repeat three times,
- *    then a plan with one wrong arrow to find.
+ *    two to plan before pressing go, then one whose ending is picked from two;
+ *  - ages 5–7: three plans, longer each time, one whose ending is picked from
+ *    three, then a move to repeat three times, then a plan with one wrong arrow
+ *    to find.
  *
  * No two boards of a play are the same shape, and the salt also mirrors or turns
  * the boards over, so the nest is not in the same corner every time.
@@ -309,19 +355,26 @@ export function birdRounds(level: LogicLevel, salt = 0): BirdRound[] {
       { ...pick((round) => !straight(round) && round.path.length === TAP_STEPS[1], 2), mode: "tap" },
       pick((round) => round.path.length === 2, 3),
       pick((round) => round.path.length === 3, 4),
+      // One turn, so the two endings look different: a straight ending and a turned one.
+      predicted(pick((round) => round.path.length === 3 && !straight(round), 7), 2, 2, salt),
     ];
   }
   return [
     pick((round) => round.path.length === 4, 1),
     pick((round) => round.path.length === 5, 2),
     pick((round) => round.path.length === 6, 3),
+    predicted(pick((round) => round.path.length === 5, 8), 3, 3, salt),
     turned(LOOP, salt !== 0 && (mix(salt, 5) & 1) === 1, false),
     bugged(pick((round) => round.path.length >= 4 && round.path.length <= 5, 6), salt),
   ];
 }
 
-/** Arrows that will run: a queued plan, a move repeated three times, or a bug that was fixed. */
+/**
+ * Arrows that will run: a queued plan, a move repeated three times, a bug that was fixed, or the
+ * given start of a plan with the ending that was picked (`queued`).
+ */
 export function program(round: BirdRound, queued: Dir[], fixed: boolean): Dir[] {
+  if (round.mode === "predict") return queued.length === 0 ? [] : [...round.shown, ...queued];
   if (round.mode === "loop") {
     const body = queued[0];
     if (!body) return [];
@@ -528,6 +581,7 @@ export function logicManifestEntries(): { id: string; say: string }[] {
     { id: "code-plan", say: "Line up the arrows, then press go." },
     { id: "code-loop", say: "Do this move three times." },
     { id: "code-bug", say: "One arrow is wrong. Tap it, then press go." },
+    { id: "code-predict", say: "Which arrows take it home? Pick one, then press go." },
     { id: "code-pattern", say: "What comes next?" },
     { id: "code-order", say: "What comes first? Put the pictures in order." },
     ...RULES.flatMap((rule) => [

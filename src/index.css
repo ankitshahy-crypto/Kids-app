@@ -6652,6 +6652,40 @@ input.is-pressed,
   opacity: 0.85;
 }
 
+/* Predict: the given start of the plan is drawn quieter and does not take a tap; the endings to
+   choose from are pictures of two or three arrows in a row. */
+.code-chip[data-given="true"] {
+  background: #f1efe9;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.code-ending {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  width: 100%;
+}
+
+.code-ending svg {
+  width: 31%;
+  height: auto;
+}
+
+/* In a predict round the endings are big pictures (two or three to a row), and Go has a row of its
+   own under them, as wide as the plan. */
+.game-frame[data-screen="bird"][data-mode="predict"][data-screen] .code-go {
+  width: min(100%, 300px);
+  min-height: 64px;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pick[data-chosen="true"] .code-ending svg path {
+  fill: var(--action);
+}
+
 /* A short phone (iPhone SE, 667px): the tiles keep a size a finger can aim at, and the plan places
    and the arrow row give up a little height instead. The page scrolls by a few px with the tip up. */
 @media (max-height: 700px) {
@@ -6664,9 +6698,14 @@ input.is-pressed,
     height: 56px;
   }
 
-  .game-frame[data-screen="bird"] .game-tray .pick.is-mid,
-  .game-frame[data-screen="bird"] .code-go {
+  .game-frame[data-screen="bird"][data-screen] .game-tray .pick.is-mid,
+  .game-frame[data-screen="bird"][data-screen] .code-go {
     min-height: 66px;
+  }
+
+  /* The endings to pick from give up a little height too. With the tip up, Go is a short scroll down. */
+  .game-frame[data-screen="bird"][data-mode="predict"] .pick[data-choice] {
+    min-height: 88px;
   }
 }
 
