@@ -7842,6 +7842,67 @@ input.is-pressed,
   }
 }
 
+/* A scene is never a still picture: one slow, small movement each. Clouds drift (and back), the
+   morning sun glows, the pond's light shimmers, the stars twinkle. Small, so nothing competes with
+   the game in front; the board's tiles are frosted, so a drift behind them is only a hint. */
+.scene-clouds {
+  animation: scene-clouds 11s ease-in-out infinite alternate;
+}
+
+.scene-sun {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scene-sun 5s ease-in-out infinite alternate;
+}
+
+.scene-water {
+  animation: scene-water 3.2s ease-in-out infinite alternate;
+}
+
+.scene-stars {
+  animation: scene-stars 2.8s ease-in-out infinite alternate;
+}
+
+@keyframes scene-clouds {
+  from {
+    transform: translateX(-7px);
+  }
+  to {
+    transform: translateX(7px);
+  }
+}
+
+@keyframes scene-sun {
+  from {
+    transform: scale(1);
+    opacity: 0.94;
+  }
+  to {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes scene-water {
+  from {
+    opacity: 0.55;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(4px);
+  }
+}
+
+@keyframes scene-stars {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Weather that moves: rain falls, snow drifts, wind blows. */
 .scene-rain {
   animation: scene-rain 0.7s linear infinite;
@@ -7891,6 +7952,10 @@ input.is-pressed,
   .scene-rain,
   .scene-snow,
   .scene-wind,
+  .scene-clouds,
+  .scene-sun,
+  .scene-water,
+  .scene-stars,
   .body-part {
     animation: none !important;
     transition: none !important;
@@ -10051,6 +10116,16 @@ input.is-pressed,
   display: none !important;
 }
 
+/* Less motion, not no lesson: the coding animal still glides tile to tile over a step's time (the
+   walk is what the child reads), with no hop, bounce or glow. */
+.app[data-calm="true"] .code-pet {
+  transition-duration: var(--step, 0.48s) !important;
+}
+
+.app[data-calm="true"] .code-cell[data-nest="true"]::before {
+  animation: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app *,
   .app *::before,
@@ -10064,6 +10139,10 @@ input.is-pressed,
   .app .confetti,
   .app .star-flight {
     display: none !important;
+  }
+
+  .app .code-pet {
+    transition-duration: var(--step, 0.48s) !important;
   }
 }
 

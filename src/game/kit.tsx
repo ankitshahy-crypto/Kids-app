@@ -332,6 +332,11 @@ export function Hand() {
 /** A drawn place for a game to happen in. Each is a wide picture that fills the top of the game. */
 export type SceneKind = "shop" | "room" | "garden" | "stand" | "morning" | "afternoon" | "night" | "pond" | "table" | "field" | "rainy" | "snowy" | "windy" | "sky";
 
+/**
+ * The scene behind a game. Each outdoor one has one slow, small movement (clouds drift, the sun
+ * glows, water shimmers, stars twinkle; the weather scenes have theirs), so the place is never a
+ * still picture: CSS on the `scene-*` classes, stilled by reduced motion and calm mode.
+ */
 export function Backdrop({ kind }: { kind: SceneKind }) {
   return (
     <svg className="game-backdrop" viewBox="0 0 360 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
@@ -372,8 +377,10 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
           <path d="M0 132c60-26 120-26 180-6s120 14 180-10v84H0Z" fill="#b8dfb4" />
           <path d="M0 152c70-16 150-12 220 0s100 8 140-4v52H0Z" fill="#9bd1a0" />
           {kind === "garden" ? <rect x="70" y="164" width="270" height="36" rx="14" fill="#b98a5e" /> : null}
-          <ellipse cx="70" cy="44" rx="30" ry="12" fill="#fffdfb" />
-          <ellipse cx="96" cy="38" rx="22" ry="12" fill="#fffdfb" />
+          <g className="scene-clouds">
+            <ellipse cx="70" cy="44" rx="30" ry="12" fill="#fffdfb" />
+            <ellipse cx="96" cy="38" rx="22" ry="12" fill="#fffdfb" />
+          </g>
         </>
       ) : null}
       {kind === "stand" ? (
@@ -392,7 +399,7 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
         <>
           <rect width="360" height="200" fill="#fde7d4" />
           <rect y="0" width="360" height="90" fill="#fdf3dc" opacity="0.7" />
-          <circle cx="180" cy="150" r="46" fill="#f9c96a" />
+          <circle className="scene-sun" cx="180" cy="150" r="46" fill="#f9c96a" />
           <path d="M0 150c80-20 200-20 360 0v50H0Z" fill="#a9d7a6" />
         </>
       ) : null}
@@ -400,8 +407,10 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
         <>
           <rect width="360" height="200" fill="#cfe6f9" />
           <circle cx="180" cy="48" r="30" fill="#f9d35f" />
-          <ellipse cx="70" cy="64" rx="34" ry="13" fill="#fffdfb" />
-          <ellipse cx="296" cy="84" rx="30" ry="12" fill="#fffdfb" />
+          <g className="scene-clouds">
+            <ellipse cx="70" cy="64" rx="34" ry="13" fill="#fffdfb" />
+            <ellipse cx="296" cy="84" rx="30" ry="12" fill="#fffdfb" />
+          </g>
           <path d="M0 150c80-20 200-20 360 0v50H0Z" fill="#9bd1a0" />
         </>
       ) : null}
@@ -410,7 +419,7 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
           <rect width="360" height="200" fill="#2f3f73" />
           <circle cx="250" cy="52" r="26" fill="#fbf1c8" />
           <circle cx="262" cy="44" r="24" fill="#2f3f73" />
-          <path d="M60 40l3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1ZM140 70l2 5 5 1-4 4 1 5-4-3-4 3 1-5-4-4 5-1ZM320 110l2 5 5 1-4 4 1 5-4-3-4 3 1-5-4-4 5-1Z" fill="#fbf1c8" />
+          <path className="scene-stars" d="M60 40l3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1ZM140 70l2 5 5 1-4 4 1 5-4-3-4 3 1-5-4-4 5-1ZM320 110l2 5 5 1-4 4 1 5-4-3-4 3 1-5-4-4 5-1Z" fill="#fbf1c8" />
           <path d="M0 150c80-20 200-20 360 0v50H0Z" fill="#4f7a6b" />
         </>
       ) : null}
@@ -419,8 +428,10 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
         <>
           <rect width="360" height="200" fill="#dcedf9" />
           <circle cx="306" cy="40" r="22" fill="#f9d976" />
-          <ellipse cx="96" cy="46" rx="34" ry="12" fill="#fffdfb" />
-          <ellipse cx="124" cy="40" rx="24" ry="12" fill="#fffdfb" />
+          <g className="scene-clouds">
+            <ellipse cx="96" cy="46" rx="34" ry="12" fill="#fffdfb" />
+            <ellipse cx="124" cy="40" rx="24" ry="12" fill="#fffdfb" />
+          </g>
         </>
       ) : null}
       {kind === "rainy" ? (
@@ -483,7 +494,7 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
           <path d="M0 96c80-18 220-18 360 0v104H0Z" fill="#b8dfb4" />
           {/* the water, with a bank on the left for the animal to stand on */}
           <path d="M96 116h264v84H96Z" fill="#9ccbe8" />
-          <path d="M96 116h264v10H96Z" fill="#bfe0f4" />
+          <path className="scene-water" d="M96 116h264v10H96Z" fill="#bfe0f4" />
           <path d="M0 118c40-8 80-6 104 2 10 30 8 56 0 80H0Z" fill="#9bd1a0" />
         </>
       ) : null}
