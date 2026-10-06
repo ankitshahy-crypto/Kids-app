@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { artOf, Avatar, preloadArt, viewFor, type ArtView } from "../avatars";
+import { artOf, Avatar, viewFor, type ArtView } from "../avatars";
 import type { AnimalId } from "../data/animals";
 import type { Outfit, OutfitSlot } from "../data/wardrobe";
 import type { Mood } from "../game/kit";
@@ -14,8 +13,6 @@ import { wearArt } from "../wardrobeArt";
  * filter, from the art).
  */
 export function Hero({ animal, outfit, mood, view = "face" }: { animal: AnimalId; outfit: Outfit; mood?: Mood; view?: ArtView }) {
-  // The child's animal's other frames, ready before a mood asks for them.
-  useEffect(() => preloadArt(animal), [animal]);
   const shown = viewFor(animal, view);
   const art = artOf(animal);
   const head = shown === "body" ? art?.head : undefined;

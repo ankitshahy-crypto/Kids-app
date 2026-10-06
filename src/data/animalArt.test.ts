@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import art from "./animalArt.json";
 import { animals } from "./animals";
@@ -17,6 +17,9 @@ describe("the painted animals", () => {
         expect(file(id, `${frame}-face.webp`), `${id}/${frame}-face.webp`).toBe(true);
         if (entry.body) expect(file(id, `${frame}.webp`), `${id}/${frame}.webp`).toBe(true);
       }
+      // And nothing is in its folder that the list does not know (a frame left behind by an earlier run).
+      const onDisk = readdirSync(new URL(`../../public/animals/${id}/`, import.meta.url)).filter((name: string) => name.endsWith("-face.webp"));
+      expect(onDisk.sort(), `${id}'s folder`).toEqual(entry.frames.map((frame) => `${frame}-face.webp`).sort());
       // The head sits at the top of the figure (its square box may poke past a narrow figure's sides).
       expect(entry.head.y).toBeGreaterThanOrEqual(0);
       expect(entry.head.y).toBeLessThan(0.2);

@@ -35,21 +35,28 @@ export function artSrc(animal: AnimalId, frame: ArtFrame, view: ArtView): string
   return `${import.meta.env.BASE_URL}animals/${animal}/${frame}${view === "face" ? "-face" : ""}.webp`;
 }
 
-const warmed = new Set<string>();
+/** The frames a mood can put on the page besides the idle one (which is there already). */
+const MOOD_FRAMES: ArtFrame[] = ["cheer", "think", "wait", "blink"];
+const warmed = new Map<string, HTMLImageElement>();
 
 /**
- * Every frame of an animal into the browser's cache, so a change of mood never shows a blank. For
- * the child's own animal (the Hero), where moods happen; not for every face on the picker.
+ * The faces an animal's moods can show, fetched and decoded ahead of the first one, and held, so a
+ * change of mood never shows a blank. For the animal in a game (GameFrame), where moods happen; not
+ * for a face on the home screen or the picker, which only ever shows its idle one.
  */
 export function preloadArt(animal: AnimalId) {
   const entry = ART[animal];
-  if (!entry || warmed.has(animal) || typeof Image === "undefined") return;
-  warmed.add(animal);
-  for (const frame of entry.frames) {
+  if (!entry || typeof Image === "undefined") return;
+  for (const frame of MOOD_FRAMES) {
+    if (!entry.frames.includes(frame)) continue;
     for (const view of entry.body ? (["face", "body"] as const) : (["face"] as const)) {
+      const src = artSrc(animal, frame, view);
+      if (warmed.has(src)) continue;
       const image = new Image();
-      image.decoding = "async";
-      image.src = artSrc(animal, frame, view);
+      image.src = src;
+      // A picture that fails to decode here is fetched again by the page when a mood wants it.
+      image.decode?.().catch(() => undefined);
+      warmed.set(src, image);
     }
   }
 }
@@ -273,8 +280,8 @@ const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
  * size) or its whole figure. Painted when the animal's art is there, drawn otherwise.
  *
  * A painted animal is a box (`.avatar-art`, sized by where it sits, as the drawing was) holding the
- * mood's frame. With a blink frame, that sits on top and shows for a moment now and then (CSS); the
- * idle frame underneath is what shows between blinks, so the face never flashes a different look.
+ * mood's frame. The blink frame is only the closed eyes, see-through everywhere else: it sits on
+ * top of the idle face and shows for a moment now and then (CSS), so nothing but the eyes changes.
  */
 export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
   const entry = ART[animal];
@@ -287,12 +294,16 @@ export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood
   const shown = viewFor(animal, view);
   // Only an animal that is given a mood is alive on the page (the one in a game): a face on a list
   // or the picker does not blink, so it does not carry (or load) the blink picture.
-  const blinks = mood !== undefined && frame === "idle" && entry.frames.includes("blink");
+  const alive = mood !== undefined;
+  const blinks = alive && frame === "idle" && entry.frames.includes("blink");
+  // A face that changes with the mood is decoded before it is painted (its pictures are preloaded,
+  // so that is quick): decoding off to the side can leave one empty frame at the change.
+  const decoding = alive ? "sync" : "async";
   return (
     <span className="avatar-art avatar-painted" data-mood={look} data-view={shown} data-frame={frame} aria-hidden="true">
       {/* The size attributes give the box its shape before the picture arrives (a face is square), so nothing jumps. */}
-      <img src={artSrc(animal, frame, shown)} width={shown === "face" ? 512 : undefined} height={shown === "face" ? 512 : undefined} alt="" draggable={false} decoding="async" />
-      {blinks ? <img className="avatar-blink" src={artSrc(animal, "blink", shown)} alt="" draggable={false} decoding="async" /> : null}
+      <img src={artSrc(animal, frame, shown)} width={shown === "face" ? 512 : undefined} height={shown === "face" ? 512 : undefined} alt="" draggable={false} decoding={decoding} />
+      {blinks ? <img className="avatar-blink" src={artSrc(animal, "blink", shown)} alt="" draggable={false} decoding={decoding} /> : null}
     </span>
   );
 }

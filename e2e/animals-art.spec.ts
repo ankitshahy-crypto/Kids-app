@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
 import { passGate } from "./gate";
@@ -134,45 +135,117 @@ test("a mood with no frame of its own shows the idle face, and the mood still sh
   expect(missing).toEqual([]);
 });
 
-test("in a game the animal blinks, and a right answer shows its cheering face", async ({ page }) => {
-  const missing = watchArt(page);
-  await install(page, profile("penguin"));
+/** Into a science game as the penguin; the frame, and the animal's painted face in it. */
+async function penguinInGame(page: Page) {
   await page.getByRole("button", { name: "Mia" }).click();
   await page.locator("[data-course=science]").click();
   await page.locator("[data-science=menu] [data-activity]").first().click();
   const frame = page.locator(".game-frame").first();
-  const host = frame.locator(".game-host .avatar-painted").first();
-  // Idle: the idle face, with the blink face over it, shown for a moment now and then (an animation
-  // on the blink picture alone; between blinks it is see-through).
+  return { frame, host: frame.locator(".game-host .avatar-painted").first() };
+}
+
+test("in a game the animal blinks, and a right answer shows its cheering face", async ({ page }) => {
+  const missing = watchArt(page);
+  await install(page, profile("penguin"));
+  const { frame, host } = await penguinInGame(page);
   await expect(host).toHaveAttribute("data-frame", "idle");
   const blink = host.locator("img.avatar-blink");
   await expect(blink).toHaveAttribute("src", /\/animals\/penguin\/blink-face\.webp$/);
   await expect.poll(() => blink.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(512);
-  expect(await blink.evaluate((img) => getComputedStyle(img).animationName)).toBe("avatar-blink-frame");
-  expect(await blink.evaluate((img) => getComputedStyle(img).opacity)).toBe("0");
-  // The right answer: the cheering face (its own picture), and no blink over it.
+  // The blink picture is the closed eyes and nothing else: most of it is see-through, its corners
+  // and its middle column (between the eyes) too, so over the idle face only the eyes change.
+  const eyes = await blink.evaluate((img) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 512;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(img as HTMLImageElement, 0, 0, 512, 512);
+    const alpha = (x: number, y: number) => ctx.getImageData(x, y, 1, 1).data[3];
+    const all = ctx.getImageData(0, 0, 512, 512).data;
+    let drawn = 0;
+    let left = 0;
+    for (let i = 3; i < all.length; i += 4) {
+      if (all[i] <= 8) continue;
+      drawn += 1;
+      if (((i - 3) / 4) % 512 < 256) left += 1;
+    }
+    return { share: drawn / (512 * 512), left: left / Math.max(1, drawn), corners: [alpha(4, 4), alpha(507, 4), alpha(4, 507), alpha(507, 507)], chin: alpha(256, 470) };
+  });
+  expect(eyes.share).toBeGreaterThan(0.01);
+  expect(eyes.share).toBeLessThan(0.2);
+  // Two eyes: about half of it each side of the middle.
+  expect(eyes.left).toBeGreaterThan(0.3);
+  expect(eyes.left).toBeLessThan(0.7);
+  expect(eyes.corners).toEqual([0, 0, 0, 0]);
+  expect(eyes.chin).toBe(0);
+  // It shows by an animation of its own: see-through for most of each turn, there for a moment at
+  // the end of it. (Read at set times in the turn, not whenever the test happens to look.)
+  const at = (ms: number) =>
+    blink.evaluate((img, ms) => {
+      const run = img.getAnimations()[0] as CSSAnimation | undefined;
+      if (!run) return "no animation";
+      run.pause();
+      run.currentTime = ms;
+      return `${run.animationName} ${getComputedStyle(img).opacity}`;
+    }, ms);
+  expect(await at(0)).toBe("avatar-blink-frame 0");
+  expect(await at(2400)).toBe("avatar-blink-frame 0");
+  expect(await at(4500)).toBe("avatar-blink-frame 0");
+  expect(await at(4720)).toBe("avatar-blink-frame 1");
+  expect(await at(0)).toBe("avatar-blink-frame 0");
+  // The right answer: the cheering face (its own picture), and no blink over it. The cheer lasts a
+  // moment, so the page notes each face it shows.
+  await host.evaluate((box) => {
+    const seen: string[] = [];
+    (window as Window & { __faces?: string[] }).__faces = seen;
+    const note = () => seen.push(`${box.getAttribute("data-frame")} ${box.querySelector("img")?.getAttribute("src")?.split("/").pop()} blink:${box.querySelectorAll("img.avatar-blink").length}`);
+    note();
+    new MutationObserver(note).observe(box, { attributes: true, childList: true, subtree: true });
+  });
   const need = (await frame.getAttribute("data-need")) ?? "";
   await frame.locator(`.pick[data-give=${need}], .pick[data-pick=${need}]`).first().click();
-  await expect(host).toHaveAttribute("data-frame", "cheer");
-  await expect(host.locator("img").first()).toHaveAttribute("src", /\/animals\/penguin\/cheer-face\.webp$/);
-  await expect(host.locator("img.avatar-blink")).toHaveCount(0);
+  const faces = () => page.evaluate(() => (window as Window & { __faces?: string[] }).__faces ?? []);
+  await expect.poll(faces).toContain("cheer cheer-face.webp blink:0");
+  expect((await faces())[0]).toBe("idle idle-face.webp blink:1");
   expect(missing).toEqual([]);
 });
 
+for (const still of ["calm mode", "reduced motion"] as const) {
+  test(`with ${still} the animal does not blink: its eyes stay open`, async ({ page }) => {
+    if (still === "reduced motion") await page.emulateMedia({ reducedMotion: "reduce" });
+    else await page.addInitScript(() => localStorage.setItem("littlenest-settings-v1", JSON.stringify({ calm: true })));
+    await install(page, profile("penguin"));
+    const { host } = await penguinInGame(page);
+    await expect(page.locator(".app")).toHaveAttribute("data-calm", "true");
+    const blink = host.locator("img.avatar-blink");
+    await expect.poll(() => blink.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(512);
+    // Nothing running on the closed eyes, and they are not left showing.
+    await expect.poll(() => blink.evaluate((img) => `${img.getAnimations().filter((run) => run.playState === "running").length} ${getComputedStyle(img).opacity}`)).toBe("0 0");
+    await page.waitForTimeout(300);
+    expect(await blink.evaluate((img) => `${img.getAnimations().filter((run) => run.playState === "running").length} ${getComputedStyle(img).opacity}`)).toBe("0 0");
+  });
+}
+
 test("every animal has a cheering face and a blink, the size of its idle face", async ({ page }) => {
+  // The list the app itself goes by (made with the pictures, by scripts/animal-art.py).
+  const art = JSON.parse(readFileSync(new URL("../src/data/animalArt.json", import.meta.url), "utf8")) as Record<string, { frames: string[] }>;
+  const animals = Object.entries(art);
+  expect(animals).toHaveLength(12);
+  for (const [animal, entry] of animals) expect(entry.frames, animal).toEqual(expect.arrayContaining(["idle", "cheer", "blink"]));
   await page.goto("./");
-  const sizes = await page.evaluate(async (base) => {
-    const animals = ["cat", "dog", "fox", "bear", "bunny", "owl", "frog", "duck", "pig", "penguin", "lion", "koala"];
-    const load = (src: string) =>
-      new Promise<number>((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(img.naturalWidth === img.naturalHeight ? img.naturalWidth : -1);
-        img.onerror = () => resolve(0);
-        img.src = src;
-      });
-    const out: Record<string, number> = {};
-    for (const animal of animals) for (const frame of ["idle", "cheer", "blink"]) out[`${animal}/${frame}`] = await load(`${base}animals/${animal}/${frame}-face.webp`);
-    return out;
-  }, new URL("./", page.url()).pathname);
+  const sizes = await page.evaluate(
+    async ({ base, names }) => {
+      const load = (src: string) =>
+        new Promise<number>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img.naturalWidth === img.naturalHeight ? img.naturalWidth : -1);
+          img.onerror = () => resolve(0);
+          img.src = src;
+        });
+      const out: Record<string, number> = {};
+      for (const name of names) out[name] = await load(`${base}animals/${name}-face.webp`);
+      return out;
+    },
+    { base: new URL("./", page.url()).pathname, names: animals.flatMap(([animal, entry]) => entry.frames.map((frame) => `${animal}/${frame}`)) },
+  );
   for (const [name, size] of Object.entries(sizes)) expect(size, name).toBe(512);
 });
