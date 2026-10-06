@@ -1056,7 +1056,7 @@ button:focus-visible {
 }
 
 /* Each animal starts its blink's turn at a moment of its own (--blink-at, seconds into the turn),
-   so two on one screen never blink together. */
+   so two on one screen do not blink in step. */
 .game-host .avatar-painted .avatar-blink {
   animation: avatar-blink-frame 4.8s step-end infinite;
   animation-delay: calc(var(--blink-at, 0) * -1s);
@@ -1069,6 +1069,16 @@ button:focus-visible {
 
 .avatar-painted .avatar-over[data-on="true"] {
   opacity: 1;
+}
+
+/* Once the mood's face is fully there, what is under it goes: no two pictures of one animal have
+   quite the same outline, and the idle one would show as a rim. (After the fade's time, which is a
+   delay, so calm mode's shortened transitions do not bring it forward; back at once, with no
+   transition, when the mood is over and its face fades away.) */
+.avatar-painted:not([data-frame="idle"]) .avatar-face,
+.avatar-painted:not([data-frame="idle"]) .avatar-blink {
+  visibility: hidden;
+  transition: visibility 0s linear var(--face-fade, 180ms);
 }
 
 @keyframes avatar-blink-frame {

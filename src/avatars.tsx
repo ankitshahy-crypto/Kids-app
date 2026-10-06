@@ -265,14 +265,16 @@ const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
  *   the idle face, always there underneath;
  *   the blink, which is only the closed eyes, see-through everywhere else, shown for a moment now
  *   and then (CSS), each animal on the page starting its turn at a moment of its own, so two of
- *   them never blink together;
+ *   them do not blink in step;
  *   each mood face it has, see-through until its mood comes, then faded in over the idle face and
  *   out again after (CSS): the same animal changing its look, not one picture swapped for another.
- *   Being on the page from the start, they are fetched before the first mood asks for one.
+ *   Once a mood face is fully there, the idle face and the blink under it are hidden (CSS), so
+ *   nothing of them shows round its edge. Being on the page from the start, the mood faces are
+ *   fetched before the first mood asks for one.
  */
 export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
   // Where in its turn this animal's blink starts: its own, kept for as long as it is on the page.
-  const [blinkAt] = useState(() => Math.random() * BLINK_EVERY);
+  const [blinkAt] = useState(() => Math.floor(Math.random() * BLINK_EVERY * 100) / 100);
   const entry = ART[animal];
   const look = mood ?? "idle";
   if (!entry) {
@@ -282,6 +284,9 @@ export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood
   const frame = frameFor(animal, look);
   const shown = viewFor(animal, view);
   const alive = mood !== undefined;
+  // The face underneath is decoded before it is painted when the animal is alive: a new animal on
+  // the coding board each round must not show one empty frame first. (A mood face fades in from
+  // nothing, so a late frame of it is not seen.)
   const face = (name: ArtFrame, className: string, on?: boolean) => (
     <img
       key={name}
@@ -294,7 +299,7 @@ export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood
       height={shown === "face" ? 512 : undefined}
       alt=""
       draggable={false}
-      decoding="async"
+      decoding={alive && name === "idle" ? "sync" : "async"}
     />
   );
   return (
@@ -304,7 +309,7 @@ export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood
       data-view={shown}
       data-frame={frame}
       aria-hidden="true"
-      style={alive ? ({ "--blink-at": blinkAt.toFixed(2) } as CSSProperties) : undefined}
+      style={alive ? ({ "--blink-at": blinkAt } as CSSProperties) : undefined}
     >
       {face("idle", "avatar-face")}
       {alive && entry.frames.includes("blink") ? face("blink", "avatar-blink") : null}

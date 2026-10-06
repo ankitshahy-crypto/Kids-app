@@ -897,6 +897,8 @@ for (const [name, setup] of [
     expect(await pet.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe("0.14s");
     await pet.evaluate((el) => {
       el.addEventListener("transitionend", (event) => {
+        // (Its own glide: a face fading inside it ends a transition too, and that one bubbles.)
+        if (event.target !== el || (event as TransitionEvent).propertyName !== "transform") return;
         (window as Window & { __glide?: number }).__glide = (event as TransitionEvent).elapsedTime;
       });
     });
