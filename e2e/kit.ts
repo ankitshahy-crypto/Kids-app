@@ -9,7 +9,7 @@ import { createdThisWeek } from "./clock";
  * whole game through in a second or two. Tests about what is said leave it on.
  */
 
-export const stageOfWeek: Record<number, string> = { 0: "day", 1: "routine", 2: "clock", 3: "coins", 4: "shop", 5: "hours", 6: "minutes", 8: "values", 9: "change", 15: "cards", 16: "cards" };
+export const stageOfWeek: Record<number, string> = { 0: "day", 1: "routine", 2: "clock", 3: "coins", 4: "shop", 5: "hours", 6: "minutes", 8: "values", 9: "change", 10: "jars", 15: "cards", 16: "cards" };
 
 export function timePlacement(weekIndex: number, stageId = stageOfWeek[weekIndex]) {
   return {
@@ -28,11 +28,11 @@ export function child(ageRange = "4") {
   };
 }
 
-/** Open the app on a child's Time & Money page. */
-export async function openTimeMoney(page: Page, options: { week?: number; quick?: boolean; ageRange?: string; tips?: boolean } = {}) {
-  const { week = 0, quick = true, ageRange = "4", tips = false } = options;
+/** Open the app on a child's Time & Money page. `salt` pins which rounds the games deal (a development-build switch). */
+export async function openTimeMoney(page: Page, options: { week?: number; quick?: boolean; ageRange?: string; tips?: boolean; salt?: number } = {}) {
+  const { week = 0, quick = true, ageRange = "4", tips = false, salt } = options;
   await page.addInitScript(
-    ({ saved, placed, quick, tips }) => {
+    ({ saved, placed, quick, tips, salt }) => {
       if (sessionStorage.getItem("kit-seeded")) return;
       sessionStorage.setItem("kit-seeded", "1");
       localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
@@ -40,8 +40,9 @@ export async function openTimeMoney(page: Page, options: { week?: number; quick?
       localStorage.removeItem("kids-app-silent-hint-v1");
       if (quick) localStorage.setItem("littlenest-quick-rounds", "1");
       if (!tips) localStorage.setItem("littlenest-settings-v1", JSON.stringify({ showTips: false }));
+      if (salt !== undefined) localStorage.setItem("littlenest-salt", String(salt));
     },
-    { saved: child(ageRange), placed: timePlacement(week), quick, tips },
+    { saved: child(ageRange), placed: timePlacement(week), quick, tips, salt },
   );
   await page.goto("./");
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });

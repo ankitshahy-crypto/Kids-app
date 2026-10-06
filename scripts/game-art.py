@@ -3,17 +3,23 @@ Make the painted props for the games from their renders.
 
 Usage: python3 scripts/game-art.py <folder of source images>
 
-The sources (`...coin-<copper|silver>-blank...`, `...planting-<bed-empty|seed|sprout|leafy|grown|sun|can>...`)
-are watercolour props on a plain paper backdrop. This writes transparent WebP files under
-public/games/:
+The sources (`...coin-<copper|silver>-blank...`, `...planting-<bed-empty|seed|sprout|leafy|grown|sun|can>...`,
+`...garden-<ground-brown|lifecycle-flower>...`, `...money-<jar|bill>...`) are watercolour props on a
+plain paper backdrop. This writes transparent WebP files under public/games/:
 
   coin-copper.webp, coin-silver.webp   a blank coin face each (the star pressed into the middle is
                                        painted out: the app draws each coin's number there, and
                                        sizes the coin, so two faces make all four coins)
+  bill.webp                            a blank bill (the app writes the amount on it: one for both)
+  jar.webp                             an empty jar with its lid (the app puts the label on it and
+                                       the coins in it)
   garden/bed.webp                      the empty planting bed
+  garden/ground.webp                   the patch of dug earth the bed stands on
   garden/seed.webp, sun.webp, can.webp the three things to give
   garden/sprout.webp, plant.webp,      the plant at each size, lifted off the bed it was painted in,
   flower.webp                          to stand in the empty bed
+  garden/bloom.webp                    a flower on its own: the last picture of the plant's life,
+                                       put in order (its seed and sprout are the two above)
 
 Needs: pip install opencv-python-headless pillow numpy
 """
@@ -143,6 +149,13 @@ def main(folder: Path):
     plant(find("planting-sprout"), "garden/sprout", 256)
     plant(find("planting-leafy"), "garden/plant", 512)
     plant(find("planting-grown"), "garden/flower", 512)
+    prop(find("garden-ground-brown"), "garden/ground", 640, solid=True)
+    prop(find("garden-lifecycle-flower"), "garden/bloom", 384)
+    # The jar is clear glass on white paper: its own outline, filled, so the glass stays (a wash of
+    # white inside it is the jar, not paper); the soft shadow under it is fainter than its lines,
+    # and falls below the threshold. The bill's pale wash is a bill too, so its outline as well.
+    prop(find("money-jar"), "jar", 384, lo=20.0, hi=36.0, solid=True)
+    prop(find("money-bill"), "bill", 512, lo=6.0, hi=18.0, solid=True)
 
 
 if __name__ == "__main__":

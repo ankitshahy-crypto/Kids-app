@@ -7566,16 +7566,18 @@ input.is-pressed,
   width: 78px;
 }
 
-.coin-jar > svg {
+/* The painted jar (public/games/jar.webp), half again as tall as it is wide: its lid is the top fifth, the glass the rest. */
+.coin-jar > .jar-glass {
   display: block;
   width: 100%;
   height: auto;
+  -webkit-user-drag: none;
 }
 
 .jar-label {
   position: absolute;
   left: 50%;
-  top: 46%;
+  top: 50%;
   width: 52%;
   transform: translate(-50%, -50%);
 }
@@ -7592,14 +7594,15 @@ input.is-pressed,
   position: absolute;
   left: 14%;
   right: 14%;
-  bottom: 7%;
+  bottom: 9%;
   display: flex;
   justify-content: center;
 }
 
+/* Up to three coins lie in the glass, overlapping a little: three fill its width, but for the sides. */
 .jar-coins .coin-art {
-  width: 34%;
-  margin: 0 -4%;
+  width: 52%;
+  margin: 0 -8%;
 }
 
 .jars-stage {
@@ -9469,10 +9472,12 @@ input.is-pressed,
 }
 
 .time-tile .math-activity-art .coin-jar {
-  width: 44px;
+  width: 33px;
 }
 
-.time-tile .math-activity-art .coin-jar svg {
+/* The jar fills its 33px (so stands the tile's height), and the coin on its label fills the label. */
+.time-tile .math-activity-art .coin-jar svg,
+.time-tile .math-activity-art .coin-jar .jar-glass {
   width: 100%;
 }
 
