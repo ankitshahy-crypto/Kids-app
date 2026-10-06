@@ -72,13 +72,13 @@ function NeedArt({ need }: { need: GrowNeed }) {
 
 /**
  * The plant at each step after the seed: where it stands in the bed's box (160 by 170), rooted in
- * the soil (which is at about y 117 to 136). The leafy plant and the flower are one painting at one
- * scale, so the leaves do not change size when it flowers; the seed sits low, half in the soil.
+ * the soil (which is at about y 117 to 136). The leafy plant's leaves are drawn a touch smaller
+ * than the flower's, so the plant only ever grows; the seed sits low, half in the soil.
  */
 const PLANT: Record<number, { art: "seed" | "sprout" | "plant" | "flower"; x: number; y: number; width: number; height: number }> = {
   1: { art: "seed", x: 73.5, y: 115, width: 13, height: 16.5 },
   2: { art: "sprout", x: 52, y: 81, width: 56, height: 47 },
-  3: { art: "plant", x: 49.5, y: 45, width: 61, height: 83 },
+  3: { art: "plant", x: 50.7, y: 56, width: 58.6, height: 72 },
   4: { art: "flower", x: 49.5, y: 16, width: 61, height: 112 },
 };
 
