@@ -1009,8 +1009,8 @@ button:focus-visible {
 
 /* ---- The painted animals (avatars.tsx, public/animals/) ----
    A box the size the drawing had, holding the mood's frame: the face fills it; the whole figure
-   stands on its bottom edge. A blink frame, when the animal has one, sits on top and shows for a
-   moment every few seconds, in a game only (a face on a list does not blink). */
+   stands on its bottom edge. A blink frame (the closed eyes alone), when the animal has one, sits
+   on top and shows for a moment every few seconds, in a game only (a face on a list does not blink). */
 .avatar-painted {
   position: relative;
   display: block;
