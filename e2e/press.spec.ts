@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
+import { noting } from "./kit";
 
 const WORDS: Record<string, number> = {
   one: 1,
@@ -59,9 +60,12 @@ test("a press shows immediately on buttons and clears when the pointer lifts", a
   await page.goto("./");
   const parent = page.getByRole("button", { name: "Parent", exact: true });
   await expect(parent).toBeVisible();
+  // After the tap the button is held for a moment, so a second tap cannot repeat it, and marked
+  // busy. The mark is gone again in under half a second, so the page notes it as it comes: a look
+  // from here, after the press has been checked, can be too late.
+  const busy = await noting(parent, (button) => `busy ${button.getAttribute("data-busy") === "true"}, marked ${button.classList.contains("is-busy")}`);
   await press(page, parent);
-  await expect(parent).toHaveAttribute("data-busy", "true");
-  await expect(parent).toHaveClass(/is-busy/);
+  await expect.poll(busy).toContain("busy true, marked true");
 
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();

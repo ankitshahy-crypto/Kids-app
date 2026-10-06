@@ -69,6 +69,44 @@ export async function onRound(frame: Locator, round: number) {
   await expect(frame).toHaveAttribute("data-solved", "false");
 }
 
+let notebooks = 0;
+
+/**
+ * Have the page note something about what it shows, every time that changes, and give the notes
+ * back when asked.
+ *
+ * For a moment that is over before a test can ask about it. Under the quick setting a right answer
+ * shows for 150 ms before the next round takes its place, and a button is marked busy for under
+ * half a second: a question from the test that comes a little late (a busy machine) finds the
+ * moment gone, and fails with nothing wrong. Looked at from inside the page, as it happens, the
+ * moment is never missed.
+ *
+ * `look` runs in the page: it sees its two arguments (the element of `target`, and `arg`) and
+ * nothing else of this file. What it returns is noted each time it differs from the last note.
+ * `target` has to stay on the page; the notes stop when its element is replaced.
+ */
+export async function noting<T, A = undefined>(target: Locator, look: (element: Element, arg: A) => T, arg?: A): Promise<() => Promise<T[]>> {
+  const book = `__notes${(notebooks += 1)}`;
+  await target.evaluate(
+    (element, { book, look, arg }) => {
+      const read = new Function(`return (${look});`)() as (element: Element, arg: unknown) => unknown;
+      const notes: unknown[] = [];
+      (window as unknown as Record<string, unknown[]>)[book] = notes;
+      let last: string | undefined;
+      const note = () => {
+        const now = JSON.stringify(read(element, arg) ?? null);
+        if (now === last) return;
+        last = now;
+        notes.push(JSON.parse(now));
+      };
+      new MutationObserver(note).observe(element, { attributes: true, childList: true, characterData: true, subtree: true });
+      note();
+    },
+    { book, look: look.toString(), arg },
+  );
+  return () => target.page().evaluate((book) => (window as unknown as Record<string, unknown[]>)[book] ?? [], book) as Promise<T[]>;
+}
+
 /** The game is over and the child is back on the section page with a star. */
 export async function expectStar(page: Page, stars = 1) {
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", String(stars), { timeout: 10_000 });

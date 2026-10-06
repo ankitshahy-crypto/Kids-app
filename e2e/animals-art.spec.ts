@@ -200,7 +200,14 @@ test("in a game the animal blinks, and a right answer shows its cheering face", 
       const run = img.getAnimations()[0] as CSSAnimation | undefined;
       if (!run) return "no animation";
       run.pause();
-      run.currentTime = ms + Number(run.effect?.getComputedTiming().delay ?? 0);
+      // The animation begins part-way through a turn (its delay is below zero, by this animal's
+      // own moment). A moment of the turn earlier than that lies before the animation's start,
+      // where nothing shows at all: it is read in the next turn, where it comes round again. (An
+      // animal whose moment was in the turn's last 80 ms had its blink read there, as not showing:
+      // about one run in sixty.)
+      const timing = run.effect!.getComputedTiming();
+      const from = ms + Number(timing.delay ?? 0);
+      run.currentTime = from < 0 ? from + Number(timing.duration) : from;
       return `${run.animationName} ${getComputedStyle(img).opacity}`;
     }, ms);
   expect(await at(0)).toBe("avatar-blink-frame 0");
@@ -231,14 +238,16 @@ test("in a game the animal blinks, and a right answer shows its cheering face", 
   // while the jump runs on its body.
   expect(seen.pop).toEqual({ ms: 420, squash: "1.06 0.94", stretch: "0.95 1.06" });
   expect(seen.moves).toEqual(expect.arrayContaining(["game-pop", "game-cheer"]));
-  // Fully there: nothing of the idle face or the blink is left under it to show round its edge.
-  await expect.poll(() => cheer.evaluate((img) => getComputedStyle(img).opacity)).toBe("1");
-  await expect.poll(() => host.evaluate((box) => [...box.querySelectorAll("img.avatar-face, img.avatar-blink")].map((img) => getComputedStyle(img).visibility).join())).toBe("hidden,hidden");
   // And out again: the next round's idle look is the idle face, there at once, with the cheering one fading away.
   await expect(host).toHaveAttribute("data-frame", "idle");
   expect(await host.locator("img.avatar-face").evaluate((img) => getComputedStyle(img).visibility)).toBe("visible");
   await expect.poll(() => cheer.evaluate((img) => getComputedStyle(img).opacity)).toBe("0");
-  expect((await cheerSeen(page)).looks.every((look) => !look.includes("another element"))).toBe(true);
+  // While it was fully there: nothing of the idle face or the blink was left under it to show round
+  // its edge. (Noted by the page as the cheer went by: the cheer lasts a second, and a question
+  // from here could come after it, to a face that was idle again.)
+  const after = await cheerSeen(page);
+  expect(after.gone).toBe("hidden,hidden");
+  expect(after.looks.every((look) => !look.includes("another element"))).toBe(true);
   expect(missing).toEqual([]);
 });
 
@@ -248,6 +257,8 @@ type CheerSeen = {
   fade: { ms: number; halfway: number; under: string } | null;
   pop: { ms: number; squash: string; stretch: string } | null;
   moved: string[];
+  /** What was left of the idle face and the blink under the cheering face, on the last frame it was fully there. */
+  gone: string | null;
 };
 
 /**
@@ -258,10 +269,11 @@ type CheerSeen = {
  */
 async function watchCheer(host: Locator) {
   await host.evaluate((box) => {
-    const seen: CheerSeen = { looks: [], moves: [], fade: null, pop: null, moved: [] };
+    const seen: CheerSeen = { looks: [], moves: [], fade: null, pop: null, moved: [], gone: null };
     (window as Window & { __cheer?: CheerSeen }).__cheer = seen;
     const idle = box.querySelector("img.avatar-face") as HTMLImageElement & { __first?: boolean };
     idle.__first = true;
+    const blink = box.querySelector("img.avatar-blink") as HTMLImageElement;
     const over = box.querySelector("img.avatar-over[data-face=cheer]") as HTMLImageElement;
     const animal = (box.closest(".hero") ?? box) as HTMLElement;
     const body = box.closest(".game-host-body") as HTMLElement;
@@ -304,6 +316,11 @@ async function watchCheer(host: Locator) {
       const place = new DOMMatrix(getComputedStyle(body).transform);
       if (!["none", "1", "1 1"].includes(scale)) seen.moved.push(`scale ${scale}`);
       if (Math.abs(place.f) > 0.5 || Math.abs(place.b) > 0.01 || Math.abs(place.a - 1) > 0.01) seen.moved.push(`body ${place.toString()}`);
+      // While the cheering face is fully there: what is left of the faces under it. (The cheer
+      // lasts a second; read here, frame by frame, not from the test, which can come to it late.)
+      if (over.getAttribute("data-on") === "true" && getComputedStyle(over).opacity === "1") {
+        seen.gone = [idle, blink].map((img) => getComputedStyle(img).visibility).join();
+      }
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
