@@ -1,5 +1,5 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -13,10 +13,10 @@ describe("the games' painted props", () => {
     for (const face of new Set(faces)) expect(existsSync(file(`coin-${face}.webp`)), `coin-${face}.webp`).toBe(true);
   });
 
-  it("the bill and the jar the money games name are there", () => {
+  it("the bills and the jar the money games name are there", () => {
     const names = source("./money.tsx").match(/moneyArt = \(name: ([^)]+)\)/)?.[1] ?? "";
-    const list = [...names.matchAll(/"([a-z]+)"/g)].map((match) => match[1]);
-    expect(list.sort()).toEqual(["bill", "jar"]);
+    const list = [...names.matchAll(/"([a-z-]+)"/g)].map((match) => match[1]);
+    expect(list.sort()).toEqual(["bill", "bill-five", "jar"]);
     for (const name of list) expect(existsSync(file(`${name}.webp`)), `${name}.webp`).toBe(true);
   });
 
@@ -29,7 +29,9 @@ describe("the games' painted props", () => {
     for (const name of list) expect(existsSync(file(`garden/${name}.webp`)), `garden/${name}.webp`).toBe(true);
     // The plant's life in order uses the garden's seed and sprout, and the flower on its own.
     const life = source("../components/ScienceGames.tsx").match(/PAINTED_LIFE[^=]*= (\{[^}]+\})/)?.[1] ?? "";
-    expect(life).toBe('{ seed: "seed", sprout: "sprout", flower: "bloom" }');
+    const pairs = Object.fromEntries([...life.matchAll(/(\w+): "(\w+)"/g)].map((match) => [match[1], match[2]]));
+    expect(pairs).toEqual({ seed: "seed", sprout: "sprout", flower: "bloom" });
+    for (const name of Object.values(pairs)) expect(list).toContain(name);
   });
 
   it("nothing is in the folder that no game names", () => {
@@ -37,11 +39,13 @@ describe("the games' painted props", () => {
       "coin-copper.webp",
       "coin-silver.webp",
       "bill.webp",
+      "bill-five.webp",
       "jar.webp",
       ...[...(source("../components/ScienceGames.tsx").match(/gardenArt = \(name: ([^)]+)\)/)?.[1] ?? "").matchAll(/"([a-z]+)"/g)].map((match) => `garden/${match[1]}.webp`),
     ]);
     const folder = fileURLToPath(file(""));
-    const found = (readdirSync(folder, { recursive: true }) as string[]).filter((path) => statSync(join(folder, path)).isFile());
+    // Pictures only (a Finder's .DS_Store is not a stray), with the folder's own separator.
+    const found = (readdirSync(folder, { recursive: true }) as string[]).filter((path) => path.endsWith(".webp")).map((path) => path.split(sep).join("/"));
     expect(found.sort()).toEqual([...named].sort());
   });
 });

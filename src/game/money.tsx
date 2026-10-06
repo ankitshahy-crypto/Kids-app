@@ -25,18 +25,23 @@ const COIN_LOOK: Record<"penny" | "nickel" | "dime" | "quarter", { r: number; fa
 };
 
 const coinFace = (face: "copper" | "silver") => `${import.meta.env.BASE_URL}games/coin-${face}.webp`;
-/** The other painted money props (public/games, made by scripts/game-art.py): a blank bill, an empty jar. */
-const moneyArt = (name: "bill" | "jar") => `${import.meta.env.BASE_URL}games/${name}.webp`;
+/**
+ * The other painted money props (public/games, made by scripts/game-art.py): a blank bill, the same
+ * turned lavender for the five, and an empty jar.
+ */
+const moneyArt = (name: "bill" | "bill-five" | "jar") => `${import.meta.env.BASE_URL}games/${name}.webp`;
 
 /** One coin or bill. Every piece is drawn in the same 100 by 100 box, so their sizes can be compared. */
 export function Coin({ id }: { id: MoneyId }) {
   if (id === "one" || id === "five") {
     const five = id === "five";
-    // One painted bill for both: the app writes the amount on it, and the five is tinted toward
-    // lavender so the two tell apart at a glance, as the coins' copper and silver do.
+    // One painted bill, written on: green for the one, the same turned lavender for the five, so the
+    // two tell apart at a glance, as the coins' copper and silver do. A pale slip under it is the
+    // bill's shape until the painting arrives.
     return (
       <svg className="coin-art" viewBox="0 0 100 100" aria-hidden="true" focusable="false" data-coin-art={id}>
-        <image href={moneyArt("bill")} x="3" y="25" width="94" height="50" preserveAspectRatio="xMidYMid meet" data-bill-face={five ? "five" : "one"} style={five ? { filter: "hue-rotate(205deg) saturate(1.15)" } : undefined} />
+        <rect x="8" y="29" width="84" height="42" rx="6" fill={five ? "#ECE6F3" : "#E6F0E8"} />
+        <image href={moneyArt(five ? "bill-five" : "bill")} x="3" y="25" width="94" height="50" preserveAspectRatio="xMidYMid meet" data-bill-face={five ? "five" : "one"} />
         <circle cx="50" cy="50" r="16" fill="#FFFDFB" opacity="0.8" />
         <text x="50" y="59" textAnchor="middle" fontSize="26" fontWeight="800" fill={five ? "#5C4A86" : "#356B45"}>
           {five ? "5" : "1"}
@@ -90,7 +95,7 @@ export function PriceTag({ cents, children }: { cents: number; children?: ReactN
 export function Jar({ label, fill = 0, children }: { label: ReactNode; fill?: number; children?: ReactNode }) {
   return (
     <span className="coin-jar" data-fill={fill}>
-      <img className="jar-glass" src={moneyArt("jar")} alt="" draggable={false} decoding="async" />
+      <img className="jar-glass" src={moneyArt("jar")} width={228} height={384} alt="" draggable={false} decoding="async" />
       <span className="jar-label">{label}</span>
       {children ? <span className="jar-coins">{children}</span> : null}
     </span>

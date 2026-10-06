@@ -1,6 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
-import { openGame, openTimeMoney } from "./kit";
+import { expectStar, openGame, openTimeMoney } from "./kit";
 
 /** The painted props the page asked for that did not come back. */
 function watchArt(page: Page): string[] {
@@ -87,33 +87,52 @@ test("the garden is painted: the bed, the things to give, and the plant at each 
   expect(missing).toEqual([]);
 });
 
-test("the bills are the painted one, with the amount written on, the five tinted", async ({ page }) => {
+test("the bills are the painted one, with the amount written on, the five turned lavender", async ({ page }) => {
   const missing = watchArt(page);
   // Week 11 names the bills along with the coins; salt 5 deals a nickel, a one and a five first.
-  const loaded = page.waitForResponse((response) => /\/games\/bill\.webp$/.test(response.url()) && response.ok());
+  const loaded = Promise.all(["bill", "bill-five"].map((name) => page.waitForResponse((response) => response.url().endsWith(`/games/${name}.webp`) && response.ok())));
   await openTimeMoney(page, { week: 10, ageRange: "6-7", salt: 5 });
   const coins = await openGame(page, "coins");
   await expect(coins).toHaveAttribute("data-task", "name");
   await loaded;
   const picks = coins.locator(".game-tray .pick .coin-art");
   await expect(picks).toHaveCount(3);
-  await expect(coins.locator(".game-tray .pick .coin-art[data-coin-art=one]")).toHaveCount(1);
-  await expect(coins.locator(".game-tray .pick .coin-art[data-coin-art=five]")).toHaveCount(1);
-  for (const id of ["one", "five"]) {
+  for (const [id, painting] of [["one", "bill"], ["five", "bill-five"]] as const) {
     const bill = coins.locator(`.game-tray .pick .coin-art[data-coin-art=${id}]`);
-    await expect(bill.locator("image")).toHaveAttribute("href", /\/games\/bill\.webp$/);
+    await expect(bill).toHaveCount(1);
+    await expect(bill.locator("image")).toHaveAttribute("href", new RegExp(`/games/${painting}\\.webp$`));
     await expect(bill.locator("image")).toHaveAttribute("data-bill-face", id);
     await expect(bill.locator("text").first()).toHaveText(id === "one" ? "1" : "5");
+    // A bill is wider than it is tall, like the painting, at a coin's width.
+    const box = await bill.locator("image").boundingBox();
+    expect(box!.width / box!.height).toBeGreaterThan(1.6);
   }
-  // The same painting on both, so the five is tinted away from the one's green.
-  const tints = await Promise.all(
-    ["one", "five"].map((id) => coins.locator(`.game-tray .pick .coin-art[data-coin-art=${id}] image`).evaluate((node) => getComputedStyle(node).filter)),
-  );
-  expect(tints[0]).toBe("none");
-  expect(tints[1]).toContain("hue-rotate");
-  // And a bill is wider than it is tall, like the painting, at a coin's width.
-  const box = await coins.locator(".game-tray .pick .coin-art[data-coin-art=one] image").boundingBox();
-  expect(box!.width / box!.height).toBeGreaterThan(1.6);
+  // The two paintings tell apart by colour: the one is green, the five lavender (more blue than green).
+  const tones = await page.evaluate(async (names) => {
+    const tone = async (name: string) => {
+      const bitmap = await createImageBitmap(await (await fetch(`games/${name}.webp`)).blob());
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext("2d")!;
+      context.drawImage(bitmap, 0, 0);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      const sum = [0, 0, 0];
+      let seen = 0;
+      for (let at = 0; at < data.length; at += 4) {
+        if (data[at + 3] < 200) continue;
+        sum[0] += data[at];
+        sum[1] += data[at + 1];
+        sum[2] += data[at + 2];
+        seen += 1;
+      }
+      return sum.map((channel) => channel / seen);
+    };
+    return Promise.all(names.map(tone));
+  }, ["bill", "bill-five"]);
+  const [one, five] = tones;
+  expect(one[1], "the one is green").toBeGreaterThan(one[2] + 6);
+  expect(five[2], "the five is lavender").toBeGreaterThan(five[1] + 6);
   expect(missing).toEqual([]);
 });
 
@@ -157,13 +176,31 @@ test("the three jars are the painted jar, and the coins put in sit in its glass"
   await jars.locator("[data-jar=save]").click();
   await jars.locator("[data-jar=save]").click();
   await expect(jars.locator("[data-jar=save] .jar-coins .coin-art")).toHaveCount(2);
-  // The coins lie in the bottom of the glass, inside the jar's sides and above its bottom.
-  const [glass, coin] = await Promise.all([jars.locator("[data-jar=save] img.jar-glass").boundingBox(), jars.locator("[data-jar=save] .jar-coins").boundingBox()]);
-  expect(coin!.x).toBeGreaterThan(glass!.x);
-  expect(coin!.x + coin!.width).toBeLessThan(glass!.x + glass!.width);
-  expect(coin!.y).toBeGreaterThan(glass!.y + glass!.height / 2);
-  expect(coin!.y + coin!.height).toBeLessThan(glass!.y + glass!.height);
+  await expectCoinsInGlass(jars.locator("[data-jar=save]"));
   expect(missing).toEqual([]);
+});
+
+/** The coins in a jar lie in the bottom of its glass: inside the jar's sides, in its lower half, above its bottom. */
+async function expectCoinsInGlass(jar: Locator) {
+  const [glass, coins] = await Promise.all([jar.locator("img.jar-glass").boundingBox(), jar.locator(".jar-coins").boundingBox()]);
+  expect(coins!.y).toBeGreaterThan(glass!.y + glass!.height / 2);
+  expect(coins!.y + coins!.height).toBeLessThan(glass!.y + glass!.height);
+  for (const coin of await jar.locator(".jar-coins .coin-art").all()) {
+    const box = await coin.boundingBox();
+    expect(box!.x).toBeGreaterThan(glass!.x + glass!.width * 0.08);
+    expect(box!.x + box!.width).toBeLessThan(glass!.x + glass!.width * 0.92);
+  }
+}
+
+test("the cards game's save jar starts with four coins, and they fit in its glass", async ({ page }) => {
+  // The last week of the course opens the cards; its save jar holds four.
+  await openTimeMoney(page, { week: 15, ageRange: "6-7" });
+  const cards = await openGame(page, "cards");
+  await expect(cards).toHaveAttribute("data-save", "4");
+  const jar = cards.locator(".pick[data-jar=save]");
+  await expect(jar.locator(".jar-coins .coin-art")).toHaveCount(4);
+  await expect.poll(() => jar.locator("img.jar-glass").evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(100);
+  await expectCoinsInGlass(jar);
 });
 
 /** Through the garden to the life put in order; `salt` picks which life (a development-build switch). */
@@ -209,12 +246,15 @@ test("the plant's life is put in order with the painted seed, sprout and flower"
     await expect.poll(() => picture.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(100);
   }
   await expect(plant.locator(".game-tray .pick svg.art")).toHaveCount(0);
-  // Put in place, each is the same painting on the line.
-  for (const art of ["seed", "sprout", "flower"]) {
+  // Put in place, each is the same painting on the line (the third ends the game, so is not looked for).
+  for (const art of ["seed", "sprout"]) {
     await expect(plant).toHaveAttribute("data-ready", "true");
     await plant.locator(`.pick[data-pick=${art}]`).click();
     await expect(plant.locator(`.order-line li[data-filled=true] img.prop-art[data-prop=${art}]`)).toHaveCount(1);
   }
+  await expect(plant).toHaveAttribute("data-ready", "true");
+  await plant.locator(".pick[data-pick=flower]").click();
+  await expectStar(page);
   expect(missing).toEqual([]);
 });
 

@@ -7566,7 +7566,11 @@ input.is-pressed,
   width: 78px;
 }
 
-/* The painted jar (public/games/jar.webp), half again as tall as it is wide: its lid is the top fifth, the glass the rest. */
+/*
+ * The painted jar (public/games/jar.webp), two-thirds again as tall as it is wide (its width and
+ * height are on the img, so it has its shape before the picture arrives): its lid is the top fifth,
+ * the glass the rest.
+ */
 .coin-jar > .jar-glass {
   display: block;
   width: 100%;
@@ -7599,9 +7603,13 @@ input.is-pressed,
   justify-content: center;
 }
 
-/* Up to three coins lie in the glass, overlapping a little: three fill its width, but for the sides. */
+/*
+ * The coins lie in the glass, overlapping a little: three fill its width, but for the sides, and
+ * more than three shrink to fit (the cards game's jar starts with four).
+ */
 .jar-coins .coin-art {
   width: 52%;
+  min-width: 0;
   margin: 0 -8%;
 }
 

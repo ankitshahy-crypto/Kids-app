@@ -10,7 +10,8 @@ plain paper backdrop. This writes transparent WebP files under public/games/:
   coin-copper.webp, coin-silver.webp   a blank coin face each (the star pressed into the middle is
                                        painted out: the app draws each coin's number there, and
                                        sizes the coin, so two faces make all four coins)
-  bill.webp                            a blank bill (the app writes the amount on it: one for both)
+  bill.webp, bill-five.webp            a blank bill (the app writes the amount on it), and the same
+                                       turned lavender for the five, so the two tell apart at a glance
   jar.webp                             an empty jar with its lid (the app puts the label on it and
                                        the coins in it)
   garden/bed.webp                      the empty planting bed
@@ -133,6 +134,19 @@ def plant(path, name, size):
     return save(img, feather(filled(mask), 1.0), name, size)
 
 
+def tinted(name, out, hue, saturation):
+    """A finished prop turned about the hue circle (`hue` degrees) and saturated, for a second of it in another colour."""
+    rgba = Image.open(OUT / f"{name}.webp").convert("RGBA")
+    h, s, v = rgba.convert("RGB").convert("HSV").split()
+    h = h.point(lambda value: (value + round(hue * 255 / 360)) % 256)
+    s = s.point(lambda value: min(255, round(value * saturation)))
+    turned = Image.merge("HSV", (h, s, v)).convert("RGB")
+    turned.putalpha(rgba.getchannel("A"))
+    path = OUT / f"{out}.webp"
+    turned.save(path, "WEBP", quality=88, method=6)
+    print(out, turned.size, f"{path.stat().st_size // 1024} KB", "tinted from", name)
+
+
 def main(folder: Path):
     def find(key):
         found = [p for p in sorted(folder.glob("*.webp")) if key in p.name]
@@ -156,6 +170,9 @@ def main(folder: Path):
     # and falls below the threshold. The bill's pale wash is a bill too, so its outline as well.
     prop(find("money-jar"), "jar", 384, lo=20.0, hi=36.0, solid=True)
     prop(find("money-bill"), "bill", 512, lo=6.0, hi=18.0, solid=True)
+    # The five is the same bill turned from green to lavender (done here, not by a CSS filter on the
+    # page: Safari does not apply a filter to a picture inside an SVG).
+    tinted("bill", "bill-five", 150, 1.25)
 
 
 if __name__ == "__main__":
