@@ -22,17 +22,18 @@ const older = {
   profiles: [{ ...profile.profiles[0], ageRange: "6-7" }],
 };
 
-async function install(page: Page, saved: unknown = profile, options: { quick?: boolean; salt?: number } = {}) {
+async function install(page: Page, saved: unknown = profile, options: { quick?: boolean; salt?: number; calm?: boolean } = {}) {
   await page.addInitScript(
-    ({ saved, quick, salt }) => {
+    ({ saved, quick, salt, calm }) => {
       localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
       localStorage.removeItem("kids-app-silent-hint-v1");
       // No wait for the praise between rounds (a development-build switch, see e2e/kit.ts).
       if (quick) localStorage.setItem("littlenest-quick-rounds", "1");
       // The boards of one known play (the same kind of switch), when a test is about one of them.
       if (salt !== undefined) localStorage.setItem("littlenest-salt", String(salt));
+      if (calm) localStorage.setItem("littlenest-settings-v1", JSON.stringify({ calm: true }));
     },
-    { saved, quick: options.quick ?? false, salt: options.salt },
+    { saved, quick: options.quick ?? false, salt: options.salt, calm: options.calm ?? false },
   );
   await page.goto("./");
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
@@ -856,6 +857,65 @@ test("home is a cheer on the face, a bigger one for a mended plan and the last r
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
   // (The game has closed by now: the note is read from the window, not the board.)
   expect(await page.evaluate(() => (window as Window & { __cheer?: string[] }).__cheer ?? [])).toContain("cheer");
+});
+
+/**
+ * What moves on the page right now: the tag and classes of each element with a running animation
+ * or transition, marked "pet" when it is part of the coding animal.
+ */
+async function moving(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    document
+      .getAnimations()
+      .filter((animation) => animation.playState === "running")
+      .map((animation) => {
+        const target = (animation.effect as KeyframeEffect | null)?.target as Element | null;
+        if (!target) return "?";
+        return `${target.closest(".code-pet") ? "pet " : ""}${target.tagName.toLowerCase()}.${[...target.classList].join(".")}`;
+      }),
+  );
+}
+
+for (const [name, setup] of [
+  ["reduced motion", { reduced: true, calm: false }],
+  ["calm mode", { reduced: false, calm: true }],
+] as const) {
+  test(`with ${name} the scene is still and the animal glides tile to tile, no hop, no blink, no glow`, async ({ page }) => {
+    if (setup.reduced) await page.emulateMedia({ reducedMotion: "reduce" });
+    await install(page, profile, { quick: true, salt: 4, calm: setup.calm });
+    await openCoding(page);
+    await page.locator("[data-game-tile=bird]").click();
+    const board = page.locator(".game-frame[data-screen=bird]");
+    if (setup.calm) await expect(page.locator(".app")).toHaveAttribute("data-calm", "true");
+    // Nothing runs on its own: no scene drift, no blink, no breath.
+    await page.waitForTimeout(300);
+    expect(await moving(page)).toEqual([]);
+    // The glide between tiles keeps a step's time (the quick setting's 160 ms step, less the 20 ms
+    // the arrow has first), not the near-nothing every other transition gets; it is the one
+    // movement left, and it is seen to happen: the page notes how long the glide took.
+    const pet = board.locator(".code-pet");
+    expect(await pet.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe("0.14s");
+    await pet.evaluate((el) => {
+      el.addEventListener("transitionend", (event) => {
+        (window as Window & { __glide?: number }).__glide = (event as TransitionEvent).elapsedTime;
+      });
+    });
+    await board.locator(`[data-arrow=${((await board.getAttribute("data-path")) ?? "").split(",")[0]}]`).click();
+    await expect.poll(() => page.evaluate(() => (window as Window & { __glide?: number }).__glide ?? null)).toBeCloseTo(0.14, 2);
+  });
+}
+
+test("the scene moves a little on its own, and the animal breathes (and blinks, once it has a blink frame)", async ({ page }) => {
+  await install(page, profile, { quick: true, salt: 4 });
+  await openCoding(page);
+  await page.locator("[data-game-tile=bird]").click();
+  const board = page.locator(".game-frame[data-screen=bird]");
+  await expect(board).toHaveAttribute("data-mode", "tap");
+  const now = await moving(page);
+  expect(now.some((it) => it.startsWith("g.scene-") || it.startsWith("circle.scene-") || it.startsWith("path.scene-"))).toBe(true);
+  expect(now).toContain("pet span.game-host-body");
+  // The painted animal blinks by showing its blink frame for a moment; one without that frame only breathes.
+  if ((await board.locator(".code-pet .avatar-blink").count()) > 0) expect(now).toContain("pet img.avatar-blink");
 });
 
 test("no two plays are alike: the boards turn and the pictures change", async ({ page }) => {
