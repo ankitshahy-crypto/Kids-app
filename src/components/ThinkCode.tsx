@@ -199,6 +199,8 @@ function lineFor(round: BirdRound, plan: (Dir | null)[], queue: Chip[]): Cue[] {
  * too. Taps on the row are let go for this long after.
  */
 const REFLOW_MS = 400;
+/** How long the kept-routine line takes to say, so the next board does not cut it off. */
+const KEPT_LINE_MS = 4200;
 
 type Walk = { step: number; cell: Cell };
 
@@ -305,7 +307,8 @@ function BirdGame({
       // The plan that got home is the child's routine now: its arrows close up into one chip on
       // the page while the line says so, and the next board is made for it.
       setKept(program(round, queue));
-      coach.right([codeSay("code-routine-kept")], rounds.next, HOME_MS);
+      // (The line is a long one, close to four seconds: given the time to be heard to its end.)
+      coach.right([codeSay("code-routine-kept")], rounds.next, HOME_MS, KEPT_LINE_MS);
       return;
     }
     coach.right([codeSay("code-home")], rounds.next, HOME_MS);
