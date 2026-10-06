@@ -9,8 +9,8 @@ import { wearArt } from "../wardrobeArt";
  * The child's animal, plus any outfit they have already earned and chosen. `mood` is how it looks
  * (see kit.tsx); `view` is its face or its whole figure. The outfit pieces sit on the head: in the
  * face view that is the whole box, in the body view the part of the figure the art says (so a hat
- * is on the head and not on the belly). A painted piece is a picture placed where the art says; a
- * piece without one yet is drawn by CSS; the sky colour is a tint of the animal itself (its own
+ * is on the head and not on the belly). A piece is a painted picture placed where the art says
+ * (one without a picture shows nothing); the sky colour is a tint of the animal itself (its own
  * filter, from the art).
  */
 export function Hero({ animal, outfit, mood, view = "face" }: { animal: AnimalId; outfit: Outfit; mood?: Mood; view?: ArtView }) {

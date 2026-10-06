@@ -32,7 +32,7 @@ function watchArt(page: Page): string[] {
 
 test("the child's animal is the painted face: on the home screen, dressed up, and in a story", async ({ page }) => {
   const missing = watchArt(page);
-  await install(page, profile("fox", { hat: "hat-leaf", glasses: "glasses-round" }));
+  await install(page, profile("fox", { hat: "hat-leaf", glasses: "glasses-round", scarf: "scarf-stripe" }));
   await page.getByRole("button", { name: "Mia" }).click();
   const hero = page.locator("[data-screen=today] .hero").first();
   const face = hero.locator(".avatar-art.avatar-painted");
@@ -50,7 +50,8 @@ test("the child's animal is the painted face: on the home screen, dressed up, an
   // The pieces are painted pictures too, placed on the face.
   await expect(hero.locator(".wear-hat")).toHaveAttribute("src", /\/wardrobe\/hat-leaf\.webp$/);
   await expect(hero.locator(".wear-glasses")).toHaveAttribute("src", /\/wardrobe\/glasses-round\.webp$/);
-  for (const piece of [".wear-hat", ".wear-glasses"]) {
+  await expect(hero.locator(".wear-scarf")).toHaveAttribute("src", /\/wardrobe\/scarf-stripe\.webp$/);
+  for (const piece of [".wear-hat", ".wear-glasses", ".wear-scarf"]) {
     await expect.poll(() => hero.locator(piece).evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(100);
   }
   await page.getByRole("button", { name: "Story" }).click();

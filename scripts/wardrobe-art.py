@@ -12,7 +12,8 @@ How each is lifted depends on what it shares with the fox:
   leaf hat, crown, dot scarf: their own colour (green, gold, teal), so a colour seed and GrabCut;
   glasses: the dark frames, where the picture differs strongly from the fox without them (the
            renders line up pixel for pixel);
-  stripe scarf: orange and cream, like the fox; not lifted (it needs a render of its own).
+  stripe scarf: orange and cream, like the fox, so no colour or difference tells them apart: its
+           band and knot are traced by hand (STRIPE_SCARF, in the render's own pixels) instead.
 Needs: pip install opencv-python-headless pillow numpy
 """
 import json, sys
@@ -47,6 +48,23 @@ def face_box(fox):
     hx0, hy0, hx1, hy1 = int(cx - size / 2), y0, int(cx + size / 2), y0 + size
     pad = int(size * 0.06)
     return hx0 - pad, hy0 - pad, hx1 + pad, hy1 + pad
+
+
+# The stripe scarf's band and knot on the fox render (1120 x 2240), traced by eye, clockwise from
+# the top left: along the top edge under the chin, down the right side, across the two tails where
+# they are cut (with the gap between them), and back up the left side.
+STRIPE_SCARF = [
+    (250, 960), (300, 966), (360, 980), (430, 998), (500, 1010), (545, 1016), (575, 1008), (640, 998), (720, 992), (790, 984), (846, 968),
+    (852, 1010), (850, 1070), (846, 1120), (815, 1150), (775, 1162), (782, 1200), (785, 1250),
+    (578, 1250), (578, 1210), (520, 1205), (515, 1250),
+    (305, 1250), (318, 1180), (292, 1140), (256, 1110), (248, 1060), (244, 1000),
+]
+
+
+def traced(img, polygon):
+    fg = np.zeros(img.shape[:2], np.uint8)
+    cv2.fillPoly(fg, [np.array(polygon, np.int32)], 1)
+    return fg
 
 
 def finish(fg, small_holes=0):
@@ -141,6 +159,8 @@ def main(folder: Path, fox_path: Path):
     manifest["hat-crown"] = save(img, by_colour(img, 34, 70, 60, 90, (430, 170, 760, 460)), "hat-crown", face)
     img = load("dot-scarf")
     manifest["scarf-dots"] = save(img, by_colour(img, 160, 215, 60, 40, (200, 600, 950, 1500)), "scarf-dots", face, keep_top=0.62)
+    img = load("stripe-scarf-0")
+    manifest["scarf-stripe"] = save(img, traced(img, STRIPE_SCARF), "scarf-stripe", face, pad=4, keep_top=0.86)
     img = load("glasses")
     manifest["glasses-round"] = save(img, glasses(img, fox, (250, 520, 900, 820)), "glasses-round", face, pad=8)
     MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n")
