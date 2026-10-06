@@ -1,6 +1,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { child, game, onRound, timePlacement } from "./kit";
 
+// Two tests here hold back or refuse a painting's fetch from the test (page.route). The service
+// worker would answer such a fetch itself, out of the test's sight, so none runs in this file.
+test.use({ serviceWorkers: "block" });
+
 /**
  * The scenes behind the games are paintings (public/backdrops, src/data/backdropArt.json). Each is
  * held where its game looks, the games' things stand on the painting's own lines, outdoors it
@@ -64,11 +68,17 @@ async function painted(frame: Locator, kind: string) {
   return { scene, art };
 }
 
-/** How far down the scene something's bottom edge is, as a share of the scene's height. */
+/**
+ * How far down the painting something's bottom edge is, as a share of the painting's height. The
+ * painting covers the scene: as tall as the scene when the scene is narrower than three by two,
+ * and otherwise as tall as two thirds of the scene's width with its top cut off (it is held by its
+ * bottom). So this is where the thing stands on the picture itself, whatever the scene's shape.
+ */
 async function down(scene: Locator, thing: Locator): Promise<number> {
   const [box, of] = [await thing.boundingBox(), await scene.boundingBox()];
   if (!box || !of) throw new Error("Nothing to measure");
-  return (box.y + box.height - of.y) / of.height;
+  const art = Math.max(of.height, (of.width * 2) / 3);
+  return 1 - (of.y + of.height - (box.y + box.height)) / art;
 }
 
 /** The movements running on the painting by themselves (its drift), by name. A fade in is not one. */
@@ -80,11 +90,20 @@ const drifting = (art: Locator) =>
       .map((animation) => (animation as CSSAnimation).animationName),
   );
 
-test("a game's scene is its painting, held where the game looks, with its things on the painting's own line", async ({ page }) => {
-  const missing = watchArt(page);
-  await install(page);
-  const shop = await openMoney(page, "shop");
-  const { scene, art } = await painted(shop, "shop");
+for (const [shape, size] of [
+  ["wider than the painting", { width: 1280, height: 720 }],
+  ["narrower than the painting, a phone", { width: 390, height: 844 }],
+] as const) {
+  test(`a game's scene is its painting, held where the game looks, with its things on the painting's own line (a scene ${shape})`, async ({ page }) => {
+    await page.setViewportSize(size);
+    const missing = watchArt(page);
+    await install(page);
+    const shop = await openMoney(page, "shop");
+    const { scene, art } = await painted(shop, "shop");
+    // The scene's shape is the one this test is for: on the desktop size it is wider than three by
+    // two (the painting is held by its bottom and its top is cut off), on the phone narrower.
+    const box = (await scene.boundingBox())!;
+    expect(box.width / box.height > 1.5).toBe(shape === "wider than the painting");
   // The painting is the scene: nothing is drawn under it.
   await expect(scene.locator("svg.game-backdrop")).toHaveCount(0);
   // As tall as the scene and wider, held at its middle, its bottom on the scene's bottom.
@@ -93,34 +112,35 @@ test("a game's scene is its painting, held where the game looks, with its things
   // Indoors nothing drifts.
   await expect(art).toHaveAttribute("data-drift", "false");
   expect(await drifting(art)).toEqual([]);
-  // The thing for sale stands on the counter: its foot is on the painted counter's front edge
-  // (about three quarters of the way down), not where the drawn counter was.
-  await expect(scene).toHaveAttribute("style", /--scene-floor:\s*0\.775/);
-  expect(await down(scene, shop.locator(".shop-counter > :first-child"))).toBeCloseTo(0.775, 2);
+    // The thing for sale stands on the counter: its foot is on the painted counter's front edge
+    // (about three quarters of the way down the painting), not where the drawn counter was.
+    await expect(scene).toHaveAttribute("style", /--scene-floor:\s*0\.775/);
+    expect(await down(scene, shop.locator(".shop-counter > :first-child"))).toBeCloseTo(0.775, 2);
 
-  // The lemonade stall is at the right of its painting, and the painting is held there.
-  await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.locator("[data-activity=lemonade]").click();
-  const stand = game(page, "lemonade");
-  const stall = await painted(stand, "stand");
-  expect(await stall.art.evaluate((img) => getComputedStyle(img).objectPosition)).toBe("100% 100%");
-  // The coins earned (one a cup) lie on the stall's counter.
-  const cups = Number(await stand.getAttribute("data-answer"));
-  await stand.locator(`.pick[data-cups="${cups}"]`).click();
-  await expect(stand).toHaveAttribute("data-earned", String(cups));
-  await expect(stand.locator(".coin-row .coin-art")).toHaveCount(cups);
-  expect(await down(stall.scene, stand.locator(".coin-row"))).toBeCloseTo(0.76, 2);
-  expect(missing).toEqual([]);
-});
+    // The lemonade stall is at the right of its painting, and the painting is held there.
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+    await page.locator("[data-activity=lemonade]").click();
+    const stand = game(page, "lemonade");
+    const stall = await painted(stand, "stand");
+    expect(await stall.art.evaluate((img) => getComputedStyle(img).objectPosition)).toBe("100% 100%");
+    // The coins earned (one a cup) lie on the stall's counter.
+    const cups = Number(await stand.getAttribute("data-answer"));
+    await stand.locator(`.pick[data-cups="${cups}"]`).click();
+    await expect(stand).toHaveAttribute("data-earned", String(cups));
+    await expect(stand.locator(".coin-row .coin-art")).toHaveCount(cups);
+    expect(await down(stall.scene, stand.locator(".coin-row"))).toBeCloseTo(0.76, 2);
 
-test("the animal to paint sits where the painted wall meets the floor", async ({ page }) => {
-  await install(page);
-  await page.getByRole("button", { name: "LittleNest Colors" }).click();
-  await page.locator("[data-activity=paint]").click();
-  const paint = game(page, "paint");
-  const { scene } = await painted(paint, "room");
-  expect(await down(scene, paint.locator(".painted-hero"))).toBeCloseTo(0.833, 2);
-});
+    // The animal to paint sits where the painted wall meets the floor.
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+    await page.getByRole("button", { name: "LittleNest Colors" }).click();
+    await page.locator("[data-activity=paint]").click();
+    const paint = game(page, "paint");
+    const room = await painted(paint, "room");
+    expect(await down(room.scene, paint.locator(".painted-hero"))).toBeCloseTo(0.833, 2);
+    expect(missing).toEqual([]);
+  });
+}
 
 test("outdoors the painting drifts, slowly, and never shows an edge", async ({ page }) => {
   await install(page);

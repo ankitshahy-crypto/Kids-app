@@ -6316,6 +6316,10 @@ input.is-pressed,
   height: clamp(210px, 33svh, 300px);
   border-radius: 28px;
   overflow: hidden;
+  /* Its painting's size is worked out from its own (see --scene-floor below), and its rounded
+     corners clip the drifting painting (WebKit lets a moving picture out of them otherwise). */
+  container-type: size;
+  isolation: isolate;
 }
 
 .game-backdrop {
@@ -6361,13 +6365,18 @@ input.is-pressed,
 
 /* A painting has its own line for things to stand on (a counter's edge, the floor), not quite
    where the drawn scene's is. A game whose things stand on the line is laid out by the painting's:
-   --scene-floor is the line's share of the way down the scene (kit.tsx sets it on a painted scene
-   that has one). The shop's thing for sale stands on the counter, and the big animal to paint sits
-   where the wall meets the floor. */
+   --scene-floor is the line's share of the way down the painting (kit.tsx sets it on a painted
+   scene that has one). The painting is three by two and covers the scene: as tall as the scene
+   when the scene is narrower than that, and otherwise as tall as two thirds of the scene's width,
+   with its top cut off (it is held by its bottom). So the line's height above the scene's bottom
+   is its share of the larger of the two. (Written twice: a browser without container units keeps
+   the first line, the scene's own height, and drops the second.) The shop's thing for sale stands
+   on the counter, and the big animal to paint sits where the wall meets the floor. */
 .game-frame[data-screen="shop"] .game-scene[data-painted="true"] .game-stage,
 .game-frame[data-screen="cards"] .game-scene[data-painted="true"] .game-stage,
 .game-frame[data-screen="paint"] .game-scene[data-painted="true"] .game-stage {
   bottom: calc(100% * (1 - var(--scene-floor, 0.75)));
+  bottom: calc(max(100cqh, 200cqw / 3) * (1 - var(--scene-floor, 0.75)));
 }
 
 .game-scene[data-painted="true"] .shop-counter {
@@ -6382,6 +6391,7 @@ input.is-pressed,
    scene at the top and the bottom.) */
 .game-scene[data-painted="true"] .stand-stage .coin-row {
   bottom: calc((100% + 16px) * (1 - var(--scene-floor, 0.75)) - 8px);
+  bottom: calc(max(100cqh, 200cqw / 3) * (1 - var(--scene-floor, 0.75)) - 8px);
 }
 
 /* The child's animal stands in the scene and reacts: a jump for a right answer, a tilt for a miss. */
