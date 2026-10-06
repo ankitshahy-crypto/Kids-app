@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { fingerPath, QUICK_STRIDE } from "./fingerPath";
+import { noting } from "./kit";
 
 /**
  * How closely the test finger follows a stroke. "quick" is the default, and what the
@@ -79,6 +80,9 @@ export async function scribbleCorner(page: Page, screen: string) {
 export async function finishPathTrace(page: Page, screen: string) {
   const root = page.locator(`[data-screen=${screen}]`);
   await expect(root).toBeVisible();
+  // The page notes what the cheer says, as it does: the cheer leaves on its own after a moment,
+  // and the screen with it, so asked from here the screen could be gone.
+  const said = await noting(root, (el) => `${el.getAttribute("data-phase")} ${el.getAttribute("data-spoken") ?? ""}`);
   for (let step = 0; step < 80; step += 1) {
     const phase = await screenPhase(page, screen);
     if (phase === null) return;
@@ -88,7 +92,7 @@ export async function finishPathTrace(page: Page, screen: string) {
     } else if (phase === "trace") {
       await traceCurrentStroke(page, screen);
     } else if (phase === "cheer") {
-      await expect(root).toHaveAttribute("data-spoken", /.+/);
+      await expect.poll(async () => (await said()).some((note) => /^cheer .+/.test(note))).toBe(true);
       // The cheer leaves on its own after a moment, so Done may already be gone.
       await root.getByRole("button", { name: "Done" }).click({ timeout: 1500 }).catch(() => undefined);
       await expect(root).toHaveCount(0, { timeout: 5000 }).catch(() => undefined);
