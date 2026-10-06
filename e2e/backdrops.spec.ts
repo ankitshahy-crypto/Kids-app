@@ -183,7 +183,7 @@ for (const [name, setup] of [
   });
 }
 
-test("the weather is its painting, and the rain still falls over the rainy one", async ({ page }) => {
+test("the weather is its painting, the rain painted in", async ({ page }) => {
   const missing = watchArt(page);
   await install(page, { ageRange: "6-7" });
   const weather = await openScience(page, "weather");
@@ -195,15 +195,8 @@ test("the weather is its painting, and the rain still falls over the rainy one",
     const kind = scenes[(await weather.getAttribute("data-item")) ?? ""];
     seen.push(kind);
     const { scene, art } = await painted(weather, kind);
-    if (kind === "rainy") {
-      // The painting shows the puddles; the rain is the drawn one, falling over it.
-      const rain = scene.locator("svg.game-backdrop path.scene-rain");
-      await expect(rain).toHaveCount(1);
-      expect(await rain.evaluate((path) => path.getAnimations().map((animation) => (animation as CSSAnimation).animationName))).toEqual(["scene-rain"]);
-      expect(await rain.evaluate((path) => (path.compareDocumentPosition(path.ownerDocument.querySelector("img.game-backdrop-art")!) & Node.DOCUMENT_POSITION_PRECEDING) !== 0)).toBe(true);
-    } else {
-      await expect(scene.locator("svg.game-backdrop")).toHaveCount(0);
-    }
+    // The painting is the whole scene, the rain of the rainy one painted in: nothing drawn over it.
+    await expect(scene.locator("svg.game-backdrop")).toHaveCount(0);
     // The sunny scene is held so that its sun is in view.
     if (kind === "afternoon") expect(await art.evaluate((img) => getComputedStyle(img).objectPosition)).toBe("75% 100%");
     await weather.locator(`.pick[data-pick=${await weather.getAttribute("data-answer")}]`).click();

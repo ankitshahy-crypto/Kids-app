@@ -376,7 +376,7 @@ function usePainting(kind: SceneKind) {
   return { painting: now.state === "none" ? undefined : PAINTINGS[kind], shown: now.state === "in", settle };
 }
 
-/** The rain of the rainy scene. It falls over the painting too, which shows the puddles and not the rain. */
+/** The rain of the drawn rainy scene. */
 function Rain() {
   return (
     <path
@@ -416,11 +416,6 @@ function Backdrop({ kind, painting, shown, settle }: { kind: SceneKind; painting
         onLoad={() => settle(kind, "in")}
         onError={() => settle(kind, "none")}
       />
-      {kind === "rainy" ? (
-        <svg className="game-backdrop" viewBox="0 0 360 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
-          <Rain />
-        </svg>
-      ) : null}
     </>
   );
 }

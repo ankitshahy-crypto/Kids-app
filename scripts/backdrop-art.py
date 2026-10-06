@@ -48,7 +48,8 @@ SCENES = {
     "afternoon": {"part": (0.5, 1.0), "hold": 75},
     "pond": {},
     "sky": {},
-    "rainy": {},
+    # Twice as wide as it is tall: the middle, where the puddles are.
+    "rainy": {"part": (0.125, 0.875)},
     "snowy": {},
     "windy": {},
     # Indoors nothing drifts. The floor is where a thing for sale stands (the front of the counter's
