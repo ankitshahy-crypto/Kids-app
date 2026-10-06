@@ -452,8 +452,11 @@ test("a plan can be mended and run again straight away, and the animal does not 
   await expect
     .poll(
       async () => {
-        if ((await board.getAttribute("data-round")) !== "0") return "next";
-        seen.push(`${await board.getAttribute("data-x")},${await board.getAttribute("data-y")}`);
+        // (The round and the place in one look: read apart, the next round can begin in between,
+        // and its start would be taken for this round's.)
+        const [round, at] = await board.evaluate((frame) => [frame.getAttribute("data-round"), `${frame.getAttribute("data-x")},${frame.getAttribute("data-y")}`]);
+        if (round !== "0") return "next";
+        seen.push(at);
         return "walking";
       },
       { timeout: 10_000, intervals: [40] },
