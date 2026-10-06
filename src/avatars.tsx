@@ -1,8 +1,58 @@
 import type { JSX } from "react";
 import type { AnimalId } from "./data/animals";
+import art from "./data/animalArt.json";
 import type { Mood } from "./game/kit";
 
 const INK = "#2C3A4F";
+
+/**
+ * The painted animals (public/animals/<id>/, made by scripts/animal-art.py): which frames each has
+ * and where its head sits in the whole figure. A mood with no frame of its own shows the idle frame
+ * (the mood still shows in how the animal moves), so frames can land one at a time; an animal with
+ * no entry at all is drawn (the shapes below), so nothing is ever blank.
+ */
+export type ArtFrame = "idle" | "cheer" | "think" | "wait" | "blink" | "wave" | "silly";
+export type ArtView = "face" | "body";
+type ArtEntry = { frames: ArtFrame[]; body: boolean; head: { x: number; y: number; w: number; h: number }; sky: string };
+const ART: Partial<Record<AnimalId, ArtEntry>> = art as Partial<Record<AnimalId, ArtEntry>>;
+
+export function artOf(animal: AnimalId): ArtEntry | null {
+  return ART[animal] ?? null;
+}
+
+/** The frame a mood shows: its own when the animal has it, else idle (a walk is the idle face hopping). */
+export function frameFor(animal: AnimalId, mood: Mood): ArtFrame {
+  const frames = ART[animal]?.frames ?? [];
+  return mood !== "idle" && mood !== "walk" && frames.includes(mood) ? mood : "idle";
+}
+
+/** The view an animal can show: its whole figure only when that is shipped (animalArt.json), else its face. */
+export function viewFor(animal: AnimalId, view: ArtView): ArtView {
+  return view === "body" && ART[animal]?.body ? "body" : "face";
+}
+
+export function artSrc(animal: AnimalId, frame: ArtFrame, view: ArtView): string {
+  return `${import.meta.env.BASE_URL}animals/${animal}/${frame}${view === "face" ? "-face" : ""}.webp`;
+}
+
+const warmed = new Set<string>();
+
+/**
+ * Every frame of an animal into the browser's cache, so a change of mood never shows a blank. For
+ * the child's own animal (the Hero), where moods happen; not for every face on the picker.
+ */
+export function preloadArt(animal: AnimalId) {
+  const entry = ART[animal];
+  if (!entry || warmed.has(animal) || typeof Image === "undefined") return;
+  warmed.add(animal);
+  for (const frame of entry.frames) {
+    for (const view of entry.body ? (["face", "body"] as const) : (["face"] as const)) {
+      const image = new Image();
+      image.decoding = "async";
+      image.src = artSrc(animal, frame, view);
+    }
+  }
+}
 
 /** What every face takes: the mood its eyes show. */
 type Face = { mood: Mood };
@@ -218,8 +268,28 @@ const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
   koala: KoalaAvatar,
 };
 
-/** An animal's face. `mood` is how it looks (see kit.tsx): the eyes follow it, by CSS. */
-export function Avatar({ animal, mood }: { animal: AnimalId; mood?: Mood }) {
-  const Art = avatars[animal];
-  return <Art mood={mood ?? "idle"} />;
+/**
+ * An animal. `mood` is how it looks (see kit.tsx); `view` is its face (the usual: it reads at tile
+ * size) or its whole figure. Painted when the animal's art is there, drawn otherwise.
+ *
+ * A painted animal is a box (`.avatar-art`, sized by where it sits, as the drawing was) holding the
+ * mood's frame. With a blink frame, that sits on top and shows for a moment now and then (CSS); the
+ * idle frame underneath is what shows between blinks, so the face never flashes a different look.
+ */
+export function Avatar({ animal, mood = "idle", view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
+  const entry = ART[animal];
+  if (!entry) {
+    const Art = avatars[animal];
+    return <Art mood={mood} />;
+  }
+  const frame = frameFor(animal, mood);
+  const shown = viewFor(animal, view);
+  const blinks = frame === "idle" && entry.frames.includes("blink");
+  return (
+    <span className="avatar-art avatar-painted" data-mood={mood} data-view={shown} data-frame={frame} aria-hidden="true">
+      {/* The size attributes give the box its shape before the picture arrives (a face is square), so nothing jumps. */}
+      <img src={artSrc(animal, frame, shown)} width={shown === "face" ? 512 : undefined} height={shown === "face" ? 512 : undefined} alt="" draggable={false} decoding="async" />
+      {blinks ? <img className="avatar-blink" src={artSrc(animal, "blink", shown)} alt="" draggable={false} decoding="async" /> : null}
+    </span>
+  );
 }

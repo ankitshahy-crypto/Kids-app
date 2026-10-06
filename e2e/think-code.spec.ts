@@ -839,7 +839,7 @@ test("the walk is one hop per step: the arrow lights first, then the animal hops
   expect(bumped.filter((it) => it.startsWith("at:"))).toEqual(["at:0,0"]);
 });
 
-test("home is a cheer with happy eyes, a bigger one for a mended plan and the last round", async ({ page }) => {
+test("home is a cheer on the face, a bigger one for a mended plan and the last round", async ({ page }) => {
   test.slow();
   const board = await toBugRound(page, 1);
   await expect(board).toHaveAttribute("data-cheer", "big");
@@ -849,7 +849,8 @@ test("home is a cheer with happy eyes, a bigger one for a mended plan and the la
     const seen: string[] = [];
     (window as Window & { __cheer?: string[] }).__cheer = seen;
     new MutationObserver(() => {
-      if (frame.querySelector(".code-pet[data-mood=cheer] .avatar-art[data-mood=cheer] .avatar-eyes-happy")) seen.push("cheer");
+      // The painted face shows its cheer frame when it has one, its idle frame otherwise (data-frame); the mood is on both.
+      if (frame.querySelector(".code-pet[data-mood=cheer] .avatar-art[data-mood=cheer]")) seen.push("cheer");
     }).observe(frame, { attributes: true, subtree: true });
   });
   await board.locator("[data-go=run]").click();
