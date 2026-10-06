@@ -82,6 +82,21 @@ async function mendPlan(board: Locator) {
 }
 
 /**
+ * The round the board was on is over: the next one has opened, or the game has ended (it says so,
+ * or it has gone from the page). One look at the page decides it. (It used to be three questions,
+ * one after another. A board that left the page between the first and the second left the second
+ * waiting for a board that was not coming back, until the wait ran out: a failure at the end of a
+ * game that had ended as it should, and the likelier the busier the machine.)
+ */
+async function roundOver(board: Locator, round: string | null) {
+  await expect
+    .poll(() => board.evaluateAll((frames, was) => frames.length === 0 || frames[0].getAttribute("data-finished") === "true" || frames[0].getAttribute("data-round") !== was, round), {
+      timeout: 10_000,
+    })
+    .toBe(true);
+}
+
+/**
  * Walk or plan the board's own path, and see the animal get home: the next round opens, or the game
  * ends. (Home itself lasts only a moment under the tests' quick setting, so it is not waited for.)
  */
@@ -101,9 +116,7 @@ async function runPath(board: Locator) {
     if (mode === "loop") break;
   }
   if (mode !== "tap") await board.locator("[data-go=run]").click();
-  await expect
-    .poll(async () => (await board.count()) === 0 || (await board.getAttribute("data-finished")) === "true" || (await board.getAttribute("data-round")) !== round, { timeout: 10_000 })
-    .toBe(true);
+  await roundOver(board, round);
 }
 
 /** Predict: pick the ending that matches the board's own path, then Go. */
@@ -115,9 +128,7 @@ async function solvePredict(board: Locator) {
   await expect(board.locator(".code-chip")).toHaveCount(path.length);
   const round = await board.getAttribute("data-round");
   await board.locator("[data-go=run]").click();
-  await expect
-    .poll(async () => (await board.count()) === 0 || (await board.getAttribute("data-finished")) === "true" || (await board.getAttribute("data-round")) !== round, { timeout: 10_000 })
-    .toBe(true);
+  await roundOver(board, round);
 }
 
 /** The round with this number (from 0) is the one being played. */
@@ -461,6 +472,27 @@ test("a plan can be mended and run again straight away, and the animal does not 
   const board = page.locator(".game-frame[data-screen=bird]");
   const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
   const start = `${await board.getAttribute("data-x")},${await board.getAttribute("data-y")}`;
+  // The page notes the round as it happens: each time the animal is put somewhere, or the board
+  // says the plan stopped short or the animal is home, where the animal is and whether the start
+  // tile is marked. (The walk used to be watched from here, a look every 40 ms. Under the quick
+  // setting it is over in under a second, and on a busy machine the first look could come after
+  // it: nothing seen, and a failure with nothing wrong. Nothing is asked of the page between the
+  // stop and the second Go either, so the second Go is as soon after the stop as a test can make it.)
+  type Note = { at: string; marked: boolean; short: boolean; home: boolean };
+  await board.evaluate((frame, startCell) => {
+    const notes: Note[] = [];
+    (window as Window & { __round?: Note[] }).__round = notes;
+    new MutationObserver(() => {
+      // (The round and the place in one look: the next round's start is not this round's.)
+      if (frame.getAttribute("data-round") !== "0") return;
+      notes.push({
+        at: `${frame.getAttribute("data-x")},${frame.getAttribute("data-y")}`,
+        marked: frame.querySelector(`[data-cell="${startCell}"]`)?.getAttribute("data-walked") === "true",
+        short: frame.getAttribute("data-wrong-why") === "short",
+        home: frame.getAttribute("data-home") === "true",
+      });
+    }).observe(frame, { attributes: true, attributeFilter: ["data-x", "data-y", "data-round", "data-wrong-why", "data-home"] });
+  }, start.replace(",", "-"));
   // One arrow short, Go, and the moment it stops: the last arrow and Go again, before the animal
   // has walked back. (A rest from the wrong run used to fire into the new one and snap the animal
   // to the start mid-walk.)
@@ -468,30 +500,23 @@ test("a plan can be mended and run again straight away, and the animal does not 
   await board.locator("[data-go=run]").click();
   await expect(board).toHaveAttribute("data-wrong-why", "short", { timeout: 5000 });
   await board.locator(`[data-arrow=${steps[steps.length - 1]}]`).click();
-  // Mending the plan brings the animal home to the start at once.
-  await expect(board).toHaveAttribute("data-x", start.split(",")[0]);
-  await expect(board).toHaveAttribute("data-y", start.split(",")[1]);
   await board.locator("[data-go=run]").click();
-  // The tile the animal leaves is marked, the start tile first.
-  await expect(board.locator(`[data-cell="${start.replace(",", "-")}"]`)).toHaveAttribute("data-walked", "true");
-  // Watch the walk: once the animal has left the start, it does not come back to it before the next round.
-  const seen: string[] = [];
-  await expect
-    .poll(
-      async () => {
-        // (The round and the place in one look: read apart, the next round can begin in between,
-        // and its start would be taken for this round's.)
-        const [round, at] = await board.evaluate((frame) => [frame.getAttribute("data-round"), `${frame.getAttribute("data-x")},${frame.getAttribute("data-y")}`]);
-        if (round !== "0") return "next";
-        seen.push(at);
-        return "walking";
-      },
-      { timeout: 10_000, intervals: [40] },
-    )
-    .toBe("next");
-  const left = seen.findIndex((cell) => cell !== start);
-  expect(left).toBeGreaterThanOrEqual(0);
-  expect(seen.slice(left)).not.toContain(start);
+  await onRound(board, 1);
+  const notes: Note[] = await page.evaluate(() => (window as Window & { __round?: Note[] }).__round ?? []);
+  // What came after the plan last stood as stopped short: the mending, then the second run. Each
+  // place the animal was put, in order (a note that it is home is the same place again).
+  const after = notes.slice(notes.map((note) => note.short).lastIndexOf(true) + 1);
+  const places = after.filter((note, index) => index === 0 || note.at !== after[index - 1].at);
+  // Mending the plan brings the animal home to the start at once.
+  expect(places[0]?.at).toBe(start);
+  // Then the walk: one place for each step of the plan, the start tile marked as soon as it is
+  // left, and the animal home at the end of it.
+  const walk = places.slice(1);
+  expect(walk).toHaveLength(steps.length);
+  expect(walk[0].marked).toBe(true);
+  expect(after[after.length - 1].home).toBe(true);
+  // Once the animal has left the start, it does not come back to it before the next round.
+  expect(walk.map((note) => note.at)).not.toContain(start);
 });
 
 test("a plan has exactly one place for each step home, on one line, on a phone", async ({ page }) => {
