@@ -126,6 +126,26 @@ async function onRound(board: Locator, round: number) {
   await expect(board).toHaveAttribute("data-home", "false");
 }
 
+/**
+ * Go, and the animal gets home: the next round opens. Home itself lasts only a moment under the
+ * tests' quick setting (150 ms), too short to ask the page about afterwards: a question that comes
+ * a little late finds the next board, where the animal is not home. So the page notes home as it
+ * happens, and what is waited for is the next round.
+ */
+async function goHome(board: Locator) {
+  const round = Number(await board.getAttribute("data-round"));
+  await board.evaluate((frame) => {
+    const seen = window as Window & { __home?: boolean };
+    seen.__home = false;
+    new MutationObserver(() => {
+      if (frame.getAttribute("data-home") === "true") seen.__home = true;
+    }).observe(frame, { attributes: true, attributeFilter: ["data-home"] });
+  });
+  await board.locator("[data-go=run]").click();
+  await onRound(board, round + 1);
+  expect(await board.page().evaluate(() => (window as Window & { __home?: boolean }).__home)).toBe(true);
+}
+
 /** The opposite of a step: a way that goes away from the nest, or off the board. */
 function wrongWay(first: string): string {
   return { right: "left", left: "right", up: "down", down: "up" }[first] ?? "left";
@@ -659,7 +679,9 @@ test("routines: the plan that gets home is kept as one chip, which does all its 
   await board.locator("[data-go=run]").click();
   await onRound(board, 2);
   expect(await page.evaluate(() => (window as Window & { __kept?: string[] }).__kept ?? [])).toContain(`${kept.join(",")} 3 true`);
-  await expect.poll(() => spokenLines(page)).toContain("home! those steps are one chip now: your routine.");
+  // The line that says so ("Home! Those steps are one chip now: your routine."). Asked for, not heard
+  // through: under the quick setting the next round opens, and speaks, before the line has begun.
+  await expect.poll(() => requestedCues(page)).toContain("prompts/code-routine-kept.mp3");
   // The next board: a longer way home with the routine chip in the tray, on a row with Go, and one
   // place for each chip of the way (the routine's three steps are one).
   await expect(board).toHaveAttribute("data-mode", "reuse");
@@ -705,12 +727,14 @@ test("routines: the plan that gets home is kept as one chip, which does all its 
       if (seen[seen.length - 1] !== note) seen.push(note);
     }).observe(frame, { attributes: true, subtree: true });
   });
-  await board.locator("[data-go=run]").click();
-  await expect(board).toHaveAttribute("data-home", "true", { timeout: 10_000 });
+  const asked = (await requestedCues(page)).length;
+  await goHome(board);
   const lit = await page.evaluate(() => (window as Window & { __lit?: string[] }).__lit ?? []);
   const expected = path.map((_, index) => (index < at ? String(index) : index < at + 3 ? `${at}:${index - at}` : String(index - 2)));
   expect(lit).toEqual(expected);
-  await expect.poll(() => spokenLines(page)).toContain("you made it home!");
+  // "You made it home!", on this board (the first board said it too, so only what was asked for
+  // since Go counts; and asked for, not heard through, as above).
+  expect((await requestedCues(page)).slice(asked)).toContain("prompts/code-home.mp3");
 });
 
 test("routines: a way home without the routine chip stops short, and the hand comes to the chip", async ({ page }) => {
@@ -751,8 +775,7 @@ test("routines: a way home without the routine chip stops short, and the hand co
   await board.locator("[data-pick=routine]").click();
   await expect(board.locator("[data-pick=routine] .game-hand")).toHaveCount(0);
   for (const dir of path.slice(at + 3)) await board.locator(`[data-arrow=${dir}]`).click();
-  await board.locator("[data-go=run]").click();
-  await expect(board).toHaveAttribute("data-home", "true", { timeout: 10_000 });
+  await goHome(board);
 });
 
 test("routines: the child's own shortest way is the routine, and the next board is made for it", async ({ page }) => {
