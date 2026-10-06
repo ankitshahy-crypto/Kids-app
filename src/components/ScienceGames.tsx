@@ -53,17 +53,28 @@ const say = (id: string): Cue => promptCue(id, "");
 const word = (name: string): Cue => wordCue(wordId(name), name);
 const title = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
-function Picture({ picture }: { picture: SciencePicture }) {
+/**
+ * A science picture: one of the app's drawings, or, for the three of the plant's life (seed,
+ * sprout, flower), the painted one, where the game asks for it (`painted`). The other lives put
+ * in order (the hen's, the butterfly's) have no painted pictures yet.
+ */
+function Picture({ picture, painted = false }: { picture: SciencePicture; painted?: boolean }) {
+  const bloom = PAINTED_LIFE[picture.art];
+  if (painted && bloom) return <img className="art prop-art" data-prop={picture.art} src={gardenArt(bloom)} alt="" draggable={false} decoding="async" />;
   return <Illustration name={picture.art} />;
 }
+
+/** The plant's life, painted: its seed and sprout are the garden's, its flower a painting of its own. */
+const PAINTED_LIFE: Partial<Record<string, "seed" | "sprout" | "bloom">> = { seed: "seed", sprout: "sprout", flower: "bloom" };
 
 // ------------------------------------------------------------------ grow
 
 /**
  * The garden's painted props (public/games/garden, made by scripts/game-art.py from the owner's
- * renders): the bed, the three things to give, and the plant at each size.
+ * renders): the bed and the dug ground it stands on, the three things to give, the plant at each
+ * size, and a flower on its own (the last picture of the plant's life).
  */
-const gardenArt = (name: "bed" | "seed" | "sun" | "can" | "sprout" | "plant" | "flower") => `${import.meta.env.BASE_URL}games/garden/${name}.webp`;
+const gardenArt = (name: "bed" | "ground" | "seed" | "sun" | "can" | "sprout" | "plant" | "flower" | "bloom") => `${import.meta.env.BASE_URL}games/garden/${name}.webp`;
 
 /** A thing to give the plant: the same picture on the choice and in the bubble that asks for it. */
 function NeedArt({ need }: { need: GrowNeed }) {
@@ -95,6 +106,8 @@ function GardenBed({ step, need, effect, turn }: { step: number; need?: GrowNeed
   return (
     <div className="garden-bed" data-grown={step} data-effect={effect || "none"}>
       <svg className="garden-plant" viewBox="0 0 160 170" aria-hidden="true" focusable="false">
+        {/* the dug ground the bed stands on, wider than the bed, its edges showing either side */}
+        <image href={gardenArt("ground")} x="-18" y="116" width="196" height="54" preserveAspectRatio="none" data-ground="true" />
         <image href={gardenArt("bed")} x="5" y="108" width="150" height="59" />
         {/* the plant, rising out of the soil at each step */}
         {plant ? (
@@ -200,7 +213,7 @@ function LifeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
           <ol className="routine-line order-line" aria-label="In order so far">
             {round.stages.map((stage, index) => (
               <li key={stage.art} data-slot={index} data-filled={index < done ? "true" : "false"}>
-                {index < done ? <Picture picture={stage} /> : <span>{index + 1}</span>}
+                {index < done ? <Picture picture={stage} painted /> : <span>{index + 1}</span>}
               </li>
             ))}
           </ol>
@@ -227,7 +240,7 @@ function LifeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
               key={picture.art}
               id={picture.art}
               name={picture.name}
-              art={<Picture picture={picture} />}
+              art={<Picture picture={picture} painted />}
               used={round.stages.findIndex((stage) => stage.art === picture.art) < done}
               wiggle={wiggle.id === picture.art ? wiggle.count : 0}
               reveal={coach.reveal && picture.art === round.stages[done]?.art}
