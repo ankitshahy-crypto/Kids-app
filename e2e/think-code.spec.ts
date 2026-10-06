@@ -82,6 +82,21 @@ async function mendPlan(board: Locator) {
 }
 
 /**
+ * The round the board was on is over: the next one has opened, or the game has ended (it says so,
+ * or it has gone from the page). One look at the page decides it. (It used to be three questions,
+ * one after another. A board that left the page between the first and the second left the second
+ * waiting for a board that was not coming back, until the wait ran out: a failure at the end of a
+ * game that had ended as it should, and the likelier the busier the machine.)
+ */
+async function roundOver(board: Locator, round: string | null) {
+  await expect
+    .poll(() => board.evaluateAll((frames, was) => frames.length === 0 || frames[0].getAttribute("data-finished") === "true" || frames[0].getAttribute("data-round") !== was, round), {
+      timeout: 10_000,
+    })
+    .toBe(true);
+}
+
+/**
  * Walk or plan the board's own path, and see the animal get home: the next round opens, or the game
  * ends. (Home itself lasts only a moment under the tests' quick setting, so it is not waited for.)
  */
@@ -101,9 +116,7 @@ async function runPath(board: Locator) {
     if (mode === "loop") break;
   }
   if (mode !== "tap") await board.locator("[data-go=run]").click();
-  await expect
-    .poll(async () => (await board.count()) === 0 || (await board.getAttribute("data-finished")) === "true" || (await board.getAttribute("data-round")) !== round, { timeout: 10_000 })
-    .toBe(true);
+  await roundOver(board, round);
 }
 
 /** Predict: pick the ending that matches the board's own path, then Go. */
@@ -115,9 +128,7 @@ async function solvePredict(board: Locator) {
   await expect(board.locator(".code-chip")).toHaveCount(path.length);
   const round = await board.getAttribute("data-round");
   await board.locator("[data-go=run]").click();
-  await expect
-    .poll(async () => (await board.count()) === 0 || (await board.getAttribute("data-finished")) === "true" || (await board.getAttribute("data-round")) !== round, { timeout: 10_000 })
-    .toBe(true);
+  await roundOver(board, round);
 }
 
 /** The round with this number (from 0) is the one being played. */
