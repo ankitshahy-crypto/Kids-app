@@ -26,10 +26,14 @@ test("coins are the painted faces, copper for the penny and silver for the rest,
     await expect(coin.locator("image")).toHaveAttribute("href", new RegExp(`/games/coin-${id === "penny" ? "copper" : "silver"}\\.webp$`));
     await expect(coin.locator("text")).toHaveText(cents ?? "");
   }
-  // A dime is still the smallest and a quarter the biggest: the size is the coin's, not the picture's.
-  const size = async (id: string) => Number(await coins.locator(`.coin-art[data-coin-art=${id}] image`).first().getAttribute("width").catch(() => "0"));
-  const seen = await picks.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-coin-art")));
-  if (seen.includes("dime") && seen.includes("quarter")) expect(await size("dime")).toBeLessThan(await size("quarter"));
+  // A dime is still the smallest and a quarter the biggest: whichever three are shown, their faces
+  // on the page are in that order of size (the size is the coin's, not the picture's).
+  const order = ["dime", "penny", "nickel", "quarter"];
+  const shown = await picks.evaluateAll((nodes) =>
+    nodes.map((node) => ({ id: node.getAttribute("data-coin-art") ?? "", width: node.querySelector("image")!.getBoundingClientRect().width })),
+  );
+  const bySize = [...shown].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  for (let i = 1; i < bySize.length; i += 1) expect(bySize[i].width, `${bySize[i].id} is bigger than ${bySize[i - 1].id}`).toBeGreaterThan(bySize[i - 1].width);
   expect(missing).toEqual([]);
 });
 
@@ -40,6 +44,7 @@ test("the garden is painted: the bed, the things to give, and the plant at each 
     ({ saved }) => {
       localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
       localStorage.removeItem("kids-app-silent-hint-v1");
+      localStorage.setItem("littlenest-settings-v1", JSON.stringify({ showTips: false }));
     },
     { saved },
   );
@@ -62,14 +67,14 @@ test("the garden is painted: the bed, the things to give, and the plant at each 
   // Bare soil, then a seed, a sprout, a leafy plant: each step its own picture, rooted in the bed.
   await expect(bed.locator("[data-plant]")).toHaveCount(0);
   for (const [step, plant] of [["1", "seed"], ["2", "sprout"], ["3", "plant"]] as const) {
-    await expect(frame).toHaveAttribute("data-ready", "true", { timeout: 15_000 });
+    await expect(frame).toHaveAttribute("data-ready", "true");
     const need = (await frame.getAttribute("data-need")) ?? "";
     await frame.locator(`.pick[data-give=${need}]`).click();
     await expect(bed).toHaveAttribute("data-grown", step);
     await expect(bed.locator("[data-plant]")).toHaveAttribute("data-plant", plant);
   }
   // And the flower, with the last thing it needs.
-  await expect(frame).toHaveAttribute("data-ready", "true", { timeout: 15_000 });
+  await expect(frame).toHaveAttribute("data-ready", "true");
   await frame.locator(`.pick[data-give=${(await frame.getAttribute("data-need")) ?? ""}]`).click();
   await expect(bed.locator("[data-plant=flower]")).toHaveCount(1);
   expect(missing).toEqual([]);

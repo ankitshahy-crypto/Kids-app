@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { promptCue, wordCue, type Cue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import {
@@ -70,11 +70,15 @@ function NeedArt({ need }: { need: GrowNeed }) {
   return <img className="art prop-art" data-prop={need} src={gardenArt(need === "water" ? "can" : need)} alt="" draggable={false} decoding="async" />;
 }
 
-/** The plant at each step after the seed: where it stands in the bed's box (160 by 170), rooted in the soil. */
+/**
+ * The plant at each step after the seed: where it stands in the bed's box (160 by 170), rooted in
+ * the soil (which is at about y 117 to 136). The leafy plant and the flower are one painting at one
+ * scale, so the leaves do not change size when it flowers; the seed sits low, half in the soil.
+ */
 const PLANT: Record<number, { art: "seed" | "sprout" | "plant" | "flower"; x: number; y: number; width: number; height: number }> = {
-  1: { art: "seed", x: 72.5, y: 108, width: 15, height: 20 },
+  1: { art: "seed", x: 73.5, y: 115, width: 13, height: 16.5 },
   2: { art: "sprout", x: 52, y: 81, width: 56, height: 47 },
-  3: { art: "plant", x: 46, y: 58, width: 68, height: 70 },
+  3: { art: "plant", x: 49.5, y: 45, width: 61, height: 83 },
   4: { art: "flower", x: 49.5, y: 16, width: 61, height: 112 },
 };
 
@@ -83,6 +87,10 @@ const PLANT: Record<number, { art: "seed" | "sprout" | "plant" | "flower"; x: nu
  * plant, a flower. A bubble shows what it needs next, and the last thing given plays over it.
  */
 function GardenBed({ step, need, effect, turn }: { step: number; need?: GrowNeed; effect: GrowNeed | ""; turn: number }) {
+  // The plant's pictures, ready before it grows into them (each rises as it appears: not out of an empty box).
+  useEffect(() => {
+    for (const { art } of Object.values(PLANT)) new Image().src = gardenArt(art);
+  }, []);
   const plant = PLANT[Math.min(step, 4)];
   return (
     <div className="garden-bed" data-grown={step} data-effect={effect || "none"}>

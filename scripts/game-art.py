@@ -116,34 +116,47 @@ def prop(path, name, size, lo=9.0, hi=26.0, solid=False):
     save(img, out, name, size)
 
 
-def plant(path, name, size, top=1.0):
-    """The plant lifted off its bed: what is green or yellow (not soil, wood or paper). `top` under 1 keeps that much of it from the ground up, green only (the head comes off)."""
+def plant(path, name, size, head=True):
+    """
+    The plant lifted off its bed: what is green or yellow (not soil, wood or paper). Without its
+    head (`head=False`) it is the green only, up to a little above its top leaf, the stem's tip
+    faded out there (so the same picture is the plant the step before it flowers, at the same scale).
+    """
     img = cv2.imread(str(path))
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     h, s, v = hsv[:, :, 0].astype(int) * 2, hsv[:, :, 1], hsv[:, :, 2]
     green = (h >= 62) & (h <= 170) & (s > 48)
     yellow = (h >= 40) & (h < 62) & (s > 120) & (v > 170)
-    mask = cv2.morphologyEx((green if top < 1.0 else green | yellow).astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    mask = cv2.morphologyEx((green | yellow if head else green).astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
     mask = filled(biggest(cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8)))) & cv2.dilate(mask, np.ones((5, 5), np.uint8))
-    mask = filled(mask)
-    if top < 1.0:
-        ys = np.where(mask.any(axis=1))[0]
-        cut = int(ys.max() - (ys.max() - ys.min()) * top)
-        mask[:cut] = 0
-    save(img, feather(mask, 1.0), name, size)
+    alpha = feather(filled(mask), 1.0).astype(np.float32)
+    if not head:
+        rows = np.where(mask.any(axis=1))[0]
+        widths = np.array([np.ptp(np.where(mask[y])[0]) + 1 for y in rows])
+        stem = np.median(widths[: max(8, len(widths) // 12)])  # the bare stem under the head
+        leaf = rows[np.argmax(widths > stem * 3)]  # the first row a leaf is in
+        tip, fade = leaf - 26, 18
+        alpha[:tip] = 0
+        alpha[tip : tip + fade] *= np.linspace(0, 1, fade)[:, None]
+    return save(img, alpha.astype(np.uint8), name, size)
 
 
 def main(folder: Path):
-    find = lambda key: next(p for p in sorted(folder.glob("*.webp")) if key in p.name)
+    def find(key):
+        found = [p for p in sorted(folder.glob("*.webp")) if key in p.name]
+        if not found:
+            sys.exit(f"No render named ...{key}... in {folder}")
+        return found[0]
+
     coin(find("coin-copper-blank"), "coin-copper")
     coin(find("coin-silver-blank"), "coin-silver")
     prop(find("planting-bed-empty"), "garden/bed", 640, solid=True)
-    prop(find("planting-seed"), "garden/seed", 256, lo=24.0, hi=44.0, solid=True)
+    prop(find("planting-seed"), "garden/seed", 256, lo=34.0, hi=54.0, solid=True)
     prop(find("planting-sun"), "garden/sun", 384, lo=20.0, hi=38.0, solid=True)
     prop(find("planting-can"), "garden/can", 384)
     plant(find("planting-sprout"), "garden/sprout", 256)
     plant(find("planting-grown"), "garden/flower", 512)
-    plant(find("planting-grown"), "garden/plant", 512, top=0.7)
+    plant(find("planting-grown"), "garden/plant", 512, head=False)
 
 
 if __name__ == "__main__":

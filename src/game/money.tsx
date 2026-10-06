@@ -17,11 +17,11 @@ import { Illustration } from "../illustrations";
  * so the number stays text (sharp at any size) and two pictures make four coins.
  */
 
-const COIN_LOOK: Record<"penny" | "nickel" | "dime" | "quarter", { r: number; face: "copper" | "silver"; text: string }> = {
-  penny: { r: 31, face: "copper", text: "#6B3814" },
-  nickel: { r: 36, face: "silver", text: "#3F4A57" },
-  dime: { r: 26, face: "silver", text: "#3F4A57" },
-  quarter: { r: 44, face: "silver", text: "#3F4A57" },
+const COIN_LOOK: Record<"penny" | "nickel" | "dime" | "quarter", { r: number; face: "copper" | "silver"; under: string; text: string }> = {
+  penny: { r: 31, face: "copper", under: "#D68A5E", text: "#6B3814" },
+  nickel: { r: 36, face: "silver", under: "#D5D7DA", text: "#3F4A57" },
+  dime: { r: 26, face: "silver", under: "#D5D7DA", text: "#3F4A57" },
+  quarter: { r: 44, face: "silver", under: "#D5D7DA", text: "#3F4A57" },
 };
 
 const coinFace = (face: "copper" | "silver") => `${import.meta.env.BASE_URL}games/coin-${face}.webp`;
@@ -50,9 +50,10 @@ export function Coin({ id }: { id: MoneyId }) {
   const cents = COIN_CENTS[id];
   return (
     <svg className="coin-art" viewBox="0 0 100 100" aria-hidden="true" focusable="false" data-coin-art={id}>
+      {/* A plain disc under the picture: the coin has its shape and size from the first frame, before the picture arrives. */}
+      <circle cx="50" cy="50" r={look.r - 1.5} fill={look.under} />
       <image href={coinFace(look.face)} x={50 - look.r} y={50 - look.r} width={look.r * 2} height={look.r * 2} data-coin-face={look.face} />
-      {/* The number sits inside the face's inner ring, a little smaller than it was on the flat coin. */}
-      <text x="50" y={50 + (cents >= 10 ? look.r * 0.27 : look.r * 0.32)} textAnchor="middle" fontSize={cents >= 10 ? look.r * 0.74 : look.r * 0.9} fontWeight="800" fill={look.text}>
+      <text x="50" y={50 + (cents >= 10 ? look.r * 0.3 : look.r * 0.36)} textAnchor="middle" fontSize={cents >= 10 ? look.r * 0.82 : look.r} fontWeight="800" fill={look.text}>
         {cents}
       </text>
     </svg>

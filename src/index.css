@@ -7718,8 +7718,18 @@ input.is-pressed,
   box-sizing: border-box;
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
+  -webkit-user-select: none;
   user-select: none;
   pointer-events: none;
+}
+
+/* The painted coins and the garden's pictures are not things to save either (a coin on the stage
+   is not in a button). */
+.coin-art,
+.garden-plant {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 @keyframes garden-rise {
