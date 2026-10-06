@@ -1017,14 +1017,29 @@ button:focus-visible {
   overflow: visible;
 }
 
+/* A face is square, from the first frame (before its picture arrives), so the box never jumps
+   and the outfit pieces have their place from the start. */
+.avatar-painted[data-view="face"] {
+  aspect-ratio: 1 / 1;
+}
+
+/* Pictures, not things to save or select: no long-press sheet on a phone, no drag. */
+.avatar-painted img,
+.wear-painted,
+.closet-swatch img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+}
+
 .avatar-painted img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: 50% 50%;
-  -webkit-user-drag: none;
-  user-select: none;
 }
 
 .avatar-painted[data-view="body"] img {
@@ -3708,7 +3723,6 @@ button:focus-visible {
   border-radius: 0;
   background: none;
   object-fit: fill;
-  -webkit-user-drag: none;
 }
 
 /* Pieces drawn by CSS, until each has its painted picture: the stripe scarf. */

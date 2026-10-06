@@ -114,10 +114,13 @@ def head_box(alpha, box):
 def sky_filter(rgba):
     """
     The CSS filter that makes this animal's fur powder blue (hue 207, a fifth of the fur's
-    saturation, a touch darker), from the fur's own colour: the most saturated third of the face's
-    pixels, which is the fur and not the cream muzzle or the dark eyes. A grey or black-and-white
-    animal has no hue to turn, so sepia gives it one first.
+    saturation), from the fur's own colour: the most saturated third of the face's pixels, which
+    is the fur and not the cream muzzle or the dark eyes. Turning a warm hue to blue darkens it, so
+    the end of the chain lifts the mid-tones back toward the mockup's light powder blue without
+    blowing out the cream. A grey or black-and-white animal has no hue to turn, so sepia gives it
+    one first.
     """
+    lift = "contrast(0.85) brightness(1.12)"
     on = rgba[:, :, 3] > 200
     hsv = cv2.cvtColor(rgba[:, :, :3], cv2.COLOR_BGR2HSV)
     h, s, v = hsv[:, :, 0][on].astype(float) * 2, hsv[:, :, 1][on].astype(float) / 255, hsv[:, :, 2][on].astype(float) / 255
@@ -125,11 +128,11 @@ def sky_filter(rgba):
     h, s = h[bright], s[bright]
     # A grey or black-and-white animal (most of its face has little colour; a beak does not count).
     if float(np.median(s)) < 0.25:
-        return "sepia(0.55) hue-rotate(167deg) saturate(0.9) brightness(0.95)"
+        return f"sepia(0.55) hue-rotate(167deg) saturate(0.9) {lift}"
     top = s >= np.percentile(s, 67)
     hue, sat = float(np.median(h[top])), float(np.median(s[top]))
     turn = round((207 - hue) % 360)
-    return f"hue-rotate({turn}deg) saturate({round(min(0.9, 0.2 / sat), 2)}) brightness(0.95)"
+    return f"hue-rotate({turn}deg) saturate({round(min(0.9, 0.2 / sat), 2)}) {lift}"
 
 
 def save_webp(rgba, path, size):

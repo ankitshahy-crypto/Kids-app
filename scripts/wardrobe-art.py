@@ -102,10 +102,20 @@ def glasses(img, fox, box):
     return finish(fg, small_holes=900)
 
 
-def save(img, fg, name, face, pad=10):
+def save(img, fg, name, face, pad=10, keep_top=1.0):
     alpha = np.clip(cv2.GaussianBlur(fg.astype(np.float32) * 255, (0, 0), 1.0), 0, 255).astype(np.uint8)
     ys, xs = np.where(alpha > 40)
     x0, x1, y0, y1 = xs.min() - pad, xs.max() + pad, ys.min() - pad, ys.max() + pad
+    if keep_top < 1.0:
+        # Only the top of the piece (a scarf's band and knot, not its tails, which would hang
+        # under the cut edge of a face), fading out over the last bit so there is no hard line.
+        y1 = y0 + int((y1 - y0) * keep_top)
+        fade = int((y1 - y0) * 0.12)
+        ramp = np.linspace(1, 0, fade)[:, None]
+        alpha = alpha.astype(np.float32)
+        alpha[y1 - fade : y1] *= ramp
+        alpha[y1:] = 0
+        alpha = alpha.astype(np.uint8)
     rgba = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
     rgba[:, :, 3] = alpha
     piece = Image.fromarray(cv2.cvtColor(rgba[y0:y1, x0:x1], cv2.COLOR_BGRA2RGBA))
@@ -130,7 +140,7 @@ def main(folder: Path, fox_path: Path):
     img = load("crown")
     manifest["hat-crown"] = save(img, by_colour(img, 34, 70, 60, 90, (430, 170, 760, 460)), "hat-crown", face)
     img = load("dot-scarf")
-    manifest["scarf-dots"] = save(img, by_colour(img, 160, 215, 60, 40, (200, 600, 950, 1500)), "scarf-dots", face)
+    manifest["scarf-dots"] = save(img, by_colour(img, 160, 215, 60, 40, (200, 600, 950, 1500)), "scarf-dots", face, keep_top=0.62)
     img = load("glasses")
     manifest["glasses-round"] = save(img, glasses(img, fox, (250, 520, 900, 820)), "glasses-round", face, pad=8)
     MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n")

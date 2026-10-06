@@ -1,4 +1,4 @@
-import { useEffect, type JSX } from "react";
+import type { JSX } from "react";
 import type { AnimalId } from "./data/animals";
 import art from "./data/animalArt.json";
 import type { Mood } from "./game/kit";
@@ -37,7 +37,10 @@ export function artSrc(animal: AnimalId, frame: ArtFrame, view: ArtView): string
 
 const warmed = new Set<string>();
 
-/** Every frame of an animal into the browser's cache, so a change of mood never shows a blank. */
+/**
+ * Every frame of an animal into the browser's cache, so a change of mood never shows a blank. For
+ * the child's own animal (the Hero), where moods happen; not for every face on the picker.
+ */
 export function preloadArt(animal: AnimalId) {
   const entry = ART[animal];
   if (!entry || warmed.has(animal) || typeof Image === "undefined") return;
@@ -275,8 +278,6 @@ const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
  */
 export function Avatar({ animal, mood = "idle", view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
   const entry = ART[animal];
-  // The animal's other frames, ready before a mood asks for them.
-  useEffect(() => preloadArt(animal), [animal]);
   if (!entry) {
     const Art = avatars[animal];
     return <Art mood={mood} />;
@@ -286,7 +287,8 @@ export function Avatar({ animal, mood = "idle", view = "face" }: { animal: Anima
   const blinks = frame === "idle" && entry.frames.includes("blink");
   return (
     <span className="avatar-art avatar-painted" data-mood={mood} data-view={shown} data-frame={frame} aria-hidden="true">
-      <img src={artSrc(animal, frame, shown)} alt="" draggable={false} decoding="async" />
+      {/* The size attributes give the box its shape before the picture arrives (a face is square), so nothing jumps. */}
+      <img src={artSrc(animal, frame, shown)} width={shown === "face" ? 512 : undefined} height={shown === "face" ? 512 : undefined} alt="" draggable={false} decoding="async" />
       {blinks ? <img className="avatar-blink" src={artSrc(animal, "blink", shown)} alt="" draggable={false} decoding="async" /> : null}
     </span>
   );

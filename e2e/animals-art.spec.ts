@@ -50,13 +50,15 @@ test("the child's animal is the painted face: on the home screen, dressed up, an
   // The pieces are painted pictures too, placed on the face.
   await expect(hero.locator(".wear-hat")).toHaveAttribute("src", /\/wardrobe\/hat-leaf\.webp$/);
   await expect(hero.locator(".wear-glasses")).toHaveAttribute("src", /\/wardrobe\/glasses-round\.webp$/);
-  await expect.poll(() => hero.locator(".wear-hat").evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(100);
+  for (const piece of [".wear-hat", ".wear-glasses"]) {
+    await expect.poll(() => hero.locator(piece).evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(100);
+  }
   await page.getByRole("button", { name: "Story" }).click();
   await expect(page.locator(".story-scene .hero .avatar-painted img").first()).toHaveAttribute("src", /\/animals\/fox\/idle-face\.webp$/);
   expect(missing).toEqual([]);
 });
 
-test("the sky colour turns the animal itself blue, with its own filter, and the dot scarf hangs under the chin", async ({ page }) => {
+test("the sky colour turns the animal itself blue, with its own filter, and the dot scarf sits at the chin", async ({ page }, testInfo) => {
   const missing = watchArt(page);
   await install(page, profile("bear", { color: "color-sky", scarf: "scarf-dots" }));
   await page.getByRole("button", { name: "Mia" }).click();
@@ -64,28 +66,35 @@ test("the sky colour turns the animal itself blue, with its own filter, and the 
   await expect(hero).toHaveAttribute("data-color", "color-sky");
   const filter = await hero.locator(".avatar-painted img").first().evaluate((img) => getComputedStyle(img).filter);
   expect(filter).toMatch(/hue-rotate|sepia/);
-  // The picture's blue shows: the fur, drawn through the same filter and sampled, is bluer than it is red.
-  const [red, blue] = await hero.locator(".avatar-painted img").first().evaluate((el) => {
-    const img = el as HTMLImageElement;
-    const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext("2d")!;
-    ctx.filter = getComputedStyle(img).filter;
-    ctx.drawImage(img, 0, 0, 64, 64);
-    const fur = ctx.getImageData(18, 20, 6, 6).data;
-    let r = 0;
-    let b = 0;
-    for (let i = 0; i < fur.length; i += 4) {
-      r += fur[i];
-      b += fur[i + 2];
-    }
-    return [r, b];
-  });
-  expect(blue).toBeGreaterThan(red);
+  // The picture's blue shows: the fur, drawn through the same filter and sampled, is bluer than it
+  // is red. (Chromium only: a canvas does not take a filter in WebKit; the page's own render does.)
+  const face = hero.locator(".avatar-painted img").first();
+  await expect.poll(() => face.evaluate((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth)).toBe(512);
+  if (testInfo.project.name === "chromium") {
+    const [red, blue] = await face.evaluate((el) => {
+      const img = el as HTMLImageElement;
+      const canvas = document.createElement("canvas");
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext("2d")!;
+      ctx.filter = getComputedStyle(img).filter;
+      ctx.drawImage(img, 0, 0, 64, 64);
+      const fur = ctx.getImageData(18, 20, 6, 6).data;
+      let r = 0;
+      let b = 0;
+      for (let i = 0; i < fur.length; i += 4) {
+        r += fur[i];
+        b += fur[i + 2];
+      }
+      return [r, b];
+    });
+    expect(blue).toBeGreaterThan(red);
+  }
+  // The scarf's band and knot sit across the bottom of the face, nothing hanging under its cut edge.
   const box = (await hero.locator(".avatar-painted").boundingBox())!;
   const scarf = (await hero.locator(".wear-scarf").boundingBox())!;
-  expect(scarf.y + scarf.height).toBeGreaterThan(box.y + box.height);
+  expect(scarf.y).toBeGreaterThan(box.y + box.height * 0.55);
+  expect(scarf.y + scarf.height).toBeLessThan(box.y + box.height * 1.02);
   expect(missing).toEqual([]);
 });
 
