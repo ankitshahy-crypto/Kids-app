@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { playEffect } from "../audio/manager";
 import { promptCue, type Cue } from "../audio/player";
-import { Avatar, preloadArt } from "../avatars";
+import { Avatar } from "../avatars";
 import { Hero } from "../components/Hero";
 import { SpeakerIcon } from "../components/icons";
 import type { AnimalId } from "../data/animals";
@@ -553,8 +553,6 @@ export function GameFrame({
   attrs?: Record<string, string | number | undefined>;
 }) {
   const mood: Mood = rounds.finished ? "cheer" : lookOf(coach);
-  // The animal's other faces, ready before the first right answer asks for one.
-  useEffect(() => preloadArt(animal), [animal]);
   return (
     <div
       className="game-frame"
