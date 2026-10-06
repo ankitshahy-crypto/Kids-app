@@ -1,7 +1,10 @@
 {
   "cat": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -14,7 +17,10 @@
   },
   "dog": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -28,6 +34,9 @@
   "fox": {
     "frames": [
       "idle",
+      "cheer",
+      "think",
+      "blink",
       "wave",
       "silly"
     ],
@@ -42,7 +51,10 @@
   },
   "bear": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -55,7 +67,10 @@
   },
   "bunny": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -68,7 +83,10 @@
   },
   "owl": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -81,7 +99,10 @@
   },
   "frog": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -94,7 +115,10 @@
   },
   "duck": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -107,7 +131,10 @@
   },
   "pig": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -120,7 +147,10 @@
   },
   "penguin": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -133,7 +163,10 @@
   },
   "lion": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -146,7 +179,10 @@
   },
   "koala": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "think",
+      "blink"
     ],
     "body": false,
     "head": {

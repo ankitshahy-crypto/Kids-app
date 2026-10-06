@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { useState, type CSSProperties, type JSX } from "react";
 import type { AnimalId } from "./data/animals";
 import art from "./data/animalArt.json";
 import type { Mood } from "./game/kit";
@@ -35,24 +35,10 @@ export function artSrc(animal: AnimalId, frame: ArtFrame, view: ArtView): string
   return `${import.meta.env.BASE_URL}animals/${animal}/${frame}${view === "face" ? "-face" : ""}.webp`;
 }
 
-const warmed = new Set<string>();
-
-/**
- * Every frame of an animal into the browser's cache, so a change of mood never shows a blank. For
- * the child's own animal (the Hero), where moods happen; not for every face on the picker.
- */
-export function preloadArt(animal: AnimalId) {
-  const entry = ART[animal];
-  if (!entry || warmed.has(animal) || typeof Image === "undefined") return;
-  warmed.add(animal);
-  for (const frame of entry.frames) {
-    for (const view of entry.body ? (["face", "body"] as const) : (["face"] as const)) {
-      const image = new Image();
-      image.decoding = "async";
-      image.src = artSrc(animal, frame, view);
-    }
-  }
-}
+/** The faces a mood can show besides the idle one, in the order they lie over it. */
+const MOOD_FRAMES: ArtFrame[] = ["cheer", "think", "wait"];
+/** A blink comes round this often (the CSS animation's length), in seconds. */
+const BLINK_EVERY = 4.8;
 
 /** What every face takes: the mood its eyes show. */
 type Face = { mood: Mood };
@@ -272,24 +258,62 @@ const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
  * An animal. `mood` is how it looks (see kit.tsx); `view` is its face (the usual: it reads at tile
  * size) or its whole figure. Painted when the animal's art is there, drawn otherwise.
  *
- * A painted animal is a box (`.avatar-art`, sized by where it sits, as the drawing was) holding the
- * mood's frame. With a blink frame, that sits on top and shows for a moment now and then (CSS); the
- * idle frame underneath is what shows between blinks, so the face never flashes a different look.
+ * A painted animal is a box (`.avatar-art`, sized by where it sits, as the drawing was). One that is
+ * not given a mood (a face on a list, the picker, the home screen) is its idle face and nothing
+ * else. One that is given a mood is alive on the page (the one in a game), and is a stack:
+ *
+ *   the idle face, always there underneath;
+ *   the blink, which is only the closed eyes, see-through everywhere else, shown for a moment now
+ *   and then (CSS), each animal on the page starting its turn at a moment of its own, so two of
+ *   them do not blink in step;
+ *   each mood face it has, see-through until its mood comes, then faded in over the idle face and
+ *   out again after (CSS): the same animal changing its look, not one picture swapped for another.
+ *   Once a mood face is fully there, the idle face and the blink under it are hidden (CSS), so
+ *   nothing of them shows round its edge. Being on the page from the start, the mood faces are
+ *   fetched before the first mood asks for one.
  */
-export function Avatar({ animal, mood = "idle", view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
+export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
+  // Where in its turn this animal's blink starts: its own, kept for as long as it is on the page.
+  const [blinkAt] = useState(() => Math.floor(Math.random() * BLINK_EVERY * 100) / 100);
   const entry = ART[animal];
+  const look = mood ?? "idle";
   if (!entry) {
     const Art = avatars[animal];
-    return <Art mood={mood} />;
+    return <Art mood={look} />;
   }
-  const frame = frameFor(animal, mood);
+  const frame = frameFor(animal, look);
   const shown = viewFor(animal, view);
-  const blinks = frame === "idle" && entry.frames.includes("blink");
+  const alive = mood !== undefined;
+  // The face underneath is decoded before it is painted when the animal is alive: a new animal on
+  // the coding board each round must not show one empty frame first. (A mood face fades in from
+  // nothing, so a late frame of it is not seen.)
+  const face = (name: ArtFrame, className: string, on?: boolean) => (
+    <img
+      key={name}
+      className={className}
+      data-face={name}
+      data-on={on === undefined ? undefined : on ? "true" : "false"}
+      src={artSrc(animal, name, shown)}
+      // The size attributes give the box its shape before the picture arrives (a face is square), so nothing jumps.
+      width={shown === "face" ? 512 : undefined}
+      height={shown === "face" ? 512 : undefined}
+      alt=""
+      draggable={false}
+      decoding={alive && name === "idle" ? "sync" : "async"}
+    />
+  );
   return (
-    <span className="avatar-art avatar-painted" data-mood={mood} data-view={shown} data-frame={frame} aria-hidden="true">
-      {/* The size attributes give the box its shape before the picture arrives (a face is square), so nothing jumps. */}
-      <img src={artSrc(animal, frame, shown)} width={shown === "face" ? 512 : undefined} height={shown === "face" ? 512 : undefined} alt="" draggable={false} decoding="async" />
-      {blinks ? <img className="avatar-blink" src={artSrc(animal, "blink", shown)} alt="" draggable={false} decoding="async" /> : null}
+    <span
+      className="avatar-art avatar-painted"
+      data-mood={look}
+      data-view={shown}
+      data-frame={frame}
+      aria-hidden="true"
+      style={alive ? ({ "--blink-at": blinkAt } as CSSProperties) : undefined}
+    >
+      {face("idle", "avatar-face")}
+      {alive && entry.frames.includes("blink") ? face("blink", "avatar-blink") : null}
+      {alive ? MOOD_FRAMES.filter((name) => entry.frames.includes(name)).map((name) => face(name, "avatar-over", frame === name)) : null}
     </span>
   );
 }

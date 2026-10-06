@@ -1008,9 +1008,11 @@ button:focus-visible {
 }
 
 /* ---- The painted animals (avatars.tsx, public/animals/) ----
-   A box the size the drawing had, holding the mood's frame: the face fills it; the whole figure
-   stands on its bottom edge. A blink frame, when the animal has one, sits on top and shows for a
-   moment every few seconds, in a game only (a face on a list does not blink). */
+   A box the size the drawing had: the face fills it; the whole figure stands on its bottom edge.
+   The idle face is always there. On an animal in a game, the blink (the closed eyes alone) lies
+   over it and shows for a moment every few seconds, and each mood face lies over both, see-through
+   until its mood comes: it fades in over the idle face and out again, so a change of mood is the
+   same animal changing its look, not one picture cut to another. */
 .avatar-painted {
   position: relative;
   display: block;
@@ -1046,14 +1048,37 @@ button:focus-visible {
   object-position: 50% 100%;
 }
 
-.avatar-painted .avatar-blink {
+.avatar-painted .avatar-blink,
+.avatar-painted .avatar-over {
   position: absolute;
   inset: 0;
   opacity: 0;
 }
 
+/* Each animal starts its blink's turn at a moment of its own (--blink-at, seconds into the turn),
+   so two on one screen do not blink in step. */
 .game-host .avatar-painted .avatar-blink {
   animation: avatar-blink-frame 4.8s step-end infinite;
+  animation-delay: calc(var(--blink-at, 0) * -1s);
+}
+
+/* A mood's face fades in over the idle one, and out again when the mood is over. */
+.avatar-painted .avatar-over {
+  transition: opacity var(--face-fade, 180ms) ease-out;
+}
+
+.avatar-painted .avatar-over[data-on="true"] {
+  opacity: 1;
+}
+
+/* Once the mood's face is fully there, what is under it goes: no two pictures of one animal have
+   quite the same outline, and the idle one would show as a rim. (After the fade's time, which is a
+   delay, so calm mode's shortened transitions do not bring it forward; back at once, with no
+   transition, when the mood is over and its face fades away.) */
+.avatar-painted:not([data-frame="idle"]) .avatar-face,
+.avatar-painted:not([data-frame="idle"]) .avatar-blink {
+  visibility: hidden;
+  transition: visibility 0s linear var(--face-fade, 180ms);
 }
 
 @keyframes avatar-blink-frame {
@@ -6335,6 +6360,33 @@ input.is-pressed,
   animation: game-think 0.7s ease;
 }
 
+/* The cheer starts with a pop: the animal squashes down, springs up taller, and settles, as a soft
+   toy does when it jumps. On the animal itself (outfit and all) and by its `scale`, which is apart
+   from its `transform`: it adds to the jump on the body and to the way the coding animal faces. */
+.game-host[data-mood="cheer"] .hero,
+.game-host[data-mood="cheer"] .game-host-body > .avatar-art {
+  transform-origin: 50% 92%;
+  animation: game-pop 0.42s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+@keyframes game-pop {
+  0% {
+    scale: 1 1;
+  }
+  22% {
+    scale: 1.06 0.94;
+  }
+  55% {
+    scale: 0.95 1.06;
+  }
+  80% {
+    scale: 1.02 0.98;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
 /* Never frozen: a slow breath while idle, a slow sway while the child takes a while. */
 .game-host[data-mood="idle"] .game-host-body {
   animation: game-breathe 3.4s ease-in-out infinite;
@@ -6754,6 +6806,11 @@ input.is-pressed,
    plan and the last round get the bigger cheer: three bounces, higher, and a brighter glow. */
 .game-frame[data-screen="bird"][data-cheer="big"] .code-pet[data-mood="cheer"] .game-host-body {
   animation: code-cheer-big 0.42s ease 3;
+}
+
+/* (The big cheer squashes and stretches on every bounce: no pop on top of it.) */
+.game-frame[data-screen="bird"][data-cheer="big"] .code-pet[data-mood="cheer"] .hero {
+  animation: none;
 }
 
 @keyframes code-cheer-big {
@@ -7253,6 +7310,8 @@ input.is-pressed,
 @media (prefers-reduced-motion: reduce) {
   .game-host,
   .game-host-body,
+  .game-host .hero,
+  .game-host .avatar-art,
   .code-pet-move,
   .game-sparkles svg,
   .game-tray .pick,
@@ -10302,6 +10361,12 @@ input.is-pressed,
   animation: none !important;
 }
 
+/* And softer, not more sudden: a mood's face still fades in over the idle one (a fade is not a
+   movement; without it the face would cut from one look to the other). */
+.app[data-calm="true"] .avatar-painted .avatar-over {
+  transition-duration: var(--face-fade, 180ms) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app *,
   .app *::before,
@@ -10319,6 +10384,10 @@ input.is-pressed,
 
   .app .code-pet {
     transition-duration: var(--step, 0.48s) !important;
+  }
+
+  .app .avatar-painted .avatar-over {
+    transition-duration: var(--face-fade, 180ms) !important;
   }
 }
 

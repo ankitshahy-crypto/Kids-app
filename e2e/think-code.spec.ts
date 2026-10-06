@@ -459,8 +459,11 @@ test("a plan can be mended and run again straight away, and the animal does not 
   await expect
     .poll(
       async () => {
-        if ((await board.getAttribute("data-round")) !== "0") return "next";
-        seen.push(`${await board.getAttribute("data-x")},${await board.getAttribute("data-y")}`);
+        // (The round and the place in one look: read apart, the next round can begin in between,
+        // and its start would be taken for this round's.)
+        const [round, at] = await board.evaluate((frame) => [frame.getAttribute("data-round"), `${frame.getAttribute("data-x")},${frame.getAttribute("data-y")}`]);
+        if (round !== "0") return "next";
+        seen.push(at);
         return "walking";
       },
       { timeout: 10_000, intervals: [40] },
@@ -1066,6 +1069,8 @@ for (const [name, setup] of [
     expect(await pet.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe("0.14s");
     await pet.evaluate((el) => {
       el.addEventListener("transitionend", (event) => {
+        // (Its own glide: a face fading inside it ends a transition too, and that one bubbles.)
+        if (event.target !== el || (event as TransitionEvent).propertyName !== "transform") return;
         (window as Window & { __glide?: number }).__glide = (event as TransitionEvent).elapsedTime;
       });
     });
@@ -1074,7 +1079,7 @@ for (const [name, setup] of [
   });
 }
 
-test("the scene moves a little on its own, and the animal breathes (and blinks, once it has a blink frame)", async ({ page }) => {
+test("the scene moves a little on its own, and the animal breathes and blinks", async ({ page }) => {
   await install(page, profile, { quick: true, salt: 4 });
   await openCoding(page);
   await page.locator("[data-game-tile=bird]").click();
@@ -1083,8 +1088,8 @@ test("the scene moves a little on its own, and the animal breathes (and blinks, 
   const now = await moving(page);
   expect(now.some((it) => it.startsWith("g.scene-") || it.startsWith("circle.scene-") || it.startsWith("path.scene-"))).toBe(true);
   expect(now).toContain("pet span.game-host-body");
-  // The painted animal blinks by showing its blink frame for a moment; one without that frame only breathes.
-  if ((await board.locator(".code-pet .avatar-blink").count()) > 0) expect(now).toContain("pet img.avatar-blink");
+  // The painted animal blinks by showing its closed eyes for a moment.
+  expect(now).toContain("pet img.avatar-blink");
 });
 
 test("no two plays are alike: the boards turn and the pictures change", async ({ page }) => {
