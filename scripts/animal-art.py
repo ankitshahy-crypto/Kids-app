@@ -20,6 +20,14 @@ the CSS filter that turns its fur powder blue (the "sky" colour of the dress-up 
 per animal, from its fur's own hue, so it works on every frame without a blue copy of each). The
 app falls back to a missing mood frame's idle frame, so frames can land one at a time.
 
+The renders of one animal are made one at a time, so the animal is never quite the same twice.
+Two things keep a change of frame from showing as a jump:
+  every mood frame's face is lined up with the idle face (its outline fitted to the idle one's);
+  the blink frame, which flashes on a still face, is the idle face itself with only the eyes
+  taken from the blink render, so nothing but the eyes changes.
+Give the script only the frames that are fit to ship (look at them first: a "think" that frowns is
+a sad animal on a child's wrong answer).
+
 The cut-out is classical (OpenCV GrabCut seeded by distance from the backdrop colour), since the
 sources come without transparency: it holds up on these figures, cream paws and floor shadow
 included. Needs: pip install opencv-python-headless pillow numpy
@@ -154,8 +162,67 @@ def crop(rgba, box, pad):
     return out
 
 
+def face_image(rgba, head):
+    """The face crop at its shipped size, as an RGBA array."""
+    face = Image.fromarray(cv2.cvtColor(crop(rgba, head, 0.06), cv2.COLOR_BGRA2RGBA)).resize((FACE_PX, FACE_PX), Image.LANCZOS)
+    return np.array(face)
+
+
+def on_grey(face):
+    """A face on mid grey, blurred: its outline and big shapes, not its fur or its expression."""
+    a = face[:, :, 3:4].astype(np.float32) / 255
+    grey = cv2.cvtColor(face[:, :, :3], cv2.COLOR_RGB2GRAY).astype(np.float32)[:, :, None]
+    return cv2.GaussianBlur((grey * a + 128 * (1 - a))[:, :, 0], (0, 0), 6)
+
+
+def lined_up(face, idle):
+    """The mood face moved and sized to sit where the idle face sits (a small affine fit, or as it is if the fit runs wild)."""
+    warp = np.eye(2, 3, dtype=np.float32)
+    try:
+        _, warp = cv2.findTransformECC(on_grey(idle), on_grey(face), warp, cv2.MOTION_AFFINE, (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 200, 1e-5), None, 5)
+    except cv2.error:
+        return face, "not lined up (no fit)"
+    scale = float(np.sqrt(abs(np.linalg.det(warp[:, :2]))))
+    shift = float(np.hypot(warp[0, 2], warp[1, 2]))
+    if not (0.85 < scale < 1.18) or shift > 80:
+        return face, f"not lined up (fit ran wild: scale {scale:.2f}, shift {shift:.0f})"
+    moved = cv2.warpAffine(face, warp, (FACE_PX, FACE_PX), flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+    return moved, f"lined up (scale {scale:.3f}, shift {shift:.1f})"
+
+
+def eyes_only(blink, idle):
+    """
+    The idle face with the blink render's eyes: the two places, in the upper middle of the face, where
+    the two differ most (an open eye is dark; a closed one is fur and a line), widened to take in the
+    whole closed eye and eased into the fur around. None if two eyes cannot be found.
+    """
+    lab = lambda face: cv2.cvtColor(face[:, :, :3], cv2.COLOR_RGB2LAB).astype(np.float32)
+    inside = cv2.erode((np.minimum(blink[:, :, 3], idle[:, :, 3]) > 200).astype(np.uint8), np.ones((25, 25), np.uint8))
+    diff = cv2.GaussianBlur(np.linalg.norm(lab(blink) - lab(idle), axis=2), (0, 0), 3) * inside
+    band = np.zeros_like(diff)
+    band[int(FACE_PX * 0.12) : int(FACE_PX * 0.72)] = 1
+    hot = cv2.morphologyEx(((diff * band) > 42).astype(np.uint8), cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+    n, labels, stats, centres = cv2.connectedComponentsWithStats(hot)
+    blobs = sorted(range(1, n), key=lambda i: -stats[i, cv2.CC_STAT_AREA])
+    blobs = [i for i in blobs if stats[i, cv2.CC_STAT_AREA] > 180]
+    # Two eyes: the two biggest that sit side by side, one each side of the middle.
+    pair = next(((i, j) for i in blobs[:4] for j in blobs[:4] if i < j and abs(centres[i][1] - centres[j][1]) < FACE_PX * 0.08 and (centres[i][0] - FACE_PX / 2) * (centres[j][0] - FACE_PX / 2) < 0), None)
+    if pair is None:
+        return None, "no two eyes found"
+    mask = np.zeros(diff.shape, np.uint8)
+    for i in pair:
+        x, y, w, h = stats[i, :4]
+        grow = int(max(w, h) * 0.38)
+        cv2.ellipse(mask, (int(x + w / 2), int(y + h / 2)), (w // 2 + grow, h // 2 + grow), 0, 0, 360, 1, -1)
+    soft = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), 7)[:, :, None]
+    out = idle.astype(np.float32) * (1 - soft) + blink.astype(np.float32) * soft
+    out[:, :, 3] = idle[:, :, 3]
+    return out.astype(np.uint8), f"eyes at {[tuple(int(v) for v in centres[i]) for i in pair]}"
+
+
 def main(folder: Path, with_body: bool):
     manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
+    sources = {}
     for path in sorted(folder.glob("*")):
         if path.suffix.lower() not in (".webp", ".png", ".jpg"):
             continue
@@ -163,33 +230,52 @@ def main(folder: Path, with_body: bool):
         if not m:
             print("skip", path.name)
             continue
-        animal, frame = m.group(1), m.group(2) or "idle"
-        frame = "idle" if frame == "mockup" else frame
-        rgba = cut_out(path)
-        box = figure_box(rgba[:, :, 3])
-        head = head_box(rgba[:, :, 3], box)
-        body = crop(rgba, box, 0.03)
-        bw, bh = body.shape[1], body.shape[0]
-        if with_body:
-            save_webp(body, OUT / animal / f"{frame}.webp", (round(BODY_PX * bw / bh), BODY_PX))
-        face = crop(rgba, head, 0.06)
-        save_webp(face, OUT / animal / f"{frame}-face.webp", (FACE_PX, FACE_PX))
-        entry = manifest.setdefault(animal, {"frames": [], "body": False, "head": {}, "sky": ""})
-        if frame not in entry["frames"]:
-            entry["frames"].append(frame)
-        if frame == "idle":
-            entry["body"] = with_body
-            entry["sky"] = sky_filter(face)
-            # The head in the whole figure's image, as fractions of it, for the outfit pieces.
-            fx0, fy0 = box[0] - int((box[2] - box[0]) * 0.03), box[1] - int((box[3] - box[1]) * 0.03)
-            entry["head"] = {
-                "x": round((head[0] - fx0) / bw, 4),
-                "y": round((head[1] - fy0) / bh, 4),
-                "w": round((head[2] - head[0]) / bw, 4),
-                "h": round((head[3] - head[1]) / bh, 4),
-            }
-        entry["frames"] = [f for f in FRAMES if f in entry["frames"]]
-        print(animal, frame, "figure", box, "head", head)
+        frame = m.group(2) or "idle"
+        sources.setdefault(m.group(1), {})["idle" if frame == "mockup" else frame] = path
+    for animal in ANIMALS:
+        idle_face = None
+        # The idle frame first: the others are fitted to it.
+        for frame in [f for f in FRAMES if f in sources.get(animal, {})]:
+            rgba = cut_out(sources[animal][frame])
+            box = figure_box(rgba[:, :, 3])
+            head = head_box(rgba[:, :, 3], box)
+            body = crop(rgba, box, 0.03)
+            bw, bh = body.shape[1], body.shape[0]
+            if with_body:
+                save_webp(body, OUT / animal / f"{frame}.webp", (round(BODY_PX * bw / bh), BODY_PX))
+            face = face_image(rgba, head)
+            note = ""
+            if frame == "idle":
+                idle_face = face
+            elif idle_face is not None and frame not in ("wave", "silly"):
+                # (A wave lifts a paw and a silly face tips the head: their outlines are their own.)
+                face, note = lined_up(face, idle_face)
+                if frame == "blink":
+                    blended, found = eyes_only(face, idle_face)
+                    note = f"{note}; {found}"
+                    if blended is None:
+                        print(animal, frame, "LEFT OUT:", note)
+                        continue
+                    face = blended
+            path = OUT / animal / f"{frame}-face.webp"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            Image.fromarray(face).save(path, "WEBP", quality=88, method=6)
+            entry = manifest.setdefault(animal, {"frames": [], "body": False, "head": {}, "sky": ""})
+            if frame not in entry["frames"]:
+                entry["frames"].append(frame)
+            if frame == "idle":
+                entry["body"] = with_body
+                entry["sky"] = sky_filter(crop(rgba, head, 0.06))
+                # The head in the whole figure's image, as fractions of it, for the outfit pieces.
+                fx0, fy0 = box[0] - int((box[2] - box[0]) * 0.03), box[1] - int((box[3] - box[1]) * 0.03)
+                entry["head"] = {
+                    "x": round((head[0] - fx0) / bw, 4),
+                    "y": round((head[1] - fy0) / bh, 4),
+                    "w": round((head[2] - head[0]) / bw, 4),
+                    "h": round((head[3] - head[1]) / bh, 4),
+                }
+            entry["frames"] = [f for f in FRAMES if f in entry["frames"]]
+            print(animal, frame, note)
     MANIFEST.write_text(json.dumps({k: manifest[k] for k in ANIMALS if k in manifest}, indent=2) + "\n")
 
 

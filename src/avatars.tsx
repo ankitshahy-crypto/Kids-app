@@ -276,17 +276,20 @@ const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
  * mood's frame. With a blink frame, that sits on top and shows for a moment now and then (CSS); the
  * idle frame underneath is what shows between blinks, so the face never flashes a different look.
  */
-export function Avatar({ animal, mood = "idle", view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
+export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
   const entry = ART[animal];
+  const look = mood ?? "idle";
   if (!entry) {
     const Art = avatars[animal];
-    return <Art mood={mood} />;
+    return <Art mood={look} />;
   }
-  const frame = frameFor(animal, mood);
+  const frame = frameFor(animal, look);
   const shown = viewFor(animal, view);
-  const blinks = frame === "idle" && entry.frames.includes("blink");
+  // Only an animal that is given a mood is alive on the page (the one in a game): a face on a list
+  // or the picker does not blink, so it does not carry (or load) the blink picture.
+  const blinks = mood !== undefined && frame === "idle" && entry.frames.includes("blink");
   return (
-    <span className="avatar-art avatar-painted" data-mood={mood} data-view={shown} data-frame={frame} aria-hidden="true">
+    <span className="avatar-art avatar-painted" data-mood={look} data-view={shown} data-frame={frame} aria-hidden="true">
       {/* The size attributes give the box its shape before the picture arrives (a face is square), so nothing jumps. */}
       <img src={artSrc(animal, frame, shown)} width={shown === "face" ? 512 : undefined} height={shown === "face" ? 512 : undefined} alt="" draggable={false} decoding="async" />
       {blinks ? <img className="avatar-blink" src={artSrc(animal, "blink", shown)} alt="" draggable={false} decoding="async" /> : null}

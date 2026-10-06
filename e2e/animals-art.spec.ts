@@ -133,3 +133,46 @@ test("a mood with no frame of its own shows the idle face, and the mood still sh
   await expect(host).toHaveAttribute("data-frame", "idle");
   expect(missing).toEqual([]);
 });
+
+test("in a game the animal blinks, and a right answer shows its cheering face", async ({ page }) => {
+  const missing = watchArt(page);
+  await install(page, profile("penguin"));
+  await page.getByRole("button", { name: "Mia" }).click();
+  await page.locator("[data-course=science]").click();
+  await page.locator("[data-science=menu] [data-activity]").first().click();
+  const frame = page.locator(".game-frame").first();
+  const host = frame.locator(".game-host .avatar-painted").first();
+  // Idle: the idle face, with the blink face over it, shown for a moment now and then (an animation
+  // on the blink picture alone; between blinks it is see-through).
+  await expect(host).toHaveAttribute("data-frame", "idle");
+  const blink = host.locator("img.avatar-blink");
+  await expect(blink).toHaveAttribute("src", /\/animals\/penguin\/blink-face\.webp$/);
+  await expect.poll(() => blink.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(512);
+  expect(await blink.evaluate((img) => getComputedStyle(img).animationName)).toBe("avatar-blink-frame");
+  expect(await blink.evaluate((img) => getComputedStyle(img).opacity)).toBe("0");
+  // The right answer: the cheering face (its own picture), and no blink over it.
+  const need = (await frame.getAttribute("data-need")) ?? "";
+  await frame.locator(`.pick[data-give=${need}], .pick[data-pick=${need}]`).first().click();
+  await expect(host).toHaveAttribute("data-frame", "cheer");
+  await expect(host.locator("img").first()).toHaveAttribute("src", /\/animals\/penguin\/cheer-face\.webp$/);
+  await expect(host.locator("img.avatar-blink")).toHaveCount(0);
+  expect(missing).toEqual([]);
+});
+
+test("every animal has a cheering face and a blink, the size of its idle face", async ({ page }) => {
+  await page.goto("./");
+  const sizes = await page.evaluate(async (base) => {
+    const animals = ["cat", "dog", "fox", "bear", "bunny", "owl", "frog", "duck", "pig", "penguin", "lion", "koala"];
+    const load = (src: string) =>
+      new Promise<number>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img.naturalWidth === img.naturalHeight ? img.naturalWidth : -1);
+        img.onerror = () => resolve(0);
+        img.src = src;
+      });
+    const out: Record<string, number> = {};
+    for (const animal of animals) for (const frame of ["idle", "cheer", "blink"]) out[`${animal}/${frame}`] = await load(`${base}animals/${animal}/${frame}-face.webp`);
+    return out;
+  }, new URL("./", page.url()).pathname);
+  for (const [name, size] of Object.entries(sizes)) expect(size, name).toBe(512);
+});

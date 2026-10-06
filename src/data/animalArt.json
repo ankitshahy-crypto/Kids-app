@@ -1,7 +1,9 @@
 {
   "cat": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -14,7 +16,9 @@
   },
   "dog": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -28,21 +32,25 @@
   "fox": {
     "frames": [
       "idle",
+      "cheer",
+      "blink",
       "wave",
       "silly"
     ],
     "body": false,
     "head": {
-      "x": -0.0565,
+      "x": -0.0527,
       "y": 0.0283,
-      "w": 0.9952,
-      "h": 0.5445
+      "w": 1.0077,
+      "h": 0.5508
     },
     "sky": "hue-rotate(185deg) saturate(0.25) contrast(0.85) brightness(1.12)"
   },
   "bear": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -55,46 +63,54 @@
   },
   "bunny": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
-      "x": -0.1342,
-      "y": 0.0281,
-      "w": 1.2526,
-      "h": 0.5946
+      "x": -0.1279,
+      "y": 0.0282,
+      "w": 1.2569,
+      "h": 0.5987
     },
     "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
   },
   "owl": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
       "x": 0.021,
       "y": 0.028,
       "w": 0.959,
-      "h": 0.5746
+      "h": 0.5743
     },
     "sky": "hue-rotate(185deg) saturate(0.33) contrast(0.85) brightness(1.12)"
   },
   "frog": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
-      "x": 0.0635,
-      "y": 0.0278,
-      "w": 0.8932,
-      "h": 0.5746
+      "x": 0.0746,
+      "y": 0.0279,
+      "w": 0.8738,
+      "h": 0.5632
     },
     "sky": "hue-rotate(137deg) saturate(0.38) contrast(0.85) brightness(1.12)"
   },
   "duck": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -107,7 +123,9 @@
   },
   "pig": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -120,11 +138,13 @@
   },
   "penguin": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
-      "x": 0.0645,
+      "x": 0.0655,
       "y": 0.0278,
       "w": 0.8727,
       "h": 0.5339
@@ -133,7 +153,9 @@
   },
   "lion": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
@@ -146,14 +168,16 @@
   },
   "koala": {
     "frames": [
-      "idle"
+      "idle",
+      "cheer",
+      "blink"
     ],
     "body": false,
     "head": {
       "x": 0.0279,
       "y": 0.0279,
       "w": 0.9433,
-      "h": 0.5964
+      "h": 0.5967
     },
     "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
   }
