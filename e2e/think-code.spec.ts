@@ -796,7 +796,7 @@ test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
   await installAudioSpy(page);
   const board = await toBugRound(page, 1);
   await expect(board).toHaveAttribute("data-bug-kind", "extra");
-  // left,left,down,up,left for a path of left,left,up,left: five arrows in five places, no hole.
+  // up,right,down,up,up for a path of up,right,up,up: five arrows in five places, no hole.
   await expect(board.locator(".code-chip")).toHaveCount(5);
   await expect(board.locator(".code-place")).toHaveCount(0);
   await board.locator("[data-go=run]").click();
@@ -821,9 +821,9 @@ test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
 test("fix it: a missing arrow has an empty place, which Go points at and an arrow fills", async ({ page }) => {
   test.slow();
   await installAudioSpy(page);
-  const board = await toBugRound(page, 4);
+  const board = await toBugRound(page, 3);
   await expect(board).toHaveAttribute("data-bug-kind", "missing");
-  // right,_,up,right for a path of right,up,up,right: the hole is the second place, and the arrow
+  // up,_,right,right for a path of up,up,right,right: the hole is the second place, and the arrow
   // keys are there to fill it.
   const gap = board.locator(".code-place[data-gap=true]");
   await expect(gap).toHaveCount(1);
@@ -865,7 +865,7 @@ test("fix it: a wrong arrow is tapped off, leaving its place for the right one",
   test.slow();
   const board = await toBugRound(page, 7);
   await expect(board).toHaveAttribute("data-bug-kind", "turn");
-  // up,right,left,left for a path of up,up,left,left.
+  // up,right,up,left for a path of up,up,up,left.
   await expect(board.locator(".code-chip")).toHaveCount(4);
   await expect(board.locator(".code-chip[data-bug=true]")).toHaveAttribute("data-dir", "right");
   // An arrow key with every place full: Go wiggles, nothing is added.
