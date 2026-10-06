@@ -398,6 +398,8 @@ function BirdGame({
    * press.
    */
   const queueChip = (chip: Chip) => {
+    if (home || running) return;
+    wiggle.still();
     if (queue.length >= places) {
       wiggle.shake("go");
       coach.touch();
@@ -630,11 +632,15 @@ function BirdGame({
     const check = checkPlan(round, dirs);
     if (!check.ok && check.why !== "short") return { chip: stepChips[check.at]?.chip ?? check.at };
     // Reuse: the routine chip, when it is not in the plan yet and its steps go the right way from
-    // where the plan so far leaves the animal; with every place full, the last arrow has to come
-    // off first, so the hand goes to that.
+    // where the plan so far leaves the animal. When the child's arrows have walked on past the
+    // routine's place (its own steps laid by hand, say), the first arrow past it has to come off,
+    // and the ones after it with it: the hand goes to that arrow, and to the chip once it is off.
     if (round.mode === "reuse" && !routineUsed) {
+      let fits = queue.length;
+      while (fits >= 0 && !routineFits(round, queue.slice(0, fits))) fits -= 1;
+      if (fits >= 0 && fits < queue.length) return { chip: fits };
+      if (fits === queue.length && queue.length < places) return { routine: true };
       if (queue.length >= places) return { chip: queue.length - 1 };
-      if (routineFits(round, queue)) return { routine: true };
     }
     const way = nextStepHome(round, walkTo(round, dirs));
     return way ? { arrow: way } : null;

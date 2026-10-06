@@ -7043,14 +7043,17 @@ input.is-pressed,
   padding: 2px;
 }
 
-/* The routine to pick from, in the tray: twice an arrow's width, on a row of its own with Go. */
+/* The routine to pick from, in the tray: twice an arrow's width, on a row of its own with Go. The
+   break between the rows takes no height of its own (it would otherwise add a gap each side). */
 .code-break {
   flex-basis: 100%;
   height: 0;
+  margin: -4px 0;
 }
 
 .game-frame[data-screen="bird"][data-screen] .game-tray .pick[data-routine-pick] {
-  --arrow: 30px;
+  /* Its small arrows shrink with the chip, so three of them and the nest mark fit a narrow phone. */
+  --arrow: calc(min(82px, (100% - 32px) / 5) * 0.4);
   width: calc(2 * min(82px, (100% - 32px) / 5) + 8px);
 }
 
@@ -7192,6 +7195,7 @@ input.is-pressed,
   }
 
   .game-frame[data-screen="bird"][data-screen] .game-tray .pick[data-routine-pick] {
+    --arrow: 26px;
     width: 136px;
   }
 }

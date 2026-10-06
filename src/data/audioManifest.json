@@ -1265,7 +1265,7 @@
     "code-bug-extra": { "file": "prompts/code-bug-extra.mp3", "say": "One arrow too many. Tap it off, then press go.", "source": "neural" },
     "code-bug-missing": { "file": "prompts/code-bug-missing.mp3", "say": "One arrow is missing. Fill the empty place, then press go.", "source": "neural" },
     "code-go": { "file": "prompts/code-go.mp3", "say": "Now press go.", "source": "neural" },
-    "code-routine-kept": { "file": "prompts/code-routine-kept.mp3", "say": "Home! Let's keep those steps. Now they're one chip: your routine.", "source": "neural" },
+    "code-routine-kept": { "file": "prompts/code-routine-kept.mp3", "say": "Home! Those steps are one chip now: your routine.", "source": "neural" },
     "code-routine-use": { "file": "prompts/code-routine-use.mp3", "say": "A longer way home. Use your routine chip, then press go.", "source": "neural" },
     "code-routine-short": { "file": "prompts/code-routine-short.mp3", "say": "Not home yet. Try your routine chip.", "source": "neural" }
   },

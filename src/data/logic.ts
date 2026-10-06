@@ -522,10 +522,14 @@ export function birdRounds(level: LogicLevel, salt = 0): BirdRound[] {
   }
   // The keep board is a short one (from the early library), and the reuse board is made from it.
   const keep: BirdRound = { ...pick((round) => round.path.length === KEEP_STEPS && !straight(round), 2, boardLibrary("early")), mode: "keep" };
+  const reuse = reuseRound(keep.path, salt);
+  // (Not the same shape as the boards after it, either. The reuse board made for a child's own way,
+  // in the game, is whatever that way needs.)
+  seen.add(boardFamily(reuse));
   return [
     pick((round) => round.path.length === 4, 1),
     { ...keep, id: `keep-${keep.id}` },
-    reuseRound(keep.path, salt),
+    reuse,
     predicted(pick((round) => round.path.length === 5, 8), 3, 3, salt),
     turned(LOOP, salt !== 0 && (mix(salt, 5) & 1) === 1, false),
     bugged(pick((round) => round.path.length >= 4 && round.path.length <= 5, 6), salt),
@@ -747,7 +751,7 @@ export function logicManifestEntries(): { id: string; say: string }[] {
     { id: "code-bug-extra", say: "One arrow too many. Tap it off, then press go." },
     { id: "code-bug-missing", say: "One arrow is missing. Fill the empty place, then press go." },
     { id: "code-predict", say: "Which arrows take it home? Pick one, then press go." },
-    { id: "code-routine-kept", say: "Home! Let's keep those steps. Now they're one chip: your routine." },
+    { id: "code-routine-kept", say: "Home! Those steps are one chip now: your routine." },
     { id: "code-routine-use", say: "A longer way home. Use your routine chip, then press go." },
     { id: "code-routine-short", say: "Not home yet. Try your routine chip." },
     { id: "code-go", say: "Now press go." },
