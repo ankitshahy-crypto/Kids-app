@@ -905,15 +905,17 @@ for (const [name, setup] of [
   });
 }
 
-test("the scene moves a little on its own, and the animal breathes and blinks", async ({ page }) => {
+test("the scene moves a little on its own, and the animal breathes (and blinks, once it has a blink frame)", async ({ page }) => {
   await install(page, profile, { quick: true, salt: 4 });
   await openCoding(page);
   await page.locator("[data-game-tile=bird]").click();
-  await expect(page.locator(".game-frame[data-screen=bird]")).toHaveAttribute("data-mode", "tap");
+  const board = page.locator(".game-frame[data-screen=bird]");
+  await expect(board).toHaveAttribute("data-mode", "tap");
   const now = await moving(page);
   expect(now.some((it) => it.startsWith("g.scene-") || it.startsWith("circle.scene-") || it.startsWith("path.scene-"))).toBe(true);
-  expect(now).toContain("pet g.avatar-eyes-open");
   expect(now).toContain("pet span.game-host-body");
+  // The painted animal blinks by showing its blink frame for a moment; one without that frame only breathes.
+  if ((await board.locator(".code-pet .avatar-blink").count()) > 0) expect(now).toContain("pet img.avatar-blink");
 });
 
 test("no two plays are alike: the boards turn and the pictures change", async ({ page }) => {
