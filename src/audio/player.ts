@@ -325,10 +325,24 @@ function takeVoice(signal: AbortSignal): AbortSignal {
   return controller.signal;
 }
 
+/**
+ * A line has been asked for. Nothing in the app listens: this is how the end-to-end tests count
+ * what a screen asked to say. (What was heard is announced as each clip starts, in the manager;
+ * a line asked for and cut off by the next before its clip could start is still a line asked for.)
+ */
+function announceLine(cues: Cue[]): void {
+  try {
+    window.dispatchEvent(new CustomEvent("littlenest:line", { detail: cues.map((cue) => cue.text) }));
+  } catch {
+    // No window, or no CustomEvent: nothing to tell.
+  }
+}
+
 /** Say each part in turn, with a beat between, and remember the whole line for "Hear again". */
 async function playCues(cues: Cue[], settings: Settings, signal: AbortSignal, options: { remember?: boolean; follow?: ReadAlong } = {}): Promise<void> {
   if (signal.aborted) throw abortError();
   if (cues.length === 0) return;
+  announceLine(cues);
   if (options.remember !== false) remember(cues);
   const voice = takeVoice(signal);
   for (let index = 0; index < cues.length; index += 1) {

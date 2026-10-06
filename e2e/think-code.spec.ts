@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { installAudioSpy, requestedCues, spokenLines } from "./audioSpy";
+import { askedLines, installAudioSpy, requestedCues, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
+import { noting } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -884,19 +885,30 @@ test("fix it: a missing arrow has an empty place, which Go points at and an arro
   // run a plan with a hole, the hole breathes (anew each time) and the line is said, once each time
   // (the instruction from the second miss is the same line, so not twice over). Three misses, and
   // the hand comes to the arrow that goes there.
+  //
+  // The line is counted as asked for, not as heard (the clip is a long one, and on a slow machine
+  // a miss's line can be cut off by the next miss's before it has started), and less the times it
+  // was said again to a child who waited (the nudge, after eight seconds with no tap: on a very
+  // slow machine the test itself can be that child).
   const missing = "one arrow is missing. fill the empty place, then press go.";
+  const nudged = await noting(board, (frame) => frame.getAttribute("data-nudge"));
+  const asked = async () => (await askedLines(page)).filter((said) => said === missing).length - (await nudged()).filter((nudge) => nudge === "true").length;
+  // The round opened with it.
+  await expect.poll(asked).toBe(1);
   await gap.click();
   await expect(gap).toHaveAttribute("data-wiggle", /^(a|b)$/);
   await expect(board).toHaveAttribute("data-misses", "1");
+  await expect.poll(asked).toBe(2);
   await board.locator("[data-go=run]").click();
   await expect(board).toHaveAttribute("data-misses", "2");
   await expect(gap).toHaveAttribute("data-next", "true");
+  // (Once: the instruction from the second miss is this same line, so it is not said twice over.)
+  await expect.poll(asked).toBe(3);
   const pulse = await gap.getAttribute("data-pulse");
   await board.locator("[data-go=run]").click();
   await expect(board).toHaveAttribute("data-misses", "3");
   await expect(gap).not.toHaveAttribute("data-pulse", pulse ?? "");
-  // Four: the round opened with it, then the three misses (six, were the instruction said twice over).
-  await expect.poll(async () => (await spokenLines(page)).filter((said) => said === missing)).toHaveLength(4);
+  await expect.poll(asked).toBe(4);
   await expect(board.locator("[data-arrow=up] .game-hand")).toBeVisible();
   // The wrong arrow in the hole: the plan runs and goes wrong there; tapped, the hole is back.
   await board.locator("[data-arrow=left]").click();
