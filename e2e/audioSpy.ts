@@ -38,6 +38,10 @@ export async function installAudioSpy(page: Page): Promise<void> {
       const src = String((event as CustomEvent<string>).detail ?? "");
       target.__audioAttempts?.push({ kind: "clip", detail: new URL(src, location.href).href });
     });
+    // A line asked for, part by part, whether or not it got to be heard (see askedLines).
+    window.addEventListener("littlenest:line", (event) => {
+      for (const text of (event as CustomEvent<string[]>).detail ?? []) target.__audioAttempts?.push({ kind: "line", detail: String(text) });
+    });
     // The moment the page asks for a clip to play is noted too, as a request, for checks on how soon a
     // screen speaks. The offline download and a card loading its sounds ahead fetch at low priority; a
     // clip being played now does not.
@@ -78,6 +82,18 @@ export async function playedClips(page: Page): Promise<string[]> {
     () => (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [],
   );
   return attempts.filter((item) => item.kind === "clip").map((item) => item.detail.split("/audio/")[1] ?? item.detail);
+}
+
+/**
+ * Lines the app asked to say, lowercased, part by part, in order, whether or not each got to be
+ * heard. For counting: a line asked for and cut off by the next before its clip could start (a
+ * long clip on a slow machine) is still a line asked for, and `spokenLines` would not have it.
+ */
+export async function askedLines(page: Page): Promise<string[]> {
+  const attempts = await page.evaluate(
+    () => (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [],
+  );
+  return attempts.filter((item) => item.kind === "line").map((item) => item.detail.toLowerCase());
 }
 
 /** Lines the app said or played, lowercased: the utterance text, or the clip's manifest line. */
