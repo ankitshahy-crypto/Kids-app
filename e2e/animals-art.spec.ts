@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
 import { passGate } from "./gate";
 
@@ -178,13 +178,14 @@ test("in a game the animal blinks, and a right answer shows its cheering face", 
   expect(eyes.corners).toEqual([0, 0, 0, 0]);
   expect(eyes.chin).toBe(0);
   // It shows by an animation of its own: see-through for most of each turn, there for a moment at
-  // the end of it. (Read at set times in the turn, not whenever the test happens to look.)
+  // the end of it. (Read at set times in the turn, not whenever the test happens to look; the turn
+  // starts at a moment of this animal's own, which the animation's delay says.)
   const at = (ms: number) =>
     blink.evaluate((img, ms) => {
       const run = img.getAnimations()[0] as CSSAnimation | undefined;
       if (!run) return "no animation";
       run.pause();
-      run.currentTime = ms;
+      run.currentTime = ms + Number(run.effect?.getComputedTiming().delay ?? 0);
       return `${run.animationName} ${getComputedStyle(img).opacity}`;
     }, ms);
   expect(await at(0)).toBe("avatar-blink-frame 0");
@@ -192,29 +193,116 @@ test("in a game the animal blinks, and a right answer shows its cheering face", 
   expect(await at(4500)).toBe("avatar-blink-frame 0");
   expect(await at(4720)).toBe("avatar-blink-frame 1");
   expect(await at(0)).toBe("avatar-blink-frame 0");
-  // The right answer: the cheering face (its own picture), and no blink over it. The cheer lasts a
-  // moment, so the page notes each face it shows.
-  await host.evaluate((box) => {
-    const seen: string[] = [];
-    (window as Window & { __faces?: string[] }).__faces = seen;
-    const note = () => seen.push(`${box.getAttribute("data-frame")} ${box.querySelector("img")?.getAttribute("src")?.split("/").pop()} blink:${box.querySelectorAll("img.avatar-blink").length}`);
-    note();
-    new MutationObserver(note).observe(box, { attributes: true, childList: true, subtree: true });
-  });
+  await blink.evaluate((img) => img.getAnimations()[0]?.play());
+  // The right answer: the cheering face fades in over the idle one, which stays where it is
+  // underneath (the same picture element all along) until the fade is done, and the animal pops.
+  const cheer = host.locator("img.avatar-over[data-face=cheer]");
+  await expect(cheer).toHaveAttribute("src", /\/animals\/penguin\/cheer-face\.webp$/);
+  await expect(cheer).toHaveAttribute("data-on", "false");
+  await expect.poll(() => cheer.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(512);
+  expect(await cheer.evaluate((img) => getComputedStyle(img).opacity)).toBe("0");
+  await watchCheer(host);
   const need = (await frame.getAttribute("data-need")) ?? "";
   await frame.locator(`.pick[data-give=${need}], .pick[data-pick=${need}]`).first().click();
-  const faces = () => page.evaluate(() => (window as Window & { __faces?: string[] }).__faces ?? []);
-  await expect.poll(faces).toContain("cheer cheer-face.webp blink:0");
-  expect((await faces())[0]).toBe("idle idle-face.webp blink:1");
+  await expect.poll(async () => (await cheerSeen(page)).looks).toContain("cheer on:true under:idle-face.webp");
+  const seen = await cheerSeen(page);
+  expect(seen.looks[0]).toBe("idle on:false under:idle-face.webp");
+  // A fade, not a cut: 180 ms long, and halfway through it the cheering face is half there, with
+  // the idle face still showing under it.
+  expect(seen.fade).toEqual({ ms: 180, halfway: expect.any(Number), under: "visible" });
+  expect(seen.fade!.halfway).toBeGreaterThan(0.2);
+  expect(seen.fade!.halfway).toBeLessThan(0.9);
+  // The pop: the animal itself squashes (wider and shorter), then stretches (narrower and taller),
+  // while the jump runs on its body.
+  expect(seen.pop).toEqual({ ms: 420, squash: "1.06 0.94", stretch: "0.95 1.06" });
+  expect(seen.moves).toEqual(expect.arrayContaining(["game-pop", "game-cheer"]));
+  // Fully there: nothing of the idle face or the blink is left under it to show round its edge.
+  await expect.poll(() => cheer.evaluate((img) => getComputedStyle(img).opacity)).toBe("1");
+  await expect.poll(() => host.evaluate((box) => [...box.querySelectorAll("img.avatar-face, img.avatar-blink")].map((img) => getComputedStyle(img).visibility).join())).toBe("hidden,hidden");
+  // And out again: the next round's idle look is the idle face, there at once, with the cheering one fading away.
+  await expect(host).toHaveAttribute("data-frame", "idle");
+  expect(await host.locator("img.avatar-face").evaluate((img) => getComputedStyle(img).visibility)).toBe("visible");
+  await expect.poll(() => cheer.evaluate((img) => getComputedStyle(img).opacity)).toBe("0");
+  expect((await cheerSeen(page)).looks.every((look) => !look.includes("another element"))).toBe(true);
   expect(missing).toEqual([]);
 });
+
+type CheerSeen = {
+  looks: string[];
+  moves: string[];
+  fade: { ms: number; halfway: number; under: string } | null;
+  pop: { ms: number; squash: string; stretch: string } | null;
+  moved: string[];
+};
+
+/**
+ * Has the page note what a cheer does to the animal, as it happens (it lasts a moment): each look;
+ * the fade of the cheering face and the pop of the animal, each stopped and read at set times of
+ * its own clock (not on whichever frames a slow machine happens to draw) and then let go on; and,
+ * frame by frame, whether the animal is ever seen scaled or off its place.
+ */
+async function watchCheer(host: Locator) {
+  await host.evaluate((box) => {
+    const seen: CheerSeen = { looks: [], moves: [], fade: null, pop: null, moved: [] };
+    (window as Window & { __cheer?: CheerSeen }).__cheer = seen;
+    const idle = box.querySelector("img.avatar-face") as HTMLImageElement & { __first?: boolean };
+    idle.__first = true;
+    const over = box.querySelector("img.avatar-over[data-face=cheer]") as HTMLImageElement;
+    const animal = (box.closest(".hero") ?? box) as HTMLElement;
+    const body = box.closest(".game-host-body") as HTMLElement;
+    const at = (run: Animation, ms: number, read: () => string) => {
+      run.pause();
+      run.currentTime = ms;
+      return read();
+    };
+    const look = () => {
+      const under = box.querySelector("img.avatar-face") as (HTMLImageElement & { __first?: boolean }) | null;
+      seen.looks.push(`${box.getAttribute("data-frame")} on:${over.getAttribute("data-on")} under:${under?.getAttribute("src")?.split("/").pop()}${under?.__first ? "" : " (another element)"}`);
+      for (const run of box.closest(".game-host")!.getAnimations({ subtree: true })) {
+        const name = (run as CSSAnimation).animationName;
+        if (name && !seen.moves.includes(name)) seen.moves.push(name);
+      }
+      if (over.getAttribute("data-on") !== "true") return;
+      const fade = over.getAnimations().find((run) => (run as CSSTransition).transitionProperty === "opacity");
+      if (fade && !seen.fade) {
+        const ms = Number(fade.effect?.getComputedTiming().duration);
+        const halfway = Number(at(fade, ms / 2, () => getComputedStyle(over).opacity));
+        seen.fade = { ms, halfway, under: getComputedStyle(idle).visibility };
+        fade.currentTime = 0;
+        fade.play();
+      }
+      const pop = animal.getAnimations().find((run) => (run as CSSAnimation).animationName === "game-pop");
+      if (pop && !seen.pop) {
+        const ms = Number(pop.effect?.getComputedTiming().duration);
+        // (The squash and the stretch are two of its keyframes: 22% and 55% of the way.)
+        const squash = at(pop, ms * 0.22, () => getComputedStyle(animal).scale);
+        const stretch = at(pop, ms * 0.55, () => getComputedStyle(animal).scale);
+        seen.pop = ms > 1 ? { ms, squash, stretch } : null;
+        pop.currentTime = 0;
+        pop.play();
+      }
+    };
+    look();
+    new MutationObserver(look).observe(box, { attributes: true, childList: true, subtree: true });
+    const frame = () => {
+      const scale = getComputedStyle(animal).scale;
+      const place = new DOMMatrix(getComputedStyle(body).transform);
+      if (!["none", "1", "1 1"].includes(scale)) seen.moved.push(`scale ${scale}`);
+      if (Math.abs(place.f) > 0.5 || Math.abs(place.b) > 0.01 || Math.abs(place.a - 1) > 0.01) seen.moved.push(`body ${place.toString()}`);
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+}
+
+const cheerSeen = (page: Page) => page.evaluate(() => (window as Window & { __cheer?: CheerSeen }).__cheer!);
 
 for (const still of ["calm mode", "reduced motion"] as const) {
   test(`with ${still} the animal does not blink: its eyes stay open`, async ({ page }) => {
     if (still === "reduced motion") await page.emulateMedia({ reducedMotion: "reduce" });
     else await page.addInitScript(() => localStorage.setItem("littlenest-settings-v1", JSON.stringify({ calm: true })));
     await install(page, profile("penguin"));
-    const { host } = await penguinInGame(page);
+    const { frame, host } = await penguinInGame(page);
     await expect(page.locator(".app")).toHaveAttribute("data-calm", "true");
     const blink = host.locator("img.avatar-blink");
     await expect.poll(() => blink.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(512);
@@ -222,8 +310,59 @@ for (const still of ["calm mode", "reduced motion"] as const) {
     await expect.poll(() => blink.evaluate((img) => `${img.getAnimations().filter((run) => run.playState === "running").length} ${getComputedStyle(img).opacity}`)).toBe("0 0");
     await page.waitForTimeout(300);
     expect(await blink.evaluate((img) => `${img.getAnimations().filter((run) => run.playState === "running").length} ${getComputedStyle(img).opacity}`)).toBe("0 0");
+    // A right answer: no pop and no jump (the animal is never seen squashed, stretched or off its
+    // place), and the cheering face still fades in over the idle one, since a fade is softer than a cut.
+    const cheer = host.locator("img.avatar-over[data-face=cheer]");
+    await expect.poll(() => cheer.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(512);
+    await watchCheer(host);
+    const need = (await frame.getAttribute("data-need")) ?? "";
+    await frame.locator(`.pick[data-give=${need}], .pick[data-pick=${need}]`).first().click();
+    await expect.poll(async () => (await cheerSeen(page)).looks).toContain("cheer on:true under:idle-face.webp");
+    const seen = await cheerSeen(page);
+    expect(seen.fade).toEqual({ ms: 180, halfway: expect.any(Number), under: "visible" });
+    expect(seen.fade!.halfway).toBeGreaterThan(0.2);
+    expect(seen.fade!.halfway).toBeLessThan(0.9);
+    expect(seen.pop).toBeNull();
+    // The idle face still goes once the cheering one is fully there (the wait is the fade's time).
+    await expect.poll(() => host.locator("img.avatar-face").evaluate((img) => getComputedStyle(img).visibility)).toBe("hidden");
+    await expect(host).toHaveAttribute("data-frame", "idle");
+    expect((await cheerSeen(page)).moved).toEqual([]);
   });
 }
+
+test("two animals on one screen do not blink in step: each starts its turn at a moment of its own", async ({ page }) => {
+  await install(page, profile("penguin"));
+  const { host } = await penguinInGame(page);
+  const blink = host.locator("img.avatar-blink");
+  await expect.poll(() => blink.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(512);
+  // The moment is the animal's own (--blink-at, seconds into the 4.8 s turn), and the blink's
+  // animation starts that far in.
+  const startOf = async () => {
+    const at = Number(await host.evaluate((box) => (box as HTMLElement).style.getPropertyValue("--blink-at")));
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(at).toBeLessThan(4.8);
+    expect(await blink.evaluate((img) => Number(img.getAnimations()[0]?.effect?.getComputedTiming().delay))).toBeCloseTo(-at * 1000, 0);
+    return at;
+  };
+  const first = await startOf();
+  // It keeps that moment through a change of mood (the animal is not made again for a cheer)...
+  const frame = page.locator(".game-frame").first();
+  const need = (await frame.getAttribute("data-need")) ?? "";
+  await frame.locator(`.pick[data-give=${need}], .pick[data-pick=${need}]`).first().click();
+  await expect(host).toHaveAttribute("data-frame", "cheer");
+  await expect(host).toHaveAttribute("data-frame", "idle");
+  expect(await startOf()).toBe(first);
+  // ...and another animal has another: the same game opened twice more does not give the same one
+  // three times (a moment is one of 480, so two of the three may happen to agree).
+  const starts = new Set([first]);
+  for (let again = 0; again < 2; again += 1) {
+    await install(page, profile("penguin"));
+    await penguinInGame(page);
+    await expect.poll(() => blink.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(512);
+    starts.add(await startOf());
+  }
+  expect(starts.size).toBeGreaterThan(1);
+});
 
 test("every animal has a cheering face and a blink, the size of its idle face", async ({ page }) => {
   // The list the app itself goes by (made with the pictures, by scripts/animal-art.py).
