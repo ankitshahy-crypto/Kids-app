@@ -89,7 +89,14 @@ async function runPath(board: Locator) {
   const path = (await board.getAttribute("data-path")) ?? "";
   const mode = await board.getAttribute("data-mode");
   const round = await board.getAttribute("data-round");
-  for (const dir of path.split(",").filter(Boolean)) {
+  // In a reuse round the routine chip stands for its steps, where they come in the way home.
+  const routine = mode === "reuse" ? ((await board.getAttribute("data-routine")) ?? "").split(",") : [];
+  const at = mode === "reuse" ? Number(await board.getAttribute("data-routine-at")) : -1;
+  for (const [index, dir] of path.split(",").filter(Boolean).entries()) {
+    if (mode === "reuse" && index >= at && index < at + routine.length) {
+      if (index === at) await board.locator("[data-pick=routine]").click();
+      continue;
+    }
     await board.locator(`[data-arrow=${dir}]`).click();
     if (mode === "loop") break;
   }
@@ -470,19 +477,25 @@ test("a plan has exactly one place for each step home, on one line, on a phone",
   await openCoding(page);
   await page.locator("[data-game-tile=bird]").click();
   const board = page.locator(".game-frame[data-screen=bird]");
-  // The second plan of ages 5 to 7 has five steps.
+  // The third board of ages 5 to 7 is the longest way home (five or six steps), with the routine
+  // chip for three of them: one place for each chip.
   await runPath(board);
   await onRound(board, 1);
+  await runPath(board);
+  await onRound(board, 2);
   const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
-  expect(steps).toHaveLength(5);
-  for (const dir of steps) await board.locator(`[data-arrow=${dir}]`).click();
-  // A sixth arrow has nowhere to go: Go wiggles (it is what is left to press) and the plan is unchanged.
+  expect(steps.length).toBeGreaterThanOrEqual(5);
+  const at = Number(await board.getAttribute("data-routine-at"));
+  for (const dir of steps.slice(0, at)) await board.locator(`[data-arrow=${dir}]`).click();
+  await board.locator("[data-pick=routine]").click();
+  for (const dir of steps.slice(at + 3)) await board.locator(`[data-arrow=${dir}]`).click();
+  // One more arrow has nowhere to go: Go wiggles (it is what is left to press) and the plan is unchanged.
   await board.locator(`[data-arrow=${steps[0]}]`).click();
   await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", /^(a|b)$/);
-  await expect(board.locator(".code-chip")).toHaveCount(5);
+  await expect(board.locator(".code-chip")).toHaveCount(steps.length - 2);
   const tops = await board.locator(".code-chip").evaluateAll((chips) => chips.map((chip) => Math.round(chip.getBoundingClientRect().top)));
   expect(new Set(tops).size).toBe(1);
-  // Go is on the screen with the plan and the arrows, not below them.
+  // Go is on the screen with the plan, the arrows and the routine chip, not below them.
   const go = await board.locator("[data-go=run]").boundingBox();
   expect(go).not.toBeNull();
   expect(go!.y + go!.height).toBeLessThanOrEqual(667 + 24);
@@ -549,7 +562,7 @@ test("Go with nothing planned says the instruction, and in the bug round the oth
   await expect(board.locator(".code-place[data-gap=true]")).toHaveCount(0);
 });
 
-test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", async ({ page }, testInfo) => {
+test("ages 5 to 7 plan longer paths, keep a routine and use it, repeat a move, and fix one wrong arrow", async ({ page }, testInfo) => {
   test.slow();
   await install(page, older, { quick: true });
   await openCoding(page);
@@ -557,19 +570,27 @@ test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", as
   const board = page.locator(".game-frame[data-screen=bird]");
   await expect(board).toHaveAttribute("data-level", "later");
   await expect(board).toHaveAttribute("data-rounds", "6");
-  for (const length of [4, 5, 6]) {
-    await expect(board).toHaveAttribute("data-mode", "plan");
+  // A plan of four, a short one of three that is kept, then a longer way home of five or six with
+  // the routine chip in it: its places are its steps less the routine's, plus the one for the chip.
+  for (const [index, mode] of ["plan", "keep", "reuse"].entries()) {
+    await expect(board).toHaveAttribute("data-mode", mode);
     const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
-    expect(steps).toHaveLength(length);
-    // Every place on one line, six included.
+    const places = Number(await board.getAttribute("data-places"));
+    if (mode === "plan") expect(steps).toHaveLength(4);
+    if (mode === "keep") expect(steps).toHaveLength(3);
+    if (mode === "reuse") {
+      expect(steps.length).toBeGreaterThanOrEqual(5);
+      expect(places).toBe(steps.length - 2);
+    } else expect(places).toBe(steps.length);
+    // Every place on one line.
     const tops = await board.locator(".code-place").evaluateAll((places) => places.map((place) => Math.round(place.getBoundingClientRect().top)));
-    expect(tops).toHaveLength(length);
+    expect(tops).toHaveLength(places);
     expect(new Set(tops).size).toBe(1);
-    // Big enough for a finger: 64px, or as near as six of them fit on a phone.
+    // Big enough for a finger: 64px.
     const box = await board.locator(".code-place").first().boundingBox();
-    expect(box?.width ?? 0).toBeGreaterThanOrEqual(length === 6 ? 50 : 64);
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(64);
     await runPath(board);
-    await onRound(board, length - 3);
+    await onRound(board, index + 1);
   }
   // Three endings to read, for a five-step plan with two given.
   await expect(board).toHaveAttribute("data-mode", "predict");
@@ -602,6 +623,150 @@ test("ages 5 to 7 plan longer paths, repeat a move, and fix one wrong arrow", as
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
 });
 
+/** Plays the first round of a known later-level game and opens the keep round (the second). */
+async function toKeepRound(page: Page, salt: number) {
+  await install(page, older, { quick: true, salt });
+  await openCoding(page);
+  await page.locator("[data-game-tile=bird]").click();
+  const board = page.locator(".game-frame[data-screen=bird]");
+  await runPath(board);
+  await onRound(board, 1);
+  await expect(board).toHaveAttribute("data-mode", "keep");
+  return board;
+}
+
+test("routines: the plan that gets home is kept as one chip, which does all its steps in a longer way home", async ({ page }) => {
+  test.slow();
+  await installAudioSpy(page);
+  const board = await toKeepRound(page, 4);
+  const kept = ((await board.getAttribute("data-path")) ?? "").split(",");
+  expect(kept).toHaveLength(3);
+  for (const dir of kept) await board.locator(`[data-arrow=${dir}]`).click();
+  // Home: the arrows close up and the one chip they have become is shown, with the kept steps on
+  // it, while the line says so. (Home lasts a moment under the quick setting; the page notes it.)
+  await board.evaluate((frame) => {
+    const seen: string[] = [];
+    (window as Window & { __kept?: string[] }).__kept = seen;
+    new MutationObserver(() => {
+      const born = frame.querySelector(".code-routine-born");
+      if (born && frame.getAttribute("data-home") === "true") seen.push(`${frame.getAttribute("data-routine")} ${born.querySelectorAll(".code-routine-step").length} ${frame.querySelector(".code-plan")?.getAttribute("data-kept")}`);
+    }).observe(frame, { attributes: true, childList: true, subtree: true });
+  });
+  await board.locator("[data-go=run]").click();
+  await onRound(board, 2);
+  expect(await page.evaluate(() => (window as Window & { __kept?: string[] }).__kept ?? [])).toContain(`${kept.join(",")} 3 true`);
+  await expect.poll(() => spokenLines(page)).toContain("home! let's keep those steps. now they're one chip: your routine.");
+  // The next board: a longer way home with the routine chip in the tray, on a row with Go, and one
+  // place for each chip of the way (the routine's three steps are one).
+  await expect(board).toHaveAttribute("data-mode", "reuse");
+  await expect(board).toHaveAttribute("data-routine", kept.join(","));
+  await expect.poll(() => spokenLines(page)).toContain("a longer way home. your routine chip does all its steps at once. line up the way, then press go.");
+  const path = ((await board.getAttribute("data-path")) ?? "").split(",");
+  const at = Number(await board.getAttribute("data-routine-at"));
+  expect(path.slice(at, at + 3)).toEqual(kept);
+  const places = path.length - 2;
+  await expect(board).toHaveAttribute("data-places", String(places));
+  await expect(board.locator(".code-place")).toHaveCount(places);
+  const pick = board.locator("[data-pick=routine]");
+  await expect(pick).toHaveAttribute("aria-label", `your routine: ${kept.join(", ")}`);
+  expect(await pick.locator(".code-routine-step").count()).toBe(3);
+  const go = await board.locator("[data-go=run]").boundingBox();
+  const chip = await pick.boundingBox();
+  expect(Math.abs((go?.y ?? 0) - (chip?.y ?? 0))).toBeLessThan(4);
+  expect(chip?.width ?? 0).toBeGreaterThan((go?.width ?? 0) * 1.8);
+  // The way home: arrows before, the routine chip, arrows after. The chip in the plan is wider
+  // than an arrow and shows its steps; the pick is dimmed once it is used.
+  for (const dir of path.slice(0, at)) await board.locator(`[data-arrow=${dir}]`).click();
+  await pick.click();
+  await expect(pick).toHaveAttribute("data-used", "true");
+  for (const dir of path.slice(at + 3)) await board.locator(`[data-arrow=${dir}]`).click();
+  await expect(board.locator(".code-queue > .code-chip")).toHaveCount(places);
+  const routineChip = board.locator(".code-chip-routine");
+  await expect(routineChip).toHaveAttribute("data-queued", String(at));
+  expect(await routineChip.locator(".code-routine-step").count()).toBe(3);
+  const arrow = await board.locator(".code-queue > .code-chip:not(.code-chip-routine)").first().boundingBox();
+  expect((await routineChip.boundingBox())?.width ?? 0).toBeGreaterThan((arrow?.width ?? 0) * 1.4);
+  await expect(board).toHaveAttribute("data-plan-full", "true");
+  // The run: the routine chip lights for its three steps, and inside it the step being walked
+  // lights, one after another, in order; the chips either side light for their own steps.
+  await board.evaluate((frame) => {
+    const seen: string[] = [];
+    (window as Window & { __lit?: string[] }).__lit = seen;
+    new MutationObserver(() => {
+      const on = frame.querySelector(".code-chip[data-on=true]");
+      if (!on) return;
+      const sub = [...on.querySelectorAll(".code-routine-step")].findIndex((step) => step.getAttribute("data-on") === "true");
+      const note = `${on.getAttribute("data-queued")}${on.classList.contains("code-chip-routine") ? `:${sub}` : ""}`;
+      if (seen[seen.length - 1] !== note) seen.push(note);
+    }).observe(frame, { attributes: true, subtree: true });
+  });
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-home", "true", { timeout: 10_000 });
+  const lit = await page.evaluate(() => (window as Window & { __lit?: string[] }).__lit ?? []);
+  const expected = path.map((_, index) => (index < at ? String(index) : index < at + 3 ? `${at}:${index - at}` : String(index - 2)));
+  expect(lit).toEqual(expected);
+  await expect.poll(() => spokenLines(page)).toContain("you made it home!");
+});
+
+test("routines: a way home without the routine chip stops short, and the hand comes to the chip", async ({ page }) => {
+  test.slow();
+  await installAudioSpy(page);
+  const board = await toKeepRound(page, 4);
+  await runPath(board);
+  await onRound(board, 2);
+  const path = ((await board.getAttribute("data-path")) ?? "").split(",");
+  const at = Number(await board.getAttribute("data-routine-at"));
+  const places = path.length - 2;
+  // Arrows alone, one for each place: the way is walked as far as they go and stops short, and the
+  // line asks for the routine chip (there is no empty place to point at), which wiggles.
+  for (const dir of path.slice(0, places)) await board.locator(`[data-arrow=${dir}]`).click();
+  await expect(board).toHaveAttribute("data-plan-full", "true");
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-wrong-why", "short", { timeout: 10_000 });
+  await expect(board).toHaveAttribute("data-home", "false");
+  await expect(board.locator("[data-pick=routine]")).toHaveAttribute("data-wiggle", /a|b/);
+  await expect.poll(() => spokenLines(page)).toContain("not home yet. try your routine chip.");
+  // Tapped off to the arrows before the routine's place, and Go twice more (a short run that
+  // points at the next place; with no arrow at all, the instruction again): three misses, and the
+  // hand is on the routine chip, since that is what goes next.
+  await board.locator(".code-queue > .code-chip").nth(at).click();
+  await expect(board.locator(".code-queue > .code-chip")).toHaveCount(at);
+  for (let miss = 2; miss <= 3; miss += 1) {
+    await board.locator("[data-go=run]").click();
+    await expect(board).toHaveAttribute("data-misses", String(miss), { timeout: 10_000 });
+    if (at > 0) {
+      await expect(board).toHaveAttribute("data-again", "true", { timeout: 10_000 });
+      await expect(board.locator(`.code-place[data-place="${at}"]`)).toHaveAttribute("data-next", "true");
+    }
+  }
+  await expect(board.locator("[data-pick=routine] .game-hand")).toHaveCount(1);
+  await expect(board.locator("[data-pick=routine]")).toHaveAttribute("data-reveal", "false");
+  // With it, home.
+  await board.locator("[data-pick=routine]").click();
+  for (const dir of path.slice(at + 3)) await board.locator(`[data-arrow=${dir}]`).click();
+  await board.locator("[data-go=run]").click();
+  await expect(board).toHaveAttribute("data-home", "true", { timeout: 10_000 });
+});
+
+test("routines: the child's own shortest way is the routine, and the next board is made for it", async ({ page }) => {
+  test.slow();
+  const board = await toKeepRound(page, 4);
+  const drawn = ((await board.getAttribute("data-path")) ?? "").split(",");
+  // The board's way is three steps with one turn (a, a, b, say): a, b, a is as short, and the child's.
+  const own = drawn[0] === drawn[1] ? [drawn[0], drawn[2], drawn[1]] : [drawn[1], drawn[0], drawn[2]];
+  expect(own).not.toEqual(drawn);
+  for (const dir of own) await board.locator(`[data-arrow=${dir}]`).click();
+  await board.locator("[data-go=run]").click();
+  await onRound(board, 2);
+  await expect(board).toHaveAttribute("data-routine", own.join(","));
+  const path = ((await board.getAttribute("data-path")) ?? "").split(",");
+  const at = Number(await board.getAttribute("data-routine-at"));
+  expect(path.slice(at, at + 3)).toEqual(own);
+  await expect(board.locator("[data-pick=routine]")).toHaveAttribute("aria-label", `your routine: ${own.join(", ")}`);
+  await runPath(board);
+  await onRound(board, 3);
+});
+
 /**
  * Plays a known later-level game through to its bug round (the sixth), quick. Six rounds take a
  * while even so: a test that starts here is marked slow (three times the usual limit).
@@ -627,12 +792,12 @@ test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
   await installAudioSpy(page);
   const board = await toBugRound(page, 1);
   await expect(board).toHaveAttribute("data-bug-kind", "extra");
-  // up,left,down,left,up for a path of up,left,left,up: five arrows in five places, no hole.
+  // left,left,down,up,left for a path of left,left,up,left: five arrows in five places, no hole.
   await expect(board.locator(".code-chip")).toHaveCount(5);
   await expect(board.locator(".code-place")).toHaveCount(0);
   await board.locator("[data-go=run]").click();
   await expect(board).toHaveAttribute("data-again", "true", { timeout: 5000 });
-  // Walked as far as the extra arrow (down, after up and left: a step away from the nest).
+  // Walked as far as the extra arrow (down, after left and left: a step away from the nest).
   await expect(board).toHaveAttribute("data-wrong-at", "2");
   await expect(board.locator(".code-chip").nth(2)).toHaveAttribute("aria-label", "down, wrong");
   // A double tap: the first takes the arrow off, the row closes up, and the arrow that was next to
@@ -652,9 +817,9 @@ test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
 test("fix it: a missing arrow has an empty place, which Go points at and an arrow fills", async ({ page }) => {
   test.slow();
   await installAudioSpy(page);
-  const board = await toBugRound(page, 3);
+  const board = await toBugRound(page, 4);
   await expect(board).toHaveAttribute("data-bug-kind", "missing");
-  // up,_,right,right for a path of up,up,right,right: the hole is the second place, and the arrow
+  // right,_,up,right for a path of right,up,up,right: the hole is the second place, and the arrow
   // keys are there to fill it.
   const gap = board.locator(".code-place[data-gap=true]");
   await expect(gap).toHaveCount(1);
@@ -694,9 +859,9 @@ test("fix it: a missing arrow has an empty place, which Go points at and an arro
 
 test("fix it: a wrong arrow is tapped off, leaving its place for the right one", async ({ page }) => {
   test.slow();
-  const board = await toBugRound(page, 5);
+  const board = await toBugRound(page, 7);
   await expect(board).toHaveAttribute("data-bug-kind", "turn");
-  // left,right,left,left for a path of left,up,left,left.
+  // up,right,left,left for a path of up,up,left,left.
   await expect(board.locator(".code-chip")).toHaveCount(4);
   await expect(board.locator(".code-chip[data-bug=true]")).toHaveAttribute("data-dir", "right");
   // An arrow key with every place full: Go wiggles, nothing is added.

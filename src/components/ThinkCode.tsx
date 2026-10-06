@@ -910,7 +910,11 @@ function BirdGame({
           ))
         : null}
       {round.mode === "reuse" ? (
-        // The routine, to put in the plan as one chip: after the arrows, so it shares a row with Go.
+        // The routine, to put in the plan as one chip: on a row of its own with Go, under the arrows
+        // (the break makes that so at every width).
+        <span className="code-break" aria-hidden="true" />
+      ) : null}
+      {round.mode === "reuse" ? (
         <Pick
           id="routine"
           name={`your routine: ${round.routine.join(", ")}`}
