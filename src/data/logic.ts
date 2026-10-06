@@ -748,7 +748,7 @@ export function logicManifestEntries(): { id: string; say: string }[] {
     { id: "code-bug-missing", say: "One arrow is missing. Fill the empty place, then press go." },
     { id: "code-predict", say: "Which arrows take it home? Pick one, then press go." },
     { id: "code-routine-kept", say: "Home! Let's keep those steps. Now they're one chip: your routine." },
-    { id: "code-routine-use", say: "A longer way home. Your routine chip does all its steps at once. Line up the way, then press go." },
+    { id: "code-routine-use", say: "A longer way home. Use your routine chip, then press go." },
     { id: "code-routine-short", say: "Not home yet. Try your routine chip." },
     { id: "code-go", say: "Now press go." },
     { id: "code-pattern", say: "What comes next?" },

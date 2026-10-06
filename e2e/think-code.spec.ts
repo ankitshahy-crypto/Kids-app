@@ -660,7 +660,7 @@ test("routines: the plan that gets home is kept as one chip, which does all its 
   // place for each chip of the way (the routine's three steps are one).
   await expect(board).toHaveAttribute("data-mode", "reuse");
   await expect(board).toHaveAttribute("data-routine", kept.join(","));
-  await expect.poll(() => spokenLines(page)).toContain("a longer way home. your routine chip does all its steps at once. line up the way, then press go.");
+  await expect.poll(() => spokenLines(page)).toContain("a longer way home. use your routine chip, then press go.");
   const path = ((await board.getAttribute("data-path")) ?? "").split(",");
   const at = Number(await board.getAttribute("data-routine-at"));
   expect(path.slice(at, at + 3)).toEqual(kept);
