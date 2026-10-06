@@ -6316,6 +6316,10 @@ input.is-pressed,
   height: clamp(210px, 33svh, 300px);
   border-radius: 28px;
   overflow: hidden;
+  /* Its painting's size is worked out from its own (see --scene-floor below), and its rounded
+     corners clip the drifting painting (WebKit lets a moving picture out of them otherwise). */
+  container-type: size;
+  isolation: isolate;
 }
 
 .game-backdrop {
@@ -6323,6 +6327,71 @@ input.is-pressed,
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+/* A scene's painting. It is as tall as the scene and wider, held where its game looks (kit.tsx
+   sets object-position from the painting's `hold`), and it fades in the first time it lands. */
+.game-backdrop-art {
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--face-fade, 180ms) ease-out;
+  /* It drifts about its ground line, so the ground stays under the animal's feet. */
+  transform-origin: 50% 100%;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.game-backdrop-art[data-in="true"] {
+  opacity: 1;
+}
+
+/* Outdoors a painting is never quite still: a very slow drift across and a little nearer, and back
+   (26 s each way). It is drawn a touch large throughout, so the drift never shows an edge. Small,
+   so nothing competes with the game in front. Indoors (a shop, a room, a table) nothing drifts.
+   Reduced motion and calm mode still it, like every other movement, and it rests at its own size. */
+.game-backdrop-art[data-drift="true"] {
+  animation: backdrop-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes backdrop-drift {
+  from {
+    transform: scale(1.03) translateX(-0.8%);
+  }
+  to {
+    transform: scale(1.05) translateX(0.8%);
+  }
+}
+
+/* A painting has its own line for things to stand on (a counter's edge, the floor), not quite
+   where the drawn scene's is. A game whose things stand on the line is laid out by the painting's:
+   --scene-floor is the line's share of the way down the painting (kit.tsx sets it on a painted
+   scene that has one). The painting is three by two and covers the scene: as tall as the scene
+   when the scene is narrower than that, and otherwise as tall as two thirds of the scene's width,
+   with its top cut off (it is held by its bottom). So the line's height above the scene's bottom
+   is its share of the larger of the two. (Written twice: a browser without container units keeps
+   the first line, the scene's own height, and drops the second.) The shop's thing for sale stands
+   on the counter, and the big animal to paint sits where the wall meets the floor. */
+.game-frame[data-screen="shop"] .game-scene[data-painted="true"] .game-stage,
+.game-frame[data-screen="cards"] .game-scene[data-painted="true"] .game-stage,
+.game-frame[data-screen="paint"] .game-scene[data-painted="true"] .game-stage {
+  bottom: calc(100% * (1 - var(--scene-floor, 0.75)));
+  bottom: calc(max(100cqh, 200cqw / 3) * (1 - var(--scene-floor, 0.75)));
+}
+
+.game-scene[data-painted="true"] .shop-counter {
+  padding-bottom: 0;
+}
+
+.game-frame[data-screen="paint"] .game-scene[data-painted="true"] .game-stage {
+  align-items: flex-end;
+}
+
+/* The coins earned lie on the stall's counter. (Their box is the stage, which is 8px inside the
+   scene at the top and the bottom.) */
+.game-scene[data-painted="true"] .stand-stage .coin-row {
+  bottom: calc((100% + 16px) * (1 - var(--scene-floor, 0.75)) - 8px);
+  bottom: calc(max(100cqh, 200cqw / 3) * (1 - var(--scene-floor, 0.75)) - 8px);
 }
 
 /* The child's animal stands in the scene and reacts: a jump for a right answer, a tilt for a miss. */
@@ -8062,6 +8131,20 @@ input.is-pressed,
   top: 66%;
 }
 
+/* On the painted pond a thing that has sunk is seen through the water: paler, and a little blue,
+   as it goes under. (On the drawn pond the water is a flat blue block, and lying low in it says
+   the same.) */
+.game-scene[data-painted="true"] .float-thing .art {
+  transition:
+    opacity 0.4s ease 0.55s,
+    filter 0.4s ease 0.55s;
+}
+
+.game-scene[data-painted="true"] .float-thing[data-result="sink"] .art {
+  opacity: 0.55;
+  filter: saturate(0.7) brightness(0.96);
+}
+
 .water-art {
   width: 86px;
 }
@@ -8183,6 +8266,8 @@ input.is-pressed,
   .garden-rays,
   .garden-need,
   .float-thing,
+  .float-thing .art,
+  .game-backdrop-art,
   .scene-rain,
   .scene-snow,
   .scene-wind,

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { playEffect } from "../audio/manager";
 import { promptCue, type Cue } from "../audio/player";
 import { Avatar } from "../avatars";
 import { Hero } from "../components/Hero";
 import { SpeakerIcon } from "../components/icons";
 import type { AnimalId } from "../data/animals";
+import backdropArt from "../data/backdropArt.json";
 import type { Outfit } from "../data/wardrobe";
 import { useSpeaker } from "../hooks/useSpeaker";
 import type { Settings } from "../settings";
@@ -333,15 +334,106 @@ export function Hand() {
   );
 }
 
-/** A drawn place for a game to happen in. Each is a wide picture that fills the top of the game. */
+/** A place for a game to happen in. Each is a wide picture that fills the top of the game. */
 export type SceneKind = "shop" | "room" | "garden" | "stand" | "morning" | "afternoon" | "night" | "pond" | "table" | "field" | "rainy" | "snowy" | "windy" | "sky";
 
 /**
- * The scene behind a game. Each outdoor one has one slow, small movement (clouds drift, the sun
+ * A scene's painting (public/backdrops, made by scripts/backdrop-art.py from the owner's renders),
+ * and how it is shown:
+ *
+ *  - `hold`: a scene is as tall as its painting and narrower, so only part of the painting's width
+ *    is in view. This is where it is held, as a share across from the left (50 is the middle; the
+ *    lemonade stall is at the right of its painting, and is held there);
+ *  - `still`: indoors nothing drifts;
+ *  - `floor`: the line in it that things stand on (a counter's edge, the floor), as a share down
+ *    from the top. The drawn scenes have theirs where the games were built for; a painting has its
+ *    own, and a game whose things stand on the line reads it (`--scene-floor`, in the styles).
+ */
+type Painting = { hold: number; still: boolean; floor?: number };
+const PAINTINGS = backdropArt as Partial<Record<SceneKind, Painting>>;
+const paintingSrc = (kind: SceneKind) => `${import.meta.env.BASE_URL}backdrops/${kind}.webp`;
+/** Paintings that have been shown once in this visit (the next time they are there at once), and ones that could not be fetched (the drawn scene stays). */
+const arrived = new Set<SceneKind>();
+const missing = new Set<SceneKind>();
+
+/**
+ * Where a scene's painting has got to: `in` (it is what is seen), `coming` (asked for; the scene's
+ * things are already laid out for it, over the paper, and it fades in when it lands), or `none`
+ * (the scene is drawn: it has no painting, or the painting could not be fetched).
+ *
+ * The scene can change under a game (the weather changes with the round), so this follows the kind.
+ */
+function usePainting(kind: SceneKind) {
+  const start = (): "in" | "coming" | "none" => (!PAINTINGS[kind] || missing.has(kind) ? "none" : arrived.has(kind) ? "in" : "coming");
+  const [at, setAt] = useState(() => ({ kind, state: start() }));
+  // A new scene: its own painting, from this render on (not a frame of the last one's).
+  const now = at.kind === kind ? at : { kind, state: start() };
+  if (now !== at) setAt(now);
+  const settle = useCallback((of: SceneKind, state: "in" | "none") => {
+    (state === "in" ? arrived : missing).add(of);
+    setAt((was) => (was.kind === of && was.state !== state ? { kind: of, state } : was));
+  }, []);
+  return { painting: now.state === "none" ? undefined : PAINTINGS[kind], shown: now.state === "in", settle };
+}
+
+/** The rain of the rainy scene. It falls over the painting too, which shows the puddles and not the rain. */
+function Rain() {
+  return (
+    <path
+      className="scene-rain"
+      d="M40 80l-8 22M80 96l-8 22M124 78l-8 22M166 98l-8 22M210 80l-8 22M252 100l-8 22M296 82l-8 22M336 98l-8 22M60 130l-8 22M146 136l-8 22M230 132l-8 22M316 134l-8 22"
+      stroke="#6f95bd"
+      strokeWidth="4"
+      strokeLinecap="round"
+    />
+  );
+}
+
+/**
+ * The scene behind a game: its painting, or the drawn scene when it has none (or the painting
+ * could not be fetched, so a game never stands on nothing).
+ *
+ * A painting that has been seen in this visit is there at once. The first time, the scene's things
+ * are laid out for it straight away and it fades in when it lands (from the device it is a few
+ * milliseconds). Outdoors it drifts, very slowly: a scene is never a still picture. Reduced motion
+ * and calm mode still it.
+ */
+function Backdrop({ kind, painting, shown, settle }: { kind: SceneKind; painting?: Painting; shown: boolean; settle: (of: SceneKind, state: "in" | "none") => void }) {
+  if (!painting) return <DrawnBackdrop kind={kind} />;
+  return (
+    <>
+      <img
+        // (A new scene is a new picture, not the last one with its address changed under it.)
+        key={kind}
+        className="game-backdrop game-backdrop-art"
+        src={paintingSrc(kind)}
+        alt=""
+        draggable={false}
+        decoding={shown ? "sync" : "async"}
+        data-in={shown ? "true" : "false"}
+        data-drift={painting.still ? "false" : "true"}
+        style={{ objectPosition: `${painting.hold}% 100%` }}
+        onLoad={() => settle(kind, "in")}
+        onError={() => settle(kind, "none")}
+      />
+      {kind === "rainy" ? (
+        <svg className="game-backdrop" viewBox="0 0 360 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+          <Rain />
+        </svg>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * A scene as it is drawn. Each outdoor one has one slow, small movement (clouds drift, the sun
  * glows, water shimmers, stars twinkle; the weather scenes have theirs), so the place is never a
  * still picture: CSS on the `scene-*` classes, stilled by reduced motion and calm mode.
+ *
+ * The small skies of Day and night are always these: at that size the sun and the moon are what
+ * tell morning, afternoon and night apart, and a painting's are too small to see.
  */
-export function Backdrop({ kind }: { kind: SceneKind }) {
+export function DrawnBackdrop({ kind }: { kind: SceneKind }) {
   return (
     <svg className="game-backdrop" viewBox="0 0 360 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
       {kind === "shop" ? (
@@ -444,13 +536,7 @@ export function Backdrop({ kind }: { kind: SceneKind }) {
           <ellipse cx="90" cy="44" rx="64" ry="24" fill="#9fb1c4" />
           <ellipse cx="150" cy="36" rx="50" ry="22" fill="#aebdcd" />
           <ellipse cx="270" cy="48" rx="66" ry="24" fill="#9fb1c4" />
-          <path
-            className="scene-rain"
-            d="M40 80l-8 22M80 96l-8 22M124 78l-8 22M166 98l-8 22M210 80l-8 22M252 100l-8 22M296 82l-8 22M336 98l-8 22M60 130l-8 22M146 136l-8 22M230 132l-8 22M316 134l-8 22"
-            stroke="#6f95bd"
-            strokeWidth="4"
-            strokeLinecap="round"
-          />
+          <Rain />
           <path d="M0 150c80-14 200-14 360 0v50H0Z" fill="#8fbf95" />
           <ellipse cx="250" cy="182" rx="40" ry="8" fill="#9ccbe8" />
         </>
@@ -557,6 +643,7 @@ export function GameFrame({
   attrs?: Record<string, string | number | undefined>;
 }) {
   const mood: Mood = rounds.finished ? "cheer" : lookOf(coach);
+  const { painting, shown, settle } = usePainting(scene);
   return (
     <div
       className="game-frame"
@@ -573,8 +660,14 @@ export function GameFrame({
         <h1>{title}</h1>
         <Pips total={rounds.total} done={rounds.finished ? rounds.total : rounds.index} />
       </div>
-      <div className="game-scene" data-scene={scene}>
-        <Backdrop kind={scene} />
+      <div
+        className="game-scene"
+        data-scene={scene}
+        // Painted, or drawn: a game whose things stand on the scene's line lays them out for the one it has.
+        data-painted={painting ? "true" : "false"}
+        style={painting?.floor !== undefined ? ({ "--scene-floor": painting.floor } as CSSProperties) : undefined}
+      >
+        <Backdrop kind={scene} painting={painting} shown={shown} settle={settle} />
         {/* The animal is the one asking. Its speaker says the question again. */}
         <button type="button" className="game-hear" data-hear="true" aria-label="Hear it again" onClick={() => coach.again()}>
           <SpeakerIcon />

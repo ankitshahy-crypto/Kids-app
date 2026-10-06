@@ -1133,8 +1133,10 @@ test("the scene moves a little on its own, and the animal breathes and blinks", 
   await page.locator("[data-game-tile=bird]").click();
   const board = page.locator(".game-frame[data-screen=bird]");
   await expect(board).toHaveAttribute("data-mode", "tap");
+  // The place is a painting, and it drifts (very slowly: see backdrops.spec.ts).
+  await expect(board.locator(".game-scene img.game-backdrop-art")).toHaveAttribute("data-in", "true");
   const now = await moving(page);
-  expect(now.some((it) => it.startsWith("g.scene-") || it.startsWith("circle.scene-") || it.startsWith("path.scene-"))).toBe(true);
+  expect(now).toContain("img.game-backdrop.game-backdrop-art");
   expect(now).toContain("pet span.game-host-body");
   // The painted animal blinks by showing its closed eyes for a moment.
   expect(now).toContain("pet img.avatar-blink");

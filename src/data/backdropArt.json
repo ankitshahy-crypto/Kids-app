@@ -1,0 +1,57 @@
+{
+  "field": {
+    "hold": 50,
+    "still": false
+  },
+  "garden": {
+    "hold": 50,
+    "still": false
+  },
+  "morning": {
+    "hold": 50,
+    "still": false
+  },
+  "afternoon": {
+    "hold": 75,
+    "still": false
+  },
+  "pond": {
+    "hold": 50,
+    "still": false
+  },
+  "sky": {
+    "hold": 50,
+    "still": false
+  },
+  "rainy": {
+    "hold": 50,
+    "still": false
+  },
+  "snowy": {
+    "hold": 50,
+    "still": false
+  },
+  "windy": {
+    "hold": 50,
+    "still": false
+  },
+  "shop": {
+    "hold": 50,
+    "still": true,
+    "floor": 0.775
+  },
+  "stand": {
+    "hold": 100,
+    "still": true,
+    "floor": 0.76
+  },
+  "room": {
+    "hold": 50,
+    "still": true,
+    "floor": 0.833
+  },
+  "table": {
+    "hold": 50,
+    "still": true
+  }
+}
