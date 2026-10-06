@@ -46,7 +46,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,webmanifest}"],
+        // The painted animals (public/animals, WebP) are part of the shell: a face is on every screen.
+        globPatterns: ["**/*.{js,css,html,svg,png,webp,ico,woff2,webmanifest}"],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         navigateFallback: "index.html",
         navigateFallbackAllowlist: allowlist,

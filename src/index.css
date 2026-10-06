@@ -1007,7 +1007,80 @@ button:focus-visible {
   display: block;
 }
 
-/* ---- Eyes: one language for every animal (avatars.tsx), driven by the mood (kit.tsx) ----
+/* ---- The painted animals (avatars.tsx, public/animals/) ----
+   A box the size the drawing had, holding the mood's frame: the face fills it; the whole figure
+   stands on its bottom edge. A blink frame, when the animal has one, sits on top and shows for a
+   moment every few seconds, in a game only (a face on a list does not blink). */
+.avatar-painted {
+  position: relative;
+  display: block;
+  overflow: visible;
+}
+
+/* A face is square, from the first frame (before its picture arrives), so the box never jumps
+   and the outfit pieces have their place from the start. */
+.avatar-painted[data-view="face"] {
+  aspect-ratio: 1 / 1;
+}
+
+/* Pictures, not things to save or select: no long-press sheet on a phone, no drag. */
+.avatar-painted img,
+.wear-painted,
+.closet-swatch img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.avatar-painted img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 50%;
+}
+
+.avatar-painted[data-view="body"] img {
+  object-position: 50% 100%;
+}
+
+.avatar-painted .avatar-blink {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.game-host .avatar-painted .avatar-blink {
+  animation: avatar-blink-frame 4.8s step-end infinite;
+}
+
+@keyframes avatar-blink-frame {
+  0%,
+  96.8% {
+    opacity: 0;
+  }
+  96.9%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* The outfit pieces sit on the head: the whole box for a face, the head's part of a whole figure. */
+.hero-head {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-host .avatar-painted .avatar-blink {
+    animation: none;
+  }
+}
+
+/* ---- Eyes: one language for every drawn animal (avatars.tsx), driven by the mood (kit.tsx) ----
    Open eyes blink now and then, so no face is ever frozen; a cheer closes them into two happy arcs;
    a miss (think) sends them to the side, with the puzzled tilt of the head; waiting sends them up.
    The moves are transforms on the eye groups, in the drawing's own units. */
@@ -3629,43 +3702,29 @@ button:focus-visible {
   background: linear-gradient(#2c3a4f, #2c3a4f) center / 18% 3px no-repeat;
 }
 
-.hero[data-color="color-sky"] .wear-color {
+/* The sky colour: the animal itself turns powder blue, by its own filter (animalArt.json), so
+   every frame of it does. The drawn animal keeps the soft blue glow behind it instead. */
+.hero[data-color="color-sky"] .avatar-painted img {
+  filter: var(--sky, none);
+}
+
+.hero[data-color="color-sky"] .avatar-art:not(.avatar-painted) + .hero-head .wear-color {
   display: block;
   background: radial-gradient(circle, #b9e4ff 0 46%, transparent 70%);
 }
 
-.hero[data-hat="hat-leaf"] .wear-hat,
-.hero[data-hat="hat-crown"] .wear-hat,
-.hero[data-scarf="scarf-stripe"] .wear-scarf,
-.hero[data-scarf="scarf-dots"] .wear-scarf,
-.hero[data-glasses="glasses-round"] .wear-glasses {
+/* A painted piece (public/wardrobe, lifted off the fox wearing it): a picture placed where the
+   art says, in fractions of the face box, the same place on every animal. Its box is the
+   picture's own shape, so nothing is stretched. */
+.wear-painted {
   display: block;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  object-fit: fill;
 }
 
-.hero[data-hat="hat-leaf"] .wear-hat {
-  background: #6eae78;
-  border-radius: 70% 30% 55% 45%;
-  transform: rotate(-18deg);
-}
-
-.hero[data-hat="hat-crown"] .wear-hat {
-  background: linear-gradient(#ffe08a, #e0a03a);
-  clip-path: polygon(0 100%, 0 42%, 18% 72%, 36% 18%, 50% 62%, 64% 12%, 82% 70%, 100% 36%, 100% 100%);
-}
-
-.hero[data-scarf="scarf-stripe"] .wear-scarf {
-  background: repeating-linear-gradient(90deg, #e07a8a 0 7px, var(--paper) 7px 12px);
-}
-
-.hero[data-scarf="scarf-dots"] .wear-scarf {
-  background-color: #7eb6d6;
-  background-image: radial-gradient(circle, #fff 1.5px, transparent 1.8px);
-  background-size: 8px 8px;
-}
-
-.hero[data-glasses="glasses-round"] .wear-glasses {
-  border: 3px solid #2c3a4f;
-}
 
 .reward-screen {
   flex: 1;
@@ -3737,33 +3796,12 @@ button:focus-visible {
   display: block;
 }
 
-.swatch-hat-leaf {
-  background: #6eae78;
-  border-radius: 70% 30% 50% 50%;
-}
-
-.swatch-hat-crown {
-  background: linear-gradient(#ffe08a, #e0a03a);
-  clip-path: polygon(0 100%, 0 40%, 20% 70%, 40% 16%, 50% 58%, 60% 10%, 80% 68%, 100% 34%, 100% 100%);
-}
-
-.swatch-scarf-stripe {
-  border-radius: 999px;
-  background: repeating-linear-gradient(90deg, #e07a8a 0 8px, var(--paper) 8px 14px);
-}
-
-.swatch-scarf-dots {
-  border-radius: 999px;
-  background-color: #7eb6d6;
-  background-image: radial-gradient(circle, #fff 2px, transparent 2.4px);
-  background-size: 10px 10px;
-}
-
-.swatch-glasses-round {
-  height: 22px;
-  border: 3px solid #2c3a4f;
-  border-radius: 40%;
-  background: linear-gradient(#2c3a4f, #2c3a4f) center / 10px 3px no-repeat;
+/* A painted piece is its own swatch. */
+.closet-swatch img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .swatch-color-sky {

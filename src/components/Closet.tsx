@@ -1,4 +1,5 @@
 import type { ChildProfile } from "../data/profiles";
+import { wearArt } from "../wardrobeArt";
 import { itemUnlocked } from "../data/rewards";
 import { wardrobe } from "../data/wardrobe";
 import { Chevron } from "./icons";
@@ -39,7 +40,9 @@ export function Closet({
                 disabled={!open}
                 onClick={() => onWear(item.id)}
               >
-                <span className={`closet-swatch swatch-${item.id}`} aria-hidden="true" />
+                <span className={`closet-swatch swatch-${item.id}`} aria-hidden="true">
+                  {wearArt(item.id) ? <img src={wearArt(item.id)?.src} alt="" draggable={false} /> : null}
+                </span>
                 <span className="closet-name">{item.name}</span>
                 <span className="closet-cost">{open ? (worn ? "Wearing" : "Wear") : `${item.stars} stars`}</span>
               </button>

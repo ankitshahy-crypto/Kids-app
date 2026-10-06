@@ -1,0 +1,160 @@
+{
+  "cat": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": 0.0495,
+      "y": 0.0282,
+      "w": 0.845,
+      "h": 0.4916
+    },
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
+  },
+  "dog": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": 0.0293,
+      "y": 0.028,
+      "w": 0.9414,
+      "h": 0.5997
+    },
+    "sky": "hue-rotate(185deg) saturate(0.26) contrast(0.85) brightness(1.12)"
+  },
+  "fox": {
+    "frames": [
+      "idle",
+      "wave",
+      "silly"
+    ],
+    "body": false,
+    "head": {
+      "x": -0.0565,
+      "y": 0.0283,
+      "w": 0.9952,
+      "h": 0.5445
+    },
+    "sky": "hue-rotate(185deg) saturate(0.25) contrast(0.85) brightness(1.12)"
+  },
+  "bear": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": 0.0387,
+      "y": 0.0279,
+      "w": 0.9325,
+      "h": 0.5038
+    },
+    "sky": "hue-rotate(181deg) saturate(0.28) contrast(0.85) brightness(1.12)"
+  },
+  "bunny": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": -0.1342,
+      "y": 0.0281,
+      "w": 1.2526,
+      "h": 0.5946
+    },
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
+  },
+  "owl": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": 0.021,
+      "y": 0.028,
+      "w": 0.959,
+      "h": 0.5746
+    },
+    "sky": "hue-rotate(185deg) saturate(0.33) contrast(0.85) brightness(1.12)"
+  },
+  "frog": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": 0.0635,
+      "y": 0.0278,
+      "w": 0.8932,
+      "h": 0.5746
+    },
+    "sky": "hue-rotate(137deg) saturate(0.38) contrast(0.85) brightness(1.12)"
+  },
+  "duck": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": 0.0375,
+      "y": 0.0281,
+      "w": 0.9298,
+      "h": 0.5185
+    },
+    "sky": "hue-rotate(169deg) saturate(0.32) contrast(0.85) brightness(1.12)"
+  },
+  "pig": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": 0.0474,
+      "y": 0.0282,
+      "w": 0.9156,
+      "h": 0.5017
+    },
+    "sky": "hue-rotate(199deg) saturate(0.53) contrast(0.85) brightness(1.12)"
+  },
+  "penguin": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": 0.0645,
+      "y": 0.0278,
+      "w": 0.8727,
+      "h": 0.5339
+    },
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
+  },
+  "lion": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": -0.0315,
+      "y": 0.028,
+      "w": 1.0143,
+      "h": 0.5613
+    },
+    "sky": "hue-rotate(179deg) saturate(0.24) contrast(0.85) brightness(1.12)"
+  },
+  "koala": {
+    "frames": [
+      "idle"
+    ],
+    "body": false,
+    "head": {
+      "x": 0.0279,
+      "y": 0.0279,
+      "w": 0.9433,
+      "h": 0.5964
+    },
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
+  }
+}
