@@ -4,7 +4,7 @@ import type { AnimalId } from "../data/animals";
 import { clockRounds, dayRounds, DOTS_TO_NEXT, ROUTINE_ART, routineRounds } from "../data/timeGames";
 import { clockCue, type DayPartId, type MoneyGame, type RoutineId, type TimeLesson, type TimeStep } from "../data/timeMoney";
 import type { Outfit } from "../data/wardrobe";
-import { Backdrop, GameFrame, Hand, newSalt, Pick, useCoach, useFinish, useRounds, useRoundState, useWiggle } from "../game/kit";
+import { DrawnBackdrop, GameFrame, Hand, newSalt, Pick, useCoach, useFinish, useRounds, useRoundState, useWiggle } from "../game/kit";
 import { Coin, Good, Jar, sayLine, sayWord } from "../game/money";
 import { Illustration } from "../illustrations";
 import type { Settings } from "../settings";
@@ -182,11 +182,14 @@ function StepArt() {
   );
 }
 
-/** A small sky: sunrise, the sun high, or the moon. */
+/**
+ * A small sky: sunrise, the sun high, or the moon. Always drawn, never the scene's painting: at
+ * this size the sun and the moon are what tell the three apart.
+ */
 function Sky({ part }: { part: DayPartId }) {
   return (
     <span className="sky-art" data-sky={part}>
-      <Backdrop kind={part} />
+      <DrawnBackdrop kind={part} />
     </span>
   );
 }
