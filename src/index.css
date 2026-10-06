@@ -7703,15 +7703,23 @@ input.is-pressed,
   animation: build-pop 0.25s ease;
 }
 
-.garden-need .art,
-.garden-need .can-art {
+.garden-need .art {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.can-art {
-  width: 88px;
+/* A painted prop (a seed, the sun, a watering can) in the box the app's drawings have: wide, with
+   a little air, whatever the picture's own shape. Not a thing to save or drag. */
+.prop-art {
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  padding: 6%;
+  box-sizing: border-box;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  pointer-events: none;
 }
 
 @keyframes garden-rise {

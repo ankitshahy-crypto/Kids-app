@@ -59,33 +59,41 @@ function Picture({ picture }: { picture: SciencePicture }) {
 
 // ------------------------------------------------------------------ grow
 
-/** A watering can, drawn for the garden. */
-function WateringCan() {
-  return (
-    <svg className="can-art" viewBox="0 0 120 100" aria-hidden="true" focusable="false">
-      <path d="M22 40h48v44c0 6-4 10-10 10H32c-6 0-10-4-10-10Z" fill="#7FB8DE" />
-      <rect x="18" y="34" width="56" height="12" rx="6" fill="#5E9CC8" />
-      <path d="M70 52l30-22" stroke="#5E9CC8" strokeWidth="9" strokeLinecap="round" />
-      <path d="M96 20l14 16-10 8-14-16Z" fill="#5E9CC8" />
-      <path d="M22 50C4 50 4 78 22 78" fill="none" stroke="#5E9CC8" strokeWidth="7" strokeLinecap="round" />
-    </svg>
-  );
+/**
+ * The garden's painted props (public/games/garden, made by scripts/game-art.py from the owner's
+ * renders): the bed, the three things to give, and the plant at each size.
+ */
+const gardenArt = (name: "bed" | "seed" | "sun" | "can" | "sprout" | "plant" | "flower") => `${import.meta.env.BASE_URL}games/garden/${name}.webp`;
+
+/** A thing to give the plant: the same picture on the choice and in the bubble that asks for it. */
+function NeedArt({ need }: { need: GrowNeed }) {
+  return <img className="art prop-art" data-prop={need} src={gardenArt(need === "water" ? "can" : need)} alt="" draggable={false} decoding="async" />;
 }
 
-function NeedArt({ need }: { need: GrowNeed }) {
-  if (need === "seed") return <Illustration name="seed" />;
-  if (need === "sun") return <Illustration name="sun" />;
-  return <WateringCan />;
-}
+/** The plant at each step after the seed: where it stands in the bed's box (160 by 170), rooted in the soil. */
+const PLANT: Record<number, { art: "seed" | "sprout" | "plant" | "flower"; x: number; y: number; width: number; height: number }> = {
+  1: { art: "seed", x: 72.5, y: 108, width: 15, height: 20 },
+  2: { art: "sprout", x: 52, y: 81, width: 56, height: 47 },
+  3: { art: "plant", x: 46, y: 58, width: 68, height: 70 },
+  4: { art: "flower", x: 49.5, y: 16, width: 61, height: 112 },
+};
 
 /**
- * The garden bed. The plant is drawn at the step it has reached: bare soil, a seed, a sprout, a plant
- * with a bud, a flower. A bubble shows what it needs next, and the last thing given plays over it.
+ * The garden bed. The plant is shown at the step it has reached: bare soil, a seed, a sprout, a leafy
+ * plant, a flower. A bubble shows what it needs next, and the last thing given plays over it.
  */
 function GardenBed({ step, need, effect, turn }: { step: number; need?: GrowNeed; effect: GrowNeed | ""; turn: number }) {
+  const plant = PLANT[Math.min(step, 4)];
   return (
     <div className="garden-bed" data-grown={step} data-effect={effect || "none"}>
       <svg className="garden-plant" viewBox="0 0 160 170" aria-hidden="true" focusable="false">
+        <image href={gardenArt("bed")} x="5" y="108" width="150" height="59" />
+        {/* the plant, rising out of the soil at each step */}
+        {plant ? (
+          <g className="garden-grow" key={`plant-${step}`}>
+            <image href={gardenArt(plant.art)} x={plant.x} y={plant.y} width={plant.width} height={plant.height} data-plant={plant.art} />
+          </g>
+        ) : null}
         {/* what was just given: water falling, or the sun's light */}
         {effect === "water" ? (
           <g key={`water-${turn}`} className="garden-drops" fill="#6fa8dc">
@@ -99,36 +107,6 @@ function GardenBed({ step, need, effect, turn }: { step: number; need?: GrowNeed
             <path d="M20 10l22 26M80 0v34M140 10l-22 26" />
           </g>
         ) : null}
-        {/* the plant */}
-        <g className="garden-grow" key={`plant-${step}`}>
-          {step >= 2 ? <path d={step >= 3 ? "M80 140V62" : "M80 140v-34"} stroke="#5f9a68" strokeWidth="7" strokeLinecap="round" fill="none" /> : null}
-          {step === 2 ? (
-            <>
-              <path d="M80 112c-16-2-22-14-18-22 12 2 18 12 18 22Z" fill="#7dba8f" />
-              <path d="M80 108c16-2 22-14 18-22-12 2-18 12-18 22Z" fill="#8fcb7a" />
-            </>
-          ) : null}
-          {step >= 3 ? (
-            <>
-              <path d="M80 118c-24-2-32-20-26-30 16 2 26 16 26 30Z" fill="#7dba8f" />
-              <path d="M80 104c24-2 32-20 26-30-16 2-26 16-26 30Z" fill="#8fcb7a" />
-            </>
-          ) : null}
-          {step === 3 ? <ellipse cx="80" cy="56" rx="11" ry="15" fill="#8fcb7a" /> : null}
-          {step >= 4 ? (
-            <g>
-              {[0, 60, 120, 180, 240, 300].map((angle) => (
-                <ellipse key={angle} cx="80" cy="30" rx="12" ry="20" fill="#f08fa5" transform={`rotate(${angle} 80 54)`} />
-              ))}
-              <circle cx="80" cy="54" r="13" fill="#f6d56b" />
-            </g>
-          ) : null}
-        </g>
-        {/* the soil, with the seed in it once it is planted */}
-        <path d="M24 150c8-18 32-26 56-26s48 8 56 26Z" fill="#a9774d" />
-        <path d="M30 150c8-12 28-18 50-18s42 6 50 18Z" fill="#b98a5e" />
-        {step === 1 ? <ellipse cx="80" cy="132" rx="9" ry="6" fill="#6b4a2b" /> : null}
-        {step === 0 ? <ellipse cx="80" cy="134" rx="12" ry="5" fill="#8a5f3a" /> : null}
       </svg>
       {/* What it needs next, as a picture: the same picture as the thing to tap. */}
       {need ? (

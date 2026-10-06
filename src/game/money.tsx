@@ -11,15 +11,20 @@ import { Illustration } from "../illustrations";
  * type, next to the word "Nickel" as the thing to tap. Here each coin is a
  * picture big enough to tap, in its own colour and its own size (a dime is
  * the smallest, a quarter the biggest), with its number large on its face.
- * They are our own drawings, not pictures of real money.
+ * They are our own pictures, not pictures of real money: two painted blank
+ * faces (public/games, made by scripts/game-art.py), copper for the penny
+ * and silver for the rest, with the coin's size and its number put on here,
+ * so the number stays text (sharp at any size) and two pictures make four coins.
  */
 
-const COIN_LOOK: Record<"penny" | "nickel" | "dime" | "quarter", { r: number; fill: string; rim: string; text: string }> = {
-  penny: { r: 31, fill: "#E0A070", rim: "#B9713F", text: "#7A4520" },
-  nickel: { r: 36, fill: "#D5D9DE", rim: "#9BA5B0", text: "#4B5563" },
-  dime: { r: 26, fill: "#E3E8EE", rim: "#9BA5B0", text: "#4B5563" },
-  quarter: { r: 44, fill: "#CBD2DA", rim: "#8C97A3", text: "#3F4A57" },
+const COIN_LOOK: Record<"penny" | "nickel" | "dime" | "quarter", { r: number; face: "copper" | "silver"; text: string }> = {
+  penny: { r: 31, face: "copper", text: "#6B3814" },
+  nickel: { r: 36, face: "silver", text: "#3F4A57" },
+  dime: { r: 26, face: "silver", text: "#3F4A57" },
+  quarter: { r: 44, face: "silver", text: "#3F4A57" },
 };
+
+const coinFace = (face: "copper" | "silver") => `${import.meta.env.BASE_URL}games/coin-${face}.webp`;
 
 /** One coin or bill. Every piece is drawn in the same 100 by 100 box, so their sizes can be compared. */
 export function Coin({ id }: { id: MoneyId }) {
@@ -45,10 +50,9 @@ export function Coin({ id }: { id: MoneyId }) {
   const cents = COIN_CENTS[id];
   return (
     <svg className="coin-art" viewBox="0 0 100 100" aria-hidden="true" focusable="false" data-coin-art={id}>
-      <circle cx="50" cy="52" r={look.r} fill={look.rim} />
-      <circle cx="50" cy="50" r={look.r} fill={look.fill} stroke={look.rim} strokeWidth="3" />
-      <circle cx="50" cy="50" r={look.r - 6} fill="none" stroke={look.rim} strokeWidth="1.5" opacity="0.6" />
-      <text x="50" y={50 + (cents >= 10 ? look.r * 0.3 : look.r * 0.36)} textAnchor="middle" fontSize={cents >= 10 ? look.r * 0.82 : look.r} fontWeight="800" fill={look.text}>
+      <image href={coinFace(look.face)} x={50 - look.r} y={50 - look.r} width={look.r * 2} height={look.r * 2} data-coin-face={look.face} />
+      {/* The number sits inside the face's inner ring, a little smaller than it was on the flat coin. */}
+      <text x="50" y={50 + (cents >= 10 ? look.r * 0.27 : look.r * 0.32)} textAnchor="middle" fontSize={cents >= 10 ? look.r * 0.74 : look.r * 0.9} fontWeight="800" fill={look.text}>
         {cents}
       </text>
     </svg>
