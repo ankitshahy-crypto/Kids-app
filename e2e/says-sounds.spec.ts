@@ -75,23 +75,44 @@ async function neverBounces(page: Page, ms = 1100) {
 }
 
 /** Each recorded clip that starts or is stopped through Web Audio, with its length in seconds. */
+type Clip = { event: string; seconds: number; file: string; word: string };
+
+/**
+ * Every clip the page starts or stops through Web Audio: its length; its file, once the app has
+ * announced it (a "littlenest:clip" event, sent the moment after a clip's source starts); and the
+ * card that was showing when it started (its `data-word`, so a test can tell its own card's clips
+ * from an earlier card's).
+ */
 async function watchClips(page: Page) {
   await page.addInitScript(() => {
-    const target = window as Window & { __clips?: { event: string; seconds: number }[]; webkitAudioContext?: typeof AudioContext };
+    const target = window as Window & { __clips?: Clip[]; webkitAudioContext?: typeof AudioContext };
     target.__clips = [];
     const Ctor = window.AudioContext ?? target.webkitAudioContext;
     if (!Ctor) return;
+    const started = new WeakMap<AudioBufferSourceNode, { file: string; word: string }>();
+    let last: AudioBufferSourceNode | null = null;
+    window.addEventListener("littlenest:clip", (event) => {
+      const file = String((event as CustomEvent<string>).detail ?? "").split("/audio/")[1] ?? "";
+      const latest = target.__clips?.[target.__clips.length - 1];
+      if (latest && latest.event === "start" && !latest.file) latest.file = file;
+      const of = last && started.get(last);
+      if (of) of.file = file;
+    });
     const create = Ctor.prototype.createBufferSource;
     Ctor.prototype.createBufferSource = function (this: AudioContext) {
       const node = create.apply(this);
       const start = node.start.bind(node);
       const stop = node.stop.bind(node);
       node.start = ((...args: Parameters<AudioBufferSourceNode["start"]>) => {
-        target.__clips?.push({ event: "start", seconds: node.buffer?.duration ?? 0 });
+        last = node;
+        const word = document.querySelector(".activity")?.getAttribute("data-word") ?? "";
+        started.set(node, { file: "", word });
+        target.__clips?.push({ event: "start", seconds: node.buffer?.duration ?? 0, file: "", word });
         return start(...args);
       }) as AudioBufferSourceNode["start"];
       node.stop = ((...args: Parameters<AudioBufferSourceNode["stop"]>) => {
-        target.__clips?.push({ event: "stop", seconds: node.buffer?.duration ?? 0 });
+        const of = started.get(node);
+        target.__clips?.push({ event: "stop", seconds: node.buffer?.duration ?? 0, file: of?.file ?? "", word: of?.word ?? "" });
         return stop(...args);
       }) as AudioBufferSourceNode["stop"];
       return node;
@@ -99,8 +120,28 @@ async function watchClips(page: Page) {
   });
 }
 
-async function clips(page: Page): Promise<{ event: string; seconds: number }[]> {
-  return page.evaluate(() => (window as Window & { __clips?: { event: string; seconds: number }[] }).__clips ?? []);
+async function clips(page: Page): Promise<Clip[]> {
+  return page.evaluate(() => (window as Window & { __clips?: Clip[] }).__clips ?? []);
+}
+
+/**
+ * The opening instruction of a word the child sounds out alone, "Say each sound as you slide."
+ * (By its file, not its length: a letter card's line is nearly as long, and the lesson opens on
+ * the letter cards. One that got going before the test clicked past it was counted as the
+ * instruction, about one run in seven under load.)
+ */
+const instruction = (clip: Clip) => clip.file === "prompts/blend-say.mp3";
+
+/**
+ * The clips of the card the test is on (the ones that started while it was showing). The lesson
+ * opens on the letter cards, and a word card can come before the one a test wants: a line of
+ * theirs that got going before the test clicked past it is not this card's, and is left out. (The
+ * instruction of an earlier word card, cut off, was taken for this card's, and a test went on
+ * before this card's had begun.)
+ */
+async function onThisCard(page: Page): Promise<() => Promise<Clip[]>> {
+  const word = (await page.locator(".activity").getAttribute("data-word")) ?? "";
+  return async () => (await clips(page)).filter((clip) => clip.word === word);
 }
 
 /** The finishing chime and other effects are synthesized: count the oscillators they start. */
@@ -421,16 +462,15 @@ for (const [key, what] of [
     await watchClips(page);
     await install(page, mia({ saysSounds: true }));
     await openLetters(page);
-    // "Say each sound as you slide." is the one long clip on this screen (about two seconds).
-    const long = (clip: { seconds: number }) => clip.seconds > 1.5;
+    const here = await onThisCard(page);
     const started = await expect
-      .poll(async () => (await clips(page)).some((clip) => clip.event === "start" && long(clip)), { timeout: 8000, intervals: [25] })
+      .poll(async () => (await here()).some((clip) => clip.event === "start" && instruction(clip)), { timeout: 8000, intervals: [25] })
       .toBe(true)
       .then(() => true, () => false);
     test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
     await page.getByRole("slider", { name: "Slide across the letters" }).focus();
     await page.keyboard.press(key);
-    await expect.poll(async () => (await clips(page)).some((clip) => clip.event === "stop" && long(clip)), { timeout: 1000 }).toBe(true);
+    await expect.poll(async () => (await here()).some((clip) => clip.event === "stop" && instruction(clip)), { timeout: 1000 }).toBe(true);
   });
 }
 
@@ -607,20 +647,19 @@ test("Play sound stops the opening instruction before its first letter, so they 
   await watchClips(page);
   await install(page, mia({ saysSounds: true }));
   await openLetters(page);
-  const long = (clip: { seconds: number }) => clip.seconds > 1.5;
-  const instruction = async () =>
-    expect
-      .poll(async () => (await clips(page)).some((clip) => clip.event === "start" && long(clip)), { timeout: 8000, intervals: [25] })
-      .toBe(true)
-      .then(() => true, () => false);
-  test.skip(!(await instruction()), "this browser engine does not play the recorded clip through Web Audio");
+  const here = await onThisCard(page);
+  const started = await expect
+    .poll(async () => (await here()).some((clip) => clip.event === "start" && instruction(clip)), { timeout: 8000, intervals: [25] })
+    .toBe(true)
+    .then(() => true, () => false);
+  test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
 
   // Play sound: the instruction is stopped, and it stops before the first letter's clip starts, so they never overlap.
-  const before = (await clips(page)).length;
+  const before = (await here()).length;
   await page.getByRole("button", { name: "Play sound" }).click();
-  await expect.poll(async () => (await clips(page)).slice(before).some((clip) => clip.event === "stop" && long(clip)), { timeout: 1000 }).toBe(true);
-  const after = (await clips(page)).slice(before);
-  const stopped = after.findIndex((clip) => clip.event === "stop" && long(clip));
+  await expect.poll(async () => (await here()).slice(before).some((clip) => clip.event === "stop" && instruction(clip)), { timeout: 1000 }).toBe(true);
+  const after = (await here()).slice(before);
+  const stopped = after.findIndex((clip) => clip.event === "stop" && instruction(clip));
   const letter = after.findIndex((clip) => clip.event === "start");
   expect(letter === -1 || stopped < letter, JSON.stringify(after)).toBe(true);
 });
@@ -629,43 +668,49 @@ test("the opening instruction counts as heard once it is said through: cut off, 
   await watchClips(page);
   await install(page, mia({ saysSounds: true }));
   await openLetters(page);
-  const long = (clip: { seconds: number }) => clip.seconds > 1.5;
-  const starts = async () => (await clips(page)).filter((clip) => clip.event === "start" && long(clip)).length;
+  const activity = page.locator(".activity");
+  const next = page.getByRole("button", { name: "Next word" });
+  // How many times a card's instruction has started: this card's, then the next's, then the one after.
+  const starts = async (word: string) => (await clips(page)).filter((clip) => clip.event === "start" && instruction(clip) && clip.word === word).length;
+  const first = (await activity.getAttribute("data-word")) ?? "";
   const started = await expect
-    .poll(starts, { timeout: 8000, intervals: [25] })
+    .poll(() => starts(first), { timeout: 8000, intervals: [25] })
     .toBeGreaterThan(0)
     .then(() => true, () => false);
   test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
-  const activity = page.locator(".activity");
-  const next = page.getByRole("button", { name: "Next word" });
 
   // Cut off by a step: the next word says it again.
   await page.getByRole("slider", { name: "Slide across the letters" }).focus();
   await page.keyboard.press("ArrowRight");
   await next.click();
+  await expect(activity).not.toHaveAttribute("data-word", first);
   await expect(activity).toHaveAttribute("data-says-sounds", "child");
-  await expect.poll(starts, { timeout: 3000, intervals: [25] }).toBe(2);
+  const second = (await activity.getAttribute("data-word")) ?? "";
+  await expect.poll(() => starts(second), { timeout: 3000, intervals: [25] }).toBe(1);
 
   // Said all the way through this time: the word after that starts without it.
   await page.waitForTimeout(3500);
   await next.click();
+  await expect(activity).not.toHaveAttribute("data-word", second);
   await expect(activity).toHaveAttribute("data-says-sounds", "child");
+  const third = (await activity.getAttribute("data-word")) ?? "";
   await page.waitForTimeout(1500);
-  expect(await starts()).toBe(2);
+  expect(await starts(third)).toBe(0);
+  expect(await starts(second)).toBe(1);
 });
 
 test("moving to another card stops the opening instruction", async ({ page }) => {
   await watchClips(page);
   await install(page, mia({ saysSounds: true }));
   await openLetters(page);
-  const long = (clip: { seconds: number }) => clip.seconds > 1.5;
+  const here = await onThisCard(page);
   const started = await expect
-    .poll(async () => (await clips(page)).some((clip) => clip.event === "start" && long(clip)), { timeout: 8000, intervals: [25] })
+    .poll(async () => (await here()).some((clip) => clip.event === "start" && instruction(clip)), { timeout: 8000, intervals: [25] })
     .toBe(true)
     .then(() => true, () => false);
   test.skip(!started, "this browser engine does not play the recorded clip through Web Audio");
   await page.getByRole("button", { name: "Next word" }).click();
-  await expect.poll(async () => (await clips(page)).some((clip) => clip.event === "stop" && long(clip)), { timeout: 1000 }).toBe(true);
+  await expect.poll(async () => (await here()).some((clip) => clip.event === "stop" && instruction(clip)), { timeout: 1000 }).toBe(true);
 });
 
 test("without a finger and with the app saying the sounds, each step sounds its letter, and End finishes the word", async ({ page }) => {

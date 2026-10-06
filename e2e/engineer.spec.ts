@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { installAudioSpy, spokenLines } from "./audioSpy";
-import { child, expectStar, expectWiggle, game, onRound } from "./kit";
+import { child, expectStar, expectWiggle, game, noting, onRound } from "./kit";
 
 /**
  * LittleNest Build on the game kit: a river to bridge, a tower to stack, a ball
@@ -133,12 +133,17 @@ test("tower: the widest block goes on first, and one put on too soon wobbles and
       // It comes off again, and can be put on when its turn comes.
       await expect(tower).toHaveAttribute("data-wobble", "none");
     }
+    // The page notes the stack as it grows. (The last block put on ends the round, and under the
+    // quick setting the next round's empty stack is there a moment later: asked from here, the
+    // block could be gone before the question lands.)
+    const stacked = await noting(tower, (frame) => [...frame.querySelectorAll(".tower-stack .tower-block")].map((block) => block.getAttribute("data-block")));
     for (let placed = 0; placed < blocks.length; placed += 1) {
       await expect(tower).toHaveAttribute("data-ready", "true");
       const want = Number(await tower.getAttribute("data-answer"));
       expect(want).toBe([...blocks].sort((a, b) => b - a)[placed]);
+      const before = (await stacked()).length;
       await tower.locator(`.pick[data-block="${want}"]`).click();
-      await expect(tower.locator(`.tower-stack .tower-block[data-block="${want}"]`)).toHaveCount(1);
+      await expect.poll(async () => (await stacked()).slice(before).some((stack) => stack.includes(String(want)))).toBe(true);
     }
     if (round === 0 && testInfo.project.name === "chromium") await tower.screenshot({ path: "test-results/screenshots/build_tower.png" });
   }

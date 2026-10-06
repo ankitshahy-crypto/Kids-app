@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { installAudioSpy, spokenLines } from "./audioSpy";
 import { answerGate, openClassPlace } from "./gate";
-import { expectStar, expectWiggle, meetClock, onRound, openGame, openTimeMoney } from "./kit";
+import { expectStar, expectWiggle, meetClock, noting, onRound, openGame, openTimeMoney } from "./kit";
 
 async function passGate(page: Page) {
   await answerGate(page, true);
@@ -372,9 +372,12 @@ test("half past: the short hand first, then the long hand, and the dots it passe
   // Now the long hand, and half past is the 6.
   await expect(clock).toHaveAttribute("data-hand", "minute");
   await expect(clock).toHaveAttribute("data-want", "6");
+  // The dots are lit for the moment the answer shows, and the next round takes them away again:
+  // the page counts them as they light.
+  const lit = await noting(clock, (frame) => frame.querySelectorAll(".clock-dot[data-lit=true]").length);
   await clock.locator(".clock-number[data-number='6']").click();
-  await expect(clock.locator(".clock-dot[data-lit=true]")).toHaveCount(30);
   await expect(clock).toHaveAttribute("data-round", "4");
+  expect(await lit()).toContain(30);
 });
 
 test("a child who waits hears the question again, and the choices stir", async ({ page }) => {

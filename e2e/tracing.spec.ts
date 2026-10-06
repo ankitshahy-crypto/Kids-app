@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { finishLetterTracing, traceCurrentStroke } from "./traceFlow";
 import { createdThisWeek } from "./clock";
+import { noting } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -109,9 +110,12 @@ test("upper and lower letters can be matched by tap or drag", async ({ page }, t
 
   const otherLetter = (await root.locator("[data-match-upper][data-paired=false]").first().getAttribute("data-match-upper")) ?? "";
   const other = root.locator(`[data-match-upper="${otherLetter}"]`);
+  // This pair is the last, and matching ends with it: a moment later the cards are gone and the
+  // next step is on the page. So the page notes the pairing as it happens.
+  const paired = await noting(root, (screen, letter) => screen.querySelector(`[data-match-upper="${letter}"]`)?.getAttribute("data-paired") ?? "gone", otherLetter);
   await other.click();
   await root.locator(`[data-match-lower="${otherLetter.toLowerCase()}"]`).click();
-  await expect(other).toHaveAttribute("data-paired", "true");
+  await expect.poll(paired).toContain("true");
 
   if (testInfo.project.name === "chromium") {
     await page.screenshot({ path: "test-results/screenshots/letter_trace_match.png" });
