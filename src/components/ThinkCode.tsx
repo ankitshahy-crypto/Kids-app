@@ -6,6 +6,7 @@ import {
   birdRounds,
   bugPlan,
   checkPlan,
+  chipSteps,
   logicLevel,
   logicManifestEntries,
   nextStepHome,
@@ -14,11 +15,16 @@ import {
   orderRounds,
   patternRounds,
   program,
+  reusePlaces,
+  reuseRound,
+  routineAt,
+  routineFits,
   ruleRounds,
   sameCell,
   stepCell,
   type BirdRound,
   type Cell,
+  type Chip,
   type Dir,
   type LogicLevel,
   type PictureCard,
@@ -149,6 +155,12 @@ export function ThinkGame({
  * stops short is walked to its end and the empty place the next arrow belongs
  * in is shown. Nothing is scored and nothing ends: after a moment the animal
  * walks back along its own trail, and the plan is there to try again.
+ *
+ * At ages 5–7 one short plan is kept: when it gets home its arrows become one
+ * chip, the child's routine, and the next board is a longer way home that the
+ * routine chip is part of. The chip does all its steps as one, and opens to show
+ * them as they are walked. A thing you made, used again as one piece: the first
+ * function.
  */
 const PLACES: SceneKind[] = ["garden", "field", "pond", "morning"];
 
@@ -165,13 +177,17 @@ const CODE_LINES: Record<string, string> = Object.fromEntries(logicManifestEntri
  * off, else a wrong one is to be tapped off (and its place filled); a plan ready to run, in any
  * round, is to be run.
  */
-function lineFor(round: BirdRound, plan: (Dir | null)[], queue: Dir[]): Cue[] {
+function lineFor(round: BirdRound, plan: (Dir | null)[], queue: Chip[]): Cue[] {
   if (round.mode === "bug") {
     if (plan.includes(null)) return [codeSay("code-bug-missing")];
     if (plan.length > round.path.length) return [codeSay("code-bug-extra")];
     return [codeSay(checkPlan(round, program(round, plan)).ok ? "code-go" : "code-bug")];
   }
-  if (round.mode === "plan") return [codeSay(queue.length >= round.path.length ? "code-go" : "code-plan")];
+  if (round.mode === "plan" || round.mode === "keep") return [codeSay(queue.length >= round.path.length ? "code-go" : "code-plan")];
+  if (round.mode === "reuse") {
+    if (queue.length >= reusePlaces(round)) return [codeSay("code-go")];
+    return [codeSay(queue.length === 0 ? "code-routine-use" : "code-plan")];
+  }
   if (round.mode === "predict") return [codeSay(queue.length > 0 ? "code-go" : "code-predict")];
   if (round.mode === "loop") return [codeSay(queue.length > 0 ? "code-go" : "code-loop")];
   return [codeSay("code-bird")];
@@ -183,6 +199,8 @@ function lineFor(round: BirdRound, plan: (Dir | null)[], queue: Dir[]): Cue[] {
  * too. Taps on the row are let go for this long after.
  */
 const REFLOW_MS = 400;
+/** How long the kept-routine line takes to say, so the next board does not cut it off. */
+const KEPT_LINE_MS = 4200;
 
 type Walk = { step: number; cell: Cell };
 
@@ -229,8 +247,16 @@ function BirdGame({
 }) {
   const list = useMemo(() => birdRounds(level, salt), [level, salt]);
   const rounds = useRounds(list);
-  const round = rounds.round;
-  const [queue, setQueue] = useRoundState<Dir[]>(rounds.index, []);
+  /**
+   * The child's routine: the plan that got home in the keep round, once it has (any shortest way
+   * counts, so it is not always the board's own path). The reuse round's board is made for it then.
+   */
+  const [kept, setKept] = useState<Dir[] | null>(null);
+  const round = useMemo(
+    () => (rounds.round.mode === "reuse" && kept && kept.join() !== rounds.round.routine.join() ? reuseRound(kept, salt) : rounds.round),
+    [rounds.round, kept, salt],
+  );
+  const [queue, setQueue] = useRoundState<Chip[]>(rounds.index, []);
   /**
    * Bug: the plan as the child has it, with `null` for an empty place. It starts as the plan shown
    * (an arrow wrong, one too many, or one missing) and is mended on the page: a tapped arrow leaves
@@ -277,6 +303,14 @@ function BirdGame({
   const arrive = () => {
     setHome(true);
     setWalking(null);
+    if (round.mode === "keep") {
+      // The plan that got home is the child's routine now: its arrows close up into one chip on
+      // the page while the line says so, and the next board is made for it.
+      setKept(program(round, queue));
+      // (The line is a long one, close to four seconds: given the time to be heard to its end.)
+      coach.right([codeSay("code-routine-kept")], rounds.next, HOME_MS, KEPT_LINE_MS);
+      return;
+    }
     coach.right([codeSay("code-home")], rounds.next, HOME_MS);
   };
 
@@ -357,17 +391,26 @@ function BirdGame({
       setQueue([dir]);
       return;
     }
-    // The plan has one place for each step home, and no more: a plan can be wrong, but it
-    // cannot run past its places. A tap with every place full is not a dead tap: Go wiggles,
-    // since Go is what is left to press.
-    if (queue.length >= round.path.length) {
+    queueChip(dir);
+  };
+
+  /**
+   * An arrow, or the routine, into the next place. The plan has one place for each step home (one
+   * for the routine's steps together), and no more: a plan can be wrong, but it cannot run past its
+   * places. A tap with every place full is not a dead tap: Go wiggles, since Go is what is left to
+   * press.
+   */
+  const queueChip = (chip: Chip) => {
+    if (home || running) return;
+    wiggle.still();
+    if (queue.length >= places) {
       wiggle.shake("go");
       coach.touch();
       return;
     }
     settle();
     coach.touch();
-    setQueue((current) => [...current, dir]);
+    setQueue((current) => [...current, chip]);
   };
 
   /**
@@ -431,9 +474,18 @@ function BirdGame({
   /**
    * The plan as it is on the page, one entry per place: a bug round's plan (with its empty places),
    * a predict round's given start and picked ending, or the queue. Go runs it only with no empty
-   * place in it, so a step's number is its chip's.
+   * place in it, so a step's number is its chip's (in a reuse round, by `chipSteps`: the routine
+   * chip is several steps).
    */
-  const steps = round.mode === "bug" ? plan : round.mode === "predict" ? [...round.shown, ...queue] : queue;
+  const steps: (Chip | null)[] = round.mode === "bug" ? plan : round.mode === "predict" ? [...round.shown, ...queue] : queue;
+  /** Which chip each step of the plan is from, and which step inside the routine (see chipSteps). */
+  const stepChips = chipSteps(round, steps);
+  /** Reuse: the routine chip is in the plan. */
+  const routineUsed = round.mode === "reuse" && queue.includes("routine");
+  // Empty places show how long the plan is: one for each step it takes to get home (a bug round
+  // with one arrow too many shows them all; a reuse round's routine chip takes one place for all
+  // its steps).
+  const places = round.mode === "loop" ? 1 : round.mode === "reuse" ? reusePlaces(round) : Math.max(round.path.length, steps.length);
 
   const go = () => {
     if (home || running) return;
@@ -503,11 +555,18 @@ function BirdGame({
         return;
       }
       setWalking(null);
-      // Which arrow to point at: the wrong one, or the empty place after a plan that stops short.
-      const at = round.mode === "loop" ? 0 : check.at;
+      // Which arrow to point at: the wrong one (in a reuse round, the chip its step is from), or the
+      // empty place after a plan that stops short (the next place; with every place full of arrows
+      // and the way still short, there is none, and it is the routine chip that is wanted).
+      const at = round.mode === "loop" ? 0 : check.why === "short" ? steps.length : (stepChips[check.at]?.chip ?? check.at);
       setWrong({ at, why: check.why });
-      wiggle.shake(`chip-${at}`);
-      coach.miss([codeSay(`code-${check.why}`)]);
+      if (round.mode === "reuse" && check.why === "short" && !routineUsed) {
+        wiggle.shake("routine");
+        coach.miss([codeSay("code-routine-short")]);
+      } else {
+        wiggle.shake(`chip-${at}`);
+        coach.miss([codeSay(`code-${check.why}`)]);
+      }
       // Then, after a moment to see where it got to, the animal walks back the way it came, and the
       // plan is there to mend.
       later.run(
@@ -539,9 +598,6 @@ function BirdGame({
 
   // What is shown in the places: in a predict round the given start is there before anything is picked.
   const arrows = steps;
-  // Empty places show how long the plan is: one for each step it takes to get home (a bug round
-  // with one arrow too many shows them all).
-  const places = round.mode === "loop" ? 1 : Math.max(round.path.length, steps.length);
   /** Bug: the plan is as it was first shown, so the arrow (or the empty place) put in it is still there. */
   const untouched = round.mode === "bug" && plan.join() === bugPlan(round).join();
   /** Bug: the plan as the child has it gets home (by any shortest way, as `checkPlan` has it, not only the drawn one). */
@@ -575,9 +631,21 @@ function BirdGame({
       const way = nextStepHome(round, pos);
       return way ? { arrow: way } : null;
     }
-    const check = checkPlan(round, queue);
-    if (!check.ok && check.why !== "short") return { chip: check.at };
-    const way = nextStepHome(round, walkTo(round, queue));
+    const dirs = program(round, queue);
+    const check = checkPlan(round, dirs);
+    if (!check.ok && check.why !== "short") return { chip: stepChips[check.at]?.chip ?? check.at };
+    // Reuse: the routine chip, when it is not in the plan yet and its steps go the right way from
+    // where the plan so far leaves the animal. When the child's arrows have walked on past the
+    // routine's place (its own steps laid by hand, say), the first arrow past it has to come off,
+    // and the ones after it with it: the hand goes to that arrow, and to the chip once it is off.
+    if (round.mode === "reuse" && !routineUsed) {
+      let fits = queue.length;
+      while (fits >= 0 && !routineFits(round, queue.slice(0, fits))) fits -= 1;
+      if (fits >= 0 && fits < queue.length) return { chip: fits };
+      if (fits === queue.length && queue.length < places) return { routine: true };
+      if (queue.length >= places) return { chip: queue.length - 1 };
+    }
+    const way = nextStepHome(round, walkTo(round, dirs));
     return way ? { arrow: way } : null;
   })();
   /**
@@ -589,7 +657,9 @@ function BirdGame({
   // A bigger cheer for a mended plan (a bug round) and for the last round of the game.
   const bigCheer = round.mode === "bug" || rounds.index === rounds.total - 1;
   const full =
-    (round.mode === "plan" && queue.length >= round.path.length) || (round.mode === "predict" && queue.length > 0) || (round.mode === "bug" && !plan.includes(null));
+    ((round.mode === "plan" || round.mode === "keep" || round.mode === "reuse") && queue.length >= places) ||
+    (round.mode === "predict" && queue.length > 0) ||
+    (round.mode === "bug" && !plan.includes(null));
   const place = PLACES[(rounds.index + Math.abs(salt)) % PLACES.length];
   const cols = round.width;
   const rowsCount = round.height;
@@ -638,6 +708,9 @@ function BirdGame({
         "data-y": pos.y,
         "data-plan-full": full ? "true" : "false",
         "data-choices": round.mode === "predict" ? round.choices.length : undefined,
+        "data-routine": round.mode === "reuse" ? round.routine.join(",") : kept && round.mode === "keep" ? kept.join(",") : undefined,
+        "data-routine-at": round.mode === "reuse" ? routineAt(round) : undefined,
+        "data-places": places,
       }}
       stage={
         <div className="code-stage" ref={stageRef}>
@@ -698,7 +771,15 @@ function BirdGame({
       }
     >
       {planned ? (
-        <div className="code-plan" data-plan={round.mode} data-places={places} style={{ "--places": places } as React.CSSProperties}>
+        <div
+          className="code-plan"
+          data-plan={round.mode}
+          data-places={places}
+          data-kept={round.mode === "keep" && home ? "true" : "false"}
+          // The routine chip is wider than an arrow (it shows its steps), so a reuse round's row is
+          // sized as if it had most of one place more.
+          style={{ "--places": round.mode === "reuse" ? places + 0.6 : places } as React.CSSProperties}
+        >
           <div className="code-queue" aria-label="Your plan">
             {Array.from({ length: places }, (_, at) => {
               const dir = arrows[at];
@@ -739,6 +820,30 @@ function BirdGame({
               const bug = untouched && at === round.bugIndex;
               const given = round.mode === "predict" && at < round.shown.length;
               const marked = wrong !== null && wrong.why !== "short" && wrong.at === at;
+              // The step being walked, when it is this chip's (a loop's one chip is every step).
+              const on = walking !== null && walking.step >= 0 && (round.mode === "loop" ? at === 0 : stepChips[walking.step]?.chip === at);
+              if (dir === "routine") {
+                // The routine chip: its steps, small, in a row. As they are walked it opens up and
+                // the one being walked lights, so the child sees one chip doing several steps.
+                const sub = on ? stepChips[walking!.step]!.sub : -1;
+                return (
+                  <button
+                    key={`routine-${at}`}
+                    type="button"
+                    className="code-chip code-chip-routine"
+                    data-queued={at}
+                    data-dir="routine"
+                    data-on={on ? "true" : "false"}
+                    data-wrong={marked ? "true" : "false"}
+                    data-wiggle={wiggle.id === `chip-${at}` ? (wiggle.count % 2 === 1 ? "a" : "b") : "false"}
+                    aria-label={`your routine, ${round.routine.join(", ")}${marked ? ", wrong" : ""}`}
+                    onClick={() => tapChip(at)}
+                  >
+                    <RoutineChip steps={round.routine} on={sub} />
+                    {hint && "chip" in hint && hint.chip === at ? <Hand /> : null}
+                  </button>
+                );
+              }
               return (
                 <button
                   key={`${dir}-${at}`}
@@ -746,7 +851,7 @@ function BirdGame({
                   className="code-chip"
                   data-queued={at}
                   data-dir={dir}
-                  data-on={walking && walking.step === at ? "true" : "false"}
+                  data-on={on ? "true" : "false"}
                   data-wrong={marked ? "true" : "false"}
                   data-wiggle={wiggle.id === `chip-${at}` ? (wiggle.count % 2 === 1 ? "a" : "b") : "false"}
                   // For the tests: the arrow put in the plan wrong (or one too many), while the plan is as shown.
@@ -768,6 +873,13 @@ function BirdGame({
               </span>
             ) : null}
           </div>
+          {round.mode === "keep" && home && kept ? (
+            // The plan, kept: the arrows close up (CSS) and this takes their place, the one chip
+            // the child uses in the next round.
+            <span className="code-routine-born" data-routine={kept.join(",")} aria-hidden="true">
+              <RoutineChip steps={kept} on={-1} />
+            </span>
+          ) : null}
         </div>
       ) : null}
       {round.mode === "predict"
@@ -806,6 +918,23 @@ function BirdGame({
             />
           ))
         : null}
+      {round.mode === "reuse" ? (
+        // The routine, to put in the plan as one chip: on a row of its own with Go, under the arrows
+        // (the break makes that so at every width).
+        <span className="code-break" aria-hidden="true" />
+      ) : null}
+      {round.mode === "reuse" ? (
+        <Pick
+          id="routine"
+          name={`your routine: ${round.routine.join(", ")}`}
+          size="mid"
+          art={<RoutineChip steps={round.routine} on={-1} />}
+          wiggle={wiggle.id === "routine" ? wiggle.count : 0}
+          demo={hint !== null && "routine" in hint}
+          onPick={() => queueChip("routine")}
+          attrs={{ "data-routine-pick": "true", "data-used": routineUsed ? "true" : "false" }}
+        />
+      ) : null}
       {planned ? (
         // Go sits at the end of the row of arrows, the same size as they are and the one solid green
         // thing on the page, so the board, the plan and Go are on one phone screen together. It is
@@ -825,6 +954,26 @@ function BirdGame({
         </button>
       ) : null}
     </GameFrame>
+  );
+}
+
+/**
+ * The routine as one chip: its steps as small arrows in a row, with a mark that says "kept" (a
+ * little nest). `on` is the step being walked right now, or -1.
+ */
+function RoutineChip({ steps, on }: { steps: Dir[]; on: number }) {
+  return (
+    <span className="code-routine" data-open={on >= 0 ? "true" : "false"}>
+      <svg className="code-routine-mark" viewBox="0 0 64 40" aria-hidden="true">
+        <ellipse cx="32" cy="24" rx="22" ry="12" fill="#e4c7a4" />
+        <ellipse cx="32" cy="22" rx="14" ry="7" fill="#f6e3b4" />
+      </svg>
+      {steps.map((dir, index) => (
+        <span key={index} className="code-routine-step" data-on={on === index ? "true" : "false"}>
+          <ArrowIcon dir={dir} />
+        </span>
+      ))}
+    </span>
   );
 }
 

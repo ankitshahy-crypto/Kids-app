@@ -7047,6 +7047,120 @@ input.is-pressed,
   box-shadow: none;
 }
 
+/* ---- The routine (ages 5–7): a kept plan as one chip ----
+   The chip shows its steps as small arrows in a row behind a little nest mark. In the plan it is
+   wider than an arrow chip (the row is sized for that, see --places), and while its steps are
+   walked it opens up and the step being walked lights, so one chip is seen doing several steps. */
+.code-routine {
+  --arrow: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+}
+
+/* (Specific enough to beat the bird screen's rule that makes every picture in a pick fill it.) */
+.game-frame[data-screen="bird"] .code-routine .code-routine-mark {
+  flex: 0 0 auto;
+  width: calc(var(--arrow) * 0.9);
+  height: calc(var(--arrow) * 0.56);
+  margin-right: 2px;
+}
+
+.code-routine-step {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: var(--arrow);
+  height: var(--arrow);
+  border-radius: 6px;
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.game-frame[data-screen="bird"] .code-routine .code-routine-step svg {
+  width: 100%;
+  height: 100%;
+}
+
+.code-routine[data-open="true"] .code-routine-step {
+  transform: scale(1.12);
+}
+
+.code-routine-step[data-on="true"] {
+  background: #f0c55b;
+  transform: scale(1.28);
+}
+
+.game-frame[data-screen="bird"] .code-chip-routine {
+  --arrow: calc(var(--place) * 0.36);
+  width: calc(var(--place) * 1.6);
+  flex-basis: calc(var(--place) * 1.6);
+  padding: 2px;
+}
+
+/* The routine to pick from, in the tray: twice an arrow's width, on a row of its own with Go. The
+   break between the rows takes no height of its own (it would otherwise add a gap each side). */
+.code-break {
+  flex-basis: 100%;
+  height: 0;
+  margin: -4px 0;
+}
+
+.game-frame[data-screen="bird"][data-screen] .game-tray .pick[data-routine-pick] {
+  /* Its small arrows shrink with the chip, so three of them and the nest mark fit a narrow phone. */
+  --arrow: calc(min(82px, (100% - 32px) / 5) * 0.4);
+  width: calc(2 * min(82px, (100% - 32px) / 5) + 8px);
+}
+
+.game-frame[data-screen="bird"] .pick[data-routine-pick][data-used="true"] {
+  opacity: 0.55;
+}
+
+.game-frame[data-screen="bird"] .pick[data-routine-pick] .pick-art {
+  width: 100%;
+}
+
+/* Kept: the plan that got home closes up, and the one chip it has become takes its place. */
+.game-frame[data-screen="bird"] .code-plan {
+  position: relative;
+}
+
+.code-plan[data-kept="true"] .code-queue .code-chip {
+  opacity: 0;
+  transform: scale(0.3);
+  transition: opacity 260ms ease 240ms, transform 320ms ease 240ms;
+}
+
+.code-routine-born {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(60%, 180px);
+  height: 64px;
+  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 0 0 0 4px #f0c55b, var(--shadow);
+  animation: routine-born 560ms cubic-bezier(0.3, 0.7, 0.4, 1) 420ms both;
+}
+
+@keyframes routine-born {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
 /* A picked ending is filled green, so that it is never mistaken for the hand's gold ring on the
    one that gets home, which can show at the same time. */
 .game-frame[data-screen="bird"] .pick[data-chosen="true"][data-reveal="false"] {
@@ -7135,6 +7249,11 @@ input.is-pressed,
   .game-frame[data-screen="bird"][data-screen] .code-go {
     width: 64px;
     min-height: 64px;
+  }
+
+  .game-frame[data-screen="bird"][data-screen] .game-tray .pick[data-routine-pick] {
+    --arrow: 26px;
+    width: 136px;
   }
 }
 

@@ -7,6 +7,7 @@ import {
   boardLibrary,
   bugPlan,
   checkPlan,
+  chipSteps,
   logicLevel,
   nextStepHome,
   predictChoices,
@@ -19,11 +20,23 @@ import {
   patternSequence,
   program,
   reachesNest,
+  reuseBoards,
+  reuseChips,
+  reusePlaces,
+  reuseRound,
+  routineAt,
+  routineFits,
   ruleRounds,
   trail,
   walk,
 } from "./logic";
-import type { BirdRound, Dir } from "./logic";
+import type { BirdRound, Chip, Dir } from "./logic";
+
+const DIRS: Dir[] = ["up", "down", "left", "right"];
+
+function turnsOf(path: Dir[]): number {
+  return path.filter((dir, index) => index > 0 && dir !== path[index - 1]).length;
+}
 
 /** What the child does to a bug round's plan: fills the empty place, takes the extra arrow off, or turns the wrong one. */
 function mend(round: BirdRound): Dir[] {
@@ -150,10 +163,20 @@ describe("guide the bird home", () => {
     expect(trail({ x: 0, y: 0 }, ["right", "right", "up"], 3, 3)).toEqual([{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }]);
   });
 
-  it("gives ages 5 to 7 three plans that grow, a repeat of three, and one wrong arrow", () => {
+  it("gives ages 5 to 7 a plan, a short one to keep, a long one to use it in, an ending to pick, a repeat of three, and one wrong arrow", () => {
     const rounds = birdRounds("later");
-    expect(rounds.map((round) => round.mode)).toEqual(["plan", "plan", "plan", "predict", "loop", "bug"]);
-    expect(rounds.slice(0, 3).map((round) => round.path.length)).toEqual([4, 5, 6]);
+    expect(rounds.map((round) => round.mode)).toEqual(["plan", "keep", "reuse", "predict", "loop", "bug"]);
+    expect(rounds[0].path).toHaveLength(4);
+    // The kept plan is three steps with a turn: worth keeping. The reuse board is a longer way home
+    // (five or six) with those three in it as one run, and the routine chip takes one place for them.
+    expect(rounds[1].path).toHaveLength(3);
+    expect(turnsOf(rounds[1].path)).toBe(1);
+    expect(rounds[2].routine).toEqual(rounds[1].path);
+    expect(rounds[2].path.length).toBeGreaterThanOrEqual(5);
+    expect(rounds[2].path.length).toBeLessThanOrEqual(6);
+    expect(routineAt(rounds[2])).toBeGreaterThanOrEqual(0);
+    expect(reuseChips(rounds[2])).toHaveLength(reusePlaces(rounds[2]));
+    expect(reuseChips(rounds[2]).filter((chip) => chip === "routine")).toHaveLength(1);
     for (const round of rounds.slice(0, 3)) expect(reachesNest(round, round.path)).toBe(true);
     expect(rounds[3].shown).toHaveLength(2);
     expect(rounds[3].choices).toHaveLength(3);
@@ -185,6 +208,59 @@ describe("guide the bird home", () => {
       expect(check.ok).toBe(false);
       if (!check.ok) expect(check.at).toBe(bug.bugIndex);
     }
+  });
+
+  it("makes a reuse board for whichever shortest way the child kept, with the routine not always first", () => {
+    // Every way a child could get home on a keep board (any shortest way counts, not only the drawn one).
+    const keeps = boardLibrary("early").filter((board) => board.path.length === 3 && turnsOf(board.path) === 1);
+    const ways = new Set<string>();
+    for (const board of keeps) for (const a of DIRS) for (const b of DIRS) for (const c of DIRS) if (checkPlan(board, [a, b, c]).ok) ways.add([a, b, c].join(","));
+    expect(ways.size).toBeGreaterThanOrEqual(16);
+    for (const way of ways) {
+      const routine = way.split(",") as Dir[];
+      const boards = reuseBoards(routine);
+      expect(boards.length, way).toBeGreaterThanOrEqual(10);
+      for (const board of boards) {
+        expect(board.mode).toBe("reuse");
+        expect(board.routine).toEqual(routine);
+        expect(board.path.length).toBeGreaterThanOrEqual(5);
+        expect(board.path.length).toBeLessThanOrEqual(6);
+        // A way a child can read: two turns, or one more than the routine's own.
+        expect(turnsOf(board.path)).toBeLessThanOrEqual(Math.max(2, turnsOf(routine) + 1));
+        // Its own way home is a shortest one, and the chips (the routine as one) walk it.
+        expect(checkPlan(board, board.path).ok).toBe(true);
+        expect(checkPlan(board, program(board, reuseChips(board))).ok).toBe(true);
+        expect(reuseChips(board)).toHaveLength(reusePlaces(board));
+      }
+      // Where the routine sits varies with the salt: at the start, in the middle, at the end.
+      const at = new Set<number>();
+      for (let salt = 0; salt < 40; salt += 1) at.add(routineAt(reuseRound(routine, salt)));
+      expect(at.size).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("runs the routine chip as its steps, knows which chip each step is from, and says when the routine fits", () => {
+    const round = birdRounds("later", 4)[2];
+    const at = routineAt(round);
+    const chips = reuseChips(round);
+    expect(program(round, chips)).toEqual(round.path);
+    expect(program(round, [null, "routine"])).toEqual(round.routine);
+    // The steps of the routine chip are that chip, numbered inside it; an arrow's step is its own.
+    const steps = chipSteps(round, chips);
+    expect(steps).toHaveLength(round.path.length);
+    expect(steps.slice(at, at + round.routine.length)).toEqual(round.routine.map((_, sub) => ({ chip: at, sub })));
+    for (const [index, step] of steps.entries()) if (index < at || index >= at + round.routine.length) expect(step.sub).toBe(-1);
+    // An empty place is no step.
+    expect(chipSteps(round, [null, ...chips])).toHaveLength(round.path.length);
+    // The routine fits after the arrows before it, and not after a step the wrong way.
+    const before = round.path.slice(0, at) as Chip[];
+    expect(routineFits(round, before)).toBe(true);
+    const astray = DIRS.find((dir) => {
+      const check = checkPlan(round, [...round.path.slice(0, at), dir]);
+      return !check.ok && check.why !== "short";
+    });
+    expect(astray).toBeDefined();
+    expect(routineFits(round, [...before, astray as Dir])).toBe(false);
   });
 
   it("has all three kinds of bug across plays, and each is mended by one change", () => {

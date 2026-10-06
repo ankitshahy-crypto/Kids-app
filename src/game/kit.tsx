@@ -198,8 +198,11 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
      * `hold` is that moment. A game whose answer is something that happens in the scene (the animal
      * walking over the bridge, a lever lifting the rock) passes how long that takes, so it is seen to
      * the end even with the voice off, when there are no words to wait for.
+     *
+     * `cap` is the few seconds: a game with a longer line to say at a right answer (the coding
+     * game's kept routine) passes the line's own length, so it is heard to the end.
      */
-    right(said: Cue[] = [], then?: () => void, hold: number = SOLVED_MIN_MS) {
+    right(said: Cue[] = [], then?: () => void, hold: number = SOLVED_MIN_MS, cap: number = SOLVED_MAX_MS) {
       quiet.current = true;
       stopIdle();
       setNudge(false);
@@ -223,7 +226,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
         after.current = window.setTimeout(then, 150);
         return;
       }
-      after.current = window.setTimeout(go, Math.max(SOLVED_MAX_MS, hold));
+      after.current = window.setTimeout(go, Math.max(cap, hold));
       if (said.length > 0) speak.line(said, go);
       else go();
     },

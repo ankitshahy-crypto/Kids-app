@@ -25,7 +25,7 @@ import type { AgeRange } from "./profiles";
  * already earned are saved under them.
  */
 
-/** Ages 3–4 play short puzzles. Ages 5–7 add longer paths, a repeat, and a bug fix. */
+/** Ages 3–4 play short puzzles. Ages 5–7 add longer paths, a routine to use again, a repeat, and a bug fix. */
 export type LogicLevel = "early" | "later";
 
 export type Dir = "up" | "down" | "left" | "right";
@@ -33,11 +33,16 @@ export type Dir = "up" | "down" | "left" | "right";
 export type Cell = { x: number; y: number };
 
 /**
- * tap: each arrow moves the animal a step. plan: arrows are lined up, then run. predict: the start
- * of a plan is given and the child picks which ending gets home, then runs it. loop: one arrow,
- * run three times. bug: a plan with one thing wrong in it to find and mend.
+ * tap: each arrow moves the animal a step. plan: arrows are lined up, then run. keep: a short plan
+ * that, once it gets home, is kept as the child's routine: its arrows become one chip. reuse: a
+ * longer way home that the routine chip is part of (it does all its steps as one). predict: the
+ * start of a plan is given and the child picks which ending gets home, then runs it. loop: one
+ * arrow, run three times. bug: a plan with one thing wrong in it to find and mend.
  */
-export type BirdMode = "tap" | "plan" | "predict" | "loop" | "bug";
+export type BirdMode = "tap" | "plan" | "keep" | "reuse" | "predict" | "loop" | "bug";
+
+/** A piece of a plan on the page: an arrow, or the routine (the kept steps, as one chip). */
+export type Chip = Dir | "routine";
 
 /** What is wrong with a bug round's plan: an arrow that turns the wrong way, one too many, or one missing. */
 export type BugKind = "turn" | "extra" | "missing";
@@ -61,6 +66,8 @@ export type BirdRound = {
   fix: Dir | null;
   /** Predict: the endings to choose from. Exactly one of them gets home. */
   choices: Dir[][];
+  /** Reuse: the kept steps, which the routine chip does as one. Empty in every other round. */
+  routine: Dir[];
 };
 
 export type PatternRule = "AB" | "ABB" | "ABC";
@@ -180,6 +187,8 @@ function turned(round: BirdRound, mirror: boolean, flip: boolean): BirdRound {
     path: round.path.map(dir),
     shown: round.shown.map(dir),
     fix: round.fix ? dir(round.fix) : null,
+    routine: round.routine.map(dir),
+    choices: round.choices.map((ending) => ending.map(dir)),
   };
 }
 
@@ -248,7 +257,7 @@ export function boardLibrary(level: LogicLevel): BirdRound[] {
               const start = { x, y };
               const { end, blocked } = walk(start, path, shape.width, shape.height);
               if (blocked) continue;
-              const board: BirdRound = { id: `plan-${shape.width}x${shape.height}-${x}${y}-${path.join("")}`, mode: "plan", width: shape.width, height: shape.height, start, nest: end, path, repeat: 1, shown: [], bugIndex: null, bugKind: null, fix: null, choices: [] };
+              const board: BirdRound = { id: `plan-${shape.width}x${shape.height}-${x}${y}-${path.join("")}`, mode: "plan", width: shape.width, height: shape.height, start, nest: end, path, repeat: 1, shown: [], bugIndex: null, bugKind: null, fix: null, choices: [], routine: [] };
               // Only a shortest way home is a board: a path that doubles back (up, right, down) is a
               // detour, and the game would call the child's shorter plan wrong.
               if (checkPlan(board, path).ok) boards.push(board);
@@ -267,7 +276,108 @@ export function boardFamily(round: BirdRound): string {
   return forms.map((form) => `${form.width}x${form.height}:${form.start.x},${form.start.y}:${form.path.join("")}`).sort()[0];
 }
 
-const LOOP: BirdRound = { id: "loop-three", mode: "loop", width: 4, height: 2, start: { x: 0, y: 0 }, nest: { x: 3, y: 0 }, path: ["right"], repeat: 3, shown: [], bugIndex: null, bugKind: null, fix: null, choices: [] };
+const LOOP: BirdRound = { id: "loop-three", mode: "loop", width: 4, height: 2, start: { x: 0, y: 0 }, nest: { x: 3, y: 0 }, path: ["right"], repeat: 3, shown: [], bugIndex: null, bugKind: null, fix: null, choices: [], routine: [] };
+
+/** How many times a path changes direction. */
+function turnsOf(path: Dir[]): number {
+  return path.filter((dir, index) => index > 0 && dir !== path[index - 1]).length;
+}
+
+/** The grids a reuse board can be on, and how long its way home is: the later level's, with the routine inside it. */
+const REUSE = { grids: [{ width: 4, height: 3 }, { width: 4, height: 4 }], steps: [5, 6], turns: 2 };
+
+/**
+ * The boards a routine can be used again on: every way home of five or six steps that has the
+ * routine's steps in it as one run, with a straight run of one to three steps before it, after it,
+ * or both, no more than two turns in all (a way a child can read; one more than the routine's own,
+ * when it has two: a child's way round a corner can be "right, up, right"), on the later level's
+ * grids, from every start it fits. The routine is not always at the start, so the child has to see
+ * where it goes. Never empty for a kept routine (three steps, on a grid of three rows).
+ */
+export function reuseBoards(routine: Dir[]): BirdRound[] {
+  const boards: BirdRound[] = [];
+  const seen = new Set<string>();
+  const turns = Math.max(REUSE.turns, turnsOf(routine) + 1);
+  const runs: Dir[][] = [[]];
+  for (const dir of DIRS) for (let length = 1; length <= 3; length += 1) runs.push(Array.from({ length }, () => dir));
+  for (const before of runs) {
+    for (const after of runs) {
+      const path = [...before, ...routine, ...after];
+      if (path.length < REUSE.steps[0] || path.length > REUSE.steps[1] || turnsOf(path) > turns) continue;
+      for (const grid of REUSE.grids) {
+        for (let y = 0; y < grid.height; y += 1) {
+          for (let x = 0; x < grid.width; x += 1) {
+            const start = { x, y };
+            const { end, blocked } = walk(start, path, grid.width, grid.height);
+            if (blocked) continue;
+            const board: BirdRound = { id: `reuse-${grid.width}x${grid.height}-${x}${y}-${path.join("")}-${before.length}`, mode: "reuse", width: grid.width, height: grid.height, start, nest: end, path, repeat: 1, shown: [], bugIndex: null, bugKind: null, fix: null, choices: [], routine };
+            // A shortest way home only (no doubling back), and each board once.
+            if (!checkPlan(board, path).ok || seen.has(board.id)) continue;
+            seen.add(board.id);
+            boards.push(board);
+          }
+        }
+      }
+    }
+  }
+  return boards;
+}
+
+/**
+ * The reuse round for a routine: one of its boards, picked by the salt. The routine is the plan the
+ * child got home with in the keep round (any shortest way counts there, so it may differ from the
+ * board's own path), which is why this is built when the keep round is done and not before; the
+ * play's list holds the one for the keep board's own path until then.
+ */
+export function reuseRound(routine: Dir[], salt: number): BirdRound {
+  const boards = reuseBoards(routine);
+  return boards[mix(salt, 12) % boards.length];
+}
+
+/** Where the routine sits in a reuse board's own path: the index of its first step. */
+export function routineAt(round: BirdRound): number {
+  const inner = round.routine.join(",");
+  for (let at = 0; at + round.routine.length <= round.path.length; at += 1) {
+    if (round.path.slice(at, at + round.routine.length).join(",") === inner) return at;
+  }
+  return -1;
+}
+
+/** The chips a reuse board's own path takes: its steps, with the routine's as one. */
+export function reuseChips(round: BirdRound): Chip[] {
+  const at = routineAt(round);
+  return [...round.path.slice(0, at), "routine", ...round.path.slice(at + round.routine.length)];
+}
+
+/** How many places a reuse round's plan has: one for each chip of the board's own way home. */
+export function reusePlaces(round: BirdRound): number {
+  return round.path.length - round.routine.length + 1;
+}
+
+/**
+ * Which chip each step of a plan comes from, and which step inside the routine it is (-1 for an
+ * arrow): for the arrow that lights as a step is walked, and the arrow a run goes wrong at.
+ */
+export function chipSteps(round: BirdRound, chips: (Chip | null)[]): { chip: number; sub: number }[] {
+  const steps: { chip: number; sub: number }[] = [];
+  chips.forEach((chip, index) => {
+    if (chip === null) return;
+    if (chip === "routine") round.routine.forEach((_, sub) => steps.push({ chip: index, sub }));
+    else steps.push({ chip: index, sub: -1 });
+  });
+  return steps;
+}
+
+/**
+ * Whether the routine, put next in a reuse plan, keeps the animal on its way: every one of its steps
+ * from where the plan so far leaves it goes nearer the nest. For the hand after three misses, and
+ * for the line after a run that stops short.
+ */
+export function routineFits(round: BirdRound, chips: (Chip | null)[]): boolean {
+  const check = checkPlan(round, program(round, [...chips, "routine"]));
+  return check.ok || check.why === "short";
+}
+
 
 /**
  * A plan with one thing wrong in it, for the child to find and mend. Three kinds, by the salt:
@@ -369,6 +479,9 @@ function predicted(round: BirdRound, tail: number, count: number, salt: number):
   };
 }
 
+/** The short board a child's routine is made on: three steps with a turn, so it is worth keeping. */
+const KEEP_STEPS = 3;
+
 /** Steps a child can take by tapping, before any planning: the two shortest kinds of board. */
 const TAP_STEPS = [2, 3];
 
@@ -377,9 +490,10 @@ const TAP_STEPS = [2, 3];
  *
  *  - ages 3–4: two boards to walk by tapping (a straight one, then one with a turn),
  *    two to plan before pressing go, then one whose ending is picked from two;
- *  - ages 5–7: three plans, longer each time, one whose ending is picked from
- *    three, then a move to repeat three times, then a plan with one wrong arrow
- *    to find.
+ *  - ages 5–7: a plan of four, then a short one of three with a turn that is kept
+ *    as the child's routine, then a longer way home of five or six that the routine
+ *    chip is part of, then a plan whose ending is picked from three, a move to
+ *    repeat three times, and a plan with one wrong arrow to find.
  *
  * No two boards of a play are the same shape, and the salt also mirrors or turns
  * the boards over, so the nest is not in the same corner every time.
@@ -387,9 +501,9 @@ const TAP_STEPS = [2, 3];
 export function birdRounds(level: LogicLevel, salt = 0): BirdRound[] {
   const library = boardLibrary(level);
   const seen = new Set<string>();
-  const pick = (filter: (round: BirdRound) => boolean, turn: number): BirdRound => {
-    const fitting = library.filter((round) => filter(round) && !seen.has(boardFamily(round)));
-    const pool = fitting.length > 0 ? fitting : library.filter(filter);
+  const pick = (filter: (round: BirdRound) => boolean, turn: number, from = library): BirdRound => {
+    const fitting = from.filter((round) => filter(round) && !seen.has(boardFamily(round)));
+    const pool = fitting.length > 0 ? fitting : from.filter(filter);
     const chosen = pool[mix(salt, turn) % pool.length];
     seen.add(boardFamily(chosen));
     const spin = mix(salt, turn + 50);
@@ -406,10 +520,16 @@ export function birdRounds(level: LogicLevel, salt = 0): BirdRound[] {
       predicted(pick((round) => round.path.length === 3 && !straight(round), 7), 2, 2, salt),
     ];
   }
+  // The keep board is a short one (from the early library), and the reuse board is made from it.
+  const keep: BirdRound = { ...pick((round) => round.path.length === KEEP_STEPS && !straight(round), 2, boardLibrary("early")), mode: "keep" };
+  const reuse = reuseRound(keep.path, salt);
+  // (Not the same shape as the boards after it, either. The reuse board made for a child's own way,
+  // in the game, is whatever that way needs.)
+  seen.add(boardFamily(reuse));
   return [
     pick((round) => round.path.length === 4, 1),
-    pick((round) => round.path.length === 5, 2),
-    pick((round) => round.path.length === 6, 3),
+    { ...keep, id: `keep-${keep.id}` },
+    reuse,
     predicted(pick((round) => round.path.length === 5, 8), 3, 3, salt),
     turned(LOOP, salt !== 0 && (mix(salt, 5) & 1) === 1, false),
     bugged(pick((round) => round.path.length >= 4 && round.path.length <= 5, 6), salt),
@@ -419,10 +539,11 @@ export function birdRounds(level: LogicLevel, salt = 0): BirdRound[] {
 /**
  * Arrows that will run: a queued plan, a move repeated three times, or the given start of a plan
  * with the ending that was picked (`queued`). A bug round's plan is the child's (`queued`), with
- * any empty place in it left out; it starts as `bugPlan` and is mended on the page.
+ * any empty place in it left out; it starts as `bugPlan` and is mended on the page. In a reuse
+ * round the routine chip stands for its steps.
  */
-export function program(round: BirdRound, queued: (Dir | null)[]): Dir[] {
-  const dirs = queued.filter((dir): dir is Dir => dir !== null);
+export function program(round: BirdRound, queued: (Chip | null)[]): Dir[] {
+  const dirs = queued.flatMap((chip): Dir[] => (chip === null ? [] : chip === "routine" ? round.routine : [chip]));
   if (round.mode === "predict") return dirs.length === 0 ? [] : [...round.shown, ...dirs];
   if (round.mode === "loop") {
     const body = dirs[0];
@@ -630,6 +751,9 @@ export function logicManifestEntries(): { id: string; say: string }[] {
     { id: "code-bug-extra", say: "One arrow too many. Tap it off, then press go." },
     { id: "code-bug-missing", say: "One arrow is missing. Fill the empty place, then press go." },
     { id: "code-predict", say: "Which arrows take it home? Pick one, then press go." },
+    { id: "code-routine-kept", say: "Home! Those steps are one chip now: your routine." },
+    { id: "code-routine-use", say: "A longer way home. Use your routine chip, then press go." },
+    { id: "code-routine-short", say: "Not home yet. Try your routine chip." },
     { id: "code-go", say: "Now press go." },
     { id: "code-pattern", say: "What comes next?" },
     { id: "code-order", say: "What comes first? Put the pictures in order." },

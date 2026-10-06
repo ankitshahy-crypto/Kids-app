@@ -155,6 +155,9 @@
     "prompts/code-predict.mp3",
     "prompts/code-read.mp3",
     "prompts/code-repeat.mp3",
+    "prompts/code-routine-kept.mp3",
+    "prompts/code-routine-short.mp3",
+    "prompts/code-routine-use.mp3",
     "prompts/code-say-hello.mp3",
     "prompts/code-short.mp3",
     "prompts/code-then-dark.mp3",
@@ -3578,7 +3581,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 16889820,
+    "shared": 16978083,
     "byAnimal": {
       "bear": 4881909,
       "bunny": 4851573,

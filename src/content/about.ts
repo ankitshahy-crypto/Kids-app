@@ -119,7 +119,7 @@ const TEACHES: readonly Piece[] = [
   { of: "games", text: "Games start with hatching, popping, feeding, rhymes, memory, and a spin." },
   {
     of: "games",
-    text: `${MODULE_CODE} starts with hello world, then a path home, a picture pattern, pictures in order, and an if-then rule, then picture blocks that play, then a short program to read and build. Ages 5 to 7 add longer paths, a repeat, and a bug fix.`,
+    text: `${MODULE_CODE} starts with hello world, then a path home, a picture pattern, pictures in order, and an if-then rule, then picture blocks that play, then a short program to read and build. Ages 5 to 7 add longer paths, a routine kept as one chip and used again, a repeat, and a bug fix.`,
   },
   {
     of: "time",
