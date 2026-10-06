@@ -61,6 +61,11 @@ FACE_PAD = 0.06
 FIT_STRETCH = (0.92, 1.08)
 FIT_SHIFT = 30
 FIT_MATCH = 0.7
+# A think face tips the head (the puzzled look): its outline is not the idle one's, so its fit is a
+# bigger move with a worse match, and is taken as long as it is still one animal (measured: stretch
+# 0.89 to 1.38 — the koala's head is drawn smaller — shift up to 93, match 0.72 to 0.95). Look at
+# the contact sheet: the fit is right when the eyes and nose sit where the idle ones do.
+FIT_LOOSE = {"think": ((0.85, 1.4), 100, 0.7)}
 
 
 def cut_out(path: Path):
@@ -193,13 +198,14 @@ def on_grey(face):
     return cv2.GaussianBlur((grey * a + 128 * (1 - a))[:, :, 0], (0, 0), 6)
 
 
-def fit(face, idle):
+def fit(face, idle, frame="cheer"):
     """
     The small affine move that puts a mood face where the idle face sits (from a place on the idle
     face to the place on the mood face that belongs there, in face pixels), or None when there is
     no such small move: the two do not match, or matching them would stretch, flip or carry the
-    face further than one animal differs from itself.
+    face further than one animal differs from itself (further for a frame that tips the head).
     """
+    (lo, hi), far, close = FIT_LOOSE.get(frame, (FIT_STRETCH, FIT_SHIFT, FIT_MATCH))
     warp = np.eye(2, 3, dtype=np.float32)
     try:
         match, warp = cv2.findTransformECC(on_grey(idle), on_grey(face), warp, cv2.MOTION_AFFINE, (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 200, 1e-5), None, 5)
@@ -209,7 +215,7 @@ def fit(face, idle):
     centre = np.array([FACE_PX / 2, FACE_PX / 2, 1], np.float32)
     shift = float(np.linalg.norm(warp @ centre - centre[:2]))
     told = f"stretch {stretch.min():.3f} to {stretch.max():.3f}, shift {shift:.1f}, match {match:.3f}"
-    if np.linalg.det(warp[:, :2]) <= 0 or stretch.min() < FIT_STRETCH[0] or stretch.max() > FIT_STRETCH[1] or shift > FIT_SHIFT or match < FIT_MATCH:
+    if np.linalg.det(warp[:, :2]) <= 0 or stretch.min() < lo or stretch.max() > hi or shift > far or match < close:
         return None, f"fit ran wild ({told})"
     return warp, f"lined up ({told})"
 
@@ -308,7 +314,7 @@ def main(folder: Path, with_body: bool):
                 if idle_face is None:
                     leave_out(animal, frame, "no idle face to line it up with")
                     continue
-                warp, note = fit(face, idle_face)
+                warp, note = fit(face, idle_face, frame)
                 if warp is None:
                     leave_out(animal, frame, note)
                     continue
