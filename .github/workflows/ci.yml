@@ -174,9 +174,11 @@ jobs:
         with:
           node-version: 22
 
+      # The script runs `npm audit` and prints each advisory as a line of a warning on the run:
+      # the package, how serious, what it is, and whether an update fixes it.
       - name: Advisories against what the app ships with
-        run: npm audit --omit=dev --audit-level=high
+        run: node scripts/audit-report.mjs --omit=dev
 
       - name: Advisories against the build's tools as well
         if: ${{ !cancelled() }}
-        run: npm audit --audit-level=high
+        run: node scripts/audit-report.mjs
