@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { installAudioSpy, spokenLines } from "./audioSpy";
+import { clipSeconds, clipStarts, installAudioSpy, spokenLines } from "./audioSpy";
 import { answerGate, openClassPlace } from "./gate";
 import { expectStar, expectWiggle, meetClock, noting, onRound, openGame, openTimeMoney } from "./kit";
 
@@ -180,6 +180,25 @@ test("coins: find the one that is named, as a picture", async ({ page }, testInf
   await expectStar(page);
 });
 
+test("coins: Hear it again after a wrong tap repeats the question, not the wrong coin's name", async ({ page }) => {
+  await installAudioSpy(page);
+  await openTimeMoney(page, { quick: false });
+  const coins = await openGame(page, "coins");
+  await expect(coins).toHaveAttribute("data-task", "name");
+  const answer = (await coins.getAttribute("data-answer")) ?? "";
+  await expect.poll(async () => (await spokenLines(page)).join(" | "), { timeout: 8_000 }).toContain(`find the | ${answer}`);
+  const wrong = coins.locator(`.pick:not([data-coin=${answer}])`).first();
+  const name = (await wrong.getAttribute("data-coin")) ?? "";
+  const heard = (await spokenLines(page)).length;
+  await wrong.click();
+  await expect.poll(async () => (await spokenLines(page)).slice(heard), { timeout: 8_000 }).toContain(name);
+  // The top bar's button says the question again: the wrong coin's name was not kept for it.
+  const before = (await spokenLines(page)).length;
+  await page.locator("[data-hear-again]").click();
+  await expect.poll(async () => (await spokenLines(page)).slice(before).join(" | "), { timeout: 8_000 }).toContain(`find the | ${answer}`);
+  expect((await spokenLines(page)).slice(before)).not.toContain(name);
+});
+
 for (const [week, task, rounds] of [
   [4, "sort", 6],
   [8, "count", 3],
@@ -253,6 +272,28 @@ test("my day: the parts of a day are put in order, three and then five", async (
     }
   }
   await expectStar(page);
+});
+
+test("my day: three quick right taps and Hear it again still reach the next round", async ({ page }) => {
+  // With the voice taking its time (no quick setting), a right tap before the last one's words are
+  // done used to leave two timers racing; the stale one could cancel the newer one, and the round
+  // never advanced. The taps come 400 ms apart, then the speaker button, which stops the praise.
+  await installAudioSpy(page);
+  await openTimeMoney(page, { quick: false });
+  const routine = await openGame(page, "routine");
+  await expect(routine).toHaveAttribute("data-round", "0");
+  const order = ((await routine.getAttribute("data-order")) ?? "").split(",");
+  expect(order).toHaveLength(3);
+  for (const id of order) {
+    await routine.locator(`.pick[data-routine=${id}]`).click();
+    await page.waitForTimeout(400);
+  }
+  await expect(routine).toHaveAttribute("data-placed", "3");
+  await routine.locator(".game-hear").click();
+  await expect(routine).toHaveAttribute("data-round", "1", { timeout: 12_000 });
+  await expect(routine).toHaveAttribute("data-placed", "0");
+  // And the second round asks for its first picture, not a later one: the stale timers wrote nothing.
+  await expect(routine).toHaveAttribute("data-next", ((await routine.getAttribute("data-order")) ?? "").split(",")[0]);
 });
 
 test("the clock starts with its hands: the short one tells the hour, the long one the minutes", async ({ page }, testInfo) => {
@@ -329,6 +370,34 @@ test("the dots between the numbers are minutes: five steps take the long hand to
   await expect(clock).toHaveAttribute("data-task", "set");
 });
 
+test("the line at the end of the dots is heard to its end before the next round opens", async ({ page }) => {
+  // "Five dots. That is five minutes." is the longest right-answer line in the game, longer than the
+  // old three-second cap, which opened the next round over its last word. The next round may open
+  // only once the clip has played through (the line's own end opens it; the cap is a safety now).
+  await installAudioSpy(page);
+  await openTimeMoney(page, { quick: false });
+  const clock = await openGame(page, "clock");
+  for (const round of [0, 1]) {
+    await expect(clock).toHaveAttribute("data-round", String(round), { timeout: 8_000 });
+    await expect(clock).toHaveAttribute("data-solved", "false");
+    await clock.locator(`.pick[data-hand-pick=${await clock.getAttribute("data-answer")}]`).click();
+  }
+  await expect(clock).toHaveAttribute("data-task", "dots", { timeout: 8_000 });
+  const rounds = await noting(clock, (frame) => ({ round: frame.getAttribute("data-round"), at: performance.now() }));
+  for (let step = 1; step <= 5; step += 1) {
+    await clock.locator(".pick[data-pick=step]").click();
+    await expect(clock).toHaveAttribute("data-minute", String(step));
+  }
+  await expect(clock).toHaveAttribute("data-round", "3", { timeout: 15_000 });
+  const opened = (await rounds()).find((note) => note.round === "3");
+  const done = (await clipStarts(page)).find((clip) => clip.file === "prompts/clock-dots-done.mp3");
+  expect(opened, "the next round opened").toBeTruthy();
+  expect(done, "the line's last clip started").toBeTruthy();
+  const seconds = await clipSeconds(page, "prompts/clock-dots-done.mp3");
+  expect(seconds).toBeGreaterThan(2);
+  expect((opened!.at - done!.at) / 1000, "the clip played through before the round opened").toBeGreaterThanOrEqual(seconds - 0.1);
+});
+
 test("setting the clock: a tap on a number moves the short hand there", async ({ page }, testInfo) => {
   await openTimeMoney(page);
   const clock = await openGame(page, "clock");
@@ -357,6 +426,34 @@ test("setting the clock: a tap on a number moves the short hand there", async ({
   await expectStar(page);
   await page.locator("[data-section-back]").click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
+});
+
+test("setting the clock to twelve: the hands start away from it, so there is something to do", async ({ page }) => {
+  // Week 12's target is twelve o'clock. A set round starts at twelve, except when twelve is asked.
+  await openTimeMoney(page, { week: 11 });
+  const clock = await openGame(page, "clock");
+  await meetClock(clock);
+  await expect(clock).toHaveAttribute("data-mode", "hour");
+  await expect(clock).toHaveAttribute("data-target-hour", "12");
+  await expect(clock).toHaveAttribute("data-hour", "6");
+  await clock.locator(".clock-number[data-number='12']").click();
+  await expect(clock).toHaveAttribute("data-solved", "true");
+  // The other set rounds ask for another hour and start at twelve, as before.
+  await expect(clock).toHaveAttribute("data-round", "4");
+  expect(await clock.getAttribute("data-target-hour")).not.toBe("12");
+  await expect(clock).toHaveAttribute("data-hour", "12");
+});
+
+test("a star is given for a game finished, even when Back is tapped during the ending", async ({ page }) => {
+  await openTimeMoney(page, { quick: false });
+  const needs = await openGame(page, "needs");
+  for (let round = 0; round < 6; round += 1) {
+    await onRound(needs, round);
+    await needs.locator(`.pick[data-bin=${(await needs.getAttribute("data-answer")) ?? ""}]`).click();
+  }
+  await expect(needs).toHaveAttribute("data-finished", "true", { timeout: 15_000 });
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expectStar(page);
 });
 
 test("half past: the short hand first, then the long hand, and the dots it passed light up", async ({ page }) => {

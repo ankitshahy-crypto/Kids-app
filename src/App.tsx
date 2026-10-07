@@ -149,6 +149,14 @@ export default function App() {
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
+  /**
+   * The screen as it is now, for a game's finish that arrives after the child has left it: a game
+   * finished and then left during its ending (Back, Break) still gives its star (the kit's
+   * `useFinish`), and that finish must not take a child who asked for a break back to Today.
+   */
+  const screenNow = useRef(screen);
+  screenNow.current = screen;
+  const onBreak = () => screenNow.current === "break";
   const [grownupsReturn, setGrownupsReturn] = useState<"start" | "kid">("start");
   const [flying, setFlying] = useState(false);
   const [cheer, setCheer] = useState<number | null>(null);
@@ -439,6 +447,7 @@ export default function App() {
   /** The story's own closing question stands in for the generic end tip. */
   const finishStory = (after: string) => {
     reward("story");
+    if (onBreak()) return;
     setScreen("today");
     presentTip(after ? { id: "story-after", text: after } : null, "after");
   };
@@ -446,6 +455,7 @@ export default function App() {
   /** The color moment names a color; the sticker is a color, the star is a reading step. */
   const finishMoment = (label: string) => {
     reward("moment", label ? [{ subject: COLORS, kind: "color", label }] : []);
+    if (onBreak()) return;
     setScreen("today");
     showTip("moment", "end");
   };
@@ -501,6 +511,7 @@ export default function App() {
       } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(mathTip(step, "end"), "after");
   };
@@ -529,6 +540,7 @@ export default function App() {
       } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(colorTip(step, "end"), "after");
   };
@@ -556,6 +568,7 @@ export default function App() {
       } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(timeTip(step, "end"), "after");
   };
@@ -582,6 +595,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(timeTip(step, "end"), "after");
   };
@@ -607,6 +621,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(engineerTip(activity, "end"), "after");
   };
@@ -632,6 +647,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(scienceTip(activity, "end"), "after");
   };
@@ -695,6 +711,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     presentTip(gameTip(game, "end"), "after");
   };
 
@@ -994,6 +1011,7 @@ export default function App() {
                       label,
                     }));
                     reward("draw", learned);
+                    if (onBreak()) return;
                     setScreen("today");
                     showTip("draw", "end");
                   }}

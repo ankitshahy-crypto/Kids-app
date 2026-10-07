@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { installAudioSpy, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 
 const profile = {
@@ -247,6 +248,22 @@ test("tapped and dragged blocks play on the animal, one step at a time", async (
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
+});
+
+test("leaving while the program plays stops it: nothing more is said over the lobby", async ({ page }) => {
+  // Five steps at 700 ms each run for 3.5 s; Back after the first leaves nothing playing.
+  await installAudioSpy(page);
+  await install(page, "move");
+  const board = page.locator("[data-build=move]");
+  for (const block of ["walk", "jump", "spin", "dance", "sing"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board).toHaveAttribute("data-script", "walk,jump,spin,dance,sing");
+  await board.locator("[data-play=run]").click();
+  await expect(board.locator("[data-index='0']")).toHaveAttribute("data-on", "true");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(board).toHaveCount(0);
+  const said = (await spokenLines(page)).length;
+  await page.waitForTimeout(2_500);
+  expect((await spokenLines(page)).slice(said)).toEqual([]);
 });
 
 test("the whole board fits a phone screen: the stage and Play are both in view", async ({ page }) => {

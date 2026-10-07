@@ -242,6 +242,8 @@ describe("the other games", () => {
       expect(count).toBeGreaterThanOrEqual(1);
       expect(count).toBeLessThanOrEqual(10);
       expect(countChoices(count, salt).choices).toContain(count);
+      // Three different numbers to choose from, at the ends of the range too (one, ten).
+      for (const edge of [1, 10, count]) expect(new Set(countChoices(edge, salt).choices).size).toBe(3);
       const color = colorChoices("red", ["red", "blue", "yellow"], salt);
       expect(color.choices).toContain(color.target);
       expect(color.choices).toHaveLength(3);

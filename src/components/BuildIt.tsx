@@ -245,6 +245,8 @@ function Builder({
   const [said, setSaid] = useState("");
   const drag = useRef<{ kind: BuildBlock; x: number; y: number; moved: boolean } | null>(null);
   const runId = useRef(0);
+  // Leaving mid-play ends the play: a later step of the loop finds the run is no longer its own.
+  useEffect(() => () => void (runId.current += 1), []);
   const finished = useRef(false);
   const boardRef = useRef<HTMLDivElement | null>(null);
 
