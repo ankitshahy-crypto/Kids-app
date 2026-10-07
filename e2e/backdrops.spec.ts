@@ -90,9 +90,14 @@ const drifting = (art: Locator) =>
       .map((animation) => (animation as CSSAnimation).animationName),
   );
 
+// The two tablet shapes are also the two where the game is drawn larger (zoom 1.2 on its side, 1.45
+// upright). WebKit made container units larger by that zoom, and the thing for sale stood 55px
+// above the counter on an upright iPad while Chromium showed it standing on it; the line is worked
+// out without those units now, and this is where WebKit says so.
 for (const [shape, size] of [
   ["wider than the painting", { width: 1280, height: 720 }],
   ["narrower than the painting, a phone", { width: 390, height: 844 }],
+  ["narrower than the painting, an iPad upright", { width: 810, height: 1080 }],
 ] as const) {
   test(`a game's scene is its painting, held where the game looks, with its things on the painting's own line (a scene ${shape})`, async ({ page }) => {
     await page.setViewportSize(size);
