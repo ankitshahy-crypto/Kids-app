@@ -54,7 +54,7 @@ function reasons(entry) {
 function fix(entry) {
   const available = entry.fixAvailable;
   if (available === true) return "An update within the allowed versions fixes it (npm audit fix)";
-  if (available && typeof available === "object") return `Fixed by ${available.name}@${available.version}${available.isSemVerMajor ? ", a major version up" : ""}`;
+  if (available && typeof available === "object") return `Fixed by ${available.name}@${available.version}${available.isSemVerMajor ? ", which is outside the versions package.json allows" : ""}`;
   return "No fixed version yet";
 }
 
