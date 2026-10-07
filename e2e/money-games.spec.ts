@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { answerGate, openClassPlace } from "./gate";
-import { expectStar, expectWiggle, onRound, openGame, openTimeMoney } from "./kit";
+import { expectStar, expectWiggle, noting, onRound, openGame, openTimeMoney } from "./kit";
 
 async function passGate(page: Page) {
   await answerGate(page, true);
@@ -23,11 +23,13 @@ test("three jars: jobs as pictures earn coins, and two in the save jar reach the
   await jars.locator("[data-jar=save]").click();
   await jars.locator("[data-jar=save]").click();
   await expect(jars.locator(".jars-goal .price-slot[data-filled=true]")).toHaveCount(2);
+  // The last coin ends the game, and a moment later the page is back on the section. What the jars
+  // held at the end is noted from inside the page as it happens: asked for afterwards, one question
+  // at a time, the third question once found the game already gone (a busy machine).
+  const held = await noting(jars, (frame) => ["data-save", "data-share", "data-goal"].map((name) => frame.getAttribute(name)).join(" "));
   await jars.locator("[data-jar=share]").click();
-  await expect(jars).toHaveAttribute("data-save", "2");
-  await expect(jars).toHaveAttribute("data-share", "1");
-  await expect(jars).toHaveAttribute("data-goal", "met");
   await expectStar(page);
+  expect(await held()).toContain("2 1 met");
   await expect.poll(async () => page.evaluate(() => localStorage.getItem("kids-app-profiles-v1") ?? "")).toContain("hat-crown");
   await page.locator("[data-section-back]").click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
@@ -37,9 +39,11 @@ test("three jars: spending it all still ends the game, and the crown waits", asy
   await openTimeMoney(page);
   const jars = await openGame(page, "jars");
   for (const chore of ["tidy", "feed", "help"]) await jars.locator(`[data-chore=${chore}]`).click();
+  // As above: the last coin ends the game, so how it ended is noted as it happens.
+  const goal = await noting(jars, (frame) => frame.getAttribute("data-goal"));
   for (const jar of ["spend", "spend", "share"]) await jars.locator(`[data-jar=${jar}]`).click();
-  await expect(jars).toHaveAttribute("data-goal", "later");
   await expectStar(page);
+  expect(await goal()).toContain("later");
   expect(await page.evaluate(() => localStorage.getItem("kids-app-profiles-v1") ?? "")).not.toContain("hat-crown");
 });
 

@@ -55,10 +55,15 @@ async function openGame(page: Page, id: string): Promise<Locator> {
 }
 
 async function openGames(page: Page) {
-  if ((await page.locator("[data-dock=games]").count()) === 0) {
-    await page.getByRole("button", { name: "Back", exact: true }).click();
-  }
-  await page.locator("[data-dock=games]").click();
+  const dock = page.locator("[data-dock=games]");
+  const back = page.getByRole("button", { name: "Back", exact: true });
+  // From Today the dock is there; from inside a game, Back leads to it. One of the two has to be on
+  // the page before choosing: a count taken the instant after the tap on the child once found no
+  // dock yet (a busy machine), and the test then waited its whole time for a Back button that
+  // Today does not have.
+  await expect(dock.or(back).first()).toBeVisible();
+  if (!(await dock.isVisible())) await back.click();
+  await dock.click();
   await expect(page.locator("[data-game=home]")).toBeVisible();
 }
 

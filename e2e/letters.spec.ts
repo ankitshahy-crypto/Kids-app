@@ -64,6 +64,9 @@ async function install(page: Page) {
     }
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
     localStorage.removeItem("kids-app-silent-hint-v1");
+    // The note about the silent switch has been read: on an iPhone it lies over the word arrows
+    // until OK is tapped, and these tests are about the letters, not the note.
+    localStorage.setItem("littlenest-silent-hint-v1", "1");
   }, profile);
 }
 
