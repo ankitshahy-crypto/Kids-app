@@ -127,3 +127,45 @@ describe("the pilot build flag", () => {
     expect(scheme).toMatch(/<ArchiveAction[\s\S]*buildConfiguration = "Pilot"/);
   });
 });
+
+/**
+ * App Store Connect refuses an upload whose app code touches a "required reason" API without a
+ * privacy manifest saying why (ITMS-91053), TestFlight included. The app's own Swift uses one:
+ * UserDefaults, for the pilot memo. The manifest has to be in the bundle, so it is checked here
+ * as a file in the target's Resources phase, not only on disk.
+ */
+describe("the privacy manifest", () => {
+  const manifest = readFileSync(new URL("../../ios/App/App/PrivacyInfo.xcprivacy", import.meta.url), "utf8");
+  const swift = ["AppDelegate", "SceneDelegate", "StorePlugin"].map((name) => readFileSync(new URL(`../../ios/App/App/${name}.swift`, import.meta.url), "utf8")).join("\n");
+  const resources = pbxproj.slice(pbxproj.indexOf("/* Resources */ = {"), pbxproj.indexOf("End PBXResourcesBuildPhase"));
+
+  it("is in the App target's bundle", () => {
+    expect(pbxproj).toMatch(/[0-9A-F]{24} \/\* PrivacyInfo\.xcprivacy \*\/ = \{isa = PBXFileReference;/);
+    expect(resources).toMatch(/[0-9A-F]{24} \/\* PrivacyInfo\.xcprivacy in Resources \*\/,/);
+  });
+
+  it("tracks nothing and collects nothing", () => {
+    expect(manifest).toMatch(/<key>NSPrivacyTracking<\/key>\s*<false\/>/);
+    expect(manifest).toMatch(/<key>NSPrivacyTrackingDomains<\/key>\s*<array\/>/);
+    expect(manifest).toMatch(/<key>NSPrivacyCollectedDataTypes<\/key>\s*<array\/>/);
+  });
+
+  it("declares every required-reason API the app's own code uses, with Apple's category names", () => {
+    // The five categories and what in Swift would reach them.
+    const categories: [string, RegExp][] = [
+      ["NSPrivacyAccessedAPICategoryUserDefaults", /UserDefaults/],
+      ["NSPrivacyAccessedAPICategoryFileTimestamp", /creationDate|modificationDate|contentModificationDateKey|attributesOfItem|\bstat\(|fstat\(|getattrlist/],
+      ["NSPrivacyAccessedAPICategorySystemBootTime", /systemUptime|mach_absolute_time/],
+      ["NSPrivacyAccessedAPICategoryDiskSpace", /volumeAvailableCapacity|statfs|volumeTotalCapacity/],
+      ["NSPrivacyAccessedAPICategoryActiveKeyboards", /activeInputModes/],
+    ];
+    for (const [category, use] of categories) {
+      const used = use.test(swift);
+      expect(manifest.includes(`<string>${category}</string>`), `${category} is ${used ? "used, so must be" : "unused, so is not"} declared`).toBe(used);
+    }
+    // UserDefaults holds only what the app wrote itself: reason CA92.1.
+    expect(manifest).toMatch(/NSPrivacyAccessedAPICategoryUserDefaults<\/string>\s*<key>NSPrivacyAccessedAPITypeReasons<\/key>\s*<array>\s*<string>CA92\.1<\/string>\s*<\/array>/);
+    // The misspelling that looks right and is refused.
+    expect(manifest).not.toContain("NSPrivacyAccessedAPITypeUserDefaults");
+  });
+});
