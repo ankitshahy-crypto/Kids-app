@@ -198,7 +198,15 @@ button:focus-visible {
   position: relative;
   overflow: hidden;
   user-select: none;
+  /* A finger held on a picture or a link opens no sheet (Save Image, Share, a link's preview): on a
+     child's screen that sheet is a way out of the app. It is inherited, so one rule covers them all. */
+  -webkit-touch-callout: none;
   background: var(--cream);
+}
+
+/* A picture is never picked up and dragged off the page. */
+.app img {
+  -webkit-user-drag: none;
 }
 
 .app.mode-parent,
@@ -1463,6 +1471,12 @@ button:focus-visible {
   font-weight: 700;
 }
 
+/* The address to write to about privacy: in the page's own ink, not a browser's blue. */
+[data-privacy-contact] a {
+  color: var(--text-sage);
+  font-weight: 700;
+}
+
 /* A mail link styled as the other grown-up buttons. */
 .feedback-link {
   display: flex;
@@ -1710,6 +1724,10 @@ button:focus-visible {
 .mode-art .nest-logo {
   width: 100%;
   height: auto;
+  /* The logo's square is kept for it before its picture arrives. It had no height until then, and
+     on arriving pushed the children's faces down the screen (75px on a phone, 137px on an iPad),
+     out from under a finger already on its way. */
+  aspect-ratio: 1;
   display: block;
   border-radius: 22%;
 }
@@ -1767,15 +1785,26 @@ button:focus-visible {
   color: var(--text-muted);
 }
 
+/*
+ * The grown-up check and the PIN sheets open with the number pad up, which covers the lower part
+ * of the screen. The card sits toward the top, so its buttons (Check, Save, Cancel) stay above the
+ * pad on a short phone, where a card in the middle had them under it; and the backdrop scrolls, so
+ * nothing is ever out of reach. The space above the card grows with the screen (9vh), so on an
+ * iPad it sits in the upper part rather than against the very top.
+ */
 .gate-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  /* Above every other sheet: the check can be asked from any of them (the end-of-lesson sheet, at
+     40, asks it on a shared class iPad, and under that sheet it could not be answered). */
+  z-index: 50;
   background: rgba(70, 58, 48, 0.28);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 24px;
+  padding: max(24px, 9vh) 24px 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .gate-card {
@@ -1820,6 +1849,12 @@ button:focus-visible {
   text-align: center;
   font-size: 28px;
   letter-spacing: 0.2em;
+}
+
+/* The PIN typed at the grown-up check: dots, with the number pad kept (a password field would
+   bring the passwords bar with it). */
+.pin-form .name-input[data-pin="entry"] {
+  -webkit-text-security: disc;
 }
 
 .pin-form button:disabled,
@@ -2567,8 +2602,14 @@ button:focus-visible {
   display: block;
   margin-top: 4px;
   color: var(--text-muted);
-  font-size: 14px;
   font-weight: 400;
+}
+
+/* The note under a teacher card's link is small. A grown-up's reading copy keeps its 16px (set
+   above): this rule used to take both down to 14px, so every Settings, Help and Privacy
+   paragraph was under the size for body text. */
+.teacher-card-link small {
+  font-size: 14px;
 }
 
 .parent-rows {
@@ -3039,7 +3080,32 @@ button:focus-visible {
   color: var(--text-sage);
 }
 
+/*
+ * A third of an iPad's screen (Slide Over, a narrow Split View) is 320 points wide, as is the
+ * smallest iPhone. With its word, the Grown-ups pill took 136 of them from the top row, and the
+ * Break button ended up under it: a tap on Break opened the grown-up check. Here the pill is its
+ * icon alone (the word is still its name, for a screen reader), and the row has its width back.
+ */
 @media (max-width: 360px) {
+  .grownups-launch {
+    gap: 0;
+    padding: 6px 11px;
+  }
+
+  .grownups-launch > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .top-bar,
+  .today-top {
+    padding-right: 64px;
+  }
+
   .roster-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

@@ -136,6 +136,12 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
 
   await page.getByRole("button", { name: /Privacy/ }).click();
   await expect(page.getByRole("heading", { name: "Privacy", exact: true })).toBeVisible();
+  // The full policy is one tap away (in the browser, not over the app), with an address to write to.
+  const policy = page.locator("[data-section='privacy'] [data-action=privacy-policy]");
+  await expect(policy).toHaveAttribute("href", "https://littlenestlearning.app/privacy.html");
+  await expect(policy).toHaveAttribute("target", "_blank");
+  await expect(policy).toHaveAttribute("rel", /noopener/);
+  await expect(page.locator("[data-section='privacy'] [data-privacy-contact] a")).toHaveAttribute("href", "mailto:hello@littlenestlearning.app");
   await expect(page.getByText("on this device")).toBeVisible();
   await expect(page.getByText("first name or one initial")).toBeVisible();
   await expect(page.getByText("Photos are not uploaded")).toBeVisible();

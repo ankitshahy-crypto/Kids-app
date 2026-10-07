@@ -1,3 +1,4 @@
+import { deviceStorage } from "../deviceStorage";
 import { PROFILES_KEY, corruptKey, readStored, stashCorrupt, writeStored, type KeyValueStore } from "../storage";
 import { animalById, isAnimalId, type AnimalId } from "./animals";
 import { normalizeThemes, type ThemeId } from "./themes";
@@ -501,7 +502,7 @@ export function storeSnapshot(store: ProfileStore): string {
  * and the original key is left as it was. This function never writes an empty
  * store over that key.
  */
-export function loadStore(storage: KeyValueStore = localStorage): ProfileStore {
+export function loadStore(storage: KeyValueStore = deviceStorage()): ProfileStore {
   let raw: string | null;
   try {
     raw = readStored(storage, STORAGE_KEY);
@@ -584,7 +585,7 @@ function adoptCorruptStash(storage: KeyValueStore, loaded: ProfileStore): Profil
 }
 
 /** One line for Grown-ups when the corrupt copy still cannot be read. */
-export function corruptProfileNotice(storage: KeyValueStore = localStorage): string | null {
+export function corruptProfileNotice(storage: KeyValueStore = deviceStorage()): string | null {
   try {
     const raw = storage.getItem(corruptKey(STORAGE_KEY));
     if (!raw || parseCurrentStore(raw)) return null;
@@ -594,6 +595,6 @@ export function corruptProfileNotice(storage: KeyValueStore = localStorage): str
   }
 }
 
-export function saveStore(store: ProfileStore, storage: KeyValueStore = localStorage): void {
+export function saveStore(store: ProfileStore, storage: KeyValueStore = deviceStorage()): void {
   writeStored(storage, STORAGE_KEY, storeSnapshot(store));
 }
