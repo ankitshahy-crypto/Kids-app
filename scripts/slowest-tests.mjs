@@ -13,9 +13,20 @@
  * passed with less than a third of its time to spare. It never fails the
  * build: with no report, or one it cannot read, it says so and stops.
  *
+ * It also says which tests passed only on a second try. On CI a failed test
+ * is tried once more, so that one slow moment on a shared runner does not
+ * turn a good commit red; but a test that needs its second try is hiding a
+ * race, in the test or in the app, and a retry that nobody hears about
+ * would hide it for good. So each one is named in a warning.
+ *
+ * And it writes the run's outcome to the job's summary page: how many
+ * passed, and the name of each test that failed or needed a second try. For
+ * a job that is allowed to fail (the WebKit run), that page is where its
+ * result is read, since the job itself shows green.
+ *
  *   node scripts/slowest-tests.mjs [path/to/e2e-results.json]
  */
-import { existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync } from "node:fs";
 
 const REPORT = process.argv[2] ?? "test-results/e2e-results.json";
 
@@ -39,6 +50,9 @@ function testsIn(suite, found = []) {
         ms: slowest.duration,
         limit: test.timeout,
         status: slowest.status,
+        // The test as a whole: "expected" (passed), "unexpected" (failed), or "flaky" (passed on a later try).
+        outcome: test.status,
+        project: test.projectName ?? "",
       });
     }
   }
@@ -69,16 +83,48 @@ function say(level, title, text) {
   else console.log(`${title}\n${text}\n`);
 }
 
+/** How many names one list on the summary page holds. A run with more than this failing is broken as a whole. */
+const LISTED = 80;
+
+/** A list for the summary page: one line a test, in file order. `timedOut` is what to say of a try that ran out of time. */
+function listed(tests, timedOut) {
+  const lines = [...tests]
+    .sort((a, b) => a.where.localeCompare(b.where, "en", { numeric: true }))
+    .slice(0, LISTED)
+    .map((test) => `- \`${test.where}\` ${test.title}${test.status === "timedOut" ? ` (${timedOut})` : ""}`);
+  if (tests.length > LISTED) lines.push(`- and ${tests.length - LISTED} more`);
+  return lines.join("\n");
+}
+
+/** The run's outcome, for the job's summary page. Outside GitHub Actions there is no such page. */
+function summary(tests, skipped) {
+  const page = process.env.GITHUB_STEP_SUMMARY;
+  if (!page) return;
+  const failed = tests.filter((test) => test.outcome === "unexpected");
+  const flaky = tests.filter((test) => test.outcome === "flaky");
+  const passed = tests.length - failed.length - flaky.length;
+  const projects = [...new Set(tests.map((test) => test.project).filter(Boolean))].join(", ");
+  const counts = [`${passed} passed`, `${failed.length} failed`];
+  if (flaky.length > 0) counts.push(`${flaky.length} passed only on a second try`);
+  if (skipped > 0) counts.push(`${skipped} skipped`);
+  const parts = [`### Browser tests${projects ? ` (${projects})` : ""}`, counts.join(" · ")];
+  if (failed.length > 0) parts.push(`**Failed**\n\n${listed(failed, "timed out")}`);
+  if (flaky.length > 0) parts.push(`**Passed only on a second try**\n\n${listed(flaky, "the first try timed out")}`);
+  appendFileSync(page, `${parts.join("\n\n")}\n\n`);
+}
+
 function report() {
   if (!existsSync(REPORT)) {
     console.log(`No browser test report at ${REPORT}; nothing to time.`);
     return;
   }
-  const tests = JSON.parse(readFileSync(REPORT, "utf8")).suites.flatMap((suite) => testsIn(suite));
+  const read = JSON.parse(readFileSync(REPORT, "utf8"));
+  const tests = read.suites.flatMap((suite) => testsIn(suite));
   if (tests.length === 0) {
     console.log("The browser test report holds no tests that ran.");
     return;
   }
+  summary(tests, read.stats?.skipped ?? 0);
   tests.sort((a, b) => b.ms - a.ms);
 
   const lines = tests.slice(0, SHOWN).map((test) => {
@@ -95,6 +141,16 @@ function report() {
       "Browser tests close to their time limit",
       `${close.length === 1 ? "This test passed" : "These tests passed"} with less than a third of the time to spare, so a slower runner can fail ${close.length === 1 ? "it" : "them"}. Make ${close.length === 1 ? "it" : "them"} quicker before that happens.\n` +
         close.map((test) => `${spent(test)}  ${test.where}  ${test.title}`).join("\n"),
+    );
+  }
+
+  const flaky = tests.filter((test) => test.outcome === "flaky");
+  if (flaky.length > 0) {
+    say(
+      "warning",
+      "Browser tests that passed only on a second try",
+      `${flaky.length === 1 ? "This test failed and then passed" : "These tests failed and then passed"} when tried again. That is a race, in the test or in the app: find it before it is a child's screen that loses.\n` +
+        flaky.map((test) => `${test.where}  ${test.title}`).join("\n"),
     );
   }
 }

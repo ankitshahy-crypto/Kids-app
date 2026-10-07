@@ -254,7 +254,8 @@ for (const id of ["life", "homes", "body", "weather", "senses", "float"]) {
 }
 
 test("the home dock stays on screen, and each section's page shows all of its activities", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "iphone" && testInfo.project.name !== "pixel", "phone layout");
+  // A phone's screen. (Until CI ran at a phone's size this test ran nowhere but at a desk.)
+  test.skip(!["iphone", "pixel", "phone-size"].includes(testInfo.project.name), "phone layout");
   await install(page);
   const height = page.viewportSize()?.height ?? 0;
   const dockBottom = () => page.locator("[data-dock=nest]").evaluate((el) => el.getBoundingClientRect().bottom);
