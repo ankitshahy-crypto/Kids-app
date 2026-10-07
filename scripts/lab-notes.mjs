@@ -31,7 +31,7 @@ if (existsSync(REPORT)) {
         if (test.status !== "unexpected" && test.status !== "flaky") continue;
         const last = (test.results ?? []).at(-1);
         const why = (last?.error?.message ?? last?.errors?.[0]?.message ?? "").replace(/\u001b\[[0-9;]*m/g, "").split("\n").map((line) => line.trim()).filter(Boolean).slice(0, 6).join(" | ").slice(0, 420);
-        lines.push(`[${test.projectName}] ${spec.file}:${spec.line} ${spec.title} :: ${last?.status} :: ${why}`);
+        lines.push(`${spec.file}:${spec.line} ${spec.title.slice(0, 70)} :: ${last?.status} ${Math.round((last?.duration ?? 0) / 1000)}s :: ${why.slice(0, 260)}`);
       }
     }
     for (const inner of suite.suites ?? []) walk(inner);
@@ -39,6 +39,12 @@ if (existsSync(REPORT)) {
   const report = JSON.parse(readFileSync(REPORT, "utf8"));
   for (const suite of report.suites ?? []) walk(suite);
   const stats = report.stats ?? {};
+  // How long the passing tests took: the slowest few, and the middle one.
+  const times = [];
+  const timeWalk = (suite) => { for (const spec of suite.specs ?? []) for (const test of spec.tests ?? []) { const last = (test.results ?? []).at(-1); if (test.status === "expected" && last) times.push([Math.round(last.duration / 100) / 10, `${spec.file}:${spec.line}`]); } for (const inner of suite.suites ?? []) timeWalk(inner); };
+  for (const suite of report.suites ?? []) timeWalk(suite);
+  times.sort((a, b) => b[0] - a[0]);
+  lines.unshift(`passing tests: ${times.length}, median ${times[Math.floor(times.length / 2)]?.[0]}s, slowest ${times.slice(0, 6).map((t) => `${t[0]}s ${t[1]}`).join("; ")}`);
   const text = `passed ${stats.expected} failed ${stats.unexpected} flaky ${stats.flaky} skipped ${stats.skipped}\n${lines.join("\n")}`;
   for (let at = 0, part = 1; at < text.length; at += LIMIT, part += 1) say(`WHY ${part}`, text.slice(at, at + LIMIT));
 }

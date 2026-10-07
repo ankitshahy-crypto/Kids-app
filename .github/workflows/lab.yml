@@ -15,9 +15,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  measure:
+  # The whole suite in WebKit on an upright iPad, in four parts, each with a limit of its own: the
+  # first try ran for a hundred minutes as one job and was stopped with nothing to show.
+  suite:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -25,16 +31,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps webkit chromium
-      - name: Measure
+      - run: npx playwright install --with-deps webkit
+      - name: The suite in WebKit, upright iPad, part ${{ matrix.shard }} of 4
         continue-on-error: true
-        run: npx playwright test -c playwright.lab.config.ts e2e/zz-lab.spec.ts e2e/backdrops.spec.ts
-      - name: What was measured (1)
+        run: npx playwright test -c playwright.lab.config.ts --project=wk-ipad --shard=${{ matrix.shard }}/4 --timeout=30000 --global-timeout=1500000 --max-failures=60 --grep-invert "units inside a game|how each game sits|the coding board and its tiles|the start screen and Today"
+      - name: Why each failed (1)
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=0
-      - name: What was measured (2)
+      - name: Why each failed (2)
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=1
-      - name: What was measured (3)
+      - name: Why each failed (3)
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=2
