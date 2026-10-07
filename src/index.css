@@ -7432,7 +7432,11 @@ input.is-pressed,
   max-height: none; /* the wide screen's cap on a picture card's art is not for a thing in its box */
   object-fit: contain;
   object-position: 50% 100%;
+  pointer-events: none; /* a thing on the stage is not in a button, and a finger held on it opens no sheet */
   -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .pick .good-art {
@@ -7721,6 +7725,11 @@ input.is-pressed,
 
 .need-item .good-art {
   width: 150px;
+}
+
+/* In the room there is no counter to stand on: the thing is in the middle of its box, whatever its shape. */
+.need-item .good-art > img.good-painted {
+  object-position: 50% 50%;
 }
 
 .day-scene .art {

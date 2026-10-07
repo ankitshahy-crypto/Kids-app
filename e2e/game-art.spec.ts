@@ -299,7 +299,7 @@ test("the thing for sale is its painting, on the shop's counter and on the two t
   expect(missing).toEqual([]);
 });
 
-test("the things to choose from, and the two to compare, are their paintings, each on a card with its price", async ({ page }) => {
+test("the things to choose from are their paintings, each on a card with its price, the cards one size", async ({ page }) => {
   const missing = watchArt(page);
   await openTimeMoney(page);
   const choose = await openGame(page, "choose");

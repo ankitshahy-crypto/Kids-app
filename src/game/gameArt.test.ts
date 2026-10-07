@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { THINGS } from "../data/timeGames";
 
 const file = (name: string) => new URL(`../../public/games/${name}`, import.meta.url);
 const source = (name: string) => readFileSync(new URL(name, import.meta.url), "utf8");
@@ -9,8 +10,6 @@ const source = (name: string) => readFileSync(new URL(name, import.meta.url), "u
 const names = (helper: string) => [...(source("../components/ScienceGames.tsx").match(new RegExp(`${helper} = \\(name: ([^)]+)\\)`))?.[1] ?? "").matchAll(/"([a-z]+)"/g)].map((match) => match[1]);
 const gardenNames = () => names("gardenArt");
 const lifeNames = () => names("lifeArt");
-/** The things of the money games, read from `THINGS` in money.tsx (a component file: read, not imported). */
-const THINGS = [...(source("./money.tsx").match(/THINGS: ThingId\[\] = \[([^\]]+)\]/)?.[1] ?? "").matchAll(/"([a-z]+)"/g)].map((match) => match[1]);
 
 describe("the games' painted props", () => {
   it("every coin face the money games name is there", () => {

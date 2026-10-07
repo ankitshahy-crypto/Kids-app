@@ -128,8 +128,9 @@ def prop(path, name, size, lo=9.0, hi=26.0, solid=False, holes=0.0):
         if holes:
             paper = ((cv2.GaussianBlur(d, (0, 0), 2) < 3.0) & shape.astype(bool)).astype(np.uint8)
             count, labels, stats, _ = cv2.connectedComponentsWithStats(paper)
+            least = holes * shape.sum()
             for label in range(1, count):
-                if stats[label, cv2.CC_STAT_AREA] >= holes * shape.sum():
+                if stats[label, cv2.CC_STAT_AREA] >= least:
                     shape[labels == label] = 0
         out = feather(cv2.erode(shape, np.ones((3, 3), np.uint8)))
     else:

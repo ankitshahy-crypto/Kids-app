@@ -68,8 +68,6 @@ export function Coin({ id }: { id: MoneyId }) {
   );
 }
 
-/** Every thing of the money games, so the folder of paintings can be checked against it. */
-export const THINGS: ThingId[] = ["apple", "bun", "milk", "cake", "plum", "corn", "grape", "kite", "drum", "boat", "car", "hat", "bed", "sock"];
 /** A thing's painting (public/games/goods, made by scripts/game-art.py from the owner's renders). */
 const thingArt = (id: ThingId) => `${import.meta.env.BASE_URL}games/goods/${id}.webp`;
 

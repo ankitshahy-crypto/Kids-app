@@ -18,6 +18,8 @@ import type { CoinTask, DayPartId, MoneyId, RoutineId, ShopTask, TimeLesson } fr
 export type GoodId = "apple" | "bun" | "milk" | "cake" | "plum" | "corn" | "grape" | "kite" | "drum" | "boat" | "car" | "hat";
 /** The things of the money games: the goods, and the two of Need or want that are not for sale. Each is painted (public/games/goods). */
 export type ThingId = GoodId | "bed" | "sock";
+/** Every thing, so the folder of paintings can be checked against the list (and scripts/game-art.py makes the same fourteen). */
+export const THINGS: ThingId[] = ["apple", "bun", "milk", "cake", "plum", "corn", "grape", "kite", "drum", "boat", "car", "hat", "bed", "sock"];
 
 const FOODS: GoodId[] = ["apple", "bun", "milk", "cake", "plum", "corn", "grape"];
 const TOYS: GoodId[] = ["kite", "drum", "boat", "car", "hat"];
