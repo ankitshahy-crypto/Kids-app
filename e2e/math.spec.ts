@@ -1,4 +1,4 @@
-import { installAudioSpy, spokenLines } from "./audioSpy";
+import { askedLines, installAudioSpy, spokenLines } from "./audioSpy";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { answerGate, openClassPlace } from "./gate";
 import { createdThisWeek } from "./clock";
@@ -86,6 +86,7 @@ test("counting: each thing says its number when tapped, and then the number is t
   await onRound(play, 0);
   await expect(play).toHaveAttribute("data-target", "3");
   const before = (await spoken(page)).length;
+  const asked = (await askedLines(page)).length;
   for (let index = 0; index < 3; index += 1) {
     const thing = play.locator(`[data-object='${index}']`);
     await thing.click();
@@ -97,7 +98,11 @@ test("counting: each thing says its number when tapped, and then the number is t
   // A thing counted once is not counted again.
   await play.locator("[data-object='0']").click();
   await expect(play).toHaveAttribute("data-counted", "3");
-  await expect.poll(async () => (await spoken(page)).slice(before)).toEqual(expect.arrayContaining(["one", "two", "three", "now tap the number."]));
+  // The counts are checked as asked for, the instruction as heard. A tap made over the last count's
+  // word stops it for the next one (the newer word takes over), so with taps as quick as a test's,
+  // on a busy machine, "one" never starts to play: it failed that way once.
+  await expect.poll(async () => (await askedLines(page)).slice(asked)).toEqual(expect.arrayContaining(["one", "two", "three"]));
+  await expect.poll(async () => (await spoken(page)).slice(before)).toContain("now tap the number.");
   if (testInfo.project.name === "chromium") await play.screenshot({ path: "test-results/screenshots/numbers_count.png" });
   // A wrong number wiggles and ends nothing.
   const wrong = play.locator(".pick:not([data-number='3'])").first();
@@ -318,12 +323,13 @@ test("adding: the things count aloud across both groups, and the sum brings them
     await play.screenshot({ path: "test-results/screenshots/number-add-iphone.png" });
   }
   // The second group goes on counting from the first.
-  const before = (await spoken(page)).length;
+  const asked = (await askedLines(page)).length;
   await play.locator("[data-object='2']").click();
   await play.locator("[data-object='0']").click();
   await expect(play.locator("[data-object='2'] .count-badge")).toHaveText("1");
   await expect(play.locator("[data-object='0'] .count-badge")).toHaveText("2");
-  await expect.poll(async () => (await spoken(page)).slice(before), { timeout: 10000 }).toEqual(expect.arrayContaining(["one", "two"]));
+  // As asked for, not as heard: the second tap can stop the first one's word (see the counting test).
+  await expect.poll(async () => (await askedLines(page)).slice(asked)).toEqual(expect.arrayContaining(["one", "two"]));
   const said = (await spoken(page)).length;
   await play.locator(".pick[data-sum='3']").click();
   await expect(play.locator(".add-row")).toHaveAttribute("data-joined", "true");

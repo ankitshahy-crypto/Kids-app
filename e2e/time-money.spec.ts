@@ -328,7 +328,7 @@ test("the dots between the numbers are minutes: five steps take the long hand to
   // not as heard: a tap made over the last count's word stops it for the next (the newer word takes
   // over), so on a busy machine, with taps as quick as these, "one" and "two" never start to play.
   await expect.poll(async () => (await spokenLines(page)).slice(heard).join(" | "), { timeout: 8_000 }).toContain("five dots. that is five minutes.");
-  expect((await askedLines(page)).slice(asked)).toEqual(expect.arrayContaining(["one", "two", "three", "four", "five"]));
+  await expect.poll(async () => (await askedLines(page)).slice(asked)).toEqual(expect.arrayContaining(["one", "two", "three", "four", "five"]));
   await expect(clock).toHaveAttribute("data-round", "3", { timeout: 8_000 });
   await expect(clock).toHaveAttribute("data-task", "set");
 });
