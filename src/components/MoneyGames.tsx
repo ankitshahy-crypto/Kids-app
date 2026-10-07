@@ -696,7 +696,7 @@ export function NeedsActivity({ animal, outfit, settingsRef, onDone }: Omit<Game
       attrs={{ "data-item": item.id, "data-answer": item.kind, "data-solved": solved ? "true" : "false" }}
       stage={
         <span className="need-item" data-kind={item.kind}>
-          <Illustration name={item.art} />
+          <Good id={item.id} />
         </span>
       }
     >

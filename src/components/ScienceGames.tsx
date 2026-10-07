@@ -54,27 +54,39 @@ const word = (name: string): Cue => wordCue(wordId(name), name);
 const title = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
- * A science picture: one of the app's drawings, or, for the three of the plant's life (seed,
- * sprout, flower), the painted one, where the game asks for it (`painted`). The other lives put
- * in order (the hen's, the butterfly's) have no painted pictures yet.
- */
-function Picture({ picture, painted = false }: { picture: SciencePicture; painted?: boolean }) {
-  const bloom = PAINTED_LIFE[picture.art];
-  if (painted && bloom) return <img className="art prop-art" data-prop={picture.art} src={gardenArt(bloom)} alt="" draggable={false} decoding="async" />;
-  return <Illustration name={picture.art} />;
-}
-
-/** The plant's life, painted: its seed and sprout are the garden's, its flower a painting of its own. */
-const PAINTED_LIFE: Partial<Record<string, "seed" | "sprout" | "bloom">> = { seed: "seed", sprout: "sprout", flower: "bloom" };
-
-// ------------------------------------------------------------------ grow
-
-/**
  * The garden's painted props (public/games/garden, made by scripts/game-art.py from the owner's
  * renders): the bed and the dug ground it stands on, the three things to give, the plant at each
  * size, and a flower on its own (the last picture of the plant's life).
  */
 const gardenArt = (name: "bed" | "ground" | "seed" | "sun" | "can" | "sprout" | "plant" | "flower" | "bloom") => `${import.meta.env.BASE_URL}games/garden/${name}.webp`;
+
+/**
+ * A science picture: one of the app's drawings, or, for a stage of a life put in order, the
+ * painted one, where the game asks for it (`painted`).
+ */
+function Picture({ picture, painted = false }: { picture: SciencePicture; painted?: boolean }) {
+  const painting = PAINTED_LIFE[picture.art];
+  if (painted && painting) return <img className="art prop-art" data-prop={picture.art} src={painting} alt="" draggable={false} decoding="async" />;
+  return <Illustration name={picture.art} />;
+}
+
+/** The hen's and the butterfly's lives, painted (public/games/life, made by scripts/game-art.py from the owner's renders). */
+const lifeArt = (name: "egg" | "chick" | "hen" | "caterpillar" | "chrysalis" | "butterfly") => `${import.meta.env.BASE_URL}games/life/${name}.webp`;
+
+/** The three lives, painted: the plant's seed and sprout are the garden's, its flower a painting of its own. */
+const PAINTED_LIFE: Partial<Record<string, string>> = {
+  seed: gardenArt("seed"),
+  sprout: gardenArt("sprout"),
+  flower: gardenArt("bloom"),
+  egg: lifeArt("egg"),
+  chick: lifeArt("chick"),
+  hen: lifeArt("hen"),
+  caterpillar: lifeArt("caterpillar"),
+  chrysalis: lifeArt("chrysalis"),
+  butterfly: lifeArt("butterfly"),
+};
+
+// ------------------------------------------------------------------ grow
 
 /** A thing to give the plant: the same picture on the choice and in the bubble that asks for it. */
 function NeedArt({ need }: { need: GrowNeed }) {

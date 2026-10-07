@@ -16,21 +16,10 @@ import type { CoinTask, DayPartId, MoneyId, RoutineId, ShopTask, TimeLesson } fr
 
 /** Things for sale. Each is one of the app's drawings and has a recorded word. */
 export type GoodId = "apple" | "bun" | "milk" | "cake" | "plum" | "corn" | "grape" | "kite" | "drum" | "boat" | "car" | "hat";
-
-export const GOOD_ART: Record<GoodId, IllustrationName> = {
-  apple: "apple",
-  bun: "bun",
-  milk: "milk",
-  cake: "cake",
-  plum: "plum",
-  corn: "corn",
-  grape: "grape",
-  kite: "kite",
-  drum: "drum",
-  boat: "boat",
-  car: "car",
-  hat: "hat",
-};
+/** The things of the money games: the goods, and the two of Need or want that are not for sale. Each is painted (public/games/goods). */
+export type ThingId = GoodId | "bed" | "sock";
+/** Every thing, so the folder of paintings can be checked against the list (and scripts/game-art.py makes the same fourteen). */
+export const THINGS: ThingId[] = ["apple", "bun", "milk", "cake", "plum", "corn", "grape", "kite", "drum", "boat", "car", "hat", "bed", "sock"];
 
 const FOODS: GoodId[] = ["apple", "bun", "milk", "cake", "plum", "corn", "grape"];
 const TOYS: GoodId[] = ["kite", "drum", "boat", "car", "hat"];
@@ -354,17 +343,17 @@ export function affordable(wallet: MoneyId, price: number): boolean {
 
 // ---------------------------------------------------------------- needs and wants
 
-export type NeedItem = { id: string; art: IllustrationName; kind: "need" | "want" };
+export type NeedItem = { id: ThingId; kind: "need" | "want" };
 
 export const NEED_ITEMS: NeedItem[] = [
-  { id: "apple", art: "apple", kind: "need" },
-  { id: "milk", art: "milk", kind: "need" },
-  { id: "bed", art: "bed", kind: "need" },
-  { id: "sock", art: "sock", kind: "need" },
-  { id: "kite", art: "kite", kind: "want" },
-  { id: "cake", art: "cake", kind: "want" },
-  { id: "drum", art: "drum", kind: "want" },
-  { id: "car", art: "car", kind: "want" },
+  { id: "apple", kind: "need" },
+  { id: "milk", kind: "need" },
+  { id: "bed", kind: "need" },
+  { id: "sock", kind: "need" },
+  { id: "kite", kind: "want" },
+  { id: "cake", kind: "want" },
+  { id: "drum", kind: "want" },
+  { id: "car", kind: "want" },
 ];
 
 /** Six things to sort, one at a time: three needs and three wants, mixed. */

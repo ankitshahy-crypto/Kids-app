@@ -564,7 +564,7 @@ function TileArt({ id, lesson }: { id: string; lesson: TimeLesson }) {
   if (id === "jars") return <Jar label={<Coin id="penny" />} />;
   if (id === "lemonade") return <Illustration name="lemonade" />;
   if (id === "choose") return <Coin id="dime" />;
-  if (id === "needs") return <Illustration name="bed" />;
+  if (id === "needs") return <Good id="bed" />;
   return <Coin id="one" />;
 }
 
