@@ -1,0 +1,94 @@
+name: Lab, all five together
+
+# Never merged. Main with the five open pull requests merged into it (#187, #188, #189, #190,
+# #191), put through every job the CI of #189 has, so what they do together is known before any
+# of them is merged.
+on:
+  push:
+    branches:
+      - "lab/**"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Explore import guard
+        run: node --experimental-strip-types scripts/check-explore-imports.mjs
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          VITE_BASE: /Kids-app/
+      - run: npx playwright install --with-deps chromium
+      - name: Playwright Chromium
+        run: npx playwright test --project=chromium
+        env:
+          CI: "true"
+      - name: Browser test report
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: node scripts/slowest-tests.mjs
+      - name: Build the locked web demo
+        if: ${{ !cancelled() }}
+        run: npm run build
+        env:
+          VITE_BASE: /Kids-app/
+          VITE_WEB_LOCK: "1"
+      - name: Playwright, locked web demo
+        if: ${{ !cancelled() }}
+        run: npx playwright test -c playwright.locked.config.ts
+        env:
+          EXPECT_WEB_LOCK: "1"
+
+  sizes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [phone-size, ipad-size]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Playwright Chromium, ${{ matrix.project }}
+        run: npx playwright test --project=${{ matrix.project }}
+      - name: Browser test report
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: node scripts/slowest-tests.mjs
+
+  webkit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - name: Playwright WebKit, iPhone
+        run: npx playwright test --project=iphone --retries=0
+      - name: Browser test report
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: node scripts/slowest-tests.mjs
