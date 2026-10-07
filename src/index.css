@@ -6316,8 +6316,10 @@ input.is-pressed,
   height: clamp(210px, 33svh, 300px);
   border-radius: 28px;
   overflow: hidden;
-  /* Its painting's size is worked out from its own (see --scene-floor below), and its rounded
-     corners clip the drifting painting (WebKit lets a moving picture out of them otherwise). */
+  /* A size container from when the floor line was worked out in container units (see --art-h for
+     why it no longer is). Kept: it also makes the scene's layout its own, and nothing here was
+     drawn without it. Its rounded corners clip the drifting painting (WebKit lets a moving picture
+     out of them otherwise). */
   container-type: size;
   isolation: isolate;
 }
@@ -6369,14 +6371,23 @@ input.is-pressed,
    scene that has one). The painting is three by two and covers the scene: as tall as the scene
    when the scene is narrower than that, and otherwise as tall as two thirds of the scene's width,
    with its top cut off (it is held by its bottom). So the line's height above the scene's bottom
-   is its share of the larger of the two. (Written twice: a browser without container units keeps
-   the first line, the scene's own height, and drops the second.) The shop's thing for sale stands
-   on the counter, and the big animal to paint sits where the wall meets the floor. */
+   is its share of the larger of the two, --art-h.
+
+   --art-h is worked out from the scene's own height and width as lengths (--scene-h, and the
+   screen's width less the page's 16px each side, up to the scene's 460px), not in container units
+   (100cqh, 200cqw / 3), which is how it was first written: WebKit makes a container unit larger
+   by the zoom of the frame it is in, so on an iPad, where a game is drawn at 1.45 or 1.2, the
+   thing for sale stood 55px above the shop's counter, and Chromium, which every screenshot came
+   from, showed it standing on it. The shop's thing for sale stands on the counter, and the big
+   animal to paint sits where the wall meets the floor. */
+.game-frame {
+  --art-h: max(var(--scene-h), min(100vw - 32px, 460px) * 2 / 3);
+}
+
 .game-frame[data-screen="shop"] .game-scene[data-painted="true"] .game-stage,
 .game-frame[data-screen="cards"] .game-scene[data-painted="true"] .game-stage,
 .game-frame[data-screen="paint"] .game-scene[data-painted="true"] .game-stage {
-  bottom: calc(100% * (1 - var(--scene-floor, 0.75)));
-  bottom: calc(max(100cqh, 200cqw / 3) * (1 - var(--scene-floor, 0.75)));
+  bottom: calc(var(--art-h) * (1 - var(--scene-floor, 0.75)));
 }
 
 .game-scene[data-painted="true"] .shop-counter {
@@ -6390,8 +6401,7 @@ input.is-pressed,
 /* The coins earned lie on the stall's counter. (Their box is the stage, which is 8px inside the
    scene at the top and the bottom.) */
 .game-scene[data-painted="true"] .stand-stage .coin-row {
-  bottom: calc((100% + 16px) * (1 - var(--scene-floor, 0.75)) - 8px);
-  bottom: calc(max(100cqh, 200cqw / 3) * (1 - var(--scene-floor, 0.75)) - 8px);
+  bottom: calc(var(--art-h) * (1 - var(--scene-floor, 0.75)) - 8px);
 }
 
 /* The child's animal stands in the scene and reacts: a jump for a right answer, a tilt for a miss. */
@@ -6691,8 +6701,8 @@ input.is-pressed,
 
 /* The scene is shorter here than in the other games: under it come the plan and the arrows, and all
    three belong on one screen, so that a child can press Go and watch what it does. */
-.game-frame[data-screen="bird"] .game-scene {
-  height: clamp(190px, 100svh - 520px, 300px);
+.game-frame[data-screen="bird"] {
+  --scene-h: clamp(190px, 100svh - 520px, 300px);
 }
 
 /* Square tiles, as many as the board has, as big as the stage allows, centered in it (the size is
@@ -7305,8 +7315,8 @@ input.is-pressed,
    and the plan give back height (they do not need to be 98px on an iPad) and the scene a little,
    and board, plan and Go stay on one screen with the tiles still the biggest thing. */
 @media (min-width: 768px) and (orientation: landscape) {
-  .game-frame[data-screen="bird"] .game-scene {
-    height: clamp(220px, calc((100svh - 470px) / 1.2), 300px);
+  .game-frame[data-screen="bird"] {
+    --scene-h: clamp(220px, calc((100svh - 470px) / 1.2), 300px);
   }
 
   .game-frame[data-screen="bird"] .code-chip,
@@ -7889,9 +7899,11 @@ input.is-pressed,
   animation-name: game-wiggle-b;
 }
 
-/* The clock needs room: its scene is taller, and the animal stands in the corner. */
-.game-frame[data-screen="clock"] .game-scene {
-  height: clamp(280px, 40svh, 340px);
+/* The clock needs room: its scene is taller, and the animal stands in the corner. (Its two hands
+   to tap are a little taller than a picture.) */
+.game-frame[data-screen="clock"] {
+  --tray-h: 127px;
+  --scene-h: clamp(268px, min(40svh, var(--scene-fit)), 340px);
 }
 
 .game-frame[data-screen="clock"] .game-host {
@@ -8079,8 +8091,8 @@ input.is-pressed,
 }
 
 /* The bird, with each part its own thing to tap. Its scene is taller, like the clock's. */
-.game-frame[data-screen="body"] .game-scene {
-  height: clamp(250px, 38svh, 330px);
+.game-frame[data-screen="body"] {
+  --scene-h: clamp(250px, 38svh, 330px);
 }
 
 .game-frame[data-screen="body"] .game-stage {
@@ -11765,26 +11777,132 @@ a.unlock-buy {
    (scene, animal, dots and pictures) is drawn larger as one piece with zoom, so every
    picture, tap area and gap keeps its proportions. Pointer maths in the games works
    from each element's box, which zoom scales the same way in WebKit and Blink.
+
+   And a scene never takes more than the page has left. The page is the screen less the
+   status bar and the home indicator: in the installed app the viewport runs under both
+   (100svh is the whole glass) and the app pads for them, so a height worked out from
+   100svh alone was taller than the room there was, by 81px on an iPhone 14 and 44px on
+   an iPad Air. With the grown-ups' tip on its line too (it is there unless turned off),
+   an iPad on its side lost the bottom of every row of choices, the price tags of What
+   can I buy?, and the whole second row of letters in Hatch the Egg.
+
+   --scene-fit is the room there is, in the frame's own px:
+     --page-h      the page (set on :root).
+     --page-rest   what is on the page outside the frame, in screen px: the padding above
+                   (8) and below (12), and the top bar.
+     --tip-room    the grown-ups' tip on its line above the game, at its tallest, with its
+                   gap; nothing when tips are turned off (then no tip comes before the game).
+                   The open tip and its chip are given the same room, so closing one to the
+                   other moves nothing in the game.
+     --frame-zoom  how much larger the frame is drawn: the same number as its zoom.
+     76px          inside the frame: its title and round dots (64), the gap under the
+                   scene (12).
+     --tray-h      the row of things to tap. A game whose row is taller than a picture
+                   (118px), or has two rows, says so below. A new game with one must too:
+                   e2e/game-fit.spec.ts fails until it does.
+   --scene-h is the scene's height: what the game would like, and never more than fits.
+   It is set on the frame, not the scene, so that what stands on a painting's floor line
+   can be placed by it (see --scene-floor).
    --------------------------------------------------------------------------- */
-.game-scene {
-  height: clamp(210px, max(33svh, 100svh - 470px), 360px);
+:root {
+  --page-h: calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 }
 
-/* Games whose choices take two rows keep the shorter scene, so the second row stays on screen. */
-.game-frame[data-screen="memory"] .game-scene,
-.game-frame[data-screen="hatch"]:not([data-level="1"]) .game-scene {
-  height: clamp(210px, 33svh, 300px);
+.game-frame {
+  --frame-zoom: 1;
+  /* A phone: 8 + the top bar (64) + 12. */
+  --page-rest: 84px;
+  --tip-room: 0px;
+  --tray-h: 118px;
+  --scene-fit: calc((var(--page-h) - var(--page-rest) - var(--tip-room)) / var(--frame-zoom) - 76px - var(--tray-h));
+  --scene-h: clamp(210px, min(max(33svh, 100svh - 470px), var(--scene-fit)), 360px);
+}
+
+/* The tip comes before the game on the page, when there is one (the game is the next thing after
+   it, or inside the next thing, as in the dock's games). A phone: three lines (91) and the gap (8). */
+.grownup-tip ~ .game-frame,
+.grownup-tip ~ * .game-frame {
+  --tip-room: 99px;
+}
+
+.game-scene {
+  height: var(--scene-h);
+}
+
+/* Games whose choices take two rows (six cards, six letters under the word) keep a shorter scene,
+   so the second row stays on the screen. On the shortest phones the scene gives a little more. */
+.game-frame[data-screen="memory"] {
+  --tray-h: 200px;
+  --scene-h: clamp(184px, min(33svh, var(--scene-fit)), 300px);
+}
+
+.game-frame[data-screen="hatch"]:not([data-level="1"]) {
+  --tray-h: 246px;
+  --scene-h: clamp(184px, min(33svh, var(--scene-fit)), 300px);
+}
+
+/* Rows taller than a picture: a price tag under each thing, a pile four blocks high. */
+.game-frame[data-screen="choose"] {
+  --tray-h: 148px;
+}
+
+.game-frame[data-screen="balance"] {
+  --tray-h: 160px;
 }
 
 @media (min-width: 768px) and (orientation: portrait) {
   .game-frame {
     zoom: 1.45;
+    --frame-zoom: 1.45;
+    /* 8 + the top bar (80) + 12. */
+    --page-rest: 100px;
+  }
+
+  /* Two lines of tip (72) and the gap (8). */
+  .grownup-tip ~ .game-frame,
+  .grownup-tip ~ * .game-frame {
+    --tip-room: 80px;
   }
 }
 
 @media (min-width: 768px) and (orientation: landscape) {
   .game-frame {
     zoom: 1.2;
+    --frame-zoom: 1.2;
+    /* 8 + the top bar (80) + 12. */
+    --page-rest: 100px;
+  }
+
+  /* One line of tip (60) and the gap (8). */
+  .grownup-tip ~ .game-frame,
+  .grownup-tip ~ * .game-frame {
+    --tip-room: 68px;
+  }
+
+  /* An iPad on its side is wide and short: six cards, or six letters, go in one row there.
+     In two rows the second ran off the bottom of the screen. */
+  .game-frame[data-screen="memory"] .game-tray,
+  .game-frame[data-screen="hatch"]:not([data-level="1"]) .game-tray {
+    /* Six of 82px and the five gaps between them are 532px; a little over, so none is pushed down. */
+    width: 540px;
+    max-width: none;
+  }
+
+  .game-frame[data-screen="memory"] {
+    --tray-h: 96px;
+  }
+
+  .game-frame[data-screen="hatch"]:not([data-level="1"]) {
+    --tray-h: 142px;
+  }
+}
+
+/* The shortest iPad on its side (a mini): the clock's face cannot be smaller than it is, so the
+   clock's whole game is drawn a little less large there, and its two hands stay on the screen. */
+@media (min-width: 768px) and (orientation: landscape) and (max-height: 760px) {
+  .game-frame[data-screen="clock"] {
+    zoom: 1.1;
+    --frame-zoom: 1.1;
   }
 }
 
