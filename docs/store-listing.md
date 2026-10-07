@@ -114,4 +114,4 @@ LittleNest Learning is reading, math, colors, games and coding, time and money, 
 
 by TriageDesk
 
-**Version:** 0.1.0
+**Version:** 0.9.0 for the pilot on TestFlight (package.json; the App Store build is 1.0 in Xcode, so bump package.json with it)
