@@ -1174,3 +1174,57 @@ test("no two plays are alike: the boards turn and the pictures change", async ({
   }
   expect(seen.size).toBeGreaterThan(2);
 });
+
+
+// ---------------------------------------------------------------- the measuring bench (lab/bird)
+import { mkdirSync, writeFileSync } from "node:fs";
+
+for (const size of [{ width: 375, height: 667 }, { width: 390, height: 763 }]) {
+  test(`LAB the coding board's parts at ${size.width}x${size.height}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(size);
+    await install(page, older, { quick: true });
+    await openCoding(page);
+    await page.locator("[data-game-tile=bird]").click();
+    const board = page.locator(".game-frame[data-screen=bird]");
+    const out: Record<string, unknown> = {};
+    const look = async (label: string) => {
+      out[label] = await board.evaluate((frame) => {
+        const n = (v: number) => Math.round(v * 10) / 10;
+        const box = (el: Element) => { const r = el.getBoundingClientRect(); return [n(r.left), n(r.top), n(r.width), n(r.height)]; };
+        const name = (el: Element) => `${el.tagName.toLowerCase()}.${String((el as HTMLElement).className && (el as SVGElement).className.baseVal === undefined ? el.className : "").split(" ").slice(0, 2).join(".")}${el.getAttribute("data-arrow") ? `[arrow=${el.getAttribute("data-arrow")}]` : ""}${el.getAttribute("data-pick") ? `[pick=${el.getAttribute("data-pick")}]` : ""}${el.getAttribute("data-go") ? "[go]" : ""}`;
+        const css = (el: Element, props: string[]) => { const s = getComputedStyle(el); return props.map((p) => s.getPropertyValue(p)).join(" | "); };
+        const tray = frame.querySelector(".game-tray")!;
+        return {
+          mode: frame.getAttribute("data-mode"), round: frame.getAttribute("data-round"), places: frame.getAttribute("data-places"),
+          frame: box(frame),
+          children: [...frame.children].map((el) => [name(el), box(el)]),
+          sceneCss: css(frame.querySelector(".game-scene")!, ["height", "width"]),
+          tray: [box(tray), css(tray, ["display", "flex-wrap", "gap", "width", "justify-content", "align-items"])],
+          trayKids: [...tray.children].map((el) => [name(el), box(el), css(el, ["width", "min-height", "height", "flex", "margin", "padding", "font-size"])]),
+          plan: [...frame.querySelectorAll(".code-plan, .code-row, .code-places")].map((el) => [name(el), box(el)]),
+          chips: [...frame.querySelectorAll(".code-chip, .code-place")].map((el) => [name(el), box(el)]),
+          go: frame.querySelector("[data-go]") ? box(frame.querySelector("[data-go]")!) : null,
+          inner: [innerWidth, innerHeight],
+          scroll: [Math.round(scrollY), document.documentElement.scrollHeight, document.documentElement.clientHeight, Math.round(visualViewport?.height ?? 0)],
+          above: [...document.querySelectorAll('.top-bar, .grownup-tip, .games-back, .screen-body, .stage')].map((el) => [name(el), box(el)]),
+        };
+      });
+    };
+    await look("round0");
+    await runPath(board);
+    await onRound(board, 1);
+    await runPath(board);
+    await onRound(board, 2);
+    await look("round2-empty");
+    const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
+    const at = Number(await board.getAttribute("data-routine-at"));
+    for (const dir of steps.slice(0, at)) await board.locator(`[data-arrow=${dir}]`).click();
+    await board.locator("[data-pick=routine]").click();
+    for (const dir of steps.slice(at + 3)) await board.locator(`[data-arrow=${dir}]`).click();
+    await look("round2-full");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await look("round2-full-top");
+    mkdirSync("lab-out", { recursive: true });
+    writeFileSync(`lab-out/${testInfo.project.name}--bird${size.width}.json`, JSON.stringify(out));
+  });
+}
