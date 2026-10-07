@@ -28,7 +28,7 @@ jobs:
       - run: npx playwright install --with-deps webkit chromium
       - name: Measure
         continue-on-error: true
-        run: npx playwright test -c playwright.lab.config.ts e2e/zz-lab.spec.ts
+        run: npx playwright test -c playwright.lab.config.ts e2e/zz-lab.spec.ts e2e/backdrops.spec.ts
       - name: What was measured (1)
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=0
