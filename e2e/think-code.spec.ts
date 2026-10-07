@@ -1228,3 +1228,59 @@ for (const size of [{ width: 375, height: 667 }, { width: 390, height: 763 }]) {
     writeFileSync(`lab-out/${testInfo.project.name}--bird${size.width}.json`, JSON.stringify(out));
   });
 }
+
+
+// The steps of "a plan has exactly one place for each step home, on one line, on a phone", with
+// where the page is scrolled to and where Go is after each of them.
+test("LAB the phone plan test, step by step", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await install(page, older, { quick: true });
+  await openCoding(page);
+  await page.locator("[data-game-tile=bird]").click();
+  const board = page.locator(".game-frame[data-screen=bird]");
+  const trail: unknown[] = [];
+  const mark = async (label: string) => {
+    trail.push([
+      label,
+      await board.evaluate((frame) => {
+        const n = (v: number) => Math.round(v * 10) / 10;
+        const scrollers: unknown[] = [];
+        for (let el: Element | null = frame; el; el = el.parentElement) {
+          const style = getComputedStyle(el);
+          if (el.scrollHeight > el.clientHeight + 1 || el.scrollTop > 0) scrollers.push([`${el.tagName.toLowerCase()}.${String(el.className).split(" ")[0]}`, n(el.scrollTop), el.scrollHeight, el.clientHeight, style.overflowY, style.scrollBehavior]);
+        }
+        const go = frame.querySelector("[data-go]");
+        const box = go?.getBoundingClientRect();
+        return { scrollers, go: box ? [n(box.top), n(box.bottom)] : null, wiggle: go?.getAttribute("data-wiggle"), frameTop: n(frame.getBoundingClientRect().top), active: document.activeElement ? `${document.activeElement.tagName.toLowerCase()}.${String(document.activeElement.className).split(" ")[0]}` : null };
+      }),
+    ]);
+  };
+  await mark("start");
+  await runPath(board);
+  await onRound(board, 1);
+  await mark("round 1");
+  await runPath(board);
+  await onRound(board, 2);
+  await mark("round 2");
+  const steps = ((await board.getAttribute("data-path")) ?? "").split(",").filter(Boolean);
+  const at = Number(await board.getAttribute("data-routine-at"));
+  trail.push(["path", steps.join(","), at]);
+  for (const dir of steps.slice(0, at)) await board.locator(`[data-arrow=${dir}]`).click();
+  await mark("arrows before the routine");
+  await board.locator("[data-pick=routine]").click();
+  await mark("routine");
+  for (const dir of steps.slice(at + 3)) await board.locator(`[data-arrow=${dir}]`).click();
+  await mark("arrows after the routine");
+  await board.locator(`[data-arrow=${steps[0]}]`).click();
+  await mark("one more arrow");
+  await expect(board.locator("[data-go=run]")).toHaveAttribute("data-wiggle", /^(a|b)$/);
+  await mark("wiggle seen");
+  await expect(board.locator(".code-chip")).toHaveCount(steps.length - 2);
+  const go = await board.locator("[data-go=run]").boundingBox();
+  trail.push(["go box", go]);
+  await page.waitForTimeout(700);
+  await mark("0.7 s later");
+  trail.push(["go box later", await board.locator("[data-go=run]").boundingBox()]);
+  mkdirSync("lab-out", { recursive: true });
+  writeFileSync(`lab-out/${testInfo.project.name}--steps${testInfo.repeatEachIndex}.json`, JSON.stringify(trail));
+});

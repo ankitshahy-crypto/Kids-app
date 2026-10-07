@@ -28,7 +28,7 @@ jobs:
       - run: npx playwright install --with-deps webkit chromium
       - name: Measure the coding board
         continue-on-error: true
-        run: npx playwright test -c playwright.lab.config.ts e2e/think-code.spec.ts -g "LAB" --project=wk-iphone --project=cr-iphone
+        run: npx playwright test -c playwright.lab.config.ts e2e/think-code.spec.ts -g "step by step|a plan has exactly one place" --project=wk-iphone --project=wk-iphone13 --project=cr-iphone --repeat-each=3 --workers=2
       - name: What was measured (1)
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=0

@@ -23,6 +23,8 @@ export default defineConfig({
     { name: "wk-ipad", use: { ...devices["iPad (gen 7)"] } },
     { name: "wk-ipad-land", use: { ...devices["iPad (gen 7) landscape"] } },
     { name: "wk-iphone", use: { ...devices["iPhone 13"], viewport: { width: 390, height: 763 } } },
+    // As the repository's own "iphone" project has it (Safari's short viewport, nothing seeded).
+    { name: "wk-iphone13", use: { ...devices["iPhone 13"] } },
     { name: "cr-ipad", use: { ...devices["iPad (gen 7)"], browserName: "chromium" } },
     { name: "cr-ipad-land", use: { ...devices["iPad (gen 7) landscape"], browserName: "chromium" } },
     { name: "cr-iphone", use: { ...devices["iPhone 13"], viewport: { width: 390, height: 763 }, browserName: "chromium" } },
