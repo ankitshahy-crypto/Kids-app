@@ -4,8 +4,9 @@ Make the painted props for the games from their renders.
 Usage: python3 scripts/game-art.py <folder of source images>
 
 The sources (`...coin-<copper|silver>-blank...`, `...planting-<bed-empty|seed|sprout|leafy|grown|sun|can>...`,
-`...garden-<ground-brown|lifecycle-flower>...`, `...money-<jar|bill>...`) are watercolour props on a
-plain paper backdrop. This writes transparent WebP files under public/games/:
+`...garden-<ground-brown|lifecycle-flower>...`, `...money-<jar|bill>...`, `...goods-<thing>...`,
+`...lifecycle-<stage>...`) are watercolour props on a plain paper backdrop. This writes transparent
+WebP files under public/games/:
 
   coin-copper.webp, coin-silver.webp   a blank coin face each (the star pressed into the middle is
                                        painted out: the app draws each coin's number there, and
@@ -21,6 +22,11 @@ plain paper backdrop. This writes transparent WebP files under public/games/:
   flower.webp                          to stand in the empty bed
   garden/bloom.webp                    a flower on its own: the last picture of the plant's life,
                                        put in order (its seed and sprout are the two above)
+  goods/<thing>.webp                   the fourteen things of the money games: the twelve for sale
+                                       (apple, bun, milk, cake, plum, corn, grape, kite, drum, boat,
+                                       car, hat) and the bed and sock of Need or want
+  life/<stage>.webp                    the hen's life (egg, chick, hen) and the butterfly's
+                                       (caterpillar, chrysalis, butterfly), put in order
 
 Needs: pip install opencv-python-headless pillow numpy
 """
@@ -103,20 +109,29 @@ def coin(path, name):
     save(img, feather(mask), name, 256, pad=0.0)
 
 
-def prop(path, name, size, lo=9.0, hi=26.0, solid=False):
+def prop(path, name, size, lo=9.0, hi=26.0, solid=False, holes=0.0):
     """
     A painted prop on paper. By default how see-through each pixel is follows how far its colour is
     from the paper, near the prop (a watering can keeps the hole in its handle and its drops).
     `solid` is the prop's own outline, filled, and nothing else: a bed's pale wood and a seed's
     highlight are not holes, and a wash of shadow or glow on the paper is left behind (it shows as
-    a dirty patch on anything but paper).
+    a dirty patch on anything but paper). With `holes`, paper seen through a solid prop (between a
+    boat's sail and its hull, a kite's tails, the straw of a nest) stays see-through where it is at
+    least that share of the prop's area; a speck of white in a highlight is not a hole.
     """
     img = cv2.imread(str(path))
     d = distance(img, backdrop(img))
     alpha = np.clip((d - lo) / (hi - lo), 0, 1)
     body = biggest(cv2.morphologyEx((alpha > 0.5).astype(np.uint8), cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8)))
     if solid:
-        out = feather(cv2.erode(filled(body), np.ones((3, 3), np.uint8)))
+        shape = filled(body)
+        if holes:
+            paper = ((cv2.GaussianBlur(d, (0, 0), 2) < 3.0) & shape.astype(bool)).astype(np.uint8)
+            count, labels, stats, _ = cv2.connectedComponentsWithStats(paper)
+            for label in range(1, count):
+                if stats[label, cv2.CC_STAT_AREA] >= holes * shape.sum():
+                    shape[labels == label] = 0
+        out = feather(cv2.erode(shape, np.ones((3, 3), np.uint8)))
     else:
         out = (alpha * cv2.dilate(body, np.ones((61, 61), np.uint8)) * 255).astype(np.uint8)
     save(img, out, name, size)
@@ -147,6 +162,12 @@ def tinted(name, out, hue, saturation):
     print(out, turned.size, f"{path.stat().st_size // 1024} KB", "tinted from", name)
 
 
+# The things of the money games (src/data/timeGames.ts: the goods, and the two of Need or want that
+# are not goods), and the stages of the two lives put in order that the garden does not paint.
+GOODS = ["apple", "bun", "milk", "cake", "plum", "corn", "grape", "kite", "drum", "boat", "car", "hat", "bed", "sock"]
+LIVES = ["egg", "chick", "hen", "caterpillar", "chrysalis", "butterfly"]
+
+
 def main(folder: Path):
     def find(key):
         found = [p for p in sorted(folder.glob("*.webp")) if key in p.name]
@@ -173,6 +194,13 @@ def main(folder: Path):
     # The five is the same bill turned from green to lavender (done here, not by a CSS filter on the
     # page: Safari does not apply a filter to a picture inside an SVG).
     tinted("bill", "bill-five", 150, 1.25)
+    # Each thing is its own outline, filled (a milk carton and a drum's head are nearly the paper's
+    # white), with the paper seen through it kept: between a kite's tails, under a boat's sail, in
+    # the straw of a nest.
+    for thing in GOODS:
+        prop(find(f"goods-{thing}"), f"goods/{thing}", 384, solid=True, holes=0.002)
+    for stage in LIVES:
+        prop(find(f"lifecycle-{stage}"), f"life/{stage}", 384, solid=True, holes=0.002)
 
 
 if __name__ == "__main__":

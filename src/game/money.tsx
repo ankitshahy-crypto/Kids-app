@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { promptCue, wordCue, type Cue } from "../audio/player";
-import { centsSay, COIN_CENTS, GOOD_ART, TIME_LINES, type GoodId } from "../data/timeGames";
+import { centsSay, COIN_CENTS, TIME_LINES, type ThingId } from "../data/timeGames";
 import type { MoneyId } from "../data/timeMoney";
-import { Illustration } from "../illustrations";
 
 /**
  * Pretend money and the things it buys, drawn for the money games.
@@ -69,11 +68,20 @@ export function Coin({ id }: { id: MoneyId }) {
   );
 }
 
-/** Something for sale, as one of the app's drawings. */
-export function Good({ id }: { id: GoodId }) {
+/** Every thing of the money games, so the folder of paintings can be checked against it. */
+export const THINGS: ThingId[] = ["apple", "bun", "milk", "cake", "plum", "corn", "grape", "kite", "drum", "boat", "car", "hat", "bed", "sock"];
+/** A thing's painting (public/games/goods, made by scripts/game-art.py from the owner's renders). */
+const thingArt = (id: ThingId) => `${import.meta.env.BASE_URL}games/goods/${id}.webp`;
+
+/**
+ * Something for sale, or one of the things of Need or want: its painting, standing on the bottom
+ * of a square box, so a thing is the same size in a row whatever its shape, and stands on a
+ * counter.
+ */
+export function Good({ id }: { id: ThingId }) {
   return (
     <span className="good-art" data-good={id}>
-      <Illustration name={GOOD_ART[id]} />
+      <img className="art good-painted" src={thingArt(id)} alt="" draggable={false} decoding="async" />
     </span>
   );
 }

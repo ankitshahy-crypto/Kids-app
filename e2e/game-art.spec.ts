@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
-import { expectStar, openGame, openTimeMoney } from "./kit";
+import { expectStar, onRound, openGame, openTimeMoney } from "./kit";
 
 /** The painted props the page asked for that did not come back. */
 function watchArt(page: Page): string[] {
@@ -258,9 +258,81 @@ test("the plant's life is put in order with the painted seed, sprout and flower"
   expect(missing).toEqual([]);
 });
 
-test("the hen's life, which has no paintings yet, is put in order with drawings", async ({ page }) => {
-  const hen = await openLifeInOrder(page, 0);
-  await expect(hen).toHaveAttribute("data-cycle", "hen");
-  await expect(hen.locator(".game-tray .pick img.prop-art")).toHaveCount(0);
-  await expect(hen.locator(".game-tray .pick svg.art")).toHaveCount(3);
+for (const [life, salt, stages] of [
+  ["hen", 0, ["egg", "chick", "hen"]],
+  ["butterfly", 14, ["caterpillar", "chrysalis", "butterfly"]],
+] as const) {
+  test(`the ${life}'s life is put in order with its three paintings`, async ({ page }) => {
+    const missing = watchArt(page);
+    const frame = await openLifeInOrder(page, salt);
+    await expect(frame).toHaveAttribute("data-cycle", life);
+    await expect(frame.locator(".game-tray .pick svg.art")).toHaveCount(0);
+    for (const stage of stages) {
+      const picture = frame.locator(`.game-tray .pick[data-pick=${stage}] img.prop-art`);
+      await expect(picture).toHaveAttribute("data-prop", stage);
+      await expect(picture).toHaveAttribute("src", new RegExp(`/games/life/${stage}\\.webp$`));
+      await expect.poll(() => picture.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(100);
+    }
+    expect(missing).toEqual([]);
+  });
+}
+
+/** A thing's painting is on the page, loaded, in its square box. */
+async function expectThing(art: Locator, thing: string) {
+  const painting = art.locator("img.good-painted");
+  await expect(painting).toHaveAttribute("src", new RegExp(`/games/goods/${thing}\\.webp$`));
+  await expect.poll(() => painting.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(100);
+  const box = await art.boundingBox();
+  expect(box!.width / box!.height).toBeCloseTo(1, 1);
+  const inside = await painting.boundingBox();
+  expect(inside!.width).toBeCloseTo(box!.width, 0);
+  expect(inside!.height).toBeCloseTo(box!.height, 0);
+}
+
+test("the thing for sale is its painting, on the shop's counter and on the two tiles that show one", async ({ page }) => {
+  const missing = watchArt(page);
+  await openTimeMoney(page);
+  await expectThing(page.locator("[data-activity=shop] .good-art"), "apple");
+  await expectThing(page.locator("[data-activity=needs] .good-art"), "bed");
+  const shop = await openGame(page, "shop");
+  await expectThing(shop.locator(".shop-counter .good-art"), (await shop.getAttribute("data-good")) ?? "");
+  expect(missing).toEqual([]);
+});
+
+test("the things to choose from, and the two to compare, are their paintings, each on a card with its price", async ({ page }) => {
+  const missing = watchArt(page);
+  await openTimeMoney(page);
+  const choose = await openGame(page, "choose");
+  const cards = choose.locator(".game-tray .pick");
+  await expect(cards).toHaveCount(3);
+  for (const card of await cards.all()) await expectThing(card.locator(".good-art"), (await card.getAttribute("data-pick")) ?? "");
+  // The cards are one size, whatever shape the thing is.
+  const heights = await cards.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
+  expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(2);
+  expect(missing).toEqual([]);
+});
+
+test("the two things to compare are their paintings", async ({ page }) => {
+  const missing = watchArt(page);
+  await openTimeMoney(page, { week: 9 });
+  const coins = await openGame(page, "coins");
+  await expect(coins).toHaveAttribute("data-task", "compare");
+  const cards = coins.locator(".game-tray .pick");
+  await expect(cards).toHaveCount(2);
+  for (const card of await cards.all()) await expectThing(card.locator(".good-art"), (await card.getAttribute("data-pick")) ?? "");
+  expect(missing).toEqual([]);
+});
+
+test("the thing of Need or want is its painting, big, in the room", async ({ page }) => {
+  const missing = watchArt(page);
+  await openTimeMoney(page);
+  const needs = await openGame(page, "needs");
+  for (let round = 0; round < 2; round += 1) {
+    await onRound(needs, round);
+    await expectThing(needs.locator(".need-item .good-art"), (await needs.getAttribute("data-item")) ?? "");
+    const box = await needs.locator(".need-item .good-art").boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(120);
+    await needs.locator(`.pick[data-bin=${(await needs.getAttribute("data-answer")) ?? ""}]`).click();
+  }
+  expect(missing).toEqual([]);
 });

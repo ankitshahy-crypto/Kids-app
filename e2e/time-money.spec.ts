@@ -31,8 +31,8 @@ test("the Time & Money page is one page of pictures, under Time and Money", asyn
   await expect(page.locator("[data-time-group=money] .time-tile > span:last-child")).toHaveText(["Coins", "Shop", "Three jars", "Lemonade", "What can I buy?", "Need or want"]);
   await expect(page.locator("[data-activity=money-play]")).toHaveCount(0);
   await expect(page.locator("[data-activity=cards]")).toHaveCount(0);
-  // Every tile carries a drawing.
-  for (const tile of await page.locator(".time-tile").all()) await expect(tile.locator(".math-activity-art svg").first()).toBeVisible();
+  // Every tile carries a picture: a drawing, or a painting (the shop's apple, the bed of Need or want).
+  for (const tile of await page.locator(".time-tile").all()) await expect(tile.locator(".math-activity-art svg, .math-activity-art img").first()).toBeVisible();
   if (testInfo.project.name === "chromium") {
     await page.locator("[data-screen=today]").screenshot({ path: "test-results/screenshots/time_money_today.png" });
   }
