@@ -1,0 +1,56 @@
+name: Lab
+
+# The measuring bench. It runs only for branches named lab/..., which are never merged: a push
+# there measures the app in WebKit at an iPad's sizes and prints what it found as notices.
+on:
+  push:
+    branches:
+      - "lab/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit chromium
+      - name: Measure
+        continue-on-error: true
+        run: npx playwright test -c playwright.lab.config.ts e2e/zz-lab.spec.ts
+      - name: What was measured
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs
+
+  suite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [wk-ipad, wk-ipad-land]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - name: The whole suite in WebKit, ${{ matrix.project }}
+        continue-on-error: true
+        run: npx playwright test -c playwright.lab.config.ts --project=${{ matrix.project }} --grep-invert "units inside a game|how each game sits|the coding board and its tiles|the start screen and Today"
+      - name: Why each failed
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs
