@@ -4,8 +4,11 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 
 const escape = (text) => text.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
-const say = (title, text) => console.log(`::notice title=${escape(title).replace(/:/g, "%3A").replace(/,/g, "%2C")}::${escape(text)}`);
-const LIMIT = 30000;
+const say = (title, text) => all.push(`::notice title=${escape(title).replace(/:/g, "%3A").replace(/,/g, "%2C")}::${escape(text)}`);
+// A notice holds 4096 characters, and a step shows ten notices: ask for a slice of ten with --slice=N.
+const LIMIT = 3900;
+const SLICE = Number((process.argv.find((a) => a.startsWith("--slice=")) ?? "--slice=0").slice(8));
+const all = [];
 
 if (existsSync("lab-out")) {
   const byProject = {};
@@ -39,3 +42,6 @@ if (existsSync(REPORT)) {
   const text = `passed ${stats.expected} failed ${stats.unexpected} flaky ${stats.flaky} skipped ${stats.skipped}\n${lines.join("\n")}`;
   for (let at = 0, part = 1; at < text.length; at += LIMIT, part += 1) say(`WHY ${part}`, text.slice(at, at + LIMIT));
 }
+
+for (const line of all.slice(SLICE * 10, SLICE * 10 + 10)) console.log(line);
+console.log(`${all.length} notices in all; this step printed slice ${SLICE}`);

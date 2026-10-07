@@ -87,20 +87,30 @@ test("units inside a game drawn larger", async ({ page }, testInfo) => {
     }
     document.body.appendChild(host);
   }, units);
+  const size = async (locator: Locator) => {
+    const b = await locator.first().boundingBox();
+    return b ? [round(b.width), round(b.height)] : null;
+  };
+  const css = (locator: Locator) => locator.first().evaluate((el) => [getComputedStyle(el).width, getComputedStyle(el).height]);
   const probes: Record<string, unknown> = {};
   for (const id of Object.keys(units)) {
-    probes[id] = { seen: await box(scene.locator(`[data-probe=${id}]`)), own: await own(scene.locator(`[data-probe=${id}]`)), plainSeen: await box(page.locator(`[data-plain=${id}]`)) };
+    // In the game: as drawn, and as the style sheet's own numbers. Outside it (a 460 by 300 box, nothing enlarged): as drawn.
+    probes[id] = { in: await size(scene.locator(`[data-probe=${id}]`)), css: await css(scene.locator(`[data-probe=${id}]`)), out: await size(page.locator(`[data-plain=${id}]`)) };
   }
   const thing = frame.locator(".shop-counter > :first-child");
   const sceneBox = (await scene.boundingBox())!;
   const thingBox = await thing.first().boundingBox();
+  const stageBox = await frame.locator(".game-stage").first().boundingBox();
   const art = Math.max(sceneBox.height, (sceneBox.width * 2) / 3);
   note(testInfo, "units", {
-    window: await page.evaluate(() => ({ inner: [innerWidth, innerHeight], visual: [visualViewport?.width, visualViewport?.height, visualViewport?.scale], dpr: devicePixelRatio, ua: navigator.userAgent.slice(0, 120), cq: CSS.supports("width", "1cqw"), svh: CSS.supports("height", "1svh"), has: CSS.supports("selector(:has(*))") })),
-    frame: { seen: await box(frame), own: await own(frame) },
-    scene: { seen: await box(scene), own: await own(scene), floorVar: await scene.evaluate((el) => (el as HTMLElement).style.getPropertyValue("--scene-floor")) },
-    counter: { seen: await box(frame.locator(".shop-counter")), own: await own(frame.locator(".shop-counter")) },
-    thing: { seen: thingBox ? { x: round(thingBox.x), y: round(thingBox.y), w: round(thingBox.width), h: round(thingBox.height) } : null, down: thingBox ? round(1 - (sceneBox.y + sceneBox.height - (thingBox.y + thingBox.height)) / art) : null },
+    window: await page.evaluate(() => ({ inner: [innerWidth, innerHeight], dpr: devicePixelRatio, ua: (navigator.userAgent.match(/Version\/[\d.]+|Chrome\/[\d.]+/) ?? [""])[0], cq: CSS.supports("width", "1cqw") })),
+    zoom: await frame.evaluate((el) => (getComputedStyle(el) as unknown as { zoom: string }).zoom),
+    scene: [round(sceneBox.width), round(sceneBox.height)],
+    sceneCss: await css(scene),
+    stage: stageBox ? { h: round(stageBox.height), bottomGap: round(sceneBox.y + sceneBox.height - stageBox.y - stageBox.height) } : null,
+    stageCssBottom: await frame.locator(".game-stage").first().evaluate((el) => getComputedStyle(el).bottom),
+    floorVar: await scene.evaluate((el) => (el as HTMLElement).style.getPropertyValue("--scene-floor")),
+    thingDown: thingBox ? round(1 - (sceneBox.y + sceneBox.height - (thingBox.y + thingBox.height)) / art) : null,
     probes,
   });
 });
@@ -141,17 +151,10 @@ test("how each game sits on the screen", async ({ page }, testInfo) => {
       if (b && b.y + b.height > low) low = b.y + b.height;
     }
     const height = page.viewportSize()!.height;
-    out[name] = {
-      spare: round(height - low),
-      picks: picks.length,
-      bar: await box(page.locator(".top-bar")),
-      tip: await box(page.locator(".grownup-tip")),
-      scene: await box(frame.locator(".game-scene")),
-      tray: await box(frame.locator(".game-tray")),
-      firstPick: picks[0] ? await box(picks[0]) : null,
-      host: await box(frame.locator(".game-host")),
-      sceneOwn: await own(frame.locator(".game-scene")),
-    };
+    const sceneB = await frame.locator(".game-scene").boundingBox();
+    const trayB = await frame.locator(".game-tray").first().boundingBox().catch(() => null);
+    const tipB = await page.locator(".grownup-tip").first().boundingBox().catch(() => null);
+    out[name] = [round(height - low), sceneB ? round(sceneB.height) : null, trayB ? round(trayB.height) : null, tipB ? round(tipB.height) : null, picks.length];
   }
   note(testInfo, "games", out);
 });

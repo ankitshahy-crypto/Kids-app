@@ -29,28 +29,12 @@ jobs:
       - name: Measure
         continue-on-error: true
         run: npx playwright test -c playwright.lab.config.ts e2e/zz-lab.spec.ts
-      - name: What was measured
+      - name: What was measured (1)
         if: ${{ !cancelled() }}
-        run: node scripts/lab-notes.mjs
-
-  suite:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 100
-    strategy:
-      fail-fast: false
-      matrix:
-        project: [wk-ipad, wk-ipad-land]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps webkit
-      - name: The whole suite in WebKit, ${{ matrix.project }}
-        continue-on-error: true
-        run: npx playwright test -c playwright.lab.config.ts --project=${{ matrix.project }} --grep-invert "units inside a game|how each game sits|the coding board and its tiles|the start screen and Today"
-      - name: Why each failed
+        run: node scripts/lab-notes.mjs --slice=0
+      - name: What was measured (2)
         if: ${{ !cancelled() }}
-        run: node scripts/lab-notes.mjs
+        run: node scripts/lab-notes.mjs --slice=1
+      - name: What was measured (3)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=2
