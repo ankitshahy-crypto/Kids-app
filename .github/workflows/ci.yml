@@ -123,10 +123,10 @@ jobs:
   # size.
   #
   # It does not block a merge yet. It is new, and what fails in it first has to be sorted into
-  # faults in the app and tests that assumed Chromium. `continue-on-error` keeps the run green
-  # while that is done, which also shows this job as green when tests in it failed: its result
-  # is read on its summary page, not from its tick. Once it passes, take `continue-on-error` out,
-  # and it blocks like the others.
+  # faults in the app and tests that assumed Chromium. `continue-on-error` keeps the run as a
+  # whole green while that is done; the job itself still shows red when a test in it failed, and
+  # its summary page names each one. Once it passes, take `continue-on-error` out, and it blocks
+  # like the others.
   webkit:
     runs-on: ubuntu-24.04
     timeout-minutes: 90

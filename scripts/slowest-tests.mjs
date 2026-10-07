@@ -20,9 +20,7 @@
  * would hide it for good. So each one is named in a warning.
  *
  * And it writes the run's outcome to the job's summary page: how many
- * passed, and the name of each test that failed or needed a second try. For
- * a job that is allowed to fail (the WebKit run), that page is where its
- * result is read, since the job itself shows green.
+ * passed, and the name of each test that failed or needed a second try.
  *
  *   node scripts/slowest-tests.mjs [path/to/e2e-results.json]
  */
