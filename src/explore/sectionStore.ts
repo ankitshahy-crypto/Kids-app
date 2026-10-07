@@ -1,3 +1,5 @@
+import { deviceStorage } from "../deviceStorage";
+
 const NAME = /^[a-z][a-z0-9-]{0,31}$/;
 
 type Store = {
@@ -16,7 +18,7 @@ export function sectionStorageKey(section: string, name: string): string {
   return key;
 }
 
-export function writeSection(section: string, name: string, value: string, storage: Store = localStorage): string {
+export function writeSection(section: string, name: string, value: string, storage: Store = deviceStorage()): string {
   const key = sectionStorageKey(section, name);
   try {
     storage.setItem(key, value);
@@ -26,7 +28,7 @@ export function writeSection(section: string, name: string, value: string, stora
   return key;
 }
 
-export function readSection(section: string, name: string, storage: Store = localStorage): string | null {
+export function readSection(section: string, name: string, storage: Store = deviceStorage()): string | null {
   try {
     return storage.getItem(sectionStorageKey(section, name));
   } catch {

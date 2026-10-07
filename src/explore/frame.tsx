@@ -1,10 +1,11 @@
 import { Suspense, useEffect, type ReactNode } from "react";
+import { deviceStorage } from "../deviceStorage";
 import { ExploreBoundary } from "./boundary";
 import { writeSection } from "./sectionStore";
 import type { ExploreSection } from "./sections";
 
 function CrashProbe({ section }: { section: ExploreSection }) {
-  if (import.meta.env.DEV && localStorage.getItem("littlenest-explore-crash") === section) {
+  if (import.meta.env.DEV && deviceStorage().getItem("littlenest-explore-crash") === section) {
     throw new Error(`Explore section ${section} crashed`);
   }
   return null;

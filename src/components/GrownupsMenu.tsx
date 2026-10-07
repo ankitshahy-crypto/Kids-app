@@ -4,7 +4,7 @@ import type { LadderStep } from "../data/ladder";
 import type { TeacherLink } from "../data/profileExtras";
 import { Avatar } from "../avatars";
 import { RemoveChildSheet } from "./RemoveChildSheet";
-import { shareMessage, shareUrl, showHelpContact } from "../config";
+import { feedbackEmail, privacyUrl, shareMessage, shareUrl, showHelpContact } from "../config";
 import { aboutContent, dailyLessonHelp } from "../content/about";
 import { resolvePlacement } from "../data/placement";
 import { READING } from "../data/subject";
@@ -16,6 +16,8 @@ import type { LessonPlace, PlacementDocument } from "../data/placement";
 import { lessonName, type ChildInput, type ChildProfile } from "../data/profiles";
 import { corruptProfileNotice } from "../data/profiles";
 import type { Settings } from "../settings";
+import { isNativeApp } from "../audio/platform";
+import { storageRefusedNotice } from "../deviceStorage";
 import { storageQuotaNotice } from "../storage";
 import { AboutWordNest } from "./AboutWordNest";
 import { ChildForm } from "./ChildForm";
@@ -152,6 +154,8 @@ export function GrownupsMenu({
   const editing = profiles.find((profile) => profile.id === editingId) ?? null;
   const quotaNotice = storageQuotaNotice();
   const profileNotice = corruptProfileNotice();
+  // The browser has refused its storage (Safari with all cookies blocked): nothing of this visit is kept.
+  const refusedNotice = storageRefusedNotice();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -187,6 +191,7 @@ export function GrownupsMenu({
           <header className="adult-head">
             <h1>Grown-ups</h1>
             <p className="adult-note">Help, settings, and profiles. A child stays on the lesson path.</p>
+            {refusedNotice ? <p className="adult-copy" data-notice="storage">{refusedNotice}</p> : null}
             {quotaNotice ? <p className="adult-copy" data-notice="quota">{quotaNotice}</p> : null}
             {profileNotice ? <p className="adult-copy" data-notice="profiles">{profileNotice}</p> : null}
           </header>
@@ -197,7 +202,8 @@ export function GrownupsMenu({
                   <span className="row-icon" style={{ background: row.tint }} aria-hidden="true" />
                   <span className="grownups-row-copy">
                     <span className="grownups-row-title">{row.title}</span>
-                    <small>{row.note}</small>
+                    {/* The installed app has nothing to download: its lessons came with it. */}
+                    <small>{row.id === "offline" && isNativeApp() ? "Everything is already on this device" : row.note}</small>
                   </span>
                   <Chevron direction="right" />
                 </button>
@@ -403,6 +409,15 @@ export function GrownupsMenu({
             <li>The one-time unlock is paid through the App Store. {PRODUCT_NAME} never sees card or Apple ID details.</li>
             <li>Nothing is sent to a school on its own. A teacher code or a progress code moves only when a grown-up types it in or reads it out, and it carries lesson places and counts, never a name.</li>
           </ul>
+          <p className="adult-copy">The full policy is on our website. It opens in your browser.</p>
+          <a className="text-button feedback-link" href={privacyUrl} target="_blank" rel="noopener noreferrer" data-action="privacy-policy">
+            Read the privacy policy
+          </a>
+          {showHelpContact ? (
+            <p className="adult-copy" data-privacy-contact>
+              Questions about privacy: <a href={`mailto:${feedbackEmail}`}>{feedbackEmail}</a>
+            </p>
+          ) : null}
         </section>
       ) : null}
 
