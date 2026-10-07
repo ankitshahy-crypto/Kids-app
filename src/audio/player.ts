@@ -359,8 +359,8 @@ function playCue(cue: Cue, settings: Settings, signal: AbortSignal, options: { r
  * An instruction and what it is about, as one line: "Tap the color you hear."
  * then "orange". Tapping "Hear again" says the whole line, not just the end.
  */
-export function playLine(cues: Cue[], settings: Settings, signal: AbortSignal): Promise<void> {
-  return playCues(cues, settings, signal);
+export function playLine(cues: Cue[], settings: Settings, signal: AbortSignal, options: { remember?: boolean } = {}): Promise<void> {
+  return playCues(cues, settings, signal, options);
 }
 
 export function promptCue(id: string, fallback = ""): Cue {

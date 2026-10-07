@@ -688,9 +688,15 @@ button:focus-visible {
   pointer-events: none;
 }
 
+/*
+ * The hero's middle is at --blend-at, a share of the track (the page sets it). At rest, before any
+ * drag, that share is small, so the floor keeps the hero whole on the screen: never nearer the
+ * left edge than half its own width (a drag already keeps it off both ends).
+ */
 .blend-token {
   position: absolute;
   top: 50%;
+  left: max(36px, var(--blend-at, 6%));
   z-index: 1;
   width: 72px;
   height: 72px;
@@ -3181,6 +3187,10 @@ button:focus-visible {
     height: 88px;
   }
 
+  .blend-token {
+    left: max(44px, var(--blend-at, 6%));
+  }
+
   .placeholder-art {
     width: min(72%, 320px);
   }
@@ -4930,6 +4940,10 @@ button:focus-visible {
   width: min(320px, 92vw);
   aspect-ratio: 1;
   margin: 4px auto 12px;
+  /* A finger on the board traces; it never scrolls the page or picks the drawing up. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .trace-board svg {

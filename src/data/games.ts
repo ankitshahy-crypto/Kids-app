@@ -554,14 +554,11 @@ export function spinCount(lesson: number, salt = 0): number {
 
 export function countChoices(total: number, salt = 0): { total: number; choices: number[] } {
   const count = Math.max(1, Math.min(10, Math.floor(total) || 1));
+  // The count and its neighbours; at the ends of the range (one, ten) the next one along, so there are three.
   const choices = [count];
   if (count > 1) choices.push(count - 1);
   if (count < 10) choices.push(count + 1);
-  while (choices.length < 3) {
-    const next = (choices[choices.length - 1] ?? count) + 1;
-    if (!choices.includes(next)) choices.push(next);
-    else break;
-  }
+  if (choices.length < 3) choices.push(count === 1 ? 3 : 8);
   return { total: count, choices: mix(choices.slice(0, 3), salt + 5) };
 }
 
