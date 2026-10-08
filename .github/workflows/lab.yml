@@ -39,7 +39,7 @@ jobs:
           VITE_BASE: /Kids-app/
       - name: Paint and Shop opened afresh, many times, in WebKit and Chromium
         continue-on-error: true
-        run: npx playwright test -c playwright.lab.config.ts e2e/zz-painting-lab.spec.ts --project=wk-iphone13 --project=cr-iphone --workers=2 --repeat-each=2
+        run: npx playwright test -c playwright.lab.config.ts e2e/zz-painting-lab.spec.ts --project=wk-iphone13 --project=cr-iphone --workers=2
         env:
           LAB_SERVE: ${{ matrix.serve }}
       - name: What was seen (1)

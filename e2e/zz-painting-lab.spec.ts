@@ -13,13 +13,13 @@ import { child, game, timePlacement } from "./kit";
  */
 const ROUNDS = Number(process.env.LAB_ROUNDS ?? 30);
 const GAMES = {
-  paint: { door: "LittleNest Colors", activity: "paint" },
-  shop: { door: "LittleNest Time & Money", activity: "shop" },
+  paint: { door: "LittleNest Colors", activity: "paint", painting: "room" },
+  shop: { door: "LittleNest Time & Money", activity: "shop", painting: "shop" },
 } as const;
 
 async function watch(page: Page) {
   await page.addInitScript(() => {
-    type Rec = { src: string; set: number; complete0?: boolean; put?: number; load?: number; onPage?: boolean; error?: number };
+    type Rec = { src: string; set: number; complete0?: boolean; put?: number; load?: number; onPage?: boolean; error?: number; loads?: [number, boolean][] };
     const w = window as unknown as { __imgs: { el: HTMLImageElement; rec: Rec }[]; __t0: number; __loading: [string, number][] };
     w.__imgs = [];
     w.__t0 = 0;
@@ -32,7 +32,7 @@ async function watch(page: Page) {
         const rec: Rec = { src: String(value).split("/").pop() ?? "", set: performance.now() };
         w.__imgs.push({ el, rec });
         queueMicrotask(() => { rec.complete0 = el.complete; });
-        el.addEventListener("load", () => { rec.load = performance.now(); rec.onPage = el.isConnected; });
+        el.addEventListener("load", () => { rec.load = performance.now(); rec.onPage = el.isConnected; (rec.loads ??= []).push([performance.now(), el.isConnected]); });
         el.addEventListener("error", () => { rec.error = performance.now(); });
       }
       return set.call(this, name, value);
@@ -56,8 +56,10 @@ async function watch(page: Page) {
   });
 }
 
-for (const [name, which] of Object.entries(GAMES)) {
-  test(`LAB ${name}: its painting, the first time the game is opened in a visit`, async ({ page }, testInfo) => {
+// "fetched first": the painting is fetched (and decoded) before the game is opened, as a picture
+// from the device is there almost at once.
+for (const [name, which] of Object.entries(GAMES)) for (const first of [false, true]) {
+  test(`LAB ${name}: its painting, the first time the game is opened in a visit${first ? ", fetched first" : ""}`, async ({ page, baseURL }, testInfo) => {
     test.setTimeout(900_000);
     await watch(page);
     await page.addInitScript(
@@ -79,6 +81,13 @@ for (const [name, which] of Object.entries(GAMES)) {
         if (await hint.count()) await hint.click();
         await page.getByRole("button", { name: "Mia" }).click();
         await page.getByRole("button", { name: which.door }).click();
+        if (first) {
+          await page.evaluate(async (url) => {
+            const art = new Image();
+            art.src = url;
+            await art.decode();
+          }, new URL(`backdrops/${which.painting}.webp`, baseURL).href);
+        }
         await page.locator(`[data-activity=${which.activity}]`).click();
         const art = game(page, which.activity).locator("img.game-backdrop-art");
         await art.waitFor({ state: "attached", timeout: 15_000 });
@@ -92,7 +101,7 @@ for (const [name, which] of Object.entries(GAMES)) {
           const from = (t: unknown) => (typeof t === "number" ? Math.round(t - w.__t0) : undefined);
           return {
             loading: w.__loading.filter(([, t]) => t >= w.__t0).map(([what, t]) => `${what}${from(t)}`).join(" "),
-            imgs: w.__imgs.filter((x) => x.rec.set as number >= w.__t0).map(({ el, rec }) => ({ src: rec.src, set: from(rec.set), c0: rec.complete0, put: from(rec.put), load: from(rec.load), onPage: rec.onPage, error: from(rec.error), now: el.isConnected, in: el.getAttribute("data-in"), complete: el.complete })),
+            imgs: w.__imgs.filter((x) => x.rec.set as number >= w.__t0).map(({ el, rec }) => ({ src: rec.src, set: from(rec.set), c0: rec.complete0, put: from(rec.put), loads: ((rec.loads ?? []) as unknown as [number, boolean][]).map(([t, on]) => `${from(t)}${on ? "on" : "off"}`).join(" "), error: from(rec.error), now: el.isConnected, in: el.getAttribute("data-in"), complete: el.complete })),
           };
         });
         if (!cameIn) out += 1;
@@ -102,11 +111,58 @@ for (const [name, which] of Object.entries(GAMES)) {
       }
     }
     mkdirSync("lab-out", { recursive: true });
+    const shown = (r: Record<string, unknown>) => ((r.imgs as { now: boolean; loads: string }[] | undefined) ?? []).find((img) => img.now);
+    const tally = {
+      shownLoadedOff: rounds.filter((r) => /off/.test(shown(r)?.loads ?? "")).length,
+      shownLoadedOn: rounds.filter((r) => /on/.test(shown(r)?.loads ?? "")).length,
+      shownOnlyOff: rounds.filter((r) => /off/.test(shown(r)?.loads ?? "") && !/on/.test(shown(r)?.loads ?? "")).length,
+    };
     const stayedOut = rounds.filter((r) => r.in === false);
     const cameIn = rounds.filter((r) => r.in === true);
     writeFileSync(
-      `lab-out/${testInfo.project.name}--${name}r${testInfo.repeatEachIndex}.json`,
-      JSON.stringify({ rounds: rounds.length, out, failed: rounds.filter((r) => r.failed).length, stayedOut: stayedOut.slice(0, 6), cameIn: cameIn.slice(0, 3), errors: rounds.filter((r) => r.failed).slice(0, 2) }),
+      `lab-out/${testInfo.project.name}--${name}${first ? "-first" : ""}r${testInfo.repeatEachIndex}.json`,
+      JSON.stringify({ rounds: rounds.length, out, ...tally, failed: rounds.filter((r) => r.failed).length, stayedOut: stayedOut.slice(0, 6), cameIn: cameIn.slice(0, 3), errors: rounds.filter((r) => r.failed).slice(0, 2) }),
     );
   });
 }
+
+// The engine alone, no React: a picture made off the page (as React makes it, inside a parent not
+// yet on the page), its address set, and put on the page 300ms later. Does its load come before?
+test("LAB the engine: a picture's load, made off the page", async ({ page, baseURL }, testInfo) => {
+  await page.goto("./");
+  const seen = await page.evaluate(async (base) => {
+    const warm = new Image();
+    warm.src = `${base}backdrops/room.webp`;
+    await warm.decode();
+    // `again`: once on the page, its address is set again, to the same one (as React does when it
+    // puts a picture on the page, so that a load it missed comes again).
+    const probe = (name: string, src: string, inParent: boolean, decodingFirst: boolean, again = false) =>
+      new Promise<Record<string, unknown>>((done) => {
+        const img = document.createElement("img");
+        const box = document.createElement("div");
+        if (inParent) box.appendChild(img);
+        const t0 = performance.now();
+        const loads: string[] = [];
+        img.addEventListener("load", () => { loads.push(`${Math.round(performance.now() - t0)}${img.isConnected ? "on" : "off"}`); });
+        if (decodingFirst) img.setAttribute("decoding", "async");
+        img.setAttribute("src", src);
+        if (!decodingFirst) img.setAttribute("decoding", "async");
+        const complete0 = img.complete;
+        setTimeout(() => {
+          const before = { complete: img.complete, loads: loads.join(" ") };
+          document.body.appendChild(inParent ? box : img);
+          let completeAgain: boolean | null = null;
+          if (again) { img.src = src; completeAgain = img.complete; }
+          setTimeout(() => { done({ name, complete0, before, completeAgain, loads: loads.join(" ") }); (inParent ? box : img).remove(); }, 250);
+        }, 300);
+      });
+    const out = [];
+    for (const [name, src] of [["fetched before", `${base}backdrops/room.webp`], ["not fetched before", `${base}backdrops/garden.webp?${Math.random()}`]] as const)
+      for (const inParent of [true, false]) out.push(await probe(`${name}, ${inParent ? "in a parent" : "alone"}`, src, inParent, false));
+    for (const [name, src] of [["fetched before", `${base}backdrops/room.webp`], ["not fetched before", `${base}backdrops/pond.webp?${Math.random()}`]] as const)
+      out.push(await probe(`${name}, in a parent, its address set again on the page`, src, true, false, true));
+    return out;
+  }, new URL(baseURL ?? "").pathname);
+  mkdirSync("lab-out", { recursive: true });
+  writeFileSync(`lab-out/${testInfo.project.name}--engine.json`, JSON.stringify(seen));
+});
