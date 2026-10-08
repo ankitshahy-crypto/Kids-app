@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
+import { DEVICES, openOn, roomUnder } from "./devices";
 
 /**
  * From the design review: on an iPad the games stayed phone-sized in the top half of the screen,
@@ -105,32 +106,21 @@ test("375x667: three choices fit one row, four do too, and Memory keeps three to
 });
 
 /**
- * As the installed app lays a game out, on the screens it is installed on.
+ * As the installed app lays a game out, on the screens it is installed on (e2e/devices.ts).
  *
- * The app's web view is the whole glass: 100svh runs under the status bar and the home indicator,
- * and the app pads for both (env(safe-area-inset-top) and -bottom). A test screen with no insets
- * has more room than the device does. At 1180 by 820 with tips off (the test above) a game fitted;
- * on the iPad Air that size stands for, with the grown-ups' tip on its line as it is by default,
- * the bottom of every row of choices was off the screen, What can I buy? had lost its price tags,
- * and Hatch the Egg its whole second row of letters.
+ * A test screen with no status bar and no home indicator has more room than the device does. At
+ * 1180 by 820 with tips off (the test above) a game fitted; on the iPad Air that size stands for,
+ * with the grown-ups' tip on its line as it is by default, the bottom of every row of choices was
+ * off the screen, What can I buy? had lost its price tags, and Hatch the Egg its whole second row
+ * of letters.
  *
  * Here each screen has its device's insets, and the tip is showing, open: the tallest the page
  * outside the game gets. Every game of every section is opened, and nothing a child taps may
- * reach below the page (the screen less the home indicator).
+ * reach below the page (the screen less the home indicator). (Take me home has more under its
+ * scene in some rounds than in its first: think-code.spec.ts plays it through on these screens.)
  *
- * Chromium can be told a device's insets and WebKit, as a test browser, cannot, so these run in
- * Chromium, once (they set their own screens). What they check is laid out in px and viewport
- * units, which the two engines agree on to the hundredth of a px, zoomed or not: measured in
- * both, at an iPad's sizes.
+ * These run in Chromium, once: they set their own screens, and the insets need Chromium.
  */
-const DEVICES: Record<string, { width: number; height: number; top: number; bottom: number }> = {
-  "an iPhone SE": { width: 375, height: 667, top: 20, bottom: 0 },
-  "an iPhone 13 mini": { width: 375, height: 812, top: 50, bottom: 34 },
-  "an iPhone 14": { width: 390, height: 844, top: 47, bottom: 34 },
-  "a 9.7-inch iPad": { width: 768, height: 1024, top: 20, bottom: 0 },
-  "an iPad Air on its side": { width: 1180, height: 820, top: 24, bottom: 20 },
-  "an iPad mini on its side": { width: 1133, height: 744, top: 24, bottom: 20 },
-};
 
 /** Each section's way in, and its tiles. The dock's games are a lobby of their own. */
 const SECTIONS: Record<string, { door: string; tiles: string }> = {
@@ -142,40 +132,10 @@ const SECTIONS: Record<string, { door: string; tiles: string }> = {
   Games: { door: "[data-dock=games]", tiles: "[data-game-tile]" },
 };
 
-async function openOn(page: Page, device: { width: number; height: number; top: number; bottom: number }) {
-  await page.setViewportSize({ width: device.width, height: device.height });
-  const session = await page.context().newCDPSession(page);
-  await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: device.top, bottom: device.bottom, left: 0, right: 0 } });
-  await page.addInitScript((created) => {
-    if (sessionStorage.getItem("fit-seeded")) return;
-    sessionStorage.setItem("fit-seeded", "1");
-    // Five years old: every section is open. Hatch the Egg at its longest: six letters under the word.
-    const mia = { id: "mia", name: "Mia", ageRange: "5", animal: "fox", createdAt: created, stars: 0, days: {}, ladder: { step: 2, successes: 0 }, games: { hatch: 3, hatches: 0, spins: 0 } };
-    localStorage.setItem("littlenest-profiles-v1", JSON.stringify({ activeId: "mia", profiles: [mia] }));
-    localStorage.setItem("littlenest-silent-hint-v1", "1");
-    localStorage.setItem("littlenest-settings-v1", JSON.stringify({ showTips: true }));
-  }, createdThisWeek());
-}
-
 async function home(page: Page) {
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator("[data-dock=games]")).toBeVisible();
-}
-
-/**
- * How far the lowest thing to tap in the game is above the bottom of the page, in px (below it is
- * negative), and how many things there are. A game with nothing in a tray (the balloons, the bird
- * whose parts are tapped) has only its scene to keep on the page.
- */
-async function roomUnder(page: Page, bottomInset: number): Promise<{ room: number; things: number }> {
-  return page.evaluate((bottomInset) => {
-    const frame = document.querySelector(".game-frame");
-    if (!frame) return { room: Number.NaN, things: 0 };
-    const things = [...frame.querySelectorAll(".game-tray .pick, .game-tray button")].filter((thing) => thing.getBoundingClientRect().width > 0);
-    const lowest = Math.max(frame.querySelector(".game-scene")?.getBoundingClientRect().bottom ?? 0, ...things.map((thing) => thing.getBoundingClientRect().bottom));
-    return { room: Math.round(window.innerHeight - bottomInset - lowest), things: things.length };
-  }, bottomInset);
 }
 
 for (const [name, device] of Object.entries(DEVICES)) {
@@ -246,4 +206,65 @@ test("on an iPad on its side six letters, and six cards, sit in one row; upright
       expect(await rows(), `${id} on ${name}`).toEqual(want);
     }
   }
+});
+
+/**
+ * A game's row of things to tap can be taller in a later round than in its first, and the tests
+ * above open each game at its first. Two were: the jars of Three jars have their names under them
+ * (its first round's chores are pictures), and a plate of seven to nine apples in Which has more
+ * has three rows of them (apples are the tallest of the things to count). On an iPad Air on its
+ * side the jars were 45px under the screen, and the bottom 34px of both plates were, in a game
+ * that is about counting what is on the plates.
+ *
+ * Found by playing every round of every game on these screens (1,309 rounds on a phone, four ages
+ * and three lesson weeks), which is how Take me home's rounds were found too (think-code.spec.ts).
+ */
+test("on an iPad on its side the second round of Three jars has its jars on the page", async ({ page, browserName }, testInfo) => {
+  test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+  for (const name of ["an iPad Air on its side", "an iPad mini on its side"]) {
+    const device = DEVICES[name];
+    await openOn(page, device, { quick: true });
+    await home(page);
+    await page.locator("[data-course=time]").click();
+    await page.locator("[data-screen=today] [data-activity=jars]").click();
+    const frame = page.locator(".game-frame[data-screen=jars]");
+    // A coin for each job, and then the jars to put them in.
+    for (const chore of ["tidy", "feed", "help"]) await frame.locator(`.pick[data-chore=${chore}]`).click();
+    await expect(frame.locator(".pick[data-jar]")).toHaveCount(3);
+    await expect(frame).toHaveAttribute("data-round", "1");
+    // The tip opens by itself the first time a child's grown-up meets the game, which here is on the first of the two screens.
+    const tip = page.locator(".grownup-tip");
+    if ((await tip.getAttribute("data-tip-open")) !== "true") await tip.locator(".grownup-tip-chip").click();
+    await expect(tip).toHaveAttribute("data-tip-open", "true");
+    expect((await roomUnder(page, device.bottom)).room, `${name}: room under the jars, tip open`).toBeGreaterThanOrEqual(0);
+    await tip.locator(".grownup-tip-hide").click();
+    expect((await roomUnder(page, device.bottom)).room, `${name}: room under the jars, tip closed to its chip`).toBeGreaterThanOrEqual(0);
+  }
+});
+
+test("on an iPad on its side a plate of nine apples in Which has more is all on the page", async ({ page, browserName }, testInfo) => {
+  test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+  const device = DEVICES["an iPad Air on its side"];
+  // One known play for ages 5 to 7 (the salt): its second round is six apples against nine.
+  await openOn(page, device, { ageRange: "6-7", quick: true, salt: 11 });
+  await home(page);
+  await page.locator("[data-course=math]").click();
+  await page.locator("[data-screen=today] [data-activity=more]").click();
+  const frame = page.locator(".game-frame[data-screen=more]");
+  const rounds = Number(await frame.getAttribute("data-rounds"));
+  let most = 0;
+  const heights = new Set<number>();
+  for (let round = 0; round < rounds; round += 1) {
+    await expect(frame).toHaveAttribute("data-round", String(round));
+    await expect(frame).toHaveAttribute("data-solved", "false");
+    const counts = await frame.locator(".game-tray .plate").evaluateAll((plates) => plates.map((plate) => Number(plate.getAttribute("data-count"))));
+    // (Apples on the plates: the count, as apples, of the fuller one.)
+    most = Math.max(most, await frame.locator(".game-tray .plate .math-apple").count() > 0 ? Math.max(...counts) : 0);
+    expect((await roomUnder(page, device.bottom)).room, `round ${round}, plates of ${counts.join(" and ")}: room under them`).toBeGreaterThanOrEqual(0);
+    heights.add(Math.round((await frame.locator(".game-scene").boundingBox())!.height));
+    await frame.locator(`.pick[data-side=${await frame.getAttribute("data-answer")}]`).click();
+  }
+  // The play had a plate of three rows of apples in it, and the scene was one height through all of it.
+  expect(most).toBe(9);
+  expect(heights.size).toBe(1);
 });

@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { askedLines, installAudioSpy, requestedCues, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
+import { DEVICES, openOn, roomUnder } from "./devices";
 import { noting } from "./kit";
 
 const profile = {
@@ -548,7 +549,16 @@ test("a plan has exactly one place for each step home, on one line, on a phone",
   await expect(board.locator(".code-chip")).toHaveCount(steps.length - 2);
   const tops = await board.locator(".code-chip").evaluateAll((chips) => chips.map((chip) => Math.round(chip.getBoundingClientRect().top)));
   expect(new Set(tops).size).toBe(1);
-  // Go is on the screen with the plan, the arrows and the routine chip, not below them.
+  // Go is on the screen with the plan, the arrows and the routine chip, not below them: with the
+  // page at its top, as a child who has not scrolled has it. (A tap on something part of the way
+  // off the screen scrolls the page to it, here as under a finger. This used to be asked wherever
+  // the taps above had left the page, and passed only because they had scrolled it: Go was 51px
+  // under the screen. The scene gives the routine's row its room now. The tip above the game is
+  // open here, four lines of it, which is as little room as this round ever has; the 24px is for
+  // what is still under the screen then, on the shortest phone there is.)
+  await board.evaluate((frame) => {
+    for (let box: Element | null = frame; box; box = box.parentElement) if (box.scrollTop > 0) box.scrollTop = 0;
+  });
   const go = await board.locator("[data-go=run]").boundingBox();
   expect(go).not.toBeNull();
   expect(go!.y + go!.height).toBeLessThanOrEqual(667 + 24);
@@ -1174,3 +1184,72 @@ test("no two plays are alike: the boards turn and the pictures change", async ({
   }
   expect(seen.size).toBeGreaterThan(2);
 });
+
+/**
+ * Every round, on the screens the app is installed on (e2e/devices.ts), as the installed app lays
+ * them out: with the device's status bar and home indicator, and the grown-ups' tip above the
+ * game, first open (as it is the first time a child's grown-up sees the game) and then closed to
+ * its chip (as it is every time after).
+ *
+ * The board has more under it than any other game, and how much depends on the round: the arrows
+ * alone, or the plan, the arrows and Go, or those and a row for the routine's chip, or the plan,
+ * the endings to pick from and Go. Its scene was one height in every round, worked out from the
+ * glass alone. So in the round with the routine, the routine's chip and Go were under the screen
+ * on an iPhone 14 the first time the game was played, and on every iPad on its side every time;
+ * and in the round whose ending is picked, Go was (by 68px on that iPhone, by 150px on an iPad
+ * Air on its side, where the endings were cut to their top third too). The tests that play these
+ * rounds passed all the while: a test's tap scrolls the page to what it taps.
+ *
+ * Here the page is looked at from its top, at the start of each round, and nothing to tap may
+ * reach below it. One case is let off, and by how much is said: the shortest phone, in the round
+ * with the routine, the first time the game is played. Its scene is as small as a board of four
+ * rows can be read at (190px) and the lower half of the routine's row is still under the screen;
+ * closed to its chip, the tip leaves the room, and it fits.
+ */
+for (const [name, ageRange] of [
+  ...Object.keys(DEVICES).map((device) => [device, "6-7"] as const),
+  // The younger child's five rounds end with two endings to pick from, not three.
+  ["an iPhone 14", "4"],
+  ["an iPad Air on its side", "4"],
+] as const) {
+  test(`on ${name}, as installed: every round of Take me home for a child of ${ageRange} has all there is to tap on the page`, async ({ page, browserName }, testInfo) => {
+    test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+    // A whole play, six rounds of it at the older age: about 15 s here, and three times that on CI.
+    test.setTimeout(90_000);
+    const device = DEVICES[name];
+    await openOn(page, device, { ageRange, quick: true });
+    await page.goto("./");
+    await page.getByRole("button", { name: "Mia" }).click();
+    await openCoding(page);
+    await page.locator("[data-game-tile=bird]").click();
+    const board = page.locator(".game-frame[data-screen=bird]");
+    const tip = page.locator(".grownup-tip");
+    const rounds = Number(await board.getAttribute("data-rounds"));
+    expect(rounds).toBe(ageRange === "4" ? 5 : 6);
+    const modes: string[] = [];
+    for (let round = 0; round < rounds; round += 1) {
+      await onRound(board, round);
+      const mode = (await board.getAttribute("data-mode")) ?? "";
+      modes.push(mode);
+      await expect(tip).toHaveAttribute("data-tip-open", "true");
+      const open = await roomUnder(page, device.bottom);
+      expect(open.things, `round ${round} (${mode}): things to tap`).toBeGreaterThanOrEqual(4);
+      const letOff = name === "an iPhone SE" && mode === "reuse" ? -40 : 0;
+      expect(open.room, `round ${round} (${mode}): room under the lowest thing to tap, tip open`).toBeGreaterThanOrEqual(letOff);
+      await tip.locator(".grownup-tip-hide").click();
+      await expect(tip).toHaveAttribute("data-tip-open", "false");
+      const chip = await roomUnder(page, device.bottom);
+      expect(chip.room, `round ${round} (${mode}): room under the lowest thing to tap, tip closed to its chip`).toBeGreaterThanOrEqual(0);
+      await tip.locator(".grownup-tip-chip").click();
+      await expect(tip).toHaveAttribute("data-tip-open", "true");
+      // Play the round, to get to the next.
+      if (mode === "predict") await solvePredict(board);
+      else if (mode === "bug") {
+        await mendPlan(board);
+        await board.locator("[data-go=run]").click();
+        await roundOver(board, String(round));
+      } else await runPath(board);
+    }
+    expect(modes).toEqual(ageRange === "4" ? ["tap", "tap", "plan", "plan", "predict"] : ["plan", "keep", "reuse", "predict", "loop", "bug"]);
+  });
+}

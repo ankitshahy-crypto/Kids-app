@@ -6780,9 +6780,52 @@ input.is-pressed,
 }
 
 /* The scene is shorter here than in the other games: under it come the plan and the arrows, and all
-   three belong on one screen, so that a child can press Go and watch what it does. */
+   three belong on one screen, so that a child can press Go and watch what it does.
+
+   How much comes under it depends on the round, and the scene gives up what the round needs
+   (--tray-h and --scene-fit: see "Games fill the screen they are on"). A round walked by tapping
+   has the arrows alone; most have the plan, then the arrows and Go; the round that uses the
+   routine has a second row for its chip; and the one whose ending is picked has the endings and
+   Go. The scene used to be one height whatever the round, sized from the glass alone: the
+   routine's row, with Go on it, and Go under the endings lay below the screen on every phone but
+   the largest, on a 9.7-inch iPad, and on every iPad on its side. */
 .game-frame[data-screen="bird"] {
-  --scene-h: clamp(190px, 100svh - 520px, 300px);
+  /* The plan (80) and the gap under it (10), the arrows and Go (82). */
+  --tray-h: 172px;
+  --scene-h: clamp(190px, min(100svh - 520px, var(--scene-fit)), 300px);
+}
+
+.game-frame[data-screen="bird"][data-mode="tap"] {
+  --tray-h: 82px;
+}
+
+/* The routine's chip and Go, on a row of their own (82) under the arrows, and the gap (16). */
+.game-frame[data-screen="bird"][data-mode="reuse"] {
+  --tray-h: 270px;
+}
+
+/* The endings (118) in place of the arrows, and Go on a row of its own under them (64 and 12). */
+.game-frame[data-screen="bird"][data-mode="predict"] {
+  --tray-h: 284px;
+}
+
+/* The tip above the game is open the first time a child's grown-up sees it, and its chip every
+   time after. The other games keep the open tip's room for both, so that closing it moves nothing
+   in them. This one has the most under its scene, and takes back what the chip leaves (44 and the
+   gap): on an iPhone 14 that is the difference between tiles of 47px and of 59px in the round with
+   the routine, every time the game is played after the first. The board is measured as it changes
+   size (ThinkCode.tsx), so it follows. */
+.grownup-tip.is-chip ~ .game-frame[data-screen="bird"],
+.grownup-tip.is-chip ~ * .game-frame[data-screen="bird"] {
+  --tip-room: 52px;
+}
+
+/* On a 375px phone this game's tip, open, is four lines and not three (110 and the gap). */
+@media (max-width: 389px) {
+  .grownup-tip:not(.is-chip) ~ .game-frame[data-screen="bird"],
+  .grownup-tip:not(.is-chip) ~ * .game-frame[data-screen="bird"] {
+    --tip-room: 118px;
+  }
 }
 
 /* Square tiles, as many as the board has, as big as the stage allows, centered in it (the size is
@@ -7353,11 +7396,24 @@ input.is-pressed,
   fill: var(--action);
 }
 
-/* A short phone (iPhone SE, 667px): the tiles keep a size a finger can aim at, and the plan places
-   and the arrow row give up a little height instead. The page scrolls by a few px with the tip up. */
+/* A short phone (iPhone SE, 667px): the plan places and the arrow row give up a little height, and
+   the scene is no taller than 222px, so the board, the plan and Go are on one screen. The round
+   with the routine has one row more than fits there under a board worth looking at: its scene goes
+   down to 190px, the least a board of four rows can be read at, and the first time the game is
+   played (the tip above it open) the page still scrolls, by the lower half of that row. */
 @media (max-height: 700px) {
-  .game-frame[data-screen="bird"] .game-scene {
-    height: 222px;
+  .game-frame[data-screen="bird"] {
+    /* The plan (72) and the gap under it (10), the arrows and Go (66). */
+    --tray-h: 148px;
+    --scene-h: clamp(190px, var(--scene-fit), 222px);
+  }
+
+  .game-frame[data-screen="bird"][data-mode="tap"] {
+    --tray-h: 66px;
+  }
+
+  .game-frame[data-screen="bird"][data-mode="reuse"] {
+    --tray-h: 230px;
   }
 
   .game-frame[data-screen="bird"] .code-chip,
@@ -7369,8 +7425,20 @@ input.is-pressed,
   .game-frame[data-screen="bird"][data-screen] .code-go {
     min-height: 66px;
   }
+}
 
-  /* The endings to pick from share a row with Go, so Go is on the screen with them. */
+/* The endings to pick from share a row with Go, wherever a row of its own for Go would be off the
+   screen: every phone but the tallest, the iPads with a home button held upright, and every iPad
+   on its side but the largest. (It was the short phone's rule alone. On an iPhone 14 as it is
+   installed, with its status bar, its home indicator and the tip, Go was 68px below the screen,
+   and on an iPad Air on its side 150px.) The board is what a child reads in this round, and this
+   way it keeps its size. */
+@media (max-height: 900px), (min-width: 768px) and (orientation: portrait) and (max-height: 1150px) {
+  .game-frame[data-screen="bird"][data-mode="predict"] {
+    /* The plan (80) and the gap under it (10), the endings and Go (76). */
+    --tray-h: 166px;
+  }
+
   .game-frame[data-screen="bird"][data-mode="predict"] .pick[data-choice],
   .game-frame[data-screen="bird"][data-mode="predict"][data-screen] .code-go {
     min-height: 76px;
@@ -7391,12 +7459,31 @@ input.is-pressed,
   }
 }
 
+/* (The short phone's plan is 8px less tall. After the rule above, which it outranks only by coming later.) */
+@media (max-height: 700px) {
+  .game-frame[data-screen="bird"][data-mode="predict"] {
+    --tray-h: 158px;
+  }
+}
+
 /* An iPad on its side: the whole game is drawn at 1.2 (see "Games fill the screen"), so the arrows
    and the plan give back height (they do not need to be 98px on an iPad) and the scene a little,
    and board, plan and Go stay on one screen with the tiles still the biggest thing. */
 @media (min-width: 768px) and (orientation: landscape) {
   .game-frame[data-screen="bird"] {
-    --scene-h: clamp(220px, calc((100svh - 470px) / 1.2), 300px);
+    /* The plan (70) and the gap under it (10), the arrows and Go (64). */
+    --tray-h: 144px;
+    --scene-h: clamp(190px, min(calc((100svh - 470px) / 1.2), var(--scene-fit)), 300px);
+  }
+
+  .game-frame[data-screen="bird"][data-mode="tap"] {
+    --tray-h: 64px;
+  }
+
+  /* The endings (118), and Go on a row of its own under them (64 and 12): the largest iPad only
+     (the rule above puts Go beside the endings on the others). */
+  .game-frame[data-screen="bird"][data-mode="predict"] {
+    --tray-h: 274px;
   }
 
   .game-frame[data-screen="bird"] .code-chip,
@@ -7413,6 +7500,34 @@ input.is-pressed,
   .game-frame[data-screen="bird"][data-screen] .game-tray .pick[data-routine-pick] {
     --arrow: 26px;
     width: 136px;
+  }
+
+  /* The routine's chip and Go go on the arrows' row: the six of them are 496px across, and an iPad
+     on its side has that and not the height for a second row (the row was 66 to 90px below the
+     screen on every iPad but the largest). The row is a little wider than the scene for it; the
+     plan stays as wide as the scene. */
+  .game-frame[data-screen="bird"][data-mode="reuse"] {
+    --tray-h: 144px;
+  }
+
+  .game-frame[data-screen="bird"][data-mode="reuse"] .game-tray {
+    width: 500px;
+    max-width: none;
+  }
+
+  .game-frame[data-screen="bird"][data-mode="reuse"] .code-plan {
+    width: 460px;
+  }
+
+  .game-frame[data-screen="bird"][data-mode="reuse"] .code-break {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (orientation: landscape) and (max-height: 900px) {
+  .game-frame[data-screen="bird"][data-mode="predict"] {
+    /* The plan (70) and the gap under it (10), the endings and Go (76). */
+    --tray-h: 156px;
   }
 }
 
@@ -11873,13 +11988,16 @@ a.unlock-buy {
      --tip-room    the grown-ups' tip on its line above the game, at its tallest, with its
                    gap; nothing when tips are turned off (then no tip comes before the game).
                    The open tip and its chip are given the same room, so closing one to the
-                   other moves nothing in the game.
+                   other moves nothing in the game. (Take me home alone takes back what the chip
+                   leaves: see its own rules.)
      --frame-zoom  how much larger the frame is drawn: the same number as its zoom.
      76px          inside the frame: its title and round dots (64), the gap under the
                    scene (12).
      --tray-h      the row of things to tap. A game whose row is taller than a picture
                    (118px), or has two rows, says so below. A new game with one must too:
-                   e2e/game-fit.spec.ts fails until it does.
+                   e2e/game-fit.spec.ts fails until it does. (Take me home has a plan, arrows
+                   and Go under its scene, and more in some rounds: it says so round by round,
+                   with its own rules.)
    --scene-h is the scene's height: what the game would like, and never more than fits.
    It is set on the frame, not the scene, so that what stands on a painting's floor line
    can be placed by it (see --scene-floor).
@@ -11930,6 +12048,34 @@ a.unlock-buy {
   --tray-h: 160px;
 }
 
+/* And rows that are taller in a later round than in the first, which is the round the first sweep
+   of these games looked at. Each keeps the taller row's room in every round, so that the scene is
+   one height from the first round to the last.
+
+   Three jars: its second round's jars have their names under them (the first round's chores are
+   pictures). On an iPad Air on its side the jars were 45px under the screen. */
+.game-frame[data-screen="jars"] {
+  --tray-h: 165px;
+}
+
+/* Which has more: a plate of seven to nine things has three rows of them, and ages 5 to 7 are
+   given up to nine. Three rows of apples (the tallest of the things to count) are 38px taller
+   than a picture, and on an iPad Air on its side the bottom 34px of both plates were under the
+   screen, in a game that is about counting what is on them. (Ages 3 and 4 have seven on a plate
+   in one round of one week in six, the lesson's own; the scene makes room in that round only.) */
+.game-frame[data-screen="more"][data-level="later"] {
+  --tray-h: 156px;
+}
+
+.game-frame[data-screen="more"]:has(.game-tray .plate[data-count="7"] .math-apple) {
+  --tray-h: 156px;
+}
+
+/* Coins, sorting: the four bins are a little taller than a picture. */
+.game-frame[data-screen="coins"][data-task="sort"] {
+  --tray-h: 128px;
+}
+
 @media (min-width: 768px) and (orientation: portrait) {
   .game-frame {
     zoom: 1.45;
@@ -11942,6 +12088,16 @@ a.unlock-buy {
   .grownup-tip ~ .game-frame,
   .grownup-tip ~ * .game-frame {
     --tip-room: 80px;
+  }
+
+  /* Take me home's routine chip, to pick: twice an arrow's width and the gap between two, said as
+     lengths. Its rule for a phone works them out from the row's width (a sum with a min() of a
+     percentage inside it), and in a frame drawn larger WebKit makes that sum too big by the zoom:
+     the chip came out 356px wide on an upright iPad where Chromium drew it 249px. Here an arrow is
+     always its full 82px, so nothing needs working out. (An iPad on its side has its own lengths,
+     with the board's rules.) */
+  .game-frame[data-screen="bird"][data-screen] .game-tray .pick[data-routine-pick] {
+    width: 172px;
   }
 }
 
