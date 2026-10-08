@@ -397,14 +397,27 @@ function Rain() {
  * are laid out for it straight away and it fades in when it lands (from the device it is a few
  * milliseconds). Outdoors it drifts, very slowly: a scene is never a still picture. Reduced motion
  * and calm mode still it.
+ *
+ * It can land before the game is on the page: the first time a game's code is asked for, React
+ * lays the game out and holds it back a moment behind "Loading", and a picture's load in that
+ * moment never reaches the game (React lets it go, as it does any event on a thing not yet on the
+ * page; Safari fires it there, Chrome waits for the page). So when the picture is put on the page,
+ * one that has already landed is taken as landed, and one that already failed as failed.
  */
 function Backdrop({ kind, painting, shown, settle }: { kind: SceneKind; painting?: Painting; shown: boolean; settle: (of: SceneKind, state: "in" | "none") => void }) {
+  const placed = useCallback(
+    (img: HTMLImageElement | null) => {
+      if (img?.complete) settle(kind, img.naturalWidth > 0 ? "in" : "none");
+    },
+    [kind, settle],
+  );
   if (!painting) return <DrawnBackdrop kind={kind} />;
   return (
     <>
       <img
         // (A new scene is a new picture, not the last one with its address changed under it.)
         key={kind}
+        ref={placed}
         className="game-backdrop game-backdrop-art"
         src={paintingSrc(kind)}
         alt=""

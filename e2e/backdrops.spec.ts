@@ -142,6 +142,25 @@ for (const [shape, size] of [
   });
 }
 
+// The first time a game's code is asked for, React lays the game out and holds it back a moment
+// behind "Loading", and a picture's load in that moment never reaches the game. WebKit fires the
+// load then, if the picture is quick to come (from the device it is); Chromium waits until the
+// picture is on the page. So here the painting is fetched before the game is opened, and its load
+// is kept from the game altogether: the game finds it there when it is put on the page.
+test("a painting that has landed before its game is on the page is shown all the same", async ({ page, baseURL }) => {
+  await install(page);
+  await page.getByRole("button", { name: "LittleNest Colors" }).click();
+  await page.evaluate(async (url) => {
+    // (A picture's load goes no higher than the document.)
+    document.addEventListener("load", (event) => { if ((event.target as Element).classList?.contains("game-backdrop-art")) event.stopImmediatePropagation(); }, { capture: true });
+    const art = new Image();
+    art.src = url;
+    await art.decode();
+  }, new URL("backdrops/room.webp", baseURL).href);
+  await page.locator("[data-activity=paint]").click();
+  await painted(game(page, "paint"), "room");
+});
+
 test("outdoors the painting drifts, slowly, and never shows an edge", async ({ page }) => {
   await install(page);
   const body = await openScience(page, "body");
