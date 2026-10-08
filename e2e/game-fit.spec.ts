@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
+import { DEVICES, openOn, roomUnder } from "./devices";
 
 /**
  * From the design review: on an iPad the games stayed phone-sized in the top half of the screen,
@@ -105,32 +106,21 @@ test("375x667: three choices fit one row, four do too, and Memory keeps three to
 });
 
 /**
- * As the installed app lays a game out, on the screens it is installed on.
+ * As the installed app lays a game out, on the screens it is installed on (e2e/devices.ts).
  *
- * The app's web view is the whole glass: 100svh runs under the status bar and the home indicator,
- * and the app pads for both (env(safe-area-inset-top) and -bottom). A test screen with no insets
- * has more room than the device does. At 1180 by 820 with tips off (the test above) a game fitted;
- * on the iPad Air that size stands for, with the grown-ups' tip on its line as it is by default,
- * the bottom of every row of choices was off the screen, What can I buy? had lost its price tags,
- * and Hatch the Egg its whole second row of letters.
+ * A test screen with no status bar and no home indicator has more room than the device does. At
+ * 1180 by 820 with tips off (the test above) a game fitted; on the iPad Air that size stands for,
+ * with the grown-ups' tip on its line as it is by default, the bottom of every row of choices was
+ * off the screen, What can I buy? had lost its price tags, and Hatch the Egg its whole second row
+ * of letters.
  *
  * Here each screen has its device's insets, and the tip is showing, open: the tallest the page
  * outside the game gets. Every game of every section is opened, and nothing a child taps may
- * reach below the page (the screen less the home indicator).
+ * reach below the page (the screen less the home indicator). (Take me home has more under its
+ * scene in some rounds than in its first: think-code.spec.ts plays it through on these screens.)
  *
- * Chromium can be told a device's insets and WebKit, as a test browser, cannot, so these run in
- * Chromium, once (they set their own screens). What they check is laid out in px and viewport
- * units, which the two engines agree on to the hundredth of a px, zoomed or not: measured in
- * both, at an iPad's sizes.
+ * These run in Chromium, once: they set their own screens, and the insets need Chromium.
  */
-const DEVICES: Record<string, { width: number; height: number; top: number; bottom: number }> = {
-  "an iPhone SE": { width: 375, height: 667, top: 20, bottom: 0 },
-  "an iPhone 13 mini": { width: 375, height: 812, top: 50, bottom: 34 },
-  "an iPhone 14": { width: 390, height: 844, top: 47, bottom: 34 },
-  "a 9.7-inch iPad": { width: 768, height: 1024, top: 20, bottom: 0 },
-  "an iPad Air on its side": { width: 1180, height: 820, top: 24, bottom: 20 },
-  "an iPad mini on its side": { width: 1133, height: 744, top: 24, bottom: 20 },
-};
 
 /** Each section's way in, and its tiles. The dock's games are a lobby of their own. */
 const SECTIONS: Record<string, { door: string; tiles: string }> = {
@@ -142,40 +132,10 @@ const SECTIONS: Record<string, { door: string; tiles: string }> = {
   Games: { door: "[data-dock=games]", tiles: "[data-game-tile]" },
 };
 
-async function openOn(page: Page, device: { width: number; height: number; top: number; bottom: number }) {
-  await page.setViewportSize({ width: device.width, height: device.height });
-  const session = await page.context().newCDPSession(page);
-  await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: device.top, bottom: device.bottom, left: 0, right: 0 } });
-  await page.addInitScript((created) => {
-    if (sessionStorage.getItem("fit-seeded")) return;
-    sessionStorage.setItem("fit-seeded", "1");
-    // Five years old: every section is open. Hatch the Egg at its longest: six letters under the word.
-    const mia = { id: "mia", name: "Mia", ageRange: "5", animal: "fox", createdAt: created, stars: 0, days: {}, ladder: { step: 2, successes: 0 }, games: { hatch: 3, hatches: 0, spins: 0 } };
-    localStorage.setItem("littlenest-profiles-v1", JSON.stringify({ activeId: "mia", profiles: [mia] }));
-    localStorage.setItem("littlenest-silent-hint-v1", "1");
-    localStorage.setItem("littlenest-settings-v1", JSON.stringify({ showTips: true }));
-  }, createdThisWeek());
-}
-
 async function home(page: Page) {
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator("[data-dock=games]")).toBeVisible();
-}
-
-/**
- * How far the lowest thing to tap in the game is above the bottom of the page, in px (below it is
- * negative), and how many things there are. A game with nothing in a tray (the balloons, the bird
- * whose parts are tapped) has only its scene to keep on the page.
- */
-async function roomUnder(page: Page, bottomInset: number): Promise<{ room: number; things: number }> {
-  return page.evaluate((bottomInset) => {
-    const frame = document.querySelector(".game-frame");
-    if (!frame) return { room: Number.NaN, things: 0 };
-    const things = [...frame.querySelectorAll(".game-tray .pick, .game-tray button")].filter((thing) => thing.getBoundingClientRect().width > 0);
-    const lowest = Math.max(frame.querySelector(".game-scene")?.getBoundingClientRect().bottom ?? 0, ...things.map((thing) => thing.getBoundingClientRect().bottom));
-    return { room: Math.round(window.innerHeight - bottomInset - lowest), things: things.length };
-  }, bottomInset);
 }
 
 for (const [name, device] of Object.entries(DEVICES)) {
