@@ -209,6 +209,8 @@ for (const [name, device] of Object.entries(DEVICES)) {
 
 test("on an iPad on its side six letters, and six cards, sit in one row; upright and on a phone, three to a row", async ({ page, browserName }, testInfo) => {
   test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+  // Four screens, two games on each: it took 22 of its 30 seconds on a slow runner when it loaded the app for every game.
+  test.setTimeout(60_000);
   const rows = async () => {
     const tops = await page.locator(".game-tray .pick").evaluateAll((picks) => picks.map((pick) => Math.round(pick.getBoundingClientRect().top)));
     const count = new Map<number, number>();
@@ -222,12 +224,15 @@ test("on an iPad on its side six letters, and six cards, sit in one row; upright
     ["an iPhone 14", [3, 3]],
   ] as const) {
     await openOn(page, DEVICES[name]);
+    await home(page);
+    await page.locator("[data-dock=games]").click();
     for (const id of ["hatch", "memory"]) {
-      await home(page);
-      await page.locator("[data-dock=games]").click();
       await page.locator(`[data-game-tile=${id}]`).click();
-      await expect(page.locator(".game-frame .game-tray .pick")).toHaveCount(6);
+      await expect(page.locator(`.game-frame[data-screen=${id}] .game-tray .pick`)).toHaveCount(6);
       expect(await rows(), `${id} on ${name}`).toEqual(want);
+      // Back to the lobby's tiles for the next, as a child goes (not by loading the app again).
+      await page.locator(".games-back").click();
+      await expect(page.locator("[data-game-tile]").first()).toBeVisible();
     }
   }
 });
