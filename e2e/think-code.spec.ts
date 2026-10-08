@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { askedLines, installAudioSpy, requestedCues, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
-import { noting } from "./kit";
+import { noting, paintingIn } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -1153,8 +1153,7 @@ test("the scene moves a little on its own, and the animal breathes and blinks", 
   const board = page.locator(".game-frame[data-screen=bird]");
   await expect(board).toHaveAttribute("data-mode", "tap");
   // The place is a painting, and it drifts (very slowly: see backdrops.spec.ts).
-  // (Up to 15 seconds for it to come in: see painted() in backdrops.spec.ts.)
-  await expect(board.locator(".game-scene img.game-backdrop-art")).toHaveAttribute("data-in", "true", { timeout: 15_000 });
+  await paintingIn(board.locator(".game-scene img.game-backdrop-art"));
   const now = await moving(page);
   expect(now).toContain("img.game-backdrop.game-backdrop-art");
   expect(now).toContain("pet span.game-host-body");

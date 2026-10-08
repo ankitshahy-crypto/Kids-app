@@ -65,6 +65,29 @@ export async function openGame(page: Page, id: string): Promise<Locator> {
 }
 
 /** Wait for the round with this number (from 0) to be the one being played. */
+/**
+ * Waits for a scene's painting to be in (src/game/kit.tsx, `data-in`), and when it is not, says what
+ * became of the picture. A painting has stayed out twice in WebKit runs of CI, for 5 s and for 15 s,
+ * and not once in two more runs of the whole suite and 250 of the painting tests with every
+ * picture watched (branch lab/painting-why). Loaded (complete, 1500 wide): the game missed its
+ * load. Not loaded: its load never finished, and when it was fetched, if it was, says more.
+ */
+export async function paintingIn(art: Locator) {
+  try {
+    await expect(art).toHaveAttribute("data-in", "true");
+  } catch (error) {
+    const seen = await art
+      .evaluate((img: HTMLImageElement) => {
+        const fetched = performance
+          .getEntriesByName(img.currentSrc || img.src)
+          .map((entry) => `from ${Math.round(entry.startTime)} to ${Math.round((entry as PerformanceResourceTiming).responseEnd)} ms`);
+        return `complete ${img.complete}, ${img.naturalWidth} wide, ${img.isConnected ? "on" : "off"} the page; fetched ${fetched.join(" and ") || "(not in the page's list)"}; the page at ${Math.round(performance.now())} ms`;
+      })
+      .catch((problem) => `could not ask the picture: ${String(problem).slice(0, 120)}`);
+    throw new Error(`The painting did not come in: ${seen}.\n${String(error)}`);
+  }
+}
+
 export async function onRound(frame: Locator, round: number) {
   await expect(frame).toHaveAttribute("data-round", String(round));
   await expect(frame).toHaveAttribute("data-solved", "false");

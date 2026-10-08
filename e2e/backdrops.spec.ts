@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { child, game, onRound, timePlacement } from "./kit";
+import { child, game, onRound, paintingIn, timePlacement } from "./kit";
 
 // Two tests here hold back or refuse a painting's fetch from the test (page.route). The service
 // worker would answer such a fetch itself, out of the test's sight, so none runs in this file.
@@ -63,11 +63,7 @@ async function painted(frame: Locator, kind: string) {
   await expect(scene).toHaveAttribute("data-painted", "true");
   const art = scene.locator("img.game-backdrop-art");
   await expect(art).toHaveAttribute("src", new RegExp(`/backdrops/${kind}\\.webp$`));
-  // Up to 15 seconds: when the game is put on the page, React sets the picture's address again (so
-  // that a load it let go, of a picture that landed before the game was on the page, comes again),
-  // and WebKit then fetches the picture a second time. From the dev server that is tens of
-  // milliseconds, and in CI, once, more than five seconds.
-  await expect(art).toHaveAttribute("data-in", "true", { timeout: 15_000 });
+  await paintingIn(art);
   await expect.poll(() => art.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(1500);
   return { scene, art };
 }
