@@ -311,19 +311,25 @@ async function watchCheer(host: Locator) {
     };
     look();
     new MutationObserver(look).observe(box, { attributes: true, childList: true, subtree: true });
+    // While the cheering face is fully there: what is left of the faces under it. (The cheer
+    // lasts a second; read here, as it goes by, not from the test, which can come to it late.)
+    const under = () => {
+      if (over.getAttribute("data-on") === "true" && getComputedStyle(over).opacity === "1") {
+        seen.gone = [idle, blink].map((img) => getComputedStyle(img).visibility).join();
+      }
+    };
     const frame = () => {
       const scale = getComputedStyle(animal).scale;
       const place = new DOMMatrix(getComputedStyle(body).transform);
       if (!["none", "1", "1 1"].includes(scale)) seen.moved.push(`scale ${scale}`);
       if (Math.abs(place.f) > 0.5 || Math.abs(place.b) > 0.01 || Math.abs(place.a - 1) > 0.01) seen.moved.push(`body ${place.toString()}`);
-      // While the cheering face is fully there: what is left of the faces under it. (The cheer
-      // lasts a second; read here, frame by frame, not from the test, which can come to it late.)
-      if (over.getAttribute("data-on") === "true" && getComputedStyle(over).opacity === "1") {
-        seen.gone = [idle, blink].map((img) => getComputedStyle(img).visibility).join();
-      }
+      under();
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
+    // And on a clock of its own as well as frame by frame: a browser that is kept busy draws few
+    // frames, and once, in WebKit, none of them fell in the second the cheer was fully there.
+    setInterval(under, 40);
   });
 }
 

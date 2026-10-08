@@ -188,8 +188,11 @@ test("the comfort settings save on this device and show on the child's screen", 
     await page.locator(`[data-setting=${id}]`).getByRole("button", { name: "On" }).click();
   }
   await expect(page.locator("[data-mix=music]").getByRole("button", { name: "Off" })).toBeVisible();
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-settings-v1") ?? "{}"));
-  expect(saved).toMatchObject({ calm: true, easierTracing: true, readableFont: true, letterSpacing: true, highContrast: true, readingGoal: 2, extraChunks: 0 });
+  // (Saved a moment after each tap, once the page has drawn the change: looked for until it is
+  // there. Read once, straight after the last tap, it was a tap behind once, in WebKit.)
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-settings-v1") ?? "{}")))
+    .toMatchObject({ calm: true, easierTracing: true, readableFont: true, letterSpacing: true, highContrast: true, readingGoal: 2, extraChunks: 0 });
 
   await page.reload();
   await page.getByRole("button", { name: "Mia" }).click();
