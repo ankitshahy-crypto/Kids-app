@@ -53,6 +53,8 @@ async function install(page: Page) {
       };
     }
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+    // The automatic download runs as in a built app (a development build holds it unless asked).
+    localStorage.setItem("littlenest-dev-download", "1");
     localStorage.removeItem("kids-app-silent-hint-v1");
   }, profile);
 }

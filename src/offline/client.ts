@@ -141,12 +141,29 @@ function warm(): Promise<void> {
 }
 
 /**
+ * A development build (the dev server the browser tests run against) starts no download on its
+ * own unless `littlenest-dev-download` is "1" (the tests of the download set it); a grown-up's tap
+ * still starts one. A test page that ran past the wait for a service worker would otherwise fetch
+ * the whole sound pack behind it, four clips at a time, and in WebKit, which reaches the dev server
+ * over six connections, a game's painting was left waiting more than five seconds. A built app,
+ * on the web or installed, is unchanged.
+ */
+function developmentHolds(): boolean {
+  if (!import.meta.env.DEV) return false;
+  try {
+    return window.localStorage.getItem("littlenest-dev-download") !== "1";
+  } catch {
+    return true;
+  }
+}
+
+/**
  * The automatic download: only once a child exists, only on a connection
  * that welcomes it, and only once per set of animals. Otherwise it waits and
  * says why; a grown-up can start it from the Offline panel.
  */
 function warmIfWelcome(): void {
-  if (snapshot.bundled) return;
+  if (snapshot.bundled || developmentHolds()) return;
   const hold = holdNow();
   if (hold) {
     if (!warming && snapshot.phase !== "ready") publish({ phase: "waiting", hold, size: sizeNow() });
