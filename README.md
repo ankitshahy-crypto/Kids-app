@@ -49,7 +49,7 @@ Teacher opens a classroom shell with sample data marked Demo: a class switcher, 
 
 ## Run on an iPhone
 
-The native project is the `ios/` folder (app id `com.triagedesk.littlenest`, display name LittleNest). It is a universal app: iPhone stays portrait, and iPad supports portrait and landscape. From a Mac with Xcode:
+The native project is the `ios/` folder (app id `com.triagedesk.littlenest`, display name LittleNest). It is a universal app for iOS 15.4 and later (the layout uses the small-viewport units Safari got in 15.4): iPhone stays portrait, and iPad supports portrait and landscape. The app is always light, so the system pickers and alerts match the cream screens. `ios/App/App/PrivacyInfo.xcprivacy` is the privacy manifest App Store Connect requires: the app's own code uses one "required reason" API, UserDefaults, for the pilot memo below, and tracks and collects nothing; `src/purchase/pilotBuild.test.ts` checks the file is in the bundle and complete. From a Mac with Xcode:
 
 ```bash
 git clone <this-repo>
