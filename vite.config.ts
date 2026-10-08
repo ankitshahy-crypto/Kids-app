@@ -22,6 +22,18 @@ const allowlist = navigationAllowlist(base);
 
 export default defineConfig({
   plugins: [
+    // The measuring bench (branch lab/**): how long the dev server keeps an idle connection open
+    // (Node's own is 5 s), from LAB_KEEPALIVE in ms.
+    {
+      name: "lab-keep-alive",
+      configureServer(server) {
+        const ms = Number(process.env.LAB_KEEPALIVE ?? 0);
+        if (ms > 0 && server.httpServer) {
+          (server.httpServer as unknown as { keepAliveTimeout: number; headersTimeout: number }).keepAliveTimeout = ms;
+          (server.httpServer as unknown as { keepAliveTimeout: number; headersTimeout: number }).headersTimeout = ms + 1000;
+        }
+      },
+    },
     react(),
     VitePWA({
       registerType: "prompt",

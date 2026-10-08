@@ -1,0 +1,45 @@
+name: Lab
+
+# The measuring bench. It runs only for branches named lab/..., which are never merged: a push
+# there measures the app and prints what it found as notices.
+on:
+  push:
+    branches:
+      - "lab/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # A request to the dev server after the connection has been idle, timed, in WebKit and Chromium:
+  # with Node's own 5 s keep-alive, and with the server keeping idle connections 120 s.
+  stall:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        keepalive: ["", "120000"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit chromium
+      - name: Requests after an idle connection, four pages at once in each browser
+        continue-on-error: true
+        run: npx playwright test -c playwright.lab.config.ts e2e/zz-stall-lab.spec.ts --project=wk-iphone13 --project=cr-iphone --workers=4 --repeat-each=4
+        env:
+          LAB_KEEPALIVE: ${{ matrix.keepalive }}
+      - name: What was seen (1)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=0
+      - name: What was seen (2)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=1
