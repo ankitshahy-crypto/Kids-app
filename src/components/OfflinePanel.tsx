@@ -58,8 +58,9 @@ export function OfflinePanel() {
         </button>
       )}
       <p className="adult-copy">
-        Recorded clips play first. If a clip is not on this device, the phone speaks. iPhone voices usually work
-        offline.
+        {bundled
+          ? "Recorded clips play first. If one cannot be played, the device's own voice speaks instead."
+          : "Recorded clips play first. If a clip is not on this device, the phone speaks. iPhone voices usually work offline."}
       </p>
       {state.queued > 0 ? (
         <p className="adult-copy" data-outbox={state.queued}>
@@ -68,21 +69,31 @@ export function OfflinePanel() {
       ) : (
         <p className="adult-copy">Nothing is waiting to send.</p>
       )}
-      {state.needRefresh ? (
-        <>
-          <p className="adult-copy">A new version is ready. It waits here so a lesson is never interrupted.</p>
-          <button type="button" className="offline-update" onClick={() => state.applyUpdate()}>
-            Update LittleNest
-          </button>
-        </>
+      {bundled ? (
+        // The installed app: its updates are the App Store's, and it is already on the Home Screen.
+        // (Nothing here names a browser or another kind of phone.)
+        <p className="adult-copy" data-offline-updates="store">
+          New versions come from the App Store, like any app.
+        </p>
       ) : (
-        <p className="adult-copy">A new version shows up here, not in the middle of a lesson.</p>
+        <>
+          {state.needRefresh ? (
+            <>
+              <p className="adult-copy">A new version is ready. It waits here so a lesson is never interrupted.</p>
+              <button type="button" className="offline-update" onClick={() => state.applyUpdate()}>
+                Update LittleNest
+              </button>
+            </>
+          ) : (
+            <p className="adult-copy">A new version shows up here, not in the middle of a lesson.</p>
+          )}
+          <h3>Add to Home Screen</h3>
+          <h4>iPhone Safari</h4>
+          <p className="adult-copy">Tap the Share button, then Add to Home Screen.</p>
+          <h4>Android</h4>
+          <p className="adult-copy">Open the browser menu, then Install app or Add to Home screen.</p>
+        </>
       )}
-      <h3>Add to Home Screen</h3>
-      <h4>iPhone Safari</h4>
-      <p className="adult-copy">Tap the Share button, then Add to Home Screen.</p>
-      <h4>Android</h4>
-      <p className="adult-copy">Open the browser menu, then Install app or Add to Home screen.</p>
     </section>
   );
 }

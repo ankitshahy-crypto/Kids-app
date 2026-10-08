@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
+import { DEVICES, openOn, roomUnder } from "./devices";
 
 /**
  * From the design review: on an iPad the games stayed phone-sized in the top half of the screen,
@@ -102,4 +103,197 @@ test("375x667: three choices fit one row, four do too, and Memory keeps three to
   const rows = new Map<number, number>();
   for (const pick of fit.picks) rows.set(pick.top, (rows.get(pick.top) ?? 0) + 1);
   expect([...rows.values()]).toEqual([3, 3]);
+});
+
+/**
+ * As the installed app lays a game out, on the screens it is installed on (e2e/devices.ts).
+ *
+ * A test screen with no status bar and no home indicator has more room than the device does. At
+ * 1180 by 820 with tips off (the test above) a game fitted; on the iPad Air that size stands for,
+ * with the grown-ups' tip on its line as it is by default, the bottom of every row of choices was
+ * off the screen, What can I buy? had lost its price tags, and Hatch the Egg its whole second row
+ * of letters.
+ *
+ * Here each screen has its device's insets, and the tip is showing, open: the tallest the page
+ * outside the game gets. Every game of every section is opened, and nothing a child taps may
+ * reach below the page (the screen less the home indicator). (Take me home has more under its
+ * scene in some rounds than in its first: think-code.spec.ts plays it through on these screens.)
+ *
+ * These run in Chromium, once: they set their own screens, and the insets need Chromium.
+ */
+
+/** Each section's way in, and its tiles. The dock's games are a lobby of their own. */
+const SECTIONS: Record<string, { door: string; tiles: string }> = {
+  Numbers: { door: "[data-course=math]", tiles: "[data-screen=today] [data-activity]" },
+  Colors: { door: "[data-course=colors]", tiles: "[data-screen=today] [data-activity]" },
+  "Time & Money": { door: "[data-course=time]", tiles: "[data-screen=today] [data-activity]" },
+  Build: { door: "[data-course=build]", tiles: "[data-screen=today] [data-activity]" },
+  Science: { door: "[data-course=science]", tiles: "[data-screen=today] [data-activity]" },
+  Games: { door: "[data-dock=games]", tiles: "[data-game-tile]" },
+};
+
+/**
+ * Tiles that open a board of their own and not a kit game (number tracing, the wheel of Spin &
+ * Say): they have their own tests. Every other tile has to open a game. (Which was which used to
+ * be told by whether a game had come within a third of a second of the tap. On a busy machine one
+ * came later than that now and then, and was passed over without a word.)
+ */
+const OWN_BOARDS = new Set(["trace", "spin"]);
+
+async function home(page: Page) {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Mia" }).click();
+  await expect(page.locator("[data-dock=games]")).toBeVisible();
+}
+
+/**
+ * From whatever a tile opened, back to the section's tiles, as a child goes: by the lobby's own
+ * button in the dock's games, by the top bar's Back elsewhere. Should that not bring the tiles (a
+ * screen whose way back leads somewhere else), the app is loaded again.
+ *
+ * (Each game used to be opened from a fresh load of the app: some four hundred loads in these
+ * tests, and a quarter of the whole suite's time on CI. And once, on CI, the start screen never
+ * came from one of them, and the test waited out its minute for the child's face.)
+ */
+async function backToTiles(page: Page, door: string, tiles: string) {
+  const lobby = page.locator(".games-back");
+  const back = (await lobby.count()) > 0 ? lobby : page.getByRole("button", { name: "Back", exact: true });
+  try {
+    await back.first().click({ timeout: 3_000 });
+    await expect(page.locator(tiles).first()).toBeVisible({ timeout: 3_000 });
+  } catch {
+    await home(page);
+    await page.locator(door).click();
+    await expect(page.locator(tiles).first()).toBeVisible();
+  }
+}
+
+for (const [name, device] of Object.entries(DEVICES)) {
+  for (const [section, { door, tiles }] of Object.entries(SECTIONS)) {
+    test(`on ${name}, as installed, with the tip open: everything to tap in ${section} is on the page`, async ({ page, browserName }, testInfo) => {
+      test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+      test.setTimeout(60_000);
+      await openOn(page, device);
+      await home(page);
+      // The insets took: the page is padded for them.
+      expect(await page.locator(".stage").evaluate((stage) => parseFloat(getComputedStyle(stage).paddingBottom))).toBe(12 + device.bottom);
+      await page.locator(door).click();
+      await expect(page.locator(tiles).first()).toBeVisible();
+      const ids = await page.locator(tiles).evaluateAll((all) => all.map((tile) => tile.getAttribute("data-activity") ?? tile.getAttribute("data-game-tile") ?? ""));
+      expect(ids.length).toBeGreaterThan(2);
+      const seen: string[] = [];
+      for (const id of ids.filter((id) => !OWN_BOARDS.has(id))) {
+        if (seen.length > 0) await backToTiles(page, door, tiles);
+        await page.locator(`${tiles}[data-activity="${id}"], ${tiles}[data-game-tile="${id}"]`).first().click();
+        const frame = page.locator(".game-frame");
+        await expect(frame.locator(".game-scene"), `${id}: a game with a scene (a tile with a board of its own belongs in OWN_BOARDS)`).toBeVisible();
+        const tip = page.locator(".grownup-tip");
+        await expect(tip).toHaveAttribute("data-tip-open", "true");
+        const open = await roomUnder(page, device.bottom);
+        // The one that does not fit: six letters under an open tip on the shortest phone. By the
+        // time a child has hatched their way to six letters the tip has long been its chip, and
+        // with the chip they fit, which is what is asked of it here.
+        const shortest = name === "an iPhone SE" && id === "hatch";
+        if (!shortest) expect(open.room, `${id}: room under the lowest thing to tap, tip open`).toBeGreaterThanOrEqual(0);
+        await tip.locator(".grownup-tip-hide").click();
+        await expect(tip).toHaveAttribute("data-tip-open", "false");
+        const chip = await roomUnder(page, device.bottom);
+        expect(chip.room, `${id}: room under the lowest thing to tap, tip closed to its chip`).toBeGreaterThanOrEqual(0);
+        seen.push(id);
+      }
+      // The section's games were all looked at (fewer than three would mean its tiles were not found).
+      expect(seen.length, `games opened in ${section}: ${seen.join(", ")}`).toBeGreaterThanOrEqual(3);
+    });
+  }
+}
+
+test("on an iPad on its side six letters, and six cards, sit in one row; upright and on a phone, three to a row", async ({ page, browserName }, testInfo) => {
+  test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+  // Four screens, two games on each: it took 22 of its 30 seconds on a slow runner when it loaded the app for every game.
+  test.setTimeout(60_000);
+  const rows = async () => {
+    const tops = await page.locator(".game-tray .pick").evaluateAll((picks) => picks.map((pick) => Math.round(pick.getBoundingClientRect().top)));
+    const count = new Map<number, number>();
+    for (const top of tops) count.set(top, (count.get(top) ?? 0) + 1);
+    return [...count.values()];
+  };
+  for (const [name, want] of [
+    ["an iPad Air on its side", [6]],
+    ["an iPad mini on its side", [6]],
+    ["a 9.7-inch iPad", [3, 3]],
+    ["an iPhone 14", [3, 3]],
+  ] as const) {
+    await openOn(page, DEVICES[name]);
+    await home(page);
+    await page.locator("[data-dock=games]").click();
+    for (const id of ["hatch", "memory"]) {
+      await page.locator(`[data-game-tile=${id}]`).click();
+      await expect(page.locator(`.game-frame[data-screen=${id}] .game-tray .pick`)).toHaveCount(6);
+      expect(await rows(), `${id} on ${name}`).toEqual(want);
+      // Back to the lobby's tiles for the next, as a child goes (not by loading the app again).
+      await page.locator(".games-back").click();
+      await expect(page.locator("[data-game-tile]").first()).toBeVisible();
+    }
+  }
+});
+
+/**
+ * A game's row of things to tap can be taller in a later round than in its first, and the tests
+ * above open each game at its first. Two were: the jars of Three jars have their names under them
+ * (its first round's chores are pictures), and a plate of seven to nine apples in Which has more
+ * has three rows of them (apples are the tallest of the things to count). On an iPad Air on its
+ * side the jars were 45px under the screen, and the bottom 34px of both plates were, in a game
+ * that is about counting what is on the plates.
+ *
+ * Found by playing every round of every game on these screens (1,309 rounds on a phone, four ages
+ * and three lesson weeks), which is how Take me home's rounds were found too (think-code.spec.ts).
+ */
+test("on an iPad on its side the second round of Three jars has its jars on the page", async ({ page, browserName }, testInfo) => {
+  test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+  for (const name of ["an iPad Air on its side", "an iPad mini on its side"]) {
+    const device = DEVICES[name];
+    await openOn(page, device, { quick: true });
+    await home(page);
+    await page.locator("[data-course=time]").click();
+    await page.locator("[data-screen=today] [data-activity=jars]").click();
+    const frame = page.locator(".game-frame[data-screen=jars]");
+    // A coin for each job, and then the jars to put them in.
+    for (const chore of ["tidy", "feed", "help"]) await frame.locator(`.pick[data-chore=${chore}]`).click();
+    await expect(frame.locator(".pick[data-jar]")).toHaveCount(3);
+    await expect(frame).toHaveAttribute("data-round", "1");
+    // The tip opens by itself the first time a child's grown-up meets the game, which here is on the first of the two screens.
+    const tip = page.locator(".grownup-tip");
+    if ((await tip.getAttribute("data-tip-open")) !== "true") await tip.locator(".grownup-tip-chip").click();
+    await expect(tip).toHaveAttribute("data-tip-open", "true");
+    expect((await roomUnder(page, device.bottom)).room, `${name}: room under the jars, tip open`).toBeGreaterThanOrEqual(0);
+    await tip.locator(".grownup-tip-hide").click();
+    expect((await roomUnder(page, device.bottom)).room, `${name}: room under the jars, tip closed to its chip`).toBeGreaterThanOrEqual(0);
+  }
+});
+
+test("on an iPad on its side a plate of nine apples in Which has more is all on the page", async ({ page, browserName }, testInfo) => {
+  test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+  const device = DEVICES["an iPad Air on its side"];
+  // One known play for ages 5 to 7 (the salt): its second round is six apples against nine.
+  await openOn(page, device, { ageRange: "6-7", quick: true, salt: 11 });
+  await home(page);
+  await page.locator("[data-course=math]").click();
+  await page.locator("[data-screen=today] [data-activity=more]").click();
+  const frame = page.locator(".game-frame[data-screen=more]");
+  const rounds = Number(await frame.getAttribute("data-rounds"));
+  let most = 0;
+  const heights = new Set<number>();
+  for (let round = 0; round < rounds; round += 1) {
+    await expect(frame).toHaveAttribute("data-round", String(round));
+    await expect(frame).toHaveAttribute("data-solved", "false");
+    const counts = await frame.locator(".game-tray .plate").evaluateAll((plates) => plates.map((plate) => Number(plate.getAttribute("data-count"))));
+    // (Apples on the plates: the count, as apples, of the fuller one.)
+    most = Math.max(most, await frame.locator(".game-tray .plate .math-apple").count() > 0 ? Math.max(...counts) : 0);
+    expect((await roomUnder(page, device.bottom)).room, `round ${round}, plates of ${counts.join(" and ")}: room under them`).toBeGreaterThanOrEqual(0);
+    heights.add(Math.round((await frame.locator(".game-scene").boundingBox())!.height));
+    await frame.locator(`.pick[data-side=${await frame.getAttribute("data-answer")}]`).click();
+  }
+  // The play had a plate of three rows of apples in it, and the scene was one height through all of it.
+  expect(most).toBe(9);
+  expect(heights.size).toBe(1);
 });

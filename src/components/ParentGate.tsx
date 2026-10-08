@@ -139,6 +139,9 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
           >
             <input
               className="name-input"
+              // The PIN typed to get in shows as dots: a child beside the grown-up does not read it.
+              // A new PIN being chosen stays in view, so it is not saved with a slip in it.
+              data-pin={mode === "pin" ? "entry" : "new"}
               inputMode="numeric"
               autoComplete="off"
               maxLength={4}

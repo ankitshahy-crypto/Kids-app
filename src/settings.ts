@@ -1,3 +1,4 @@
+import { deviceStorage } from "./deviceStorage";
 import { SETTINGS_KEY, readStored, writeStored } from "./storage";
 
 export type SpeechSpeed = "slow" | "slower";
@@ -107,7 +108,7 @@ const STORAGE_KEY = SETTINGS_KEY;
 
 export function loadSettings(): Settings {
   try {
-    const raw = readStored(localStorage, STORAGE_KEY);
+    const raw = readStored(deviceStorage(), STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return DEFAULT_SETTINGS;
@@ -142,5 +143,5 @@ export function loadSettings(): Settings {
 }
 
 export function saveSettings(settings: Settings): void {
-  writeStored(localStorage, STORAGE_KEY, JSON.stringify(settings));
+  writeStored(deviceStorage(), STORAGE_KEY, JSON.stringify(settings));
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { unlockAudio } from "../audio/manager";
 import { resumeSpeech } from "../audio/player";
 import type { AnimalId } from "../data/animals";
@@ -537,7 +537,7 @@ export function SoundItOut({
             <line x1="2" y1="12" x2="90" y2="12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             <path d="M86 5 L97 12 L86 19" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>
-          <div className="blend-token" ref={tokenRef} style={{ left: `${progress * 100}%` }} data-blend-token>
+          <div className="blend-token" ref={tokenRef} style={{ "--blend-at": `${progress * 100}%` } as CSSProperties} data-blend-token>
             {animal ? <Hero animal={animal} outfit={outfit} /> : <StarIcon />}
           </div>
         </div>

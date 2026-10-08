@@ -1,3 +1,5 @@
+import { deviceStorage } from "../deviceStorage";
+
 export const PIN_ATTEMPT_LIMIT = 5;
 export const PIN_COOLDOWN_MS = 30_000;
 /** First lock, then the next, then every lock after that. */
@@ -50,7 +52,7 @@ function write(storage: AttemptStore, attempts: PinAttempts): void {
 }
 
 /** A lock that has already ended keeps its strike count and clears the miss tally. */
-export function readPinAttempts(now = Date.now(), storage: AttemptStore = localStorage): PinAttempts {
+export function readPinAttempts(now = Date.now(), storage: AttemptStore = deviceStorage()): PinAttempts {
   const current = readRaw(storage);
   if (current.lockedUntil > 0 && current.lockedUntil <= now) {
     return { fails: 0, lockedUntil: 0, strikes: current.strikes };
@@ -63,7 +65,7 @@ export function pinLocked(attempts: PinAttempts, now = Date.now()): boolean {
 }
 
 /** Count a wrong answer. The fifth miss locks the gate, longer each time it happens. */
-export function noteWrongPin(now = Date.now(), storage: AttemptStore = localStorage): PinAttempts {
+export function noteWrongPin(now = Date.now(), storage: AttemptStore = deviceStorage()): PinAttempts {
   const current = readPinAttempts(now, storage);
   if (pinLocked(current, now)) return current;
   const fails = current.fails + 1;
@@ -77,7 +79,7 @@ export function noteWrongPin(now = Date.now(), storage: AttemptStore = localStor
   return next;
 }
 
-export function clearPinAttempts(storage: AttemptStore = localStorage): void {
+export function clearPinAttempts(storage: AttemptStore = deviceStorage()): void {
   try {
     storage.removeItem(ATTEMPT_KEY);
   } catch {

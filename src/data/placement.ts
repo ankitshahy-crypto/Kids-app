@@ -1,3 +1,4 @@
+import { deviceStorage } from "../deviceStorage";
 import { PLACEMENT_KEY, readStored, writeStored } from "../storage";
 import { calendarStageCap } from "./ageBand";
 import {
@@ -302,7 +303,7 @@ export function parsePlacement(value: unknown): PlacementDocument | null {
   return { version: 1, origin, classId, updatedAt, subjects };
 }
 
-export function loadPlacement(storage: KeyValueStore = localStorage): PlacementDocument {
+export function loadPlacement(storage: KeyValueStore = deviceStorage()): PlacementDocument {
   try {
     const raw = readStored(storage, PLACEMENT_STORAGE_KEY);
     if (!raw) return emptyPlacement();
@@ -312,7 +313,7 @@ export function loadPlacement(storage: KeyValueStore = localStorage): PlacementD
   }
 }
 
-export function savePlacement(doc: PlacementDocument, storage: KeyValueStore = localStorage): void {
+export function savePlacement(doc: PlacementDocument, storage: KeyValueStore = deviceStorage()): void {
   writeStored(storage, PLACEMENT_STORAGE_KEY, JSON.stringify(doc));
 }
 

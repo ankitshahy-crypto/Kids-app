@@ -10,7 +10,15 @@ import type { Settings } from "../settings";
  */
 export function useSpeaker(settingsRef: { current: Settings }) {
   const playRef = useRef<AbortController | null>(null);
-  useEffect(() => () => playRef.current?.abort(), []);
+  /** The screen has closed: a line stopped by that tells no one. */
+  const gone = useRef(false);
+  useEffect(() => {
+    gone.current = false;
+    return () => {
+      gone.current = true;
+      playRef.current?.abort();
+    };
+  }, []);
   return useMemo(() => {
     const play = (run: (settings: Settings, signal: AbortSignal) => Promise<void>) => {
       playRef.current?.abort();
@@ -39,12 +47,24 @@ export function useSpeaker(settingsRef: { current: Settings }) {
       color(name: string) {
         play((settings, signal) => playColor(name, settings, signal));
       },
-      /** `onDone` runs only when the whole line is said, not when it is stopped. */
-      line(cues: Cue[], onDone?: () => void) {
+      /**
+       * `onDone` runs only when the whole line is said, not when it is stopped. `onStop` runs when it
+       * is stopped before its end by something else being said (not when the screen closes). A line is
+       * kept for "Hear it again" unless `remember` is false (what a tap says, right or wrong, is not
+       * the question).
+       */
+      line(cues: Cue[], onDone?: () => void, options: { remember?: boolean; onStop?: () => void } = {}) {
         play((settings, signal) =>
-          playLine(cues, settings, signal).then(() => {
-            if (!signal.aborted) onDone?.();
-          }),
+          playLine(cues, settings, signal, { remember: options.remember }).then(
+            () => {
+              if (!signal.aborted) onDone?.();
+              else if (!gone.current) options.onStop?.();
+            },
+            (error: unknown) => {
+              if (!gone.current) options.onStop?.();
+              throw error;
+            },
+          ),
         );
       },
     };

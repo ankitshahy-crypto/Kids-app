@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { installAudioSpy, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
+import { noting } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -249,6 +251,22 @@ test("tapped and dragged blocks play on the animal, one step at a time", async (
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
+test("leaving while the program plays stops it: nothing more is said over the lobby", async ({ page }) => {
+  // Five steps at 700 ms each run for 3.5 s; Back after the first leaves nothing playing.
+  await installAudioSpy(page);
+  await install(page, "move");
+  const board = page.locator("[data-build=move]");
+  for (const block of ["walk", "jump", "spin", "dance", "sing"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board).toHaveAttribute("data-script", "walk,jump,spin,dance,sing");
+  await board.locator("[data-play=run]").click();
+  await expect(board.locator("[data-index='0']")).toHaveAttribute("data-on", "true");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(board).toHaveCount(0);
+  const said = (await spokenLines(page)).length;
+  await page.waitForTimeout(2_500);
+  expect((await spokenLines(page)).slice(said)).toEqual([]);
+});
+
 test("the whole board fits a phone screen: the stage and Play are both in view", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await install(page, "move");
@@ -258,6 +276,23 @@ test("the whole board fits a phone screen: the stage and Play are both in view",
   // Five blocks in one row.
   const tops = await board.locator(".build-block").evaluateAll((blocks) => blocks.map((block) => Math.round(block.getBoundingClientRect().top)));
   expect(new Set(tops).size).toBe(1);
+});
+
+test("with Reduce Motion a program still plays one step at a time, each move held still", async ({ page }) => {
+  // Reduce Motion stills the moves, not the program. Played all at once, the stage never moved and
+  // only the last block's name was heard (each name stops the one before).
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await install(page, "move");
+  const board = page.locator("[data-build=move]");
+  for (const block of ["walk", "jump", "spin"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board).toHaveAttribute("data-script", "walk,jump,spin");
+  const stage = board.locator(".build-stage");
+  const poses = await noting(stage, (element) => element.getAttribute("data-pose"));
+  await board.locator("[data-play=run]").click();
+  await expect(stage).toHaveAttribute("data-pose", "jump");
+  expect(await stage.locator(".build-pose").evaluate((pose) => getComputedStyle(pose).animationName)).toBe("none");
+  await expect(board).toHaveAttribute("data-played", "true");
+  expect(await poses()).toEqual(["rest", "walk", "jump", "spin", "rest"]);
 });
 
 test("a step tapped in Your steps comes out", async ({ page }) => {

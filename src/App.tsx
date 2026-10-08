@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
 import { clearLastCue, primeSpeech, replayLastCue, resumeSpeech } from "./audio/player";
+import { deviceStorage } from "./deviceStorage";
 import { BreakScreen } from "./components/BreakScreen";
 import { HearAgainButton, BreakButton } from "./components/ComfortButtons";
 import { WrapUpSheet } from "./components/WrapUpSheet";
@@ -149,6 +150,14 @@ export default function App() {
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
+  /**
+   * The screen as it is now, for a game's finish that arrives after the child has left it: a game
+   * finished and then left during its ending (Back, Break) still gives its star (the kit's
+   * `useFinish`), and that finish must not take a child who asked for a break back to Today.
+   */
+  const screenNow = useRef(screen);
+  screenNow.current = screen;
+  const onBreak = () => screenNow.current === "break";
   const [grownupsReturn, setGrownupsReturn] = useState<"start" | "kid">("start");
   const [flying, setFlying] = useState(false);
   const [cheer, setCheer] = useState<number | null>(null);
@@ -439,6 +448,7 @@ export default function App() {
   /** The story's own closing question stands in for the generic end tip. */
   const finishStory = (after: string) => {
     reward("story");
+    if (onBreak()) return;
     setScreen("today");
     presentTip(after ? { id: "story-after", text: after } : null, "after");
   };
@@ -446,6 +456,7 @@ export default function App() {
   /** The color moment names a color; the sticker is a color, the star is a reading step. */
   const finishMoment = (label: string) => {
     reward("moment", label ? [{ subject: COLORS, kind: "color", label }] : []);
+    if (onBreak()) return;
     setScreen("today");
     showTip("moment", "end");
   };
@@ -501,6 +512,7 @@ export default function App() {
       } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(mathTip(step, "end"), "after");
   };
@@ -529,6 +541,7 @@ export default function App() {
       } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(colorTip(step, "end"), "after");
   };
@@ -556,6 +569,7 @@ export default function App() {
       } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(timeTip(step, "end"), "after");
   };
@@ -582,6 +596,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(timeTip(step, "end"), "after");
   };
@@ -607,6 +622,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(engineerTip(activity, "end"), "after");
   };
@@ -632,6 +648,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     setScreen("today");
     presentTip(scienceTip(activity, "end"), "after");
   };
@@ -695,6 +712,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
     }
+    if (onBreak()) return;
     presentTip(gameTip(game, "end"), "after");
   };
 
@@ -754,7 +772,7 @@ export default function App() {
     setScreen("break");
   };
 
-  const extrasLeft = active ? extraAllowed(localStorage, active.id, todayKey(), settingsRef.current.extraChunks) : false;
+  const extrasLeft = active ? extraAllowed(deviceStorage(), active.id, todayKey(), settingsRef.current.extraChunks) : false;
 
   return (
     <div
@@ -910,11 +928,17 @@ export default function App() {
                   reason={wrappingUp}
                   canTakeMore={extrasLeft}
                   onMore={() => {
-                    noteExtra(localStorage, active.id, todayKey());
+                    noteExtra(deviceStorage(), active.id, todayKey());
                     setExtrasTick((tick) => tick + 1);
                     setOffer(false);
                   }}
                   onDone={() => {
+                    // On a shared class iPad the start screen is every child's profile, one tap away:
+                    // getting there is a switch of child, and asks a grown-up like any other.
+                    if (settings.sharedDevice) {
+                      askSwitch();
+                      return;
+                    }
                     setOffer(false);
                     setTip(null);
                     setMode("start");
@@ -957,6 +981,10 @@ export default function App() {
                   profile={active}
                   onReady={() => setScreen("today")}
                   onSwitch={() => {
+                    if (settings.sharedDevice) {
+                      askSwitch();
+                      return;
+                    }
                     setScreen("today");
                     setMode("start");
                   }}
@@ -994,6 +1022,7 @@ export default function App() {
                       label,
                     }));
                     reward("draw", learned);
+                    if (onBreak()) return;
                     setScreen("today");
                     showTip("draw", "end");
                   }}
@@ -1211,7 +1240,11 @@ export default function App() {
         {mode === "kid" && askingSwitch ? (
           <ParentGate
             onPass={() => {
+              // Wherever the switch was asked from (Today, a break, the end of the lesson), the next
+              // child starts on Today, with nothing of this one's visit left open.
               setAskingSwitch(false);
+              setOffer(false);
+              setScreen("today");
               setMode("start");
             }}
             onCancel={() => setAskingSwitch(false)}

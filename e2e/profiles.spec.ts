@@ -152,6 +152,62 @@ test("a shared class iPad asks the grown-up check before switching child", async
   await expect(page.locator("[data-screen=start]")).toBeVisible();
 });
 
+test("a shared class iPad asks the grown-up check from a break and at the end of the lesson too", async ({ page }) => {
+  // Every way to the start screen, where each child's profile is one tap away, is a switch of child.
+  const today = await page.evaluate(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
+  await page.addInitScript((today) => {
+    localStorage.setItem(
+      "littlenest-profiles-v1",
+      JSON.stringify({
+        activeId: "mia",
+        profiles: [
+          { id: "mia", name: "Mia", ageRange: "4", animal: "fox", createdAt: new Date().toISOString(), stars: 0, days: { [today]: { reading: { letter: true, draw: true, story: false, moment: true } } } },
+        ],
+      }),
+    );
+    localStorage.setItem("littlenest-settings-v1", JSON.stringify({ sharedDevice: true, extraChunks: 0 }));
+    localStorage.setItem("littlenest-silent-hint-v1", "1");
+  }, today);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Mia" }).click();
+  // From a break: Switch child asks, and Cancel leaves the child on the break.
+  await page.getByRole("button", { name: "Story" }).click();
+  await page.locator("[data-break]").click();
+  await expect(page.locator("[data-screen=break]")).toBeVisible();
+  const gate = page.locator("[data-gate]");
+  await page.getByRole("button", { name: "Switch child" }).click();
+  await expect(gate).toBeVisible();
+  await expect(page.locator("[data-screen=start]")).toHaveCount(0);
+  await gate.getByRole("button", { name: "Cancel" }).click();
+  await expect(gate).toHaveCount(0);
+  await expect(page.locator("[data-screen=break]")).toBeVisible();
+  await page.getByRole("button", { name: "I'm ready" }).click();
+  // At the end of the lesson: All done asks too, and Cancel leaves the wrap-up where it was.
+  await page.getByRole("button", { name: "Story" }).click();
+  await page.getByRole("button", { name: "Read", exact: true }).click();
+  for (let turn = 0; turn < 5; turn += 1) await page.getByRole("button", { name: "Next page" }).click();
+  await page.getByRole("button", { name: "All done" }).click();
+  const sheet = page.locator("[data-wrap-up]");
+  await expect(sheet).toHaveAttribute("data-more", "false");
+  await sheet.locator(".wrap-up-done").click();
+  await expect(gate).toBeVisible();
+  await expect(page.locator("[data-screen=start]")).toHaveCount(0);
+  await gate.getByRole("button", { name: "Cancel" }).click();
+  await expect(gate).toHaveCount(0);
+  await expect(sheet).toBeVisible();
+  // A grown-up answers: the start screen, and the next child begins on Today with no wrap-up left open.
+  // (A button that commits takes no second tap for a moment after the first; a test is quicker than that.)
+  await expect(sheet.locator(".wrap-up-done")).not.toHaveAttribute("data-busy", "true");
+  await sheet.locator(".wrap-up-done").click();
+  await passGate(page);
+  await expect(page.locator("[data-screen=start]")).toBeVisible();
+  await page.getByRole("button", { name: "Mia" }).click();
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
+});
+
 test("at home, a quick tap on the animal stays in the lesson and a hold switches child", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem(

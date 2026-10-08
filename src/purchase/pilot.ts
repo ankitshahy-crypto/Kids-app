@@ -43,3 +43,21 @@ export function pilotUnlocks(answer: PilotAnswer | null | undefined, now: number
 export function afterPilotAnswer(answer: PilotAnswer | null | undefined, now: number = Date.now()): Partial<UnlockState> {
   return pilotUnlocks(answer, now) ? { beta: true, unlocked: true, ready: true } : { ready: true };
 }
+
+/**
+ * The first answers at launch, as one: what the pilot answer does to the unlock state, given once
+ * it is safe to draw the locks.
+ *
+ * A pilot build opens the moment its answer is in. Any other copy waits for the first answer about
+ * what the family owns as well (whatever it is, and a failed check counts): a family that has
+ * paid, on a phone with nothing saved yet (a new phone, a sibling's by Family Sharing), would
+ * otherwise see the locks drawn at the pilot answer and taken away a moment later.
+ */
+export async function firstAnswers(pilot: Promise<PilotAnswer | null | undefined>, owned: Promise<unknown>, now?: number): Promise<Partial<UnlockState>> {
+  const patch = await pilot.then(
+    (answer) => afterPilotAnswer(answer, now),
+    (): Partial<UnlockState> => ({ ready: true }),
+  );
+  if (!patch.beta) await owned.catch(() => undefined);
+  return patch;
+}

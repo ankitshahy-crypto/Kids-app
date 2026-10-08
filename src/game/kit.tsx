@@ -43,6 +43,12 @@ export const REVEAL_AT = 3;
 /** The shortest and longest a right answer stays on screen before the next round. */
 const SOLVED_MIN_MS = 900;
 const SOLVED_MAX_MS = 3200;
+/**
+ * How long a right answer's words may take before the next round opens without them. The words end
+ * the wait themselves, so this only matters when they neither end nor are stopped (a clip that never
+ * arrives): longer than any line the games say.
+ */
+const LINE_GUARD_MS = 8000;
 /** How long the ending plays before the star is given. */
 const FINISH_MS = 1700;
 
@@ -93,6 +99,8 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
   const idle = useRef<number | null>(null);
   const moodTimer = useRef<number | null>(null);
   const after = useRef<number | null>(null);
+  /** Which right answer (or telling) the `after` timer belongs to: an older one's callbacks do nothing. */
+  const turn = useRef(0);
   const quiet = useRef(false);
 
   const stopIdle = useCallback(() => {
@@ -135,6 +143,58 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
     [],
   );
 
+  /**
+   * Say `said`, then run `then`: when the words are done, never sooner than `hold` after now, and
+   * with `pause` after the words (a moment to see what happened).
+   *
+   * The words' own end is what ends the wait, so a line is heard to its last word however long it is
+   * ("Five dots. That is five minutes." used to lose its end to a three-second limit). Two things
+   * stand behind that. If the words are stopped before their end (the child taps the speaker to hear
+   * the question, or taps something else that speaks), the wait ends `cap` after it began, as it
+   * always did. If they neither end nor stop (a clip that never arrives), it ends at LINE_GUARD_MS.
+   *
+   * A wait that follows another before the first one's words are done (My day: a right answer for
+   * each card) takes over from it: the first one's timer is cleared, and whatever of it still fires
+   * finds it is no longer its turn and does nothing. (Before, the first one's late callback could
+   * clear the second one's timer, and the round then waited for ever.)
+   */
+  const afterLine = (said: Cue[], then: () => void, { hold = 0, pause = 0, cap }: { hold?: number; pause?: number; cap: number }) => {
+    const mine = ++turn.current;
+    if (after.current !== null) window.clearTimeout(after.current);
+    // What a tap's answer says is not kept for "Hear it again": that button repeats the question.
+    if (quick()) {
+      if (said.length > 0) speak.line(said, undefined, { remember: false });
+      after.current = window.setTimeout(then, 150);
+      return;
+    }
+    const started = Date.now();
+    let ran = false;
+    const go = () => {
+      if (ran || mine !== turn.current) return;
+      ran = true;
+      if (after.current !== null) window.clearTimeout(after.current);
+      after.current = window.setTimeout(then, Math.max(pause, hold - (Date.now() - started)));
+    };
+    if (said.length === 0) {
+      go();
+      return;
+    }
+    const longest = Math.max(cap, hold);
+    let saying = true;
+    after.current = window.setTimeout(() => {
+      if (ran || mine !== turn.current) return;
+      if (!saying) go();
+      else after.current = window.setTimeout(go, Math.max(0, LINE_GUARD_MS - longest));
+    }, longest);
+    speak.line(said, go, {
+      remember: false,
+      onStop: () => {
+        saying = false;
+        if (Date.now() - started >= longest) go();
+      },
+    });
+  };
+
   return {
     speak,
     mood,
@@ -152,7 +212,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
     /** A tap that is neither right nor wrong (picking something up, a step on the way). */
     touch(said?: Cue[]) {
       setNudge(false);
-      if (said) speak.line(said);
+      if (said) speak.line(said, undefined, { remember: false });
       arm();
     },
     /**
@@ -163,20 +223,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
       quiet.current = true;
       stopIdle();
       setNudge(false);
-      if (quick()) {
-        speak.line(said);
-        after.current = window.setTimeout(then, 150);
-        return;
-      }
-      let ran = false;
-      const go = () => {
-        if (ran) return;
-        ran = true;
-        if (after.current !== null) window.clearTimeout(after.current);
-        after.current = window.setTimeout(then, SOLVED_MIN_MS);
-      };
-      after.current = window.setTimeout(go, SOLVED_MAX_MS);
-      speak.line(said, go);
+      afterLine(said, then, { pause: SOLVED_MIN_MS, cap: SOLVED_MAX_MS });
     },
     /**
      * A wrong tap. It names what was tapped, so the miss still teaches. From the second miss it
@@ -189,19 +236,19 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
       playEffect("boop", settingsRef.current);
       feel("think");
       const again = missRef.current >= 2 ? lineRef.current.filter((cue) => !said.some((it) => it.text === cue.text)) : [];
-      if (said.length + again.length > 0) speak.line([...said, ...again]);
+      // What a wrong tap says is not kept for "Hear it again": that button repeats the question.
+      if (said.length + again.length > 0) speak.line([...said, ...again], undefined, { remember: false });
       arm();
     },
     /**
      * A right answer. It is named aloud, the animal cheers, and `then` runs when the words are done
-     * (never sooner than a moment, never later than a few seconds).
+     * (never sooner than a moment).
      *
      * `hold` is that moment. A game whose answer is something that happens in the scene (the animal
      * walking over the bridge, a lever lifting the rock) passes how long that takes, so it is seen to
      * the end even with the voice off, when there are no words to wait for.
      *
-     * `cap` is the few seconds: a game with a longer line to say at a right answer (the coding
-     * game's kept routine) passes the line's own length, so it is heard to the end.
+     * `cap` is how long the wait lasts when the words are stopped before their end (see `afterLine`).
      */
     right(said: Cue[] = [], then?: () => void, hold: number = SOLVED_MIN_MS, cap: number = SOLVED_MAX_MS) {
       quiet.current = true;
@@ -210,26 +257,10 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
       playEffect("chime", settingsRef.current);
       feel("cheer");
       if (!then) {
-        if (said.length > 0) speak.line(said);
+        if (said.length > 0) speak.line(said, undefined, { remember: false });
         return;
       }
-      const started = Date.now();
-      let ran = false;
-      const go = () => {
-        if (ran) return;
-        ran = true;
-        if (after.current !== null) window.clearTimeout(after.current);
-        const wait = Math.max(0, (reducedMotion() ? 300 : hold) - (Date.now() - started));
-        after.current = window.setTimeout(then, wait);
-      };
-      if (quick()) {
-        if (said.length > 0) speak.line(said);
-        after.current = window.setTimeout(then, 150);
-        return;
-      }
-      after.current = window.setTimeout(go, Math.max(cap, hold));
-      if (said.length > 0) speak.line(said, go);
-      else go();
+      afterLine(said, then, { hold: reducedMotion() ? 300 : hold, cap });
     },
   };
 }
@@ -292,16 +323,35 @@ export function useRounds<T>(rounds: T[]) {
   };
 }
 
-/** The ending: "You did it!", the animal celebrates, and then the star is given. */
+/**
+ * The ending: "You did it!", the animal celebrates, and then the star is given.
+ *
+ * A child who leaves during the ending (Back, Break, back to the games) has still finished the game:
+ * the star is given as they go, a moment after the game has closed. (The app's own finish then finds
+ * where the child has gone, and does not take one who asked for a break back to Today.)
+ */
 export function useFinish(finished: boolean, settingsRef: { current: Settings }, coach: Coach, onDone: () => void) {
   const done = useRef(onDone);
   done.current = onDone;
+  /** The star being given on the way out, so that an effect run again at once (React's rehearsal, in development) can take it back. */
+  const leaving = useRef<number | null>(null);
   useEffect(() => {
     if (!finished) return;
+    if (leaving.current !== null) window.clearTimeout(leaving.current);
+    leaving.current = null;
     playEffect("celebrate", settingsRef.current);
     coach.speak.line([promptCue("kit-done", "You did it!")]);
-    const timer = window.setTimeout(() => done.current(), quick() ? 200 : reducedMotion() ? 700 : FINISH_MS);
-    return () => window.clearTimeout(timer);
+    let given = false;
+    const give = () => {
+      if (given) return;
+      given = true;
+      done.current();
+    };
+    const timer = window.setTimeout(give, quick() ? 200 : reducedMotion() ? 700 : FINISH_MS);
+    return () => {
+      window.clearTimeout(timer);
+      if (!given) leaving.current = window.setTimeout(give, 0);
+    };
     // Runs once, when the last round is done.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);

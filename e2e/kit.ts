@@ -9,7 +9,7 @@ import { createdThisWeek } from "./clock";
  * whole game through in a second or two. Tests about what is said leave it on.
  */
 
-export const stageOfWeek: Record<number, string> = { 0: "day", 1: "routine", 2: "clock", 3: "coins", 4: "shop", 5: "hours", 6: "minutes", 8: "values", 9: "change", 10: "jars", 15: "cards", 16: "cards" };
+export const stageOfWeek: Record<number, string> = { 0: "day", 1: "routine", 2: "clock", 3: "coins", 4: "shop", 5: "hours", 6: "minutes", 8: "values", 9: "change", 10: "jars", 11: "jars", 15: "cards", 16: "cards" };
 
 export function timePlacement(weekIndex: number, stageId = stageOfWeek[weekIndex]) {
   return {

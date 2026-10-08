@@ -83,6 +83,19 @@ export function UnlockPanel({ profiles = [] }: { profiles?: ChildProfile[] }) {
     );
   }
 
+  if (!unlock.ready) {
+    // The App Store has not answered yet (the first moments after the app opens): nothing to buy
+    // is offered until it is known what this copy is and what the family owns.
+    return (
+      <section className="adult-section" data-section="unlock" data-unlock="checking">
+        <h2>Full {PRODUCT_SHORT}</h2>
+        <p className="adult-copy" role="status">
+          Checking with the App Store…
+        </p>
+      </section>
+    );
+  }
+
   if (unlock.beta) {
     return (
       <section className="adult-section" data-section="unlock" data-unlock="beta">
