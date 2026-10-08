@@ -1,0 +1,60 @@
+name: Lab
+
+# The measuring bench. It runs only for branches named lab/..., which are never merged: a push
+# there measures the app and prints what it found as notices.
+on:
+  push:
+    branches:
+      - "lab/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # A painting that stays out in WebKit: the whole suite twice over as CI runs it, and the paintings'
+  # tests alone many times over; for a test that fails waiting for one, what happened to it.
+  full:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - name: The whole suite in WebKit, twice over
+        continue-on-error: true
+        run: npx playwright test --project=iphone --retries=0 --repeat-each=2
+      - name: What was seen (1)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=0
+      - name: What was seen (2)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=1
+
+  paintings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - name: The paintings' tests in WebKit, 25 times over, four at once
+        continue-on-error: true
+        run: npx playwright test e2e/backdrops.spec.ts --project=iphone --retries=0 --repeat-each=25 --workers=4
+      - name: What was seen (1)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=0
+      - name: What was seen (2)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=1
