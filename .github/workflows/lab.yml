@@ -93,7 +93,7 @@ jobs:
         continue-on-error: true
         run: node scripts/slowest-tests.mjs
 
-  # The three tests that failed once each in WebKit, 25 times over.
+  # The test whose painting came late once in WebKit, and the coding board's painted place, 25 times over.
   webkit-again:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -105,8 +105,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps webkit
-      - name: Three tests in WebKit, 25 times over, two at once
-        run: npx playwright test e2e/comfort.spec.ts e2e/animals-art.spec.ts e2e/time-money.spec.ts -g "comfort settings save|the animal blinks|clock to twelve" --project=iphone --retries=0 --repeat-each=25
+      - name: Two painting tests in WebKit, 25 times over, two at once
+        run: npx playwright test e2e/backdrops.spec.ts e2e/think-code.spec.ts -g "narrower than the painting, a phone|the scene moves a little on its own" --project=iphone --retries=0 --repeat-each=25
       - name: Browser test report
         if: ${{ !cancelled() }}
         continue-on-error: true
