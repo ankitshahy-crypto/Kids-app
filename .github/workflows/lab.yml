@@ -1,0 +1,46 @@
+name: Lab
+
+# The measuring bench. It runs only for branches named lab/..., which are never merged: a push
+# there measures the app and prints what it found as notices.
+on:
+  push:
+    branches:
+      - "lab/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The painting tests in WebKit many times over, with the service worker blocked (as the file has
+  # it) and left be: every stall in each. The two tests that hold back or refuse a painting from the
+  # test are left out of both (a service worker would answer those requests itself).
+  sw:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        sw: [block, allow]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - name: The painting tests in WebKit, 60 times over, four at once
+        continue-on-error: true
+        run: npx playwright test e2e/backdrops.spec.ts --project=iphone --retries=0 --repeat-each=60 --workers=4 --grep-invert "the first time a painting lands|cannot be fetched"
+        env:
+          LAB_SW: ${{ matrix.sw }}
+      - name: What was seen (1)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=0
+      - name: What was seen (2)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=1

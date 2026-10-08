@@ -1,9 +1,21 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { child, game, onRound, paintingIn, timePlacement } from "./kit";
+import { watchPaintings } from "./zz-art-watch";
 
 // Two tests here hold back or refuse a painting's fetch from the test (page.route). The service
 // worker would answer such a fetch itself, out of the test's sight, so none runs in this file.
-test.use({ serviceWorkers: "block" });
+// The measuring bench (branch lab/sw): LAB_SW=allow leaves the service worker be, to see whether
+// blocking it is what stalls WebKit's requests.
+test.use({ serviceWorkers: process.env.LAB_SW === "allow" ? "allow" : "block" });
+
+let watch: ReturnType<typeof watchPaintings>;
+test.beforeEach(async ({ page }) => {
+  watch = watchPaintings(page);
+  await watch.ready;
+});
+test.afterEach(async ({}, testInfo) => {
+  await watch.report(testInfo);
+});
 
 /**
  * The scenes behind the games are paintings (public/backdrops, src/data/backdropArt.json). Each is
