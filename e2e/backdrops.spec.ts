@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { child, game, onRound, timePlacement } from "./kit";
+import { child, game, onRound, paintingIn, timePlacement } from "./kit";
 
 // Two tests here hold back or refuse a painting's fetch from the test (page.route). The service
 // worker would answer such a fetch itself, out of the test's sight, so none runs in this file.
@@ -63,7 +63,7 @@ async function painted(frame: Locator, kind: string) {
   await expect(scene).toHaveAttribute("data-painted", "true");
   const art = scene.locator("img.game-backdrop-art");
   await expect(art).toHaveAttribute("src", new RegExp(`/backdrops/${kind}\\.webp$`));
-  await expect(art).toHaveAttribute("data-in", "true");
+  await paintingIn(art);
   await expect.poll(() => art.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(1500);
   return { scene, art };
 }

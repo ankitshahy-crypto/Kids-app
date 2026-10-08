@@ -18,9 +18,13 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Every job names its runner's version. `ubuntu-latest` moves to the next version on a day of
+# GitHub's choosing, and the browsers' system packages move with it: a red build that no commit
+# caused. The version is changed here, on purpose, in a pull request of its own.
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -57,8 +61,10 @@ jobs:
       # A timed-out test says only that it ran out of time, and how close the others came is
       # one line each among hundreds in the log. This lists the slowest tests on the run's
       # summary, and warns about any that passed close to the limit, so a test creeping toward
-      # 30 s is seen before it fails. It runs after a failure too, and cannot fail the build.
-      - name: Slowest browser tests
+      # 30 s is seen before it fails. It also names each test that passed only on its second try
+      # (a failed test is tried once more on CI), and writes what passed and failed to the job's
+      # summary page. It runs after a failure too, and cannot fail the build.
+      - name: Browser test report
         if: ${{ !cancelled() }}
         continue-on-error: true
         run: node scripts/slowest-tests.mjs
@@ -74,3 +80,104 @@ jobs:
         run: npx playwright test -c playwright.locked.config.ts
         env:
           EXPECT_WEB_LOCK: "1"
+
+  # Every browser test again at the two sizes the app is used at: an iPhone's screen and an
+  # iPad's. The job above runs them in a desktop window, where a button pushed off a phone's
+  # screen, or a board that no longer fits beside its tray on an iPad, still passes. These block
+  # a merge like the job above. They need no build: the tests run against the dev server.
+  sizes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      # One size failing says nothing about the other: let both finish.
+      fail-fast: false
+      matrix:
+        project: [phone-size, ipad-size]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright Chromium, ${{ matrix.project }}
+        run: npx playwright test --project=${{ matrix.project }}
+
+      - name: Browser test report
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: node scripts/slowest-tests.mjs
+
+  # The app's own engine. The iPhone and iPad app draws its pages with WebKit, and every job above
+  # runs in Chromium, so a fault that only WebKit has (in sound, in touch, in how a page is laid
+  # out) reached a real iPad before any test saw it. This runs the tests in WebKit at an iPhone's
+  # size. As in the jobs above, a test that fails is tried once more, and one that passes only on
+  # its second try is named on the run.
+  #
+  # It does not block a merge yet. About 8 s into a test page the app starts its background sound
+  # download, four clips at a time, and WebKit reaches the dev server over six connections: a game's
+  # painting asked for after that can wait past the test's five seconds. The installed app never
+  # runs that download (its sounds are bundled). Once the tests keep it out, take
+  # `continue-on-error` out, and this blocks like the others.
+  webkit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+
+      - name: Playwright WebKit, iPhone
+        run: npx playwright test --project=iphone
+
+      - name: Browser test report
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: node scripts/slowest-tests.mjs
+
+  # Known faults in the packages the app is built from, as npm's advisories list them. The first
+  # step is the packages the app itself ships with; the second adds the build's tools. Like the
+  # job above this does not block a merge yet: an advisory is published on npm's day, not on a
+  # commit's, and what to block on is decided once it is known what this reports.
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      # The script runs `npm audit` and prints each advisory as a line of a warning on the run:
+      # the package, how serious, what it is, and whether an update fixes it.
+      - name: Advisories against what the app ships with
+        run: node scripts/audit-report.mjs --omit=dev
+
+      - name: Advisories against the build's tools as well
+        if: ${{ !cancelled() }}
+        run: node scripts/audit-report.mjs

@@ -75,7 +75,7 @@ async function setRange(page: Page, id: string, value: string) {
   }, value);
 }
 
-test("sliders drive the channel gains, and speech volume follows the browser", async ({ page }, testInfo) => {
+test("sliders drive the channel gains, and speech volume follows the browser", async ({ page }) => {
   await installAudioSpies(page);
   await page.goto("./");
   await passParent(page);
@@ -83,7 +83,9 @@ test("sliders drive the channel gains, and speech volume follows the browser", a
   if (await hint.count()) await hint.click();
   await page.getByRole("button", { name: "Settings" }).click();
 
-  const ios = testInfo.project.name === "iphone";
+  // An iPhone or iPad, as the app itself tells one (its user agent, or a Mac that takes touches), not
+  // by this project's name: on an iPad-shaped WebKit project the note showed and the test said no.
+  const ios = await page.evaluate(() => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
   const note = page.getByText("volume buttons");
   if (ios) await expect(note).toBeVisible();
   else await expect(note).toHaveCount(0);

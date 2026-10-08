@@ -47,7 +47,7 @@ test("a first run adds a child and starts their day", async ({ page }) => {
   await expect(page.locator("[data-first-run=true]")).toContainText("Add your child to begin");
   await addSam(page);
   await expect(page.locator(".chunk-strip")).toHaveText("4 more!");
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await expect(page.locator("[data-screen=start]")).toBeVisible();
   await expect(page.getByRole("button", { name: "Sam", exact: true })).toBeVisible();
   const saved = await page.evaluate(() => localStorage.getItem("littlenest-profiles-v1"));
@@ -57,7 +57,7 @@ test("a first run adds a child and starts their day", async ({ page }) => {
 test("removing a child clears them from the start screen", async ({ page }) => {
   await page.goto("./");
   await addSam(page);
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
   await expect(page.getByText("Sam · age 4")).toBeVisible();
@@ -121,7 +121,7 @@ test("the first child offers a PIN once, and a saved PIN guards the next grown-u
   await save.click();
   await expect(prompt).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await expect(page.locator("[data-gate=pin]")).toBeVisible();
   await expect(page.getByLabel("Answer")).toHaveCount(0);
@@ -222,6 +222,13 @@ test("at home, a quick tap on the animal stays in the lesson and a hold switches
   await avatar.click();
   await page.waitForTimeout(400);
   await expect(page.locator("[data-screen=today]")).toBeVisible();
-  await avatar.click({ delay: 1600 });
+  // Held for two seconds, here and wherever a test switches child. The button fires at a second
+  // and a half (HOLD_MS), and the tests held it for 1.6 s: a tenth of a second to spare. A page
+  // kept from running for longer than that as the hold came due (a busy machine does it now and
+  // then) got the release first, which clears the timer, and nothing opened: the next thing the
+  // test asked for was on a start screen that never came. Measured: with the page stalled for
+  // 0.3 s across the 1.5 s mark, a hold of 1.6 s opened nothing six times in six, and a hold of
+  // 2 s opened the start screen six times in six.
+  await avatar.click({ delay: 2000 });
   await expect(page.locator("[data-screen=start]")).toBeVisible();
 });

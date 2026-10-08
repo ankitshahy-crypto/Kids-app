@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { clipSeconds, clipStarts, installAudioSpy, spokenLines } from "./audioSpy";
 import { answerGate, openClassPlace } from "./gate";
 import { expectStar, expectWiggle, meetClock, noting, onRound, openGame, openTimeMoney } from "./kit";
+import { askedLines } from "./audioSpy";
 
 async function passGate(page: Page) {
   await answerGate(page, true);
@@ -349,6 +350,7 @@ test("the dots between the numbers are minutes: five steps take the long hand to
   await expect(clock).toHaveAttribute("data-minute", "0");
   await expect(clock.locator(".clock-dot[data-lit=true]")).toHaveCount(0);
   const heard = (await spokenLines(page)).length;
+  const asked = (await askedLines(page)).length;
   for (const step of [1, 2, 3]) {
     await clock.locator(".pick[data-pick=step]").click();
     // The long hand moves one dot, the dot lights, and the count is shown.
@@ -363,9 +365,11 @@ test("the dots between the numbers are minutes: five steps take the long hand to
   await clock.locator(".clock-hand[data-hand=minute]").click();
   await expect(clock).toHaveAttribute("data-minute", "4");
   await clock.locator(".pick[data-pick=step]").click();
-  // Each step was counted aloud, and five dots are five minutes.
+  // Each step was counted aloud, and five dots are five minutes. The counts are checked as asked for,
+  // not as heard: a tap made over the last count's word stops it for the next (the newer word takes
+  // over), so on a busy machine, with taps as quick as these, "one" and "two" never start to play.
   await expect.poll(async () => (await spokenLines(page)).slice(heard).join(" | "), { timeout: 8_000 }).toContain("five dots. that is five minutes.");
-  expect((await spokenLines(page)).slice(heard)).toEqual(expect.arrayContaining(["one", "five"]));
+  await expect.poll(async () => (await askedLines(page)).slice(asked)).toEqual(expect.arrayContaining(["one", "two", "three", "four", "five"]));
   await expect(clock).toHaveAttribute("data-round", "3", { timeout: 8_000 });
   await expect(clock).toHaveAttribute("data-task", "set");
 });
@@ -516,7 +520,7 @@ test("teacher placement and printables cover the clock and coins", async ({ page
   await openTimeMoney(page);
   // A section page has Back where the child's animal is on the reading path, so step back to the path first.
   await page.locator("[data-section-back]").click();
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
   await passGate(page);
   await page.getByRole("button", { name: /Printables/ }).click();

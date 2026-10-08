@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { askedLines, installAudioSpy, requestedCues, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 import { DEVICES, openOn, roomUnder } from "./devices";
-import { noting } from "./kit";
+import { noting, paintingIn } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -29,6 +29,10 @@ async function install(page: Page, saved: unknown = profile, options: { quick?: 
     ({ saved, quick, salt, calm }) => {
       localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
       localStorage.removeItem("kids-app-silent-hint-v1");
+      // The note about the silent switch has been read. On an iPhone it comes up after the first
+      // tap, across the bottom of the screen, and takes the taps meant for Go until OK is tapped:
+      // every test here that pressed Go timed out in WebKit. None of them is about the note.
+      localStorage.setItem("littlenest-silent-hint-v1", "1");
       // No wait for the praise between rounds (a development-build switch, see e2e/kit.ts).
       if (quick) localStorage.setItem("littlenest-quick-rounds", "1");
       // The boards of one known play (the same kind of switch), when a test is about one of them.
@@ -1129,9 +1133,12 @@ for (const [name, setup] of [
     await page.locator("[data-game-tile=bird]").click();
     const board = page.locator(".game-frame[data-screen=bird]");
     if (setup.calm) await expect(page.locator(".app")).toHaveAttribute("data-calm", "true");
-    // Nothing runs on its own: no scene drift, no blink, no breath.
+    // Nothing runs on its own: no scene drift, no blink, no breath. Looked at more than once: a
+    // change somewhere on the page (the reading ring taking its step each second, say) is a
+    // near-instant movement here, and one look can land on that very frame; it failed that way once
+    // in a few hundred runs. What this is about would still be moving at the next look.
     await page.waitForTimeout(300);
-    expect(await moving(page)).toEqual([]);
+    await expect.poll(() => moving(page), { timeout: 3_000 }).toEqual([]);
     // The glide between tiles keeps a step's time (the quick setting's 160 ms step, less the 20 ms
     // the arrow has first), not the near-nothing every other transition gets; it is the one
     // movement left, and it is seen to happen: the page notes how long the glide took.
@@ -1156,7 +1163,7 @@ test("the scene moves a little on its own, and the animal breathes and blinks", 
   const board = page.locator(".game-frame[data-screen=bird]");
   await expect(board).toHaveAttribute("data-mode", "tap");
   // The place is a painting, and it drifts (very slowly: see backdrops.spec.ts).
-  await expect(board.locator(".game-scene img.game-backdrop-art")).toHaveAttribute("data-in", "true");
+  await paintingIn(board.locator(".game-scene img.game-backdrop-art"));
   const now = await moving(page);
   expect(now).toContain("img.game-backdrop.game-backdrop-art");
   expect(now).toContain("pet span.game-host-body");

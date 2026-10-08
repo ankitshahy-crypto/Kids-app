@@ -253,8 +253,11 @@ for (const id of ["life", "homes", "body", "weather", "senses", "float"]) {
   });
 }
 
-test("the home dock stays on screen, and each section's page shows all of its activities", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "iphone" && testInfo.project.name !== "pixel", "phone layout");
+test("the home dock stays on screen, and each section's page shows all of its activities", async ({ page }) => {
+  // A phone's screen less its status bar and home bar, whatever the project's own size: the test
+  // is about that screen. (It used to skip everywhere but two projects CI did not run, and in a
+  // third, an iPhone in Safari with its bars up, the screen is shorter than the app's own.)
+  await page.setViewportSize({ width: 390, height: 763 });
   await install(page);
   const height = page.viewportSize()?.height ?? 0;
   const dockBottom = () => page.locator("[data-dock=nest]").evaluate((el) => el.getBoundingClientRect().bottom);

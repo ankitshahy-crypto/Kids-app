@@ -33,7 +33,7 @@ test("a teacher places the word ladder and the egg uses that step", async ({ pag
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
   if (await hint.count()) await hint.click();
   await page.getByRole("button", { name: "Mia" }).click();
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
   await openTeacherChild(page, "mia");
