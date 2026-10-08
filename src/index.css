@@ -11968,6 +11968,34 @@ a.unlock-buy {
   --tray-h: 160px;
 }
 
+/* And rows that are taller in a later round than in the first, which is the round the first sweep
+   of these games looked at. Each keeps the taller row's room in every round, so that the scene is
+   one height from the first round to the last.
+
+   Three jars: its second round's jars have their names under them (the first round's chores are
+   pictures). On an iPad Air on its side the jars were 45px under the screen. */
+.game-frame[data-screen="jars"] {
+  --tray-h: 165px;
+}
+
+/* Which has more: a plate of seven to nine things has three rows of them, and ages 5 to 7 are
+   given up to nine. Three rows of apples (the tallest of the things to count) are 38px taller
+   than a picture, and on an iPad Air on its side the bottom 34px of both plates were under the
+   screen, in a game that is about counting what is on them. (Ages 3 and 4 have seven on a plate
+   in one round of one week in six, the lesson's own; the scene makes room in that round only.) */
+.game-frame[data-screen="more"][data-level="later"] {
+  --tray-h: 156px;
+}
+
+.game-frame[data-screen="more"]:has(.game-tray .plate[data-count="7"] .math-apple) {
+  --tray-h: 156px;
+}
+
+/* Coins, sorting: the four bins are a little taller than a picture. */
+.game-frame[data-screen="coins"][data-task="sort"] {
+  --tray-h: 128px;
+}
+
 @media (min-width: 768px) and (orientation: portrait) {
   .game-frame {
     zoom: 1.45;
@@ -11980,6 +12008,16 @@ a.unlock-buy {
   .grownup-tip ~ .game-frame,
   .grownup-tip ~ * .game-frame {
     --tip-room: 80px;
+  }
+
+  /* Take me home's routine chip, to pick: twice an arrow's width and the gap between two, said as
+     lengths. Its rule for a phone works them out from the row's width (a sum with a min() of a
+     percentage inside it), and in a frame drawn larger WebKit makes that sum too big by the zoom:
+     the chip came out 356px wide on an upright iPad where Chromium drew it 249px. Here an arrow is
+     always its full 82px, so nothing needs working out. (An iPad on its side has its own lengths,
+     with the board's rules.) */
+  .game-frame[data-screen="bird"][data-screen] .game-tray .pick[data-routine-pick] {
+    width: 172px;
   }
 }
 
