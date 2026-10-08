@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  measure:
+  loads:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -25,19 +25,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps webkit chromium
-      - name: Take me home, round by round, in both engines
+      - run: npx playwright install --with-deps chromium
+      - name: The start screen, loaded many times, two at once
         continue-on-error: true
-        run: npx playwright test -c playwright.lab.config.ts e2e/zz-bird-lab.spec.ts --workers=2
-      - name: What was measured (1)
+        run: npx playwright test -c playwright.lab.config.ts e2e/zz-loads-lab.spec.ts --project=cr-iphone --workers=2
+      - name: What was seen (1)
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=0
-      - name: What was measured (2)
+      - name: What was seen (2)
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=1
-      - name: What was measured (3)
-        if: ${{ !cancelled() }}
-        run: node scripts/lab-notes.mjs --slice=2
-      - name: What was measured (4)
-        if: ${{ !cancelled() }}
-        run: node scripts/lab-notes.mjs --slice=3
