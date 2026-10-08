@@ -514,7 +514,7 @@ test("teacher placement and printables cover the clock and coins", async ({ page
   await openTimeMoney(page);
   // A section page has Back where the child's animal is on the reading path, so step back to the path first.
   await page.locator("[data-section-back]").click();
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
   await passGate(page);
   await page.getByRole("button", { name: /Printables/ }).click();

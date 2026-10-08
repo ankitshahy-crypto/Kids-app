@@ -347,7 +347,7 @@ test("a teacher sets the hatch level and the egg follows it", async ({ page }) =
     );
   });
   await install(page);
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Teacher", exact: true }).click();
   await passGate(page);
   await openTeacherChild(page, "mia");

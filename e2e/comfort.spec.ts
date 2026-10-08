@@ -258,7 +258,7 @@ test("a break keeps everything and comes back to Today", async ({ page }) => {
   await expect(page.locator(".chunk-strip")).toHaveText("1 of 4 · 3 more!");
   await page.getByRole("button", { name: "Story" }).click();
   await page.locator("[data-break]").click();
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await expect(page.locator("[data-screen=start]")).toBeVisible();
 });
 

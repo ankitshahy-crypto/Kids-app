@@ -147,7 +147,7 @@ test("the Friday sound game notes first tries quietly and shows grown-ups what t
   await page.getByRole("button", { name: "Get my star" }).click();
   await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", String(before + 1));
 
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await passGate(page);
   await page.getByRole("button", { name: "Progress", exact: true }).click();

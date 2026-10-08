@@ -94,7 +94,7 @@ test("a lesson still plays after the connection drops", async ({ page }, testInf
   await page.getByRole("button", { name: "My Nest" }).click();
   await expect(page.locator("[data-screen=nest]")).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "Switch child" }).click({ delay: 1600 });
+  await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
   await answerGate(page, true);
   await page.getByRole("button", { name: /Offline/ }).click();
