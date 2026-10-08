@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
 import { clearLastCue, primeSpeech, replayLastCue, resumeSpeech } from "./audio/player";
+import { deviceStorage } from "./deviceStorage";
 import { BreakScreen } from "./components/BreakScreen";
 import { HearAgainButton, BreakButton } from "./components/ComfortButtons";
 import { WrapUpSheet } from "./components/WrapUpSheet";
@@ -771,7 +772,7 @@ export default function App() {
     setScreen("break");
   };
 
-  const extrasLeft = active ? extraAllowed(localStorage, active.id, todayKey(), settingsRef.current.extraChunks) : false;
+  const extrasLeft = active ? extraAllowed(deviceStorage(), active.id, todayKey(), settingsRef.current.extraChunks) : false;
 
   return (
     <div
@@ -927,11 +928,17 @@ export default function App() {
                   reason={wrappingUp}
                   canTakeMore={extrasLeft}
                   onMore={() => {
-                    noteExtra(localStorage, active.id, todayKey());
+                    noteExtra(deviceStorage(), active.id, todayKey());
                     setExtrasTick((tick) => tick + 1);
                     setOffer(false);
                   }}
                   onDone={() => {
+                    // On a shared class iPad the start screen is every child's profile, one tap away:
+                    // getting there is a switch of child, and asks a grown-up like any other.
+                    if (settings.sharedDevice) {
+                      askSwitch();
+                      return;
+                    }
                     setOffer(false);
                     setTip(null);
                     setMode("start");
@@ -974,6 +981,10 @@ export default function App() {
                   profile={active}
                   onReady={() => setScreen("today")}
                   onSwitch={() => {
+                    if (settings.sharedDevice) {
+                      askSwitch();
+                      return;
+                    }
                     setScreen("today");
                     setMode("start");
                   }}
@@ -1229,7 +1240,11 @@ export default function App() {
         {mode === "kid" && askingSwitch ? (
           <ParentGate
             onPass={() => {
+              // Wherever the switch was asked from (Today, a break, the end of the lesson), the next
+              // child starts on Today, with nothing of this one's visit left open.
               setAskingSwitch(false);
+              setOffer(false);
+              setScreen("today");
               setMode("start");
             }}
             onCancel={() => setAskingSwitch(false)}

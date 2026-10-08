@@ -2,7 +2,7 @@ import { registerPlugin } from "@capacitor/core";
 import { isNativeApp } from "../audio/platform";
 import { unlockProductId } from "../config";
 import { PAYWALL_PREVIEW_KEY, UNLOCK_KEY } from "../storage";
-import { afterPilotAnswer, type PilotAnswer } from "./pilot";
+import { firstAnswers, type PilotAnswer } from "./pilot";
 
 /**
  * The one-time unlock. On the iPhone app this asks the App Store (StoreKit,
@@ -160,19 +160,19 @@ export function startStore(): void {
   // No answer in time: show the app as any App Store copy would. A pilot
   // answer that arrives later still opens it.
   const waiting = window.setTimeout(() => publish({ ready: true }), PILOT_CHECK_MS);
-  void Store.beta()
-    .then((result: PilotAnswer) => {
-      window.clearTimeout(waiting);
-      publish(afterPilotAnswer(result));
-    })
-    .catch(() => {
-      window.clearTimeout(waiting);
-      publish({ ready: true });
-    });
+  // What the family owns, asked at once. The locks wait for this answer too (see firstAnswers).
+  const owned = Store.owned({ id: unlockProductId }).then(
+    (result: { owned: boolean }) => setOwned(result.owned),
+    // A failed check keeps the last answer, as when the app comes back to the foreground.
+    () => undefined,
+  );
+  void firstAnswers(Store.beta(), owned).then((patch) => {
+    window.clearTimeout(waiting);
+    publish(patch);
+  });
   void Store.addListener("owned", (data: { productId: string; owned: boolean }) => {
     if (data.productId === unlockProductId) setOwned(data.owned);
   }).catch(() => undefined);
-  recheckOwned();
   // Back from the background: ask again, so a refund given meanwhile locks the paid weeks.
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") recheckOwned();

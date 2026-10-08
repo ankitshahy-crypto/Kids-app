@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isNativeApp } from "../audio/platform";
 import { PRODUCT_SHORT } from "../brand";
 import { Avatar } from "../avatars";
 import { Illustration } from "../illustrations";
@@ -276,9 +277,17 @@ export function Printables({
         >
           Letters from this week
         </button> : null}
-        <button type="button" className="print-button" onClick={() => window.print()}>
-          Print
-        </button>
+        {isNativeApp() ? (
+          // The installed app's page cannot print itself (the web view has no print of its own), so
+          // no button is shown that would do nothing. The sheets below can still be looked through.
+          <p className="adult-copy" data-print="unavailable">
+            Printing from the app is not ready yet.
+          </p>
+        ) : (
+          <button type="button" className="print-button" onClick={() => window.print()}>
+            Print
+          </button>
+        )}
       </div>
       <div className="print-root" data-paper={paper}>
         {sheetCourse === "math" ? (

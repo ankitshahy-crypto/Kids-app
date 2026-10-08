@@ -232,7 +232,7 @@ const timeTips: Record<string, { start: string; end: string }> = {
     end: "Ask: which hand tells the hour? Find the dots on a clock at home.",
   },
   coins: {
-    start: "Each coin says its name and what it is worth. The pictures are our own drawings.",
+    start: "Each coin says its name and what it is worth. The coins are pretend ones, painted for the app.",
     end: "Ask: which coin is the biggest?",
   },
   shop: {

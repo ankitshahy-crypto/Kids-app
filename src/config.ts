@@ -14,6 +14,14 @@ import { PRODUCT_NAME } from "./brand";
  */
 export const shareUrl = "https://littlenestlearning.app/";
 
+/**
+ * The privacy policy: the website's own page (website/privacy.html in this repo, published with the
+ * page above). The Privacy page in Grown-ups links to it, behind the grown-up check like every link
+ * out of the app. Check it opens before each App Store submission: the store's listing needs the
+ * same address.
+ */
+export const privacyUrl = `${shareUrl}privacy.html`;
+
 export const shareMessage = `${PRODUCT_NAME} is reading, math, colors, games and coding, time and money, building, and science for ages 3–7. Five happy minutes a day.`;
 
 /**

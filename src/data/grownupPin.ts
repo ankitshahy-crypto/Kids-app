@@ -1,3 +1,5 @@
+import { deviceStorage } from "../deviceStorage";
+
 const PIN_KEY = "littlenest-grownup-pin-v1";
 
 type PinStore = {
@@ -20,7 +22,7 @@ export function pinDigest(pin: string): string {
   return (hash >>> 0).toString(16);
 }
 
-export function readPinDigest(storage: PinStore = localStorage): string | null {
+export function readPinDigest(storage: PinStore = deviceStorage()): string | null {
   try {
     return storage.getItem(PIN_KEY);
   } catch {
@@ -28,11 +30,11 @@ export function readPinDigest(storage: PinStore = localStorage): string | null {
   }
 }
 
-export function hasGrownupPin(storage: PinStore = localStorage): boolean {
+export function hasGrownupPin(storage: PinStore = deviceStorage()): boolean {
   return Boolean(readPinDigest(storage));
 }
 
-export function savePin(pin: string, storage: PinStore = localStorage): boolean {
+export function savePin(pin: string, storage: PinStore = deviceStorage()): boolean {
   if (!isPin(pin)) return false;
   try {
     storage.setItem(PIN_KEY, pinDigest(pin));
@@ -42,13 +44,13 @@ export function savePin(pin: string, storage: PinStore = localStorage): boolean 
   }
 }
 
-export function pinMatches(pin: string, storage: PinStore = localStorage): boolean {
+export function pinMatches(pin: string, storage: PinStore = deviceStorage()): boolean {
   const saved = readPinDigest(storage);
   return Boolean(saved && isPin(pin) && saved === pinDigest(pin));
 }
 
 /** Removes the PIN only. Profiles and progress stay where they are. */
-export function clearPin(storage: PinStore = localStorage): void {
+export function clearPin(storage: PinStore = deviceStorage()): void {
   try {
     storage.removeItem(PIN_KEY);
   } catch {
