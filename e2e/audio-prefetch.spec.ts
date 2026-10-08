@@ -53,6 +53,8 @@ test("opening Grown-ups settings does not request missing audio files", async ({
   await page.addInitScript((saved) => {
     localStorage.setItem("littlenest-profiles-v1", JSON.stringify(saved));
     localStorage.setItem("littlenest-silent-hint-v1", "1");
+    // The automatic download runs as in a built app (a development build holds it unless asked).
+    localStorage.setItem("littlenest-dev-download", "1");
   }, profile);
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();

@@ -48,6 +48,8 @@ test("a fresh visit with no child fetches no sound clips", async ({ page }) => {
     localStorage.removeItem("littlenest-profiles-v1");
     localStorage.removeItem("kids-app-profiles-v1");
     localStorage.setItem("littlenest-silent-hint-v1", "1");
+    // The automatic download runs as in a built app (a development build holds it unless asked).
+    localStorage.setItem("littlenest-dev-download", "1");
   });
   await page.goto("./");
   await expect(page.locator("html")).toHaveAttribute("data-offline", "waiting", { timeout: 15000 });
@@ -66,6 +68,7 @@ test("Low Data Mode holds the download until a grown-up starts it, and the panel
   await page.addInitScript((saved) => {
     localStorage.setItem("littlenest-profiles-v1", JSON.stringify(saved));
     localStorage.setItem("littlenest-silent-hint-v1", "1");
+    localStorage.setItem("littlenest-dev-download", "1");
     Object.defineProperty(navigator, "connection", { value: { saveData: true, type: "wifi", effectiveType: "4g" }, configurable: true });
   }, profile);
   await page.goto("./");
@@ -97,6 +100,7 @@ test("a good connection with a child starts one pass on its own", async ({ page 
   await page.addInitScript((saved) => {
     localStorage.setItem("littlenest-profiles-v1", JSON.stringify(saved));
     localStorage.setItem("littlenest-silent-hint-v1", "1");
+    localStorage.setItem("littlenest-dev-download", "1");
     Object.defineProperty(navigator, "connection", { value: { saveData: false, type: "wifi", effectiveType: "4g" }, configurable: true });
   }, profile);
   await page.goto("./");
@@ -113,6 +117,7 @@ test("with the service worker, one child's whole pack stays saved and a clip pla
   await page.addInitScript((saved) => {
     localStorage.setItem("littlenest-profiles-v1", JSON.stringify(saved));
     localStorage.setItem("littlenest-silent-hint-v1", "1");
+    localStorage.setItem("littlenest-dev-download", "1");
     Object.defineProperty(navigator, "connection", { value: { saveData: false, type: "wifi", effectiveType: "4g" }, configurable: true });
   }, profile);
   await page.goto("./");
