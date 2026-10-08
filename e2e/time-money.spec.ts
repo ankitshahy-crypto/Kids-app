@@ -440,10 +440,16 @@ test("setting the clock to twelve: the hands start away from it, so there is som
   await expect(clock).toHaveAttribute("data-mode", "hour");
   await expect(clock).toHaveAttribute("data-target-hour", "12");
   await expect(clock).toHaveAttribute("data-hour", "6");
+  await expect(clock).toHaveAttribute("data-round", "3");
+  // The tap on twelve is right. (The page notes it as it happens: under the quick setting a right
+  // answer shows for 150 ms before the next round opens, and asked for from here a late look found
+  // the next round, unsolved, and waited out its time for a moment already gone. It failed that
+  // way once, in WebKit on a busy machine.)
+  const rounds = await noting(clock, (frame) => `${frame.getAttribute("data-round")} ${frame.getAttribute("data-solved")}`);
   await clock.locator(".clock-number[data-number='12']").click();
-  await expect(clock).toHaveAttribute("data-solved", "true");
   // The other set rounds ask for another hour and start at twelve, as before.
   await expect(clock).toHaveAttribute("data-round", "4");
+  expect(await rounds()).toContain("3 true");
   expect(await clock.getAttribute("data-target-hour")).not.toBe("12");
   await expect(clock).toHaveAttribute("data-hour", "12");
 });
