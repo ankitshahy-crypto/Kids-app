@@ -109,6 +109,22 @@ test("stroke numbers on Big M do not overlap", async ({ page }) => {
   }
 });
 
+test("the hero starts whole on the screen, at the start of the track", async ({ page }) => {
+  await install(page);
+  await page.getByRole("button", { name: "Mia" }).click();
+  await page.getByRole("button", { name: "Letters" }).click();
+  const hint = page.getByRole("status").getByRole("button", { name: "OK" });
+  if (await hint.count()) await hint.click();
+  const track = page.locator(".blend-track");
+  await expect(track).toBeVisible();
+  const trackBox = await track.boundingBox();
+  const tokenBox = await page.locator("[data-blend-token]").boundingBox();
+  // Not cut off by the screen's edge or the track's: its whole width is inside both.
+  expect(tokenBox!.x).toBeGreaterThanOrEqual(0);
+  expect(tokenBox!.x).toBeGreaterThanOrEqual(trackBox!.x - 1);
+  expect(tokenBox!.x).toBeLessThan(trackBox!.x + trackBox!.width / 4);
+});
+
 test("the hero stays on the track after blending", async ({ page }) => {
   await install(page);
   await page.getByRole("button", { name: "Mia" }).click();

@@ -371,7 +371,9 @@ export function ClockActivity({ lesson, animal, outfit, settingsRef, onDone }: G
   const list = useMemo(() => clockRounds(lesson, salt), [lesson, salt]);
   const rounds = useRounds(list);
   const round = rounds.round;
-  const start = round.kind === "set" ? { hour: 12, minute: 0 } : { hour: round.hour, minute: 0 };
+  // A set round starts at twelve o'clock, so the hands are away from what is asked; when twelve is
+  // asked, it starts at six (a child would otherwise be asked to tap where the hand already points).
+  const start = round.kind === "set" ? { hour: round.hour === 12 ? 6 : 12, minute: 0 } : { hour: round.hour, minute: 0 };
   const [hands, setHands] = useRoundState(rounds.index, start);
   const [hand, setHand] = useRoundState<Hand>(rounds.index, "hour");
   const [solved, setSolved] = useRoundState(rounds.index, false);

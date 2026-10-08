@@ -24,23 +24,23 @@ export function clipShipped(file: string): boolean {
  */
 export async function installAudioSpy(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    const target = window as Window & { __audioAttempts?: { kind: string; detail: string }[] };
+    const target = window as Window & { __audioAttempts?: { kind: string; detail: string; at: number }[] };
     target.__audioAttempts = [];
     const synth = window.SpeechSynthesis?.prototype;
     if (synth && typeof synth.speak === "function") {
       const speak = synth.speak;
       synth.speak = function (this: SpeechSynthesis, utterance: SpeechSynthesisUtterance) {
-        target.__audioAttempts?.push({ kind: "speech", detail: utterance.text });
+        target.__audioAttempts?.push({ kind: "speech", detail: utterance.text, at: performance.now() });
         return speak.call(this, utterance);
       };
     }
     window.addEventListener("littlenest:clip", (event) => {
       const src = String((event as CustomEvent<string>).detail ?? "");
-      target.__audioAttempts?.push({ kind: "clip", detail: new URL(src, location.href).href });
+      target.__audioAttempts?.push({ kind: "clip", detail: new URL(src, location.href).href, at: performance.now() });
     });
     // A line asked for, part by part, whether or not it got to be heard (see askedLines).
     window.addEventListener("littlenest:line", (event) => {
-      for (const text of (event as CustomEvent<string[]>).detail ?? []) target.__audioAttempts?.push({ kind: "line", detail: String(text) });
+      for (const text of (event as CustomEvent<string[]>).detail ?? []) target.__audioAttempts?.push({ kind: "line", detail: String(text), at: performance.now() });
     });
     // The moment the page asks for a clip to play is noted too, as a request, for checks on how soon a
     // screen speaks. The offline download and a card loading its sounds ahead fetch at low priority; a
@@ -49,7 +49,7 @@ export async function installAudioSpy(page: Page): Promise<void> {
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.includes("/audio/") && url.endsWith(".mp3") && init?.priority !== "low") {
-        target.__audioAttempts?.push({ kind: "request", detail: url });
+        target.__audioAttempts?.push({ kind: "request", detail: url, at: performance.now() });
       }
       return fetchWas(input, init);
     };
@@ -108,4 +108,25 @@ export async function spokenLines(page: Page): Promise<string[]> {
       const file = item.detail.split("/audio/")[1] ?? item.detail;
       return (sayByFile.get(file) ?? file).toLowerCase();
     });
+}
+
+/** When each bundled clip started to play, by the page's clock (performance.now()), with its file ("prompts/clock-dots-done.mp3"). */
+export async function clipStarts(page: Page): Promise<{ file: string; at: number }[]> {
+  const attempts = await page.evaluate(
+    () => (window as Window & { __audioAttempts?: { kind: string; detail: string; at: number }[] }).__audioAttempts ?? [],
+  );
+  return attempts.filter((attempt) => attempt.kind === "clip").map((attempt) => ({ file: attempt.detail.replace(/^.*\/audio\//, ""), at: attempt.at }));
+}
+
+/** How long a bundled clip plays, decoded by the page itself. */
+export async function clipSeconds(page: Page, file: string): Promise<number> {
+  return page.evaluate(async (file) => {
+    const bytes = await (await fetch(`audio/${file}`)).arrayBuffer();
+    const context = new AudioContext();
+    try {
+      return (await context.decodeAudioData(bytes)).duration;
+    } finally {
+      await context.close();
+    }
+  }, file);
 }
