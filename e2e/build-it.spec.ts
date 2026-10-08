@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
+import { noting } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -258,6 +259,23 @@ test("the whole board fits a phone screen: the stage and Play are both in view",
   // Five blocks in one row.
   const tops = await board.locator(".build-block").evaluateAll((blocks) => blocks.map((block) => Math.round(block.getBoundingClientRect().top)));
   expect(new Set(tops).size).toBe(1);
+});
+
+test("with Reduce Motion a program still plays one step at a time, each move held still", async ({ page }) => {
+  // Reduce Motion stills the moves, not the program. Played all at once, the stage never moved and
+  // only the last block's name was heard (each name stops the one before).
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await install(page, "move");
+  const board = page.locator("[data-build=move]");
+  for (const block of ["walk", "jump", "spin"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board).toHaveAttribute("data-script", "walk,jump,spin");
+  const stage = board.locator(".build-stage");
+  const poses = await noting(stage, (element) => element.getAttribute("data-pose"));
+  await board.locator("[data-play=run]").click();
+  await expect(stage).toHaveAttribute("data-pose", "jump");
+  expect(await stage.locator(".build-pose").evaluate((pose) => getComputedStyle(pose).animationName)).toBe("none");
+  await expect(board).toHaveAttribute("data-played", "true");
+  expect(await poses()).toEqual(["rest", "walk", "jump", "spin", "rest"]);
 });
 
 test("a step tapped in Your steps comes out", async ({ page }) => {

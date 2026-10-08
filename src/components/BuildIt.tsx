@@ -315,9 +315,12 @@ function Builder({
       return;
     }
     const id = ++runId.current;
-    const pace = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : STEP_MS;
+    // Reduce Motion stills the moves (the styles hold each pose still), not the program: every step
+    // keeps its time on the stage, so the child still sees and hears it run one step at a time.
+    // (It used to play all at once: the stage never moved, and only the last block's name was heard.)
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // The program is acted out on the stage, so the stage has to be on screen when Play is pressed.
-    boardRef.current?.querySelector(".build-stage")?.scrollIntoView({ block: "nearest", behavior: pace ? "smooth" : "auto" });
+    boardRef.current?.querySelector(".build-stage")?.scrollIntoView({ block: "nearest", behavior: still ? "auto" : "smooth" });
     setPlayed(false);
     setMiss(-1);
     setRan([]);
@@ -350,7 +353,7 @@ function Builder({
         }
         if (splash) speak.prompt("build-splash", "Splash!");
         // The repeat block itself is not a step on stage: it lights and the body runs again.
-        if (pace) await sleep(step.block === "repeat" ? pace / 3 : pace);
+        await sleep(step.block === "repeat" ? STEP_MS / 3 : STEP_MS);
       }
       if (runId.current !== id) return;
       setPlaying(-1);
