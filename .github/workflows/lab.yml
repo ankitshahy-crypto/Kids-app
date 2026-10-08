@@ -1,0 +1,49 @@
+name: Lab
+
+# The measuring bench. It runs only for branches named lab/..., which are never merged: a push
+# there measures the app and prints what it found as notices.
+on:
+  push:
+    branches:
+      - "lab/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The build 3 playtest's two faults, one device shape a job: in WebKit as an iPhone, an iPad and an
+  # iPad on its side, and in Chromium as an iPad to compare.
+  build3:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [wk-iphone, wk-ipad, wk-ipad-land, cr-ipad]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit chromium
+      - name: Hatch the Egg and Take me home, ${{ matrix.project }}
+        continue-on-error: true
+        run: npx playwright test -c playwright.lab.config.ts e2e/zz-build3-lab.spec.ts --project=${{ matrix.project }} --workers=1
+      - name: What was seen (1)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=0
+      - name: What was seen (2)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=1
+      - name: What was seen (3)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=2
+      - name: What was seen (4)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=3
