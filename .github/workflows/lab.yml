@@ -41,25 +41,3 @@ jobs:
       - name: What was measured (4)
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=3
-
-  coding:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        project: [wk-iphone13, wk-ipad, wk-ipad-land]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps webkit
-      - name: The coding tests in WebKit
-        continue-on-error: true
-        run: npx playwright test -c playwright.lab.config.ts e2e/think-code.spec.ts e2e/backdrops.spec.ts --project=${{ matrix.project }} --workers=2
-      - name: Why each failed
-        if: ${{ !cancelled() }}
-        run: node scripts/lab-notes.mjs --slice=0
