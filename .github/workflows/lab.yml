@@ -28,7 +28,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: The start screen, loaded many times, two at once
         continue-on-error: true
-        run: npx playwright test -c playwright.lab.config.ts e2e/zz-loads-lab.spec.ts --project=cr-iphone --workers=2
+        run: npx playwright test -c playwright.lab.config.ts e2e/zz-loads-lab.spec.ts --project=cr-iphone --workers=2 --repeat-each=12
       - name: What was seen (1)
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=0

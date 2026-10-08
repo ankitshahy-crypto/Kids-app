@@ -48,6 +48,6 @@ for (const round of [0, 1, 2, 3]) {
     }
     times.sort((a, b) => a - b);
     mkdirSync("lab-out", { recursive: true });
-    writeFileSync(`lab-out/${testInfo.project.name}--loads${round}.json`, JSON.stringify({ loads: 60, misses, median: times[Math.floor(times.length / 2)], slowest: times.slice(-3), failedInAll: failed.length, errorsInAll: [...new Set(errors)].slice(0, 6) }));
+    writeFileSync(`lab-out/${testInfo.project.name}--loads${round}r${testInfo.repeatEachIndex}.json`, JSON.stringify({ misses, slowest: times.slice(-1), errorsInAll: [...new Set(errors)].slice(0, 3) }));
   });
 }
