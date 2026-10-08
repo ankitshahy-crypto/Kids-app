@@ -207,3 +207,64 @@ test("on an iPad on its side six letters, and six cards, sit in one row; upright
     }
   }
 });
+
+/**
+ * A game's row of things to tap can be taller in a later round than in its first, and the tests
+ * above open each game at its first. Two were: the jars of Three jars have their names under them
+ * (its first round's chores are pictures), and a plate of seven to nine apples in Which has more
+ * has three rows of them (apples are the tallest of the things to count). On an iPad Air on its
+ * side the jars were 45px under the screen, and the bottom 34px of both plates were, in a game
+ * that is about counting what is on the plates.
+ *
+ * Found by playing every round of every game on these screens (1,309 rounds on a phone, four ages
+ * and three lesson weeks), which is how Take me home's rounds were found too (think-code.spec.ts).
+ */
+test("on an iPad on its side the second round of Three jars has its jars on the page", async ({ page, browserName }, testInfo) => {
+  test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+  for (const name of ["an iPad Air on its side", "an iPad mini on its side"]) {
+    const device = DEVICES[name];
+    await openOn(page, device, { quick: true });
+    await home(page);
+    await page.locator("[data-course=time]").click();
+    await page.locator("[data-screen=today] [data-activity=jars]").click();
+    const frame = page.locator(".game-frame[data-screen=jars]");
+    // A coin for each job, and then the jars to put them in.
+    for (const chore of ["tidy", "feed", "help"]) await frame.locator(`.pick[data-chore=${chore}]`).click();
+    await expect(frame.locator(".pick[data-jar]")).toHaveCount(3);
+    await expect(frame).toHaveAttribute("data-round", "1");
+    // The tip opens by itself the first time a child's grown-up meets the game, which here is on the first of the two screens.
+    const tip = page.locator(".grownup-tip");
+    if ((await tip.getAttribute("data-tip-open")) !== "true") await tip.locator(".grownup-tip-chip").click();
+    await expect(tip).toHaveAttribute("data-tip-open", "true");
+    expect((await roomUnder(page, device.bottom)).room, `${name}: room under the jars, tip open`).toBeGreaterThanOrEqual(0);
+    await tip.locator(".grownup-tip-hide").click();
+    expect((await roomUnder(page, device.bottom)).room, `${name}: room under the jars, tip closed to its chip`).toBeGreaterThanOrEqual(0);
+  }
+});
+
+test("on an iPad on its side a plate of nine apples in Which has more is all on the page", async ({ page, browserName }, testInfo) => {
+  test.skip(browserName !== "chromium" || testInfo.project.name !== "chromium", "sets its own screens, and the insets need Chromium");
+  const device = DEVICES["an iPad Air on its side"];
+  // One known play for ages 5 to 7 (the salt): its second round is six apples against nine.
+  await openOn(page, device, { ageRange: "6-7", quick: true, salt: 11 });
+  await home(page);
+  await page.locator("[data-course=math]").click();
+  await page.locator("[data-screen=today] [data-activity=more]").click();
+  const frame = page.locator(".game-frame[data-screen=more]");
+  const rounds = Number(await frame.getAttribute("data-rounds"));
+  let most = 0;
+  const heights = new Set<number>();
+  for (let round = 0; round < rounds; round += 1) {
+    await expect(frame).toHaveAttribute("data-round", String(round));
+    await expect(frame).toHaveAttribute("data-solved", "false");
+    const counts = await frame.locator(".game-tray .plate").evaluateAll((plates) => plates.map((plate) => Number(plate.getAttribute("data-count"))));
+    // (Apples on the plates: the count, as apples, of the fuller one.)
+    most = Math.max(most, await frame.locator(".game-tray .plate .math-apple").count() > 0 ? Math.max(...counts) : 0);
+    expect((await roomUnder(page, device.bottom)).room, `round ${round}, plates of ${counts.join(" and ")}: room under them`).toBeGreaterThanOrEqual(0);
+    heights.add(Math.round((await frame.locator(".game-scene").boundingBox())!.height));
+    await frame.locator(`.pick[data-side=${await frame.getAttribute("data-answer")}]`).click();
+  }
+  // The play had a plate of three rows of apples in it, and the scene was one height through all of it.
+  expect(most).toBe(9);
+  expect(heights.size).toBe(1);
+});

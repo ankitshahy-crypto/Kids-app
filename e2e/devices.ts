@@ -31,14 +31,15 @@ export const DEVICES: Record<string, Device> = {
  *
  * The child is five unless another age is asked for: every section is open at five. Hatch the Egg
  * is at its longest, six letters under the word. `quick` leaves out the wait for the praise
- * between a game's rounds (a development-build switch, see e2e/kit.ts).
+ * between a game's rounds, and `salt` makes a game's rounds the ones of one known play (two
+ * development-build switches, see e2e/kit.ts).
  */
-export async function openOn(page: Page, device: Device, child: { ageRange?: string; quick?: boolean } = {}) {
+export async function openOn(page: Page, device: Device, child: { ageRange?: string; quick?: boolean; salt?: number } = {}) {
   await page.setViewportSize({ width: device.width, height: device.height });
   const session = await page.context().newCDPSession(page);
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: device.top, bottom: device.bottom, left: 0, right: 0 } });
   await page.addInitScript(
-    ({ created, ageRange, quick }) => {
+    ({ created, ageRange, quick, salt }) => {
       if (sessionStorage.getItem("fit-seeded")) return;
       sessionStorage.setItem("fit-seeded", "1");
       const mia = { id: "mia", name: "Mia", ageRange, animal: "fox", createdAt: created, stars: 0, days: {}, ladder: { step: 2, successes: 0 }, games: { hatch: 3, hatches: 0, spins: 0 } };
@@ -46,8 +47,9 @@ export async function openOn(page: Page, device: Device, child: { ageRange?: str
       localStorage.setItem("littlenest-silent-hint-v1", "1");
       localStorage.setItem("littlenest-settings-v1", JSON.stringify({ showTips: true }));
       if (quick) localStorage.setItem("littlenest-quick-rounds", "1");
+      if (salt !== null) localStorage.setItem("littlenest-salt", String(salt));
     },
-    { created: createdThisWeek(), ageRange: child.ageRange ?? "5", quick: child.quick ?? false },
+    { created: createdThisWeek(), ageRange: child.ageRange ?? "5", quick: child.quick ?? false, salt: child.salt ?? null },
   );
 }
 
