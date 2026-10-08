@@ -63,7 +63,11 @@ async function painted(frame: Locator, kind: string) {
   await expect(scene).toHaveAttribute("data-painted", "true");
   const art = scene.locator("img.game-backdrop-art");
   await expect(art).toHaveAttribute("src", new RegExp(`/backdrops/${kind}\\.webp$`));
-  await expect(art).toHaveAttribute("data-in", "true");
+  // Up to 15 seconds: when the game is put on the page, React sets the picture's address again (so
+  // that a load it let go, of a picture that landed before the game was on the page, comes again),
+  // and WebKit then fetches the picture a second time. From the dev server that is tens of
+  // milliseconds, and in CI, once, more than five seconds.
+  await expect(art).toHaveAttribute("data-in", "true", { timeout: 15_000 });
   await expect.poll(() => art.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(1500);
   return { scene, art };
 }
