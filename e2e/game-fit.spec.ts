@@ -132,10 +132,40 @@ const SECTIONS: Record<string, { door: string; tiles: string }> = {
   Games: { door: "[data-dock=games]", tiles: "[data-game-tile]" },
 };
 
+/**
+ * Tiles that open a board of their own and not a kit game (number tracing, the wheel of Spin &
+ * Say): they have their own tests. Every other tile has to open a game. (Which was which used to
+ * be told by whether a game had come within a third of a second of the tap. On a busy machine one
+ * came later than that now and then, and was passed over without a word.)
+ */
+const OWN_BOARDS = new Set(["trace", "spin"]);
+
 async function home(page: Page) {
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator("[data-dock=games]")).toBeVisible();
+}
+
+/**
+ * From whatever a tile opened, back to the section's tiles, as a child goes: by the lobby's own
+ * button in the dock's games, by the top bar's Back elsewhere. Should that not bring the tiles (a
+ * screen whose way back leads somewhere else), the app is loaded again.
+ *
+ * (Each game used to be opened from a fresh load of the app: some four hundred loads in these
+ * tests, and a quarter of the whole suite's time on CI. And once, on CI, the start screen never
+ * came from one of them, and the test waited out its minute for the child's face.)
+ */
+async function backToTiles(page: Page, door: string, tiles: string) {
+  const lobby = page.locator(".games-back");
+  const back = (await lobby.count()) > 0 ? lobby : page.getByRole("button", { name: "Back", exact: true });
+  try {
+    await back.first().click({ timeout: 3_000 });
+    await expect(page.locator(tiles).first()).toBeVisible({ timeout: 3_000 });
+  } catch {
+    await home(page);
+    await page.locator(door).click();
+    await expect(page.locator(tiles).first()).toBeVisible();
+  }
 }
 
 for (const [name, device] of Object.entries(DEVICES)) {
@@ -152,17 +182,11 @@ for (const [name, device] of Object.entries(DEVICES)) {
       const ids = await page.locator(tiles).evaluateAll((all) => all.map((tile) => tile.getAttribute("data-activity") ?? tile.getAttribute("data-game-tile") ?? ""));
       expect(ids.length).toBeGreaterThan(2);
       const seen: string[] = [];
-      for (const id of ids) {
-        await home(page);
-        await page.locator(door).click();
+      for (const id of ids.filter((id) => !OWN_BOARDS.has(id))) {
+        if (seen.length > 0) await backToTiles(page, door, tiles);
         await page.locator(`${tiles}[data-activity="${id}"], ${tiles}[data-game-tile="${id}"]`).first().click();
-        // Not every tile opens a kit game (the wheel of Spin & Say, number tracing): those have their own tests.
         const frame = page.locator(".game-frame");
-        if ((await frame.count()) === 0) {
-          await page.waitForTimeout(300);
-          if ((await frame.count()) === 0) continue;
-        }
-        await expect(frame.locator(".game-scene")).toBeVisible();
+        await expect(frame.locator(".game-scene"), `${id}: a game with a scene (a tile with a board of its own belongs in OWN_BOARDS)`).toBeVisible();
         const tip = page.locator(".grownup-tip");
         await expect(tip).toHaveAttribute("data-tip-open", "true");
         const open = await roomUnder(page, device.bottom);
@@ -177,8 +201,8 @@ for (const [name, device] of Object.entries(DEVICES)) {
         expect(chip.room, `${id}: room under the lowest thing to tap, tip closed to its chip`).toBeGreaterThanOrEqual(0);
         seen.push(id);
       }
-      // The section's kit games were all looked at (a section with fewer than three would mean the tiles were not found).
-      expect(seen.length, `kit games opened in ${section}: ${seen.join(", ")}`).toBeGreaterThanOrEqual(3);
+      // The section's games were all looked at (fewer than three would mean its tiles were not found).
+      expect(seen.length, `games opened in ${section}: ${seen.join(", ")}`).toBeGreaterThanOrEqual(3);
     });
   }
 }
