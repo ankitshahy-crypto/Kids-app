@@ -1,0 +1,112 @@
+import { test, type Page } from "@playwright/test";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { child, game, timePlacement } from "./kit";
+
+/**
+ * The measuring bench (branch lab/**, never merged): a game's painting the first time the game is
+ * opened in a visit, and whether it comes in. One test saw Paint's painting stay out in WebKit.
+ *
+ * The first time a game's code is asked for, React lays the game out and holds it back a moment
+ * behind "Loading"; a picture's load in that moment is let go by React. Each round here loads the
+ * app afresh and opens one game, and writes down whether its painting came in within four seconds,
+ * and when each picture was made (its address set), put on the page, and loaded, from the tap.
+ */
+const ROUNDS = Number(process.env.LAB_ROUNDS ?? 30);
+const GAMES = {
+  paint: { door: "LittleNest Colors", activity: "paint" },
+  shop: { door: "LittleNest Time & Money", activity: "shop" },
+} as const;
+
+async function watch(page: Page) {
+  await page.addInitScript(() => {
+    type Rec = { src: string; set: number; complete0?: boolean; put?: number; load?: number; onPage?: boolean; error?: number };
+    const w = window as unknown as { __imgs: { el: HTMLImageElement; rec: Rec }[]; __t0: number; __loading: [string, number][] };
+    w.__imgs = [];
+    w.__t0 = 0;
+    w.__loading = [];
+    const set = Element.prototype.setAttribute;
+    Element.prototype.setAttribute = function (this: Element, name: string, value: string) {
+      if (this instanceof HTMLImageElement && name === "src" && /backdrops\//.test(String(value)) && !(this as unknown as { __watched?: boolean }).__watched) {
+        (this as unknown as { __watched?: boolean }).__watched = true;
+        const el = this;
+        const rec: Rec = { src: String(value).split("/").pop() ?? "", set: performance.now() };
+        w.__imgs.push({ el, rec });
+        queueMicrotask(() => { rec.complete0 = el.complete; });
+        el.addEventListener("load", () => { rec.load = performance.now(); rec.onPage = el.isConnected; });
+        el.addEventListener("error", () => { rec.error = performance.now(); });
+      }
+      return set.call(this, name, value);
+    } as typeof Element.prototype.setAttribute;
+    addEventListener("pointerdown", () => { w.__t0 = performance.now(); }, { capture: true });
+    const isLoading = (node: Element) => [node, ...node.querySelectorAll("p.adult-copy")].some((p) => p.matches("p.adult-copy") && p.textContent === "Loading");
+    new MutationObserver((list) => {
+      const now = performance.now();
+      for (const change of list) {
+        for (const node of change.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          for (const img of [node, ...node.querySelectorAll("img")]) {
+            const hit = w.__imgs.find((x) => x.el === img);
+            if (hit && hit.rec.put === undefined) hit.rec.put = now;
+          }
+          if (isLoading(node)) w.__loading.push(["in", now]);
+        }
+        for (const node of change.removedNodes) if (node instanceof Element && isLoading(node)) w.__loading.push(["out", now]);
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+}
+
+for (const [name, which] of Object.entries(GAMES)) {
+  test(`LAB ${name}: its painting, the first time the game is opened in a visit`, async ({ page }, testInfo) => {
+    test.setTimeout(900_000);
+    await watch(page);
+    await page.addInitScript(
+      ({ saved, placed }) => {
+        if (sessionStorage.getItem("painting-seeded")) return;
+        sessionStorage.setItem("painting-seeded", "1");
+        localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+        localStorage.setItem("littlenest-placement-v1", JSON.stringify(placed));
+        localStorage.setItem("littlenest-settings-v1", JSON.stringify({ showTips: false }));
+      },
+      { saved: child("4"), placed: timePlacement(0) },
+    );
+    const rounds: Record<string, unknown>[] = [];
+    let out = 0;
+    for (let round = 0; round < ROUNDS; round += 1) {
+      try {
+        await page.goto("./");
+        const hint = page.getByRole("status").getByRole("button", { name: "OK" });
+        if (await hint.count()) await hint.click();
+        await page.getByRole("button", { name: "Mia" }).click();
+        await page.getByRole("button", { name: which.door }).click();
+        await page.locator(`[data-activity=${which.activity}]`).click();
+        const art = game(page, which.activity).locator("img.game-backdrop-art");
+        await art.waitFor({ state: "attached", timeout: 15_000 });
+        const cameIn = await art.evaluate((img) => new Promise<boolean>((done) => {
+          const until = performance.now() + 4000;
+          const look = () => (img.getAttribute("data-in") === "true" ? done(true) : performance.now() > until ? done(false) : setTimeout(look, 50));
+          look();
+        }));
+        const seen = await page.evaluate(() => {
+          const w = window as unknown as { __imgs: { el: HTMLImageElement; rec: Record<string, number | boolean | string | undefined> }[]; __t0: number; __loading: [string, number][] };
+          const from = (t: unknown) => (typeof t === "number" ? Math.round(t - w.__t0) : undefined);
+          return {
+            loading: w.__loading.filter(([, t]) => t >= w.__t0).map(([what, t]) => `${what}${from(t)}`).join(" "),
+            imgs: w.__imgs.filter((x) => x.rec.set as number >= w.__t0).map(({ el, rec }) => ({ src: rec.src, set: from(rec.set), c0: rec.complete0, put: from(rec.put), load: from(rec.load), onPage: rec.onPage, error: from(rec.error), now: el.isConnected, in: el.getAttribute("data-in"), complete: el.complete })),
+          };
+        });
+        if (!cameIn) out += 1;
+        rounds.push({ round, in: cameIn, ...seen });
+      } catch (error) {
+        rounds.push({ round, failed: String(error).split("\n")[0].slice(0, 160) });
+      }
+    }
+    mkdirSync("lab-out", { recursive: true });
+    const stayedOut = rounds.filter((r) => r.in === false);
+    const cameIn = rounds.filter((r) => r.in === true);
+    writeFileSync(
+      `lab-out/${testInfo.project.name}--${name}r${testInfo.repeatEachIndex}.json`,
+      JSON.stringify({ rounds: rounds.length, out, failed: rounds.filter((r) => r.failed).length, stayedOut: stayedOut.slice(0, 6), cameIn: cameIn.slice(0, 3), errors: rounds.filter((r) => r.failed).slice(0, 2) }),
+    );
+  });
+}

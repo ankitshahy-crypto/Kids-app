@@ -1,0 +1,50 @@
+name: Lab
+
+# The measuring bench. It runs only for branches named lab/..., which are never merged: a push
+# there measures the app and prints what it found as notices.
+on:
+  push:
+    branches:
+      - "lab/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # A game's painting the first time the game is opened in a visit, in WebKit and Chromium: from
+  # the dev server as CI tests the app, and from a build as it is installed.
+  painting:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        serve: [dev, preview]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit chromium
+      - name: Build
+        if: ${{ matrix.serve == 'preview' }}
+        run: npm run build
+        env:
+          VITE_BASE: /Kids-app/
+      - name: Paint and Shop opened afresh, many times, in WebKit and Chromium
+        continue-on-error: true
+        run: npx playwright test -c playwright.lab.config.ts e2e/zz-painting-lab.spec.ts --project=wk-iphone13 --project=cr-iphone --workers=2 --repeat-each=2
+        env:
+          LAB_SERVE: ${{ matrix.serve }}
+      - name: What was seen (1)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=0
+      - name: What was seen (2)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=1
