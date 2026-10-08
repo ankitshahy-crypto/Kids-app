@@ -120,11 +120,18 @@ jobs:
   # The app's own engine. The iPhone and iPad app draws its pages with WebKit, and every job above
   # runs in Chromium, so a fault that only WebKit has (in sound, in touch, in how a page is laid
   # out) reached a real iPad before any test saw it. This runs the tests in WebKit at an iPhone's
-  # size, and blocks a merge like the jobs above. As in them, a test that fails is tried once more,
-  # and one that passes only on its second try is named on the run.
+  # size. As in the jobs above, a test that fails is tried once more, and one that passes only on
+  # its second try is named on the run.
+  #
+  # It does not block a merge yet. About 8 s into a test page the app starts its background sound
+  # download, four clips at a time, and WebKit reaches the dev server over six connections: a game's
+  # painting asked for after that can wait past the test's five seconds. The installed app never
+  # runs that download (its sounds are bundled). Once the tests keep it out, take
+  # `continue-on-error` out, and this blocks like the others.
   webkit:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -150,9 +157,9 @@ jobs:
         run: node scripts/slowest-tests.mjs
 
   # Known faults in the packages the app is built from, as npm's advisories list them. The first
-  # step is the packages the app itself ships with; the second adds the build's tools. This does
-  # not block a merge yet: an advisory is published on npm's day, not on a commit's, and what to
-  # block on is decided once it is known what this reports.
+  # step is the packages the app itself ships with; the second adds the build's tools. Like the
+  # job above this does not block a merge yet: an advisory is published on npm's day, not on a
+  # commit's, and what to block on is decided once it is known what this reports.
   audit:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
