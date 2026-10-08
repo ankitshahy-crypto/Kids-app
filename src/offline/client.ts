@@ -143,10 +143,10 @@ function warm(): Promise<void> {
 /**
  * A development build (the dev server the browser tests run against) starts no download on its
  * own unless `littlenest-dev-download` is "1" (the tests of the download set it); a grown-up's tap
- * still starts one. A test page that ran past the wait for a service worker would otherwise fetch
- * the whole sound pack behind it, four clips at a time, and in WebKit, which reaches the dev server
- * over six connections, a game's painting was left waiting more than five seconds. A built app,
- * on the web or installed, is unchanged.
+ * still starts one. Otherwise every test page that lived past the wait for a service worker
+ * fetched the whole sound pack, four clips at a time, beside the page's own requests: thousands of
+ * requests to the dev server in each run of the suite, which took a third longer for them. A built
+ * app, on the web or installed, is unchanged.
  */
 function developmentHolds(): boolean {
   if (!import.meta.env.DEV) return false;
