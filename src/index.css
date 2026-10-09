@@ -361,14 +361,14 @@ button:focus-visible {
   place-items: center;
   gap: 2px;
   font-family: var(--font-display, inherit);
-  font-size: clamp(96px, 26vmin, 168px);
+  font-size: clamp(56px, 13vmin, 96px);
   font-weight: 700;
   line-height: 1;
   color: var(--sage-deep, #2f4a3c);
 }
 
 .letter-glyph small {
-  font-size: clamp(18px, 3.2vmin, 26px);
+  font-size: clamp(16px, 3vmin, 22px);
   font-weight: 600;
   color: var(--text-sage, #5f7a68);
   letter-spacing: 0.02em;
@@ -376,18 +376,23 @@ button:focus-visible {
 
 /* A sound unit's glyph (sh, a-e) is longer than one letter, so it sits smaller and lowercase. */
 .letter-glyph[data-glyph-long="true"] {
-  font-size: clamp(64px, 17vmin, 112px);
+  font-size: clamp(44px, 10vmin, 72px);
   letter-spacing: -0.02em;
 }
 
+/*
+ * The word is the page: the word (or the letter) being said is the largest thing on the screen,
+ * so its picture, when it has one, sits small above it. (The card used to take all the room that
+ * was left, and the word sat under it at a third of its size.)
+ */
 .picture-card {
   position: relative;
-  width: 100%;
-  flex: 1 1 180px;
-  min-height: 168px;
-  max-height: 440px;
+  width: min(100%, 320px);
+  flex: 0 1 auto;
+  height: clamp(104px, 19svh, 168px);
+  min-height: 0;
   background: var(--paper);
-  border-radius: 32px;
+  border-radius: 26px;
   box-shadow: var(--shadow);
   display: flex;
   align-items: center;
@@ -475,9 +480,18 @@ button:focus-visible {
 .tile-wrap {
   position: relative;
   flex: 1 1 0;
-  max-width: 88px;
+  max-width: 124px;
   aspect-ratio: 1;
   display: flex;
+}
+
+/* A letter card's one tile is the letter being said: the biggest thing on the page. */
+.activity[data-letter-card="true"] .tile-wrap {
+  max-width: 172px;
+}
+
+.activity[data-letter-card="true"] .tile {
+  font-size: clamp(56px, 18vw, 96px);
 }
 
 .letters.chunks {
@@ -498,10 +512,10 @@ button:focus-visible {
 .tile {
   width: 100%;
   height: 100%;
-  border-radius: 22px;
+  border-radius: 26px;
   background: var(--tile);
   color: var(--ink);
-  font-size: clamp(28px, 8vw, 42px);
+  font-size: clamp(36px, 12vw, 64px);
   font-weight: 700;
   box-shadow: 0 8px 16px rgba(90, 70, 50, 0.05);
   border: 3px solid transparent;
@@ -519,11 +533,11 @@ button:focus-visible {
 
 /* A sound unit on one tile: sh, igh, a-e. Two or three letters share the square. */
 .tile-wrap.is-unit {
-  max-width: 104px;
+  max-width: 136px;
 }
 
 .tile-wrap.is-unit .tile {
-  font-size: clamp(20px, 5.6vw, 30px);
+  font-size: clamp(26px, 8vw, 42px);
   letter-spacing: -0.02em;
   text-transform: lowercase;
 }
@@ -558,13 +572,10 @@ button:focus-visible {
   box-shadow: none;
 }
 
-/* What the lesson is about, for the grown-up: "This week: M and A". */
+/* What the lesson is about, for the grown-up: "This week: M and A". Small, and off the word. */
 .lesson-focus {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1;
+  flex: 0 0 auto;
+  margin: -6px 0 -8px;
   padding: 4px 14px;
   border-radius: 999px;
   background: rgba(232, 243, 236, 0.92);
@@ -581,11 +592,11 @@ button:focus-visible {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 10px;
+  bottom: 6px;
   z-index: 1;
   text-align: center;
   font-family: var(--font-display, inherit);
-  font-size: clamp(22px, 5.2vmin, 34px);
+  font-size: clamp(18px, 4vmin, 26px);
   font-weight: 600;
   line-height: 1.1;
   color: var(--text-sage, #5f7a68);
@@ -597,67 +608,31 @@ button:focus-visible {
   font-weight: 700;
 }
 
-/* A word with no drawing: the child's animal, and the word in its speech bubble once it is read. */
-.word-teller {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-}
-
-.word-teller .avatar-art,
-.word-teller .hero {
-  width: clamp(96px, 24vmin, 150px);
-  height: clamp(96px, 24vmin, 150px);
-}
-
-.word-teller .icon {
-  width: 96px;
-  height: 96px;
-  color: #e2a15a;
-}
-
+/* The word, in the animal's speech bubble, once it has been read. */
 .word-bubble {
   position: relative;
-  min-width: 96px;
-  padding: 8px 22px;
-  border-radius: 24px;
+  min-width: 64px;
+  padding: 4px 16px;
+  border-radius: 20px;
   background: #fff6e4;
   border: 3px solid #f0dcc0;
   color: var(--sage-deep, #2f4a3c);
   font-family: var(--font-display, inherit);
-  font-size: clamp(34px, 9vmin, 60px);
+  font-size: clamp(24px, 6vmin, 40px);
   font-weight: 700;
   line-height: 1.1;
   text-align: center;
-}
-
-.word-bubble::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -11px;
-  width: 16px;
-  height: 16px;
-  margin-left: -8px;
-  background: #fff6e4;
-  border-right: 3px solid #f0dcc0;
-  border-bottom: 3px solid #f0dcc0;
-  transform: rotate(45deg);
-}
-
-.word-teller[data-word-teller="waiting"] .word-bubble {
-  color: #c9b79c;
-}
-
-.word-teller[data-word-teller="said"] .word-bubble {
-  animation: blend-pop 0.7s ease;
+  white-space: nowrap;
 }
 
 .blend {
   width: 100%;
+  /* The word takes the room the page has: it sits in the middle of what is left under its picture. */
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   touch-action: none;
   overscroll-behavior: none;
@@ -697,34 +672,95 @@ button:focus-visible {
 }
 
 /*
- * The hero's middle is at --blend-at, a share of the track (the page sets it). At rest, before any
- * drag, that share is small, so the floor keeps the hero whole on the screen: never nearer the
- * left edge than half its own width (a drag already keeps it off both ends).
+ * The one bar: under the letter whose sound plays, under the whole word while it is said, and
+ * otherwise where the finger or the last sound left it. The page sets its left edge and width as
+ * shares of the track (measured from the tiles). It is the app's yellow, pale until a sound plays,
+ * and it never flashes: it moves, and that is all, so calm mode keeps it as it is.
  */
-.blend-token {
+.blend-bar {
   position: absolute;
-  top: 50%;
-  left: max(36px, var(--blend-at, 6%));
+  top: 0;
+  left: var(--bar-left, 0%);
+  width: var(--bar-width, 20%);
+  height: 9px;
+  border-radius: 999px;
+  background: var(--gold);
+  opacity: 0.45;
+  pointer-events: none;
+  transition:
+    left 0.22s ease,
+    width 0.22s ease,
+    opacity 0.2s ease;
+}
+
+/* A new card puts the bar under its first tile at once, with no slide from where the last one left it. */
+.blend-bar[data-under="none"] {
+  transition: none;
+}
+
+.blend-bar[data-said="true"] {
+  opacity: 1;
+}
+
+.blend-bar[data-under="word"] {
+  height: 11px;
+}
+
+/*
+ * The child's animal waits at the edge of the track until the word is said, then comes in under
+ * the word and says it. (It used to be the slider's thumb, dragged under the letters.)
+ */
+.blend-animal {
+  position: absolute;
+  top: 56%;
+  left: 36px;
   z-index: 1;
   width: 72px;
   height: 72px;
-  margin: 0;
   display: grid;
   place-items: center;
   transform: translate(-50%, -50%);
   pointer-events: none;
   filter: drop-shadow(0 8px 12px rgba(90, 70, 50, 0.16));
+  transition: left 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.blend-token .avatar-art {
+.blend-animal .avatar-art {
   width: 68px;
   height: 68px;
 }
 
-.blend-token .icon {
+.blend-animal .icon {
   width: 52px;
   height: 52px;
   color: #e2a15a;
+}
+
+.blend-animal[data-word-teller="said"] {
+  left: 50%;
+}
+
+.blend-animal .word-bubble {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin-left: 12px;
+  transform: translateY(-50%);
+  animation: blend-pop 0.7s ease;
+}
+
+.blend-animal .word-bubble::after {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  background: #fff6e4;
+  border-left: 3px solid #f0dcc0;
+  border-bottom: 3px solid #f0dcc0;
+  transform: rotate(45deg);
 }
 
 .blend.is-celebrating .tile-wrap.is-lit .tile {
@@ -3244,10 +3280,10 @@ button:focus-visible {
   }
 
   .picture-card {
-    width: min(100%, 560px);
-    min-height: 300px;
-    max-height: 520px;
-    border-radius: 40px;
+    width: min(100%, 420px);
+    height: clamp(140px, 22svh, 240px);
+    min-height: 0;
+    border-radius: 32px;
   }
 
   .art {
@@ -3267,26 +3303,54 @@ button:focus-visible {
   }
 
   .tile-wrap {
-    max-width: 128px;
+    max-width: 164px;
+  }
+
+  .activity[data-letter-card="true"] .tile-wrap {
+    max-width: 220px;
   }
 
   .tile {
-    border-radius: 28px;
-    font-size: 52px;
+    border-radius: 32px;
+    font-size: 76px;
+  }
+
+  .activity[data-letter-card="true"] .tile {
+    font-size: 124px;
+  }
+
+  .tile-wrap.is-unit {
+    max-width: 180px;
+  }
+
+  .tile-wrap.is-unit .tile {
+    font-size: 50px;
   }
 
   .blend-track {
     min-height: 104px;
   }
 
-  .blend-token,
-  .blend-token .avatar-art {
+  .blend-bar {
+    height: 11px;
+  }
+
+  .blend-bar[data-under="word"] {
+    height: 13px;
+  }
+
+  .blend-animal,
+  .blend-animal .avatar-art {
     width: 88px;
     height: 88px;
   }
 
-  .blend-token {
-    left: max(44px, var(--blend-at, 6%));
+  .blend-animal {
+    left: 44px;
+  }
+
+  .blend-animal[data-word-teller="said"] {
+    left: 50%;
   }
 
   .placeholder-art {
@@ -3546,8 +3610,8 @@ button:focus-visible {
   }
 
   .picture-card {
-    width: min(100%, 600px);
-    max-height: 600px;
+    width: min(100%, 460px);
+    height: clamp(160px, 22svh, 280px);
   }
 
   .art {
@@ -3555,11 +3619,11 @@ button:focus-visible {
   }
 
   .tile-wrap {
-    max-width: 140px;
+    max-width: 184px;
   }
 
   .tile {
-    font-size: 58px;
+    font-size: 84px;
   }
 
   .placeholder[data-step="draw"] .placeholder-art,
@@ -3620,10 +3684,11 @@ button:focus-visible {
     padding-top: 0;
   }
 
-  .activity {
+  /* On its side, a word with a picture puts the picture beside the word, small; the word keeps the room. */
+  .activity:has(.picture-card) {
     display: grid;
-    grid-template-columns: minmax(0, 560px) minmax(280px, 420px);
-    grid-template-rows: auto auto auto;
+    grid-template-columns: minmax(0, 320px) minmax(360px, 640px);
+    grid-template-rows: auto auto auto auto;
     justify-content: center;
     align-items: center;
     align-content: center;
@@ -3631,23 +3696,29 @@ button:focus-visible {
     row-gap: 12px;
   }
 
+  .activity:has(.picture-card) .lesson-focus {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+    margin: 0;
+  }
+
   .picture-card {
     grid-column: 1;
-    grid-row: 1 / span 3;
-    width: min(100%, 520px);
-    height: min(68dvh, 480px);
-    max-height: 480px;
+    grid-row: 2 / span 3;
+    width: min(100%, 320px);
+    height: min(44dvh, 260px);
     min-height: 0;
   }
 
-  .sound-label {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .blend {
+  .activity:has(.picture-card) .sound-label {
     grid-column: 2;
     grid-row: 2;
+  }
+
+  .activity:has(.picture-card) .blend {
+    grid-column: 2;
+    grid-row: 3;
     width: 100%;
   }
 
@@ -3656,9 +3727,9 @@ button:focus-visible {
     grid-row: auto;
   }
 
-  .controls {
+  .activity:has(.picture-card) .controls {
     grid-column: 2;
-    grid-row: 3;
+    grid-row: 4;
     margin-top: 0;
   }
 

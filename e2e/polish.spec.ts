@@ -109,7 +109,7 @@ test("stroke numbers on Big M do not overlap", async ({ page }) => {
   }
 });
 
-test("the hero starts whole on the screen, at the start of the track", async ({ page }) => {
+test("the bar starts under the first tile, whole on the screen and on the track", async ({ page }) => {
   await install(page);
   await page.getByRole("button", { name: "Mia" }).click();
   await page.getByRole("button", { name: "Letters" }).click();
@@ -118,14 +118,20 @@ test("the hero starts whole on the screen, at the start of the track", async ({ 
   const track = page.locator(".blend-track");
   await expect(track).toBeVisible();
   const trackBox = await track.boundingBox();
-  const tokenBox = await page.locator("[data-blend-token]").boundingBox();
-  // Not cut off by the screen's edge or the track's: its whole width is inside both.
-  expect(tokenBox!.x).toBeGreaterThanOrEqual(0);
-  expect(tokenBox!.x).toBeGreaterThanOrEqual(trackBox!.x - 1);
-  expect(tokenBox!.x).toBeLessThan(trackBox!.x + trackBox!.width / 4);
+  const bar = page.locator("[data-blend-token]");
+  const tileBox = await page.locator(".letters .tile-wrap").first().boundingBox();
+  // Not cut off by the screen's edge or the track's: its whole width is inside both, under the first tile.
+  await expect.poll(async () => {
+    const box = await bar.boundingBox();
+    return box ? [box.x >= 0, box.x >= trackBox!.x - 1, box.x + box.width <= trackBox!.x + trackBox!.width + 1, Math.abs(box.x - tileBox!.x) <= 3, Math.abs(box.width - tileBox!.width) <= 3] : [];
+  }).toEqual([true, true, true, true, true]);
+  // The animal waits at the edge of the track, whole on the screen.
+  const animalBox = await page.locator(".blend-animal").boundingBox();
+  expect(animalBox!.x).toBeGreaterThanOrEqual(0);
+  expect(animalBox!.x).toBeLessThan(trackBox!.x + trackBox!.width / 4);
 });
 
-test("the hero stays on the track after blending", async ({ page }) => {
+test("after blending, the bar is under the whole word and the animal has come in, on the track", async ({ page }) => {
   await install(page);
   await page.getByRole("button", { name: "Mia" }).click();
   await page.getByRole("button", { name: "Letters" }).click();
@@ -134,10 +140,13 @@ test("the hero stays on the track after blending", async ({ page }) => {
   const track = page.locator(".blend-track");
   await dragAcross(page, track);
   await expect(page.locator(".activity")).toHaveAttribute("data-blended", "true");
+  await expect(page.locator("[data-blend-token]")).toHaveAttribute("data-under", "word");
+  await expect(page.locator(".blend-animal")).toHaveAttribute("data-word-teller", "said");
   const trackBox = await track.boundingBox();
-  const tokenBox = await page.locator("[data-blend-token]").boundingBox();
-  expect(trackBox).toBeTruthy();
-  expect(tokenBox).toBeTruthy();
-  expect(tokenBox!.x + tokenBox!.width).toBeLessThanOrEqual(trackBox!.x + trackBox!.width + 1);
-  expect(tokenBox!.x).toBeGreaterThanOrEqual(trackBox!.x - 1);
+  const barBox = await page.locator("[data-blend-token]").boundingBox();
+  const animalBox = await page.locator(".blend-animal").boundingBox();
+  expect(barBox!.x + barBox!.width).toBeLessThanOrEqual(trackBox!.x + trackBox!.width + 1);
+  expect(barBox!.x).toBeGreaterThanOrEqual(trackBox!.x - 1);
+  expect(animalBox!.x).toBeGreaterThanOrEqual(trackBox!.x - 1);
+  expect(animalBox!.x + animalBox!.width).toBeLessThanOrEqual(trackBox!.x + trackBox!.width + 1);
 });

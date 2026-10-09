@@ -117,9 +117,11 @@ test("the letters of the week are the first cards in Sound it out, then the word
   await expect(tiles.nth(0).locator("button")).toHaveText("a");
   await expect(tiles.nth(1).locator("button")).toHaveText("m");
   await expect(tiles.nth(0)).toHaveAttribute("data-lit", "false");
-  // "am" has no drawing: the child's animal waits, and says the word once it is read.
+  // "am" has no drawing, so nothing sits above the word: the child's animal waits at the edge of the
+  // track, and comes in and says the word once it is read.
+  await expect(page.locator(".picture-card")).toHaveCount(0);
   await expect(page.locator("[data-word-teller]")).toHaveAttribute("data-word-teller", "waiting");
-  await expect(page.locator(".word-bubble")).toHaveText("?");
+  await expect(page.locator(".word-bubble")).toHaveCount(0);
   const sounded = (await playedClips(page)).length;
   await dragAcross(page, page.locator(".blend-track"));
   await expect(activity).toHaveAttribute("data-blended", "true");
