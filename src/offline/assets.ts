@@ -127,9 +127,9 @@ export function offlineUrls(): string[] {
   add(`${base}icons/icon-512.png`);
   add(`${base}icons/icon-maskable-512.png`);
   add(`${base}icons/apple-touch-icon.png`);
-  add(`${base}icons/module-words.png`);
-  add(`${base}icons/module-numbers.png`);
-  add(`${base}icons/module-colors.png`);
+  add(`${base}icons/module-words.svg`);
+  add(`${base}icons/module-numbers.svg`);
+  add(`${base}icons/module-colors.svg`);
   add(`${base}icons/module-time.svg`);
   add(`${base}icons/module-build.svg`);
   add(`${base}icons/module-science.svg`);

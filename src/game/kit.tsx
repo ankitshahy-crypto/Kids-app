@@ -59,13 +59,14 @@ const FINISH_MS = 1700;
  *  - wait: the child is taking a while (the nudge): eyes up, a slow sway;
  *  - think: a miss: a puzzled tilt of the head, eyes to the side (never sad);
  *  - cheer: a right answer: a pop (a squash, then a stretch) into a bounce, happy eyes;
- *  - walk: on the way somewhere (the coding board): a hop with each step.
+ *  - walk: on the way somewhere (the coding board): a hop with each step;
+ *  - sleepy: Break time: half-closed eyes, a slump (a face the round plush has; others show idle).
  *
  * The look is CSS on `data-mood`, on the host and on the avatar: a painted animal fades to the
  * mood's own face when it has one; a drawn one changes its eyes (one eye language for every animal,
  * see avatars.tsx). So any game that shows the animal gets it by passing the mood down.
  */
-export type Mood = "idle" | "wait" | "think" | "cheer" | "walk";
+export type Mood = "idle" | "wait" | "think" | "cheer" | "walk" | "sleepy";
 
 /**
  * For the tests only, and only in a development build: do not wait for a line to be said before the

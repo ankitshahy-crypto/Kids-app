@@ -4,193 +4,479 @@
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.0495,
+      "x": 0.0278,
       "y": 0.0282,
-      "w": 0.845,
-      "h": 0.4916
+      "w": 0.9444,
+      "h": 0.9437
     },
-    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        -0.0206,
+        -0.0141,
+        1.0405
+      ],
+      "think": [
+        0.0548,
+        0.0665,
+        0.9354
+      ],
+      "wait": [
+        0.0487,
+        0.0751,
+        0.9279
+      ],
+      "sleepy": [
+        0.0812,
+        0.0739,
+        0.887
+      ]
+    }
   },
   "dog": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.0293,
-      "y": 0.028,
-      "w": 0.9414,
-      "h": 0.5997
+      "x": 0.0277,
+      "y": 0.0282,
+      "w": 0.9447,
+      "h": 0.9436
     },
-    "sky": "hue-rotate(185deg) saturate(0.26) contrast(0.85) brightness(1.12)"
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.0607,
+        0.1143,
+        0.9273
+      ],
+      "think": [
+        0.0282,
+        0.1509,
+        0.897
+      ],
+      "wait": [
+        0.0473,
+        0.0871,
+        0.97
+      ],
+      "sleepy": [
+        -0.0613,
+        -0.0009,
+        1.0558
+      ]
+    }
   },
   "fox": {
     "frames": [
       "idle",
       "cheer",
       "think",
+      "wait",
       "blink",
-      "wave",
-      "silly"
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": -0.0565,
-      "y": 0.0283,
-      "w": 0.9952,
-      "h": 0.5445
+      "x": 0.028,
+      "y": 0.0275,
+      "w": 0.944,
+      "h": 0.9451
     },
-    "sky": "hue-rotate(185deg) saturate(0.25) contrast(0.85) brightness(1.12)"
+    "sky": "hue-rotate(181deg) saturate(0.27) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.0579,
+        0.0576,
+        0.907
+      ],
+      "think": [
+        0.088,
+        0.0917,
+        0.9082
+      ],
+      "wait": [
+        0.0468,
+        0.0675,
+        0.9353
+      ],
+      "sleepy": [
+        0.0724,
+        0.0691,
+        0.9094
+      ]
+    }
   },
   "bear": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.0387,
-      "y": 0.0279,
-      "w": 0.9325,
-      "h": 0.5038
+      "x": 0.028,
+      "y": 0.0275,
+      "w": 0.944,
+      "h": 0.9451
     },
-    "sky": "hue-rotate(181deg) saturate(0.28) contrast(0.85) brightness(1.12)"
+    "sky": "hue-rotate(181deg) saturate(0.31) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.0108,
+        0.0437,
+        0.977
+      ],
+      "think": [
+        0.0462,
+        0.0728,
+        0.9439
+      ],
+      "wait": [
+        -0.0012,
+        0.0016,
+        1.0026
+      ],
+      "sleepy": [
+        0.0312,
+        0.0544,
+        0.9203
+      ]
+    }
   },
   "bunny": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": -0.1342,
+      "x": 0.0279,
       "y": 0.0281,
-      "w": 1.2526,
-      "h": 0.5946
+      "w": 0.9441,
+      "h": 0.9438
     },
-    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.065,
+        0.0498,
+        0.9002
+      ],
+      "think": [
+        0.0073,
+        -0.0015,
+        0.9776
+      ],
+      "wait": [
+        0.0201,
+        0.0528,
+        0.9363
+      ],
+      "sleepy": [
+        -0.1303,
+        -0.1866,
+        1.1963
+      ]
+    }
   },
   "owl": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.021,
-      "y": 0.028,
-      "w": 0.959,
-      "h": 0.5746
+      "x": 0.0277,
+      "y": 0.0277,
+      "w": 0.9447,
+      "h": 0.9447
     },
-    "sky": "hue-rotate(185deg) saturate(0.33) contrast(0.85) brightness(1.12)"
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.0206,
+        0.0487,
+        0.9496
+      ],
+      "think": [
+        -0.003,
+        0.0567,
+        0.9931
+      ],
+      "wait": [
+        -0.0025,
+        0.0535,
+        0.9991
+      ],
+      "sleepy": [
+        0.0641,
+        0.0634,
+        0.8818
+      ]
+    }
   },
   "frog": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.0635,
-      "y": 0.0278,
-      "w": 0.8932,
-      "h": 0.5746
+      "x": 0.0277,
+      "y": 0.0279,
+      "w": 0.9446,
+      "h": 0.9443
     },
-    "sky": "hue-rotate(137deg) saturate(0.38) contrast(0.85) brightness(1.12)"
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        -0.0046,
+        0.0059,
+        1.0271
+      ],
+      "think": [
+        0.0661,
+        0.0952,
+        0.8606
+      ],
+      "wait": [
+        0.0238,
+        0.055,
+        0.9433
+      ],
+      "sleepy": [
+        0.1054,
+        0.0886,
+        0.8344
+      ]
+    }
   },
   "duck": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.0375,
-      "y": 0.0281,
-      "w": 0.9298,
-      "h": 0.5185
+      "x": 0.0275,
+      "y": 0.0279,
+      "w": 0.945,
+      "h": 0.9443
     },
-    "sky": "hue-rotate(169deg) saturate(0.32) contrast(0.85) brightness(1.12)"
+    "sky": "hue-rotate(161deg) saturate(0.34) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.0225,
+        0.0334,
+        0.9386
+      ],
+      "think": [
+        -0.0531,
+        0.0064,
+        1.0356
+      ],
+      "wait": [
+        0.016,
+        0.0218,
+        0.9724
+      ],
+      "sleepy": [
+        -0.0385,
+        -0.0194,
+        1.0203
+      ]
+    }
   },
   "pig": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.0474,
-      "y": 0.0282,
-      "w": 0.9156,
-      "h": 0.5017
+      "x": 0.0283,
+      "y": 0.0281,
+      "w": 0.9434,
+      "h": 0.9438
     },
-    "sky": "hue-rotate(199deg) saturate(0.53) contrast(0.85) brightness(1.12)"
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.0437,
+        0.0822,
+        0.8759
+      ],
+      "think": [
+        0.0571,
+        0.1049,
+        0.8572
+      ],
+      "wait": [
+        0.0069,
+        0.0135,
+        0.9893
+      ],
+      "sleepy": [
+        0.0945,
+        0.0705,
+        0.8519
+      ]
+    }
   },
   "penguin": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.0645,
-      "y": 0.0278,
-      "w": 0.8727,
-      "h": 0.5339
+      "x": 0.0277,
+      "y": 0.0279,
+      "w": 0.9446,
+      "h": 0.9443
     },
-    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.0078,
+        0.0111,
+        0.9675
+      ],
+      "think": [
+        -0.0387,
+        -0.0121,
+        1.0694
+      ],
+      "wait": [
+        0.0047,
+        0.0128,
+        1.0011
+      ],
+      "sleepy": [
+        -0.0555,
+        -0.0369,
+        1.0496
+      ]
+    }
   },
   "lion": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": -0.0315,
-      "y": 0.028,
-      "w": 1.0143,
-      "h": 0.5613
+      "x": 0.0283,
+      "y": 0.0276,
+      "w": 0.9434,
+      "h": 0.9449
     },
-    "sky": "hue-rotate(179deg) saturate(0.24) contrast(0.85) brightness(1.12)"
+    "sky": "hue-rotate(175deg) saturate(0.33) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.0487,
+        0.0523,
+        0.9046
+      ],
+      "think": [
+        0.031,
+        0.0305,
+        0.9595
+      ],
+      "wait": [
+        0.009,
+        0.0256,
+        0.9736
+      ],
+      "sleepy": [
+        0.0372,
+        0.0136,
+        0.9129
+      ]
+    }
   },
   "koala": {
     "frames": [
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.0279,
-      "y": 0.0279,
-      "w": 0.9433,
-      "h": 0.5964
+      "x": 0.028,
+      "y": 0.028,
+      "w": 0.9441,
+      "h": 0.9439
     },
-    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)"
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.0219,
+        0.0378,
+        0.9579
+      ],
+      "think": [
+        0.0439,
+        0.0488,
+        0.984
+      ],
+      "wait": [
+        -0.0447,
+        0.0078,
+        1.0275
+      ],
+      "sleepy": [
+        0.0017,
+        -0.0099,
+        0.9933
+      ]
+    }
   }
 }

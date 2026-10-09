@@ -1,0 +1,19 @@
+{
+  "dog": {
+    "clips": {
+      "cheer": {
+        "seconds": 1.208,
+        "loops": false
+      },
+      "idle": {
+        "seconds": 9.708,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0486,
+      0.0536,
+      0.9011
+    ]
+  }
+}

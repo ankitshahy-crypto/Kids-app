@@ -1,11 +1,19 @@
 """
 Make the app's animal art from the painted plush figures.
 
-Usage: python3 scripts/animal-art.py <folder of source images> [--body]
+Usage: python3 scripts/animal-art.py <folder of source images> [--body] [--round]
+
+`--round` is for the round-plush renders (docs/round-plush/README.md): one marshmallow body that is
+nearly all head, on a flat green. The face crop is then the whole figure, and a mood frame keeps its
+own crop (its ears may lift above where the idle ones hang; cut to the idle's frame they would be
+clipped) and is lined up with the idle frame by its body instead: the widest part and the floor,
+which every mood keeps. The manifest records, per mood frame, where the idle frame sits inside it
+(`places`: x, y, side, fractions of the mood frame), and the app draws the mood face that much
+larger than its box and shifted, so the body stays put while the ears rise past the box's edge.
 
 Each source is a WebP (or PNG) of one plush animal on a plain light studio backdrop, named
 `...animal-<id>[-<frame>]...` (`<id>` from src/data/animals.ts; no frame, or `mockup`, is the
-idle frame; `cheer`, `think`, `wait`, `blink`, `wave`, `silly` are the mood frames). For each
+idle frame; `cheer`, `think`, `wait`, `blink`, `sleepy`, `wave`, `silly` are the mood frames). For each
 one this writes, under public/animals/<id>/:
 
   <frame>-face.webp   the head, square, 512px, on a transparent background: what the app shows
@@ -48,12 +56,17 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "animals"
 MANIFEST = ROOT / "src" / "data" / "animalArt.json"
 ANIMALS = ["cat", "dog", "fox", "bear", "bunny", "owl", "frog", "duck", "pig", "penguin", "lion", "koala"]
-FRAMES = ["idle", "cheer", "think", "wait", "blink", "wave", "silly"]
+FRAMES = ["idle", "cheer", "think", "wait", "blink", "sleepy", "wave", "silly"]
 # A wave lifts a paw and a silly face tips the head: their outlines are their own, not the idle one's.
 OWN_OUTLINE = ("wave", "silly")
 FACE_PX = 512
 BODY_PX = 800
 FACE_PAD = 0.06
+# Round plush: air round the figure for ears that lift (cheer, wait) and a body that tips (think).
+ROUND_PAD = 0.12
+# Ears that lift make a taller figure and so a wider crop: the body in it is smaller by a quarter.
+ROUND_FIT = ((0.6, 1.5), FACE_PX * 0.3)
+ROUND = "--round" in sys.argv
 # How far one animal differs from itself between two renders, with room to spare. Measured on the
 # twelve: stretch 0.95 to 1.03, the middle of the face carried up to 11px, match 0.73 (the frog, whose
 # eyes are a third of its face) to 0.96. Two different animals: match 0.19 to 0.70, or a stretch
@@ -65,7 +78,8 @@ FIT_MATCH = 0.7
 # bigger move with a worse match, and is taken as long as it is still one animal (measured: stretch
 # 0.89 to 1.38 — the koala's head is drawn smaller — shift up to 93, match 0.72 to 0.95). Look at
 # the contact sheet: the fit is right when the eyes and nose sit where the idle ones do.
-FIT_LOOSE = {"think": ((0.85, 1.4), 100, 0.7)}
+# A sleepy face slumps to one side the same way.
+FIT_LOOSE = {"think": ((0.85, 1.4), 100, 0.7), "sleepy": ((0.85, 1.4), 100, 0.7)}
 
 
 def cut_out(path: Path):
@@ -84,15 +98,29 @@ def cut_out(path: Path):
     sat = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:, :, 1].astype(np.float32)
     mask = np.full((h, w), cv2.GC_PR_BGD, np.uint8)
     mask[dist < 6] = cv2.GC_BGD
-    # The floor shadow, at the bottom of the picture, is grey and a little darker than the backdrop.
-    # (Only there: a grey animal, the koala, is grey all over.)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    bghsv = cv2.cvtColor(np.uint8([[bg]]), cv2.COLOR_BGR2HSV)[0, 0].astype(np.float32)
     foot = np.zeros((h, w), bool)
     foot[int(h * 0.78) :] = True
-    mask[foot & (sat < 16) & (dist < 48) & (L < bglab[0] + 4)] = cv2.GC_BGD
-    sure = cv2.erode((dist > 40).astype(np.uint8), np.ones((9, 9), np.uint8)) > 0
-    sure &= ~(foot & (sat < 16) & (L > bglab[0] - 30))
-    mask[sure] = cv2.GC_FGD
-    mask[(dist >= 20) & ~sure & ~(foot & (sat < 16))] = cv2.GC_PR_FGD
+    if bghsv[1] > 60:
+        # A coloured backdrop (the round-plush renders: green). Its shadow is the same hue, darker,
+        # and about as saturated, anywhere in the picture: backdrop. Nothing of an animal is that
+        # colour: a plush of the backdrop's own hue (the mint frog) is a pastel, well under the
+        # backdrop's saturation (measured: the shadow stays above 0.9 of it; the frog is under 0.65).
+        hue_off = np.abs(((hsv[:, :, 0].astype(np.float32) - bghsv[0]) + 90) % 180 - 90)
+        shadow = (hue_off < 14) & (sat > bghsv[1] * 0.8) & (L < bglab[0] + 4)
+        mask[shadow] = cv2.GC_BGD
+        sure = cv2.erode(((dist > 40) & ~shadow).astype(np.uint8), np.ones((9, 9), np.uint8)) > 0
+        mask[sure] = cv2.GC_FGD
+        mask[(dist >= 20) & ~sure & ~shadow] = cv2.GC_PR_FGD
+    else:
+        # The floor shadow, at the bottom of the picture, is grey and a little darker than the backdrop.
+        # (Only there: a grey animal, the koala, is grey all over.)
+        mask[foot & (sat < 16) & (dist < 48) & (L < bglab[0] + 4)] = cv2.GC_BGD
+        sure = cv2.erode((dist > 40).astype(np.uint8), np.ones((9, 9), np.uint8)) > 0
+        sure &= ~(foot & (sat < 16) & (L > bglab[0] - 30))
+        mask[sure] = cv2.GC_FGD
+        mask[(dist >= 20) & ~sure & ~(foot & (sat < 16))] = cv2.GC_PR_FGD
     cv2.grabCut(img, mask, None, np.zeros((1, 65), np.float64), np.zeros((1, 65), np.float64), 8, cv2.GC_INIT_WITH_MASK)
     fg = ((mask == cv2.GC_FGD) | (mask == cv2.GC_PR_FGD)).astype(np.uint8)
     # Under the feet only what is darker or coloured is the figure: the paws are cream, the shadow is not.
@@ -101,7 +129,8 @@ def cut_out(path: Path):
         floor = int(rows.max() - 0.12 * (rows.max() - rows.min()))
         zone = np.zeros_like(fg, bool)
         zone[floor:] = True
-        fg[zone & (L > 208) & (sat < 30) & (dist < 40)] = 0
+        if bghsv[1] <= 60:
+            fg[zone & (L > 208) & (sat < 30) & (dist < 40)] = 0
         fg = cv2.morphologyEx(fg, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
     # The biggest blob is the figure; holes in it are its own light parts.
     n, labels, stats, _ = cv2.connectedComponentsWithStats(fg)
@@ -140,6 +169,46 @@ def head_box(alpha, box):
     size = max(bottom - y0, width)
     cx = (left + right) / 2
     return int(cx - size / 2), y0, int(cx + size / 2), y0 + size
+
+
+def round_box(alpha, box):
+    """A round plush is nearly all head: the whole figure, in a square centred on it."""
+    x0, y0, x1, y1 = box
+    size = max(x1 - x0, y1 - y0)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    return int(cx - size / 2), int(cy - size / 2), int(cx + size / 2), int(cy + size / 2)
+
+
+def body_marks(face):
+    """Where a round plush's body is in a face crop, with the ears, paws and tufts taken off: the
+    figure opened with a disc a fifth of the crop wide keeps only what is wider than that, the body.
+    Its size (the root of its area, the same whichever way it tips), its middle, and its floor. Two
+    renders of one animal draw the body a little bigger or smaller; the body is what every mood keeps."""
+    alpha = (face[:, :, 3] > 96).astype(np.uint8)
+    k = int(FACE_PX * 0.2) | 1
+    disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+    body = cv2.morphologyEx(alpha, cv2.MORPH_OPEN, disc)
+    if not body.any():
+        body = alpha
+    ys, xs = np.where(body > 0)
+    return float(np.sqrt(len(xs))), float(xs.mean()), int(ys.max())
+
+
+def fit_body(face, idle):
+    """The move (uniform scale and shift, as an affine) that puts a mood frame's body on the idle
+    frame's: same size, same middle, same floor. None when the move is more than one animal
+    differs from itself between two renders."""
+    (lo, hi), far = ROUND_FIT
+    fw, fx, ff = body_marks(face)
+    iw, ix, i_floor = body_marks(idle)
+    scale = fw / iw
+    # From a place on the idle face to the place on the mood face that belongs there.
+    warp = np.array([[scale, 0, fx - scale * ix], [0, scale, ff - scale * i_floor]], np.float32)
+    shift = float(np.hypot(warp[0, 2] + (scale - 1) * FACE_PX / 2, warp[1, 2] + (scale - 1) * FACE_PX / 2))
+    told = f"scale {scale:.3f}, shift {shift:.1f}"
+    if scale < lo or scale > hi or shift > far:
+        return None, f"fit ran wild ({told})"
+    return warp, f"lined up by the body ({told})"
 
 
 def sky_filter(rgba):
@@ -185,9 +254,13 @@ def crop(rgba, box, pad):
     return out
 
 
+def face_pad():
+    return ROUND_PAD if ROUND else FACE_PAD
+
+
 def face_image(rgba, head):
     """The face crop at its shipped size, as an RGBA array."""
-    face = Image.fromarray(cv2.cvtColor(crop(rgba, head, FACE_PAD), cv2.COLOR_BGRA2RGBA)).resize((FACE_PX, FACE_PX), Image.LANCZOS)
+    face = Image.fromarray(cv2.cvtColor(crop(rgba, head, face_pad()), cv2.COLOR_BGRA2RGBA)).resize((FACE_PX, FACE_PX), Image.LANCZOS)
     return np.array(face)
 
 
@@ -227,11 +300,59 @@ def moved(rgba, head, warp):
     """
     x0, y0, x1, y1 = head
     w, h = x1 - x0, y1 - y0
-    origin = np.array([x0 - int(w * FACE_PAD), y0 - int(h * FACE_PAD)], np.float64)
-    size = np.diag([(w + 2 * int(w * FACE_PAD)) / FACE_PX, (h + 2 * int(h * FACE_PAD)) / FACE_PX])
+    pad = face_pad()
+    origin = np.array([x0 - int(w * pad), y0 - int(h * pad)], np.float64)
+    size = np.diag([(w + 2 * int(w * pad)) / FACE_PX, (h + 2 * int(h * pad)) / FACE_PX])
     turn = size @ warp[:, :2].astype(np.float64) @ np.linalg.inv(size)
     full = np.hstack([turn, (origin - turn @ origin + size @ warp[:, 2].astype(np.float64))[:, None]])
     return cv2.warpAffine(rgba, full, (rgba.shape[1], rgba.shape[0]), flags=cv2.INTER_CUBIC | cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+
+
+def eyes_of(idle):
+    """A round plush's two open eyes on its idle face: the two dark, compact spots in the upper
+    middle of the face that sit level, one each side of the middle and clear of it (the nose is dark
+    too, and in the middle), and no further out than a quarter of the face. None when no such pair
+    is there."""
+    lab = cv2.cvtColor(idle[:, :, :3], cv2.COLOR_RGB2LAB)
+    dark = ((lab[:, :, 0] < 70) & (idle[:, :, 3] > 200)).astype(np.uint8)
+    band = np.zeros_like(dark)
+    band[int(FACE_PX * 0.18) : int(FACE_PX * 0.72)] = 1
+    dark = cv2.morphologyEx(dark * band, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    n, labels, stats, centres = cv2.connectedComponentsWithStats(dark)
+    spots = [i for i in range(1, n) if FACE_PX * FACE_PX * 0.0004 < stats[i, cv2.CC_STAT_AREA] < FACE_PX * FACE_PX * 0.02]
+    # Compact: about as wide as tall (a mouth is a thin line; a stripe is long).
+    spots = [i for i in spots if 0.5 < stats[i, cv2.CC_STAT_WIDTH] / max(1, stats[i, cv2.CC_STAT_HEIGHT]) < 2.0]
+    level = lambda i, j: abs(centres[i][1] - centres[j][1]) < FACE_PX * 0.06
+    either_side = lambda i, j: (centres[i][0] - FACE_PX / 2) * (centres[j][0] - FACE_PX / 2) < 0
+    # (Clear of the middle by a little, and no further out than the frog's eyes, which sit on bumps
+    # at the sides of its head: 0.223 of the face from the middle.)
+    clear = lambda i: FACE_PX * 0.03 < abs(centres[i][0] - FACE_PX / 2) < FACE_PX * 0.26
+    alike = lambda i, j: 0.4 < stats[i, cv2.CC_STAT_AREA] / stats[j, cv2.CC_STAT_AREA] < 2.5
+    pairs = [(i, j) for i, j in combinations(spots, 2) if level(i, j) and either_side(i, j) and clear(i) and clear(j) and alike(i, j)]
+    if not pairs:
+        return None
+    # The biggest such pair: the eyes, not two flecks.
+    i, j = max(pairs, key=lambda ij: stats[ij[0], cv2.CC_STAT_AREA] + stats[ij[1], cv2.CC_STAT_AREA])
+    return [(int(stats[k, 0]), int(stats[k, 1]), int(stats[k, 2]), int(stats[k, 3])) for k in (i, j)]
+
+
+def eyes_only_round(blink, idle):
+    """The blink's shut eyes alone, for a round plush: the two places where the idle face has its
+    open eyes (found on the idle face itself, so a belly or an ear that differs between the two
+    renders does not count), each widened to take in the shut eye drawn there, eased out into nothing."""
+    eyes = eyes_of(idle)
+    if eyes is None:
+        return None, "no two eyes found on the idle face"
+    mask = np.zeros((FACE_PX, FACE_PX), np.uint8)
+    for x, y, w, h in eyes:
+        grow = int(max(w, h) * 0.7)
+        cv2.ellipse(mask, (int(x + w / 2), int(y + h / 2)), (w // 2 + grow + 6, h // 2 + grow), 0, 0, 360, 1, -1)
+    soft = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), 7)
+    soft[soft < 0.004] = 0
+    out = blink.copy()
+    out[:, :, 3] = np.round(soft * idle[:, :, 3]).astype(np.uint8)
+    out[out[:, :, 3] == 0] = 0
+    return out, f"eyes at {[(int(x + w / 2), int(y + h / 2)) for x, y, w, h in eyes]}"
 
 
 def eyes_only(blink, idle):
@@ -251,10 +372,14 @@ def eyes_only(blink, idle):
     n, labels, stats, centres = cv2.connectedComponentsWithStats(hot)
     blobs = sorted(range(1, n), key=lambda i: -stats[i, cv2.CC_STAT_AREA])
     blobs = [i for i in blobs if stats[i, cv2.CC_STAT_AREA] > 180]
-    # Two eyes: the two biggest that sit side by side, one each side of the middle.
+    # Two eyes: the two biggest that sit side by side, one each side of the middle, each clear of
+    # the middle (a mouth that opened too lies in the middle, under the eyes), the most level pair.
     level = lambda i, j: abs(centres[i][1] - centres[j][1]) < FACE_PX * 0.08
     either_side = lambda i, j: (centres[i][0] - FACE_PX / 2) * (centres[j][0] - FACE_PX / 2) < 0
-    pair = next(((i, j) for i, j in combinations(blobs[:4], 2) if level(i, j) and either_side(i, j)), None)
+    # ...and not out at the sides, where an ear that fell differs too (the bunny's blink render).
+    clear = lambda i: FACE_PX * 0.03 < abs(centres[i][0] - FACE_PX / 2) < FACE_PX * 0.2
+    pairs = [(i, j) for i, j in combinations(blobs[:5], 2) if level(i, j) and either_side(i, j) and clear(i) and clear(j)]
+    pair = min(pairs, key=lambda ij: abs(centres[ij[0]][1] - centres[ij[1]][1])) if pairs else None
     if pair is None:
         return None, "no two eyes found"
     mask = np.zeros(diff.shape, np.uint8)
@@ -292,6 +417,7 @@ def main(folder: Path, with_body: bool):
             (OUT / animal / name).unlink(missing_ok=True)
         if animal in manifest:
             manifest[animal]["frames"] = [f for f in manifest[animal]["frames"] if f != frame]
+            manifest[animal].get("places", {}).pop(frame, None)
 
     for animal in ANIMALS:
         have = sources.get(animal, {})
@@ -300,27 +426,48 @@ def main(folder: Path, with_body: bool):
         shipped = OUT / animal / "idle-face.webp"
         if "idle" not in have and shipped.exists():
             idle_face = np.array(Image.open(shipped).convert("RGBA"))
+        elif "idle" in have and animal in manifest:
+            # A new idle is a new set: the frames shipped before were lined up with the old idle, and a
+            # mood frame not rendered again would show the old animal. They go, until rendered again.
+            for frame in [f for f in manifest[animal]["frames"] if f not in have]:
+                print(animal, frame, "gone: not in the new set (the mood shows the idle face until it is rendered)")
+                for name in (f"{frame}-face.webp", f"{frame}.webp"):
+                    (OUT / animal / name).unlink(missing_ok=True)
+                manifest[animal]["frames"] = [f for f in manifest[animal]["frames"] if f != frame]
+                manifest[animal].get("places", {}).pop(frame, None)
         for frame in [f for f in FRAMES if f in have]:
             rgba = cut_out(have[frame])
             box = figure_box(rgba[:, :, 3])
-            head = head_box(rgba[:, :, 3], box)
+            head = round_box(rgba[:, :, 3], box) if ROUND else head_box(rgba[:, :, 3], box)
             body = crop(rgba, box, 0.03)
             bw, bh = body.shape[1], body.shape[0]
             face = face_image(rgba, head)
             note = ""
+            place = None
             if frame == "idle":
                 idle_face = face
             elif frame not in OWN_OUTLINE:
                 if idle_face is None:
                     leave_out(animal, frame, "no idle face to line it up with")
                     continue
-                warp, note = fit(face, idle_face, frame)
+                # A blink is the idle render with the eyes shut: the exact fit of its outline (as for
+                # the painted portraits) lines it up to the pixel, which the eyes need. The other
+                # moods change the outline (ears, a tilt): fitted by the body instead.
+                warp, note = fit_body(face, idle_face) if ROUND and frame != "blink" else fit(face, idle_face, frame)
+                if warp is None and ROUND and frame == "blink":
+                    # A blink render whose ears fell (the bunny's) has no outline to fit: by the body, then.
+                    warp, note = fit_body(face, idle_face)
                 if warp is None:
                     leave_out(animal, frame, note)
                     continue
-                face = face_image(moved(rgba, head, warp), head)
+                if ROUND and frame != "blink":
+                    # Kept as cut; the app places it (see `places` below).
+                    scale = float(warp[0, 0])
+                    place = [round(float(warp[0, 2]) / FACE_PX, 4), round(float(warp[1, 2]) / FACE_PX, 4), round(scale, 4)]
+                else:
+                    face = face_image(moved(rgba, head, warp), head)
                 if frame == "blink":
-                    face, found = eyes_only(face, idle_face)
+                    face, found = eyes_only_round(face, idle_face) if ROUND else eyes_only(face, idle_face)
                     note = f"{note}; {found}"
                     if face is None:
                         leave_out(animal, frame, note)
@@ -333,16 +480,22 @@ def main(folder: Path, with_body: bool):
             entry = manifest.setdefault(animal, {"frames": [], "body": False, "head": {}, "sky": ""})
             if frame not in entry["frames"]:
                 entry["frames"].append(frame)
+            if place:
+                entry.setdefault("places", {})[frame] = place
+            elif "places" in entry:
+                entry["places"].pop(frame, None)
             if frame == "idle":
                 entry["body"] = with_body
                 entry["sky"] = sky_filter(crop(rgba, head, FACE_PAD))
                 # The head in the whole figure's image, as fractions of it, for the outfit pieces.
+                # (A round plush is all head: the figure itself.)
                 fx0, fy0 = box[0] - int((box[2] - box[0]) * 0.03), box[1] - int((box[3] - box[1]) * 0.03)
+                hx0, hy0, hx1, hy1 = box if ROUND else head
                 entry["head"] = {
-                    "x": round((head[0] - fx0) / bw, 4),
-                    "y": round((head[1] - fy0) / bh, 4),
-                    "w": round((head[2] - head[0]) / bw, 4),
-                    "h": round((head[3] - head[1]) / bh, 4),
+                    "x": round((hx0 - fx0) / bw, 4),
+                    "y": round((hy0 - fy0) / bh, 4),
+                    "w": round((hx1 - hx0) / bw, 4),
+                    "h": round((hy1 - hy0) / bh, 4),
                 }
             entry["frames"] = [f for f in FRAMES if f in entry["frames"]]
             print(animal, frame, note)

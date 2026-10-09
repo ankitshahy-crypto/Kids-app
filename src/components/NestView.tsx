@@ -1,6 +1,6 @@
 import type { ChildProfile } from "../data/profiles";
 import { Chevron } from "./icons";
-import { EggNest } from "./sceneArt";
+import { Nest } from "./sceneArt";
 import { Hero } from "./Hero";
 
 export function NestView({ profile, onBack }: { profile: ChildProfile; onBack: () => void }) {
@@ -13,8 +13,9 @@ export function NestView({ profile, onBack }: { profile: ChildProfile; onBack: (
       </button>
       <h1>My Nest</h1>
       <div className="nest-art">
-        <EggNest />
-        <Hero animal={profile.animal} outfit={profile.outfit} />
+        <Nest>
+          <Hero animal={profile.animal} outfit={profile.outfit} />
+        </Nest>
       </div>
       <p className="nest-note">A finished day adds a twig or an egg.</p>
       <ul className="nest-pieces">
