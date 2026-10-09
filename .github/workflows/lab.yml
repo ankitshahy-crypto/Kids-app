@@ -1,0 +1,47 @@
+name: Lab
+
+# The measuring bench. It runs only for branches named lab/..., which are never merged: a push
+# there measures the app and prints what it found as notices.
+on:
+  push:
+    branches:
+      - "lab/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The polish pass made the WebKit run half as long again (18 to 27 minutes, two tests over
+  # their limit). Every browser test in WebKit at an iPhone's size, once with the polish whole,
+  # once with each piece of it taken out, once with all of them out: the piece that costs the
+  # time shows as the variant that runs quick (scripts/lab-polish-variant.py).
+  polish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [full, nograin, nolight, noblob, noshadow, notransition, nofade, nofront, none]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - name: The polish, ${{ matrix.variant }}
+        run: python3 scripts/lab-polish-variant.py ${{ matrix.variant }}
+      - name: Playwright WebKit, iPhone, ${{ matrix.variant }}
+        continue-on-error: true
+        run: npx playwright test --project=iphone
+      - name: What was seen (1)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=0
+      - name: What was seen (2)
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-notes.mjs --slice=1
