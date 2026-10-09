@@ -115,9 +115,9 @@ The `<video>` lists both sources; the browser takes the one it can play.
 
 ### What the video tool is asked for
 
-A clip comes from the video generator on a flat, even background (a mid grey, or a green that is in
-none of the animals), camera locked, the animal centered and whole, no shadow on the ground, no
-props, no text, starting and ending in the idle pose. The pipeline (to write: `scripts/animal-clips.py`)
+A clip comes from the video generator on a flat, even green background (a colour in none of the
+animals; a shadow on it is then keyed out with it, which a grey cannot do), camera locked, the animal centered and whole, no shadow on the ground, no
+props, no text, starting and ending in the idle pose. The pipeline (`scripts/animal-clips.py`)
 keys the background out frame by frame with the same keying for the whole clip (no flicker), crops
 to the figure's box over all frames (so the animal never shifts between clips), writes the PNG
 sequence and the WebM, and a small `<clip>.json`: the head's box per frame, for the outfits.
