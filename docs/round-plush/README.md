@@ -7,6 +7,11 @@ still frames to short video clips. The games, their layouts and the calm palette
 This is the working spec. It starts with one animal, the dog, and nothing is batched until the dog
 is approved on a phone.
 
+Settled with Ankit (2026-10-09): no sad animal, ever (a wrong answer gets puzzled); sleepy is added,
+for Break time; the mood language is the one drawn below; the dog starts with two clips, idle and
+cheer, and the other eight come once those have been seen moving on a phone; the HEVC files are
+encoded on his Mac from the frames the pipeline writes.
+
 ## 1. The mood language
 
 A face this simple cannot carry a mood on its own, so every mood is said three ways at once, and the
@@ -37,27 +42,46 @@ bear, pig, koala — ears; owl — the brow tufts; duck, penguin — the wings; 
 ## 2. Stills: what the pipeline takes
 
 The still frames stay the shipped art, under the video and in every place the animal is not alive
-(the start screen, the sticker book, the Parent page, a tile). They go through `scripts/animal-art.py`
-unchanged: one render per frame on a plain light studio backdrop, named
-`...animal-dog-<frame>...` with `<frame>` one of `idle` (or none), `cheer`, `think`, `wait`, `blink`.
+(the start screen, the sticker book, the Parent page, a tile). They go through `scripts/animal-art.py`:
+one render per frame on a flat backdrop, named `...animal-dog-<frame>...` with `<frame>` one of
+`idle` (or none), `cheer`, `think`, `wait`, `blink`, `sleepy` (new: shown on Break time).
 The script cuts the figure out, lines each mood face up with the idle face, and ships
 `public/animals/dog/<frame>-face.webp` at 512px. A round plush is nearly all head, so the "face"
 crop is most of the figure, which is what a board tile wants.
 
-Render brief for the dog's stills (the same words for every animal, with its appendage swapped in):
+Render brief for the dog, as sent. One backdrop for stills and clips alike: a flat, even green,
+which is in none of the animals (a cream plush on a cream backdrop cannot be cut out; on green the
+figure and its shadow part cleanly). Each file is named with `animal-dog-<frame>` in it.
 
-> A round plush toy dog, pillow-soft and ultra-round, cream fur with a warm brown patch over one eye
-> and brown floppy ears, a tiny face low on the body: two black dot eyes with a small shine, a small
-> black nose, a tiny stitched smile, two soft pink blush spots. Sitting, facing the camera, centered,
-> whole figure in frame with air around it. Soft studio light, plain light cream backdrop, no shadow
-> on the backdrop, no props, no text. Pastel, calm, matte fur, gentle subsurface glow. Square.
+The dog, the same words every time:
 
-then per frame: idle — "as above"; cheer — "eyes as two happy arcs, mouth open in a wide smile with a
-tiny tongue, both ears up, body squashed a little wider as if mid-bounce, blush bright"; think — "eyes
-looking up and to one side, one ear lifted, the body tipped about ten degrees to the other side, mouth
-a tiny 'o', blush faint, curious not sad"; wait — "eyes looking up, ears half up, the body leaning
-forward a touch, the small smile"; blink — "identical to idle, eyes closed: two gentle downward
-curves"; sleepy — "eyes half closed, ears down, body slumped to one side, mouth a small yawn".
+> A round plush toy dog in the Squishmallow style: ultra-round, pillow-soft, one marshmallow body
+> with no neck and tiny stub paws, cream fur with a warm brown patch over one eye and two brown
+> floppy ears, a tiny face set low: two black dot eyes with a small white shine, a small black nose,
+> a tiny stitched smile, two soft pink blush spots. Sitting, facing the camera, centered, the whole
+> figure in frame with air around it. Soft studio light, matte fur, gentle glow, pastel and calm.
+> Flat even green backdrop (#5aa85a), no props, no text, no watermark. Square.
+
+Stills (one render each; `animal-dog-idle`, `-cheer`, `-think`, `-wait`, `-blink`, `-sleepy`):
+
+- idle: as above.
+- cheer: eyes as two happy arcs, mouth open in a wide smile with a tiny tongue, both ears up, the
+  body squashed a little wider as if mid-bounce, blush bright.
+- think: eyes looking up and to one side, one ear lifted, the body tipped about ten degrees the
+  other way, mouth a tiny "o", blush faint. Curious, not sad.
+- wait: eyes looking up, ears half up, the body leaning forward a touch, the small smile.
+- blink: identical to idle, eyes closed as two gentle downward curves.
+- sleepy: eyes half closed, ears down, the body slumped to one side, mouth a small yawn.
+
+Clips (video, 24 fps, square, camera locked, the same dog and backdrop; `animal-dog-idle`,
+`animal-dog-cheer`):
+
+- idle, 8 seconds: sitting still, breathing softly (barely visible), blinking twice or three times
+  (each blink quick), one slow look to the left and back, one to the right and back, nothing else;
+  the first and last frames the same neutral pose, so it loops.
+- cheer, 1 second: from the neutral pose, eyes to happy arcs, both ears up, one bounce (the body
+  squashes wide, then springs tall, lands), mouth open, blush bright; the last frame back at the
+  neutral pose.
 
 One render at a time, so the animal is never quite the same twice: the script's line-up handles small
 differences; a frame that cannot be lined up is reported, not shipped.
@@ -115,7 +139,7 @@ The `<video>` lists both sources; the browser takes the one it can play.
 
 ### What the video tool is asked for
 
-A clip comes from the video generator on a flat, even green background (a colour in none of the
+A clip comes from the video generator on the same flat green as the stills (a colour in none of the
 animals; a shadow on it is then keyed out with it, which a grey cannot do), camera locked, the animal centered and whole, no shadow on the ground, no
 props, no text, starting and ending in the idle pose. The pipeline (`scripts/animal-clips.py`)
 keys the background out frame by frame with the same keying for the whole clip (no flicker), crops
@@ -142,8 +166,8 @@ sequence and the WebM, and a small `<clip>.json`: the head's box per frame, for 
 
 ## 5. Order of work
 
-1. Dog stills (six frames) and the dog idle clip, from the brief above; `animal-art.py` and the clip
-   pipeline run on them; a contact sheet and the idle loop on a phone. Review.
+1. Dog stills (six frames) and the dog's idle and cheer clips, from the brief above; `animal-art.py`
+   and the clip pipeline run on them; a contact sheet and the two clips on a phone. Review.
 2. The dog in one scene (Hatch the Egg: the field, with the near layer), alive. Review.
 3. The dog's moves (nine clips). Make a dance and Take me home with them. Review.
 4. The other eleven animals, stills first (one sheet), then clips (one sheet with stills from each
