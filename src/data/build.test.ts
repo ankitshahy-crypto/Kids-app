@@ -11,8 +11,12 @@ import {
   codeRounds,
   compile,
   firstDifference,
+  GOAL_MISSES,
+  goalPalette,
   lineCues,
   loadBuild,
+  MOVE_GOALS,
+  moveGoals,
   moveResult,
   palette,
   playSteps,
@@ -98,16 +102,67 @@ describe("hello world", () => {
 });
 
 describe("read the code", () => {
-  it("starts with hello world and gives two more programs, shorter first", () => {
-    for (const level of ["early", "later"] as const) {
-      for (let salt = 0; salt < 40; salt += 1) {
-        const rounds = codeRounds(level, salt);
-        expect(rounds).toHaveLength(3);
-        expect(rounds[0]).toEqual(["hello"]);
-        expect(rounds[1]).not.toEqual(rounds[2]);
-        expect(rounds[1].length).toBeLessThanOrEqual(rounds[2].length);
+  it("starts with hello world, then two blocks, then three blocks (ages 3–4) or a repeat and then the pond (5–7)", () => {
+    for (let salt = 0; salt < 40; salt += 1) {
+      const early = codeRounds("early", salt);
+      expect(early).toHaveLength(3);
+      expect(early[0]).toEqual(["hello"]);
+      expect(early[1]).toHaveLength(2);
+      expect(early[2]).toHaveLength(3);
+      const later = codeRounds("later", salt);
+      expect(later).toHaveLength(4);
+      expect(later[0]).toEqual(["hello"]);
+      expect(later[1]).toHaveLength(2);
+      expect(later[1]).not.toContain("repeat");
+      expect(later[2]).toContain("repeat");
+      expect(later[2]).not.toContain("pond");
+      // The pond last: the one program of three lines that walks there, the rule If, then taught.
+      expect(later[3]).toEqual(["walk", "repeat", "pond"]);
+      expect(moveResult(later[3]).splashed).toBe(true);
+      for (const rounds of [early, later]) {
+        for (let index = 1; index < rounds.length; index += 1) expect(rounds[index - 1].length).toBeLessThanOrEqual(rounds[index].length);
       }
     }
+    // Longer lists than one play shows: the second and the third program each come from many.
+    const seconds = new Set<string>();
+    const thirds = { early: new Set<string>(), later: new Set<string>() };
+    for (let salt = 0; salt < 200; salt += 1) {
+      seconds.add(codeRounds("early", salt)[1].join(","));
+      for (const level of ["early", "later"] as const) thirds[level].add(codeRounds(level, salt)[2].join(","));
+    }
+    expect(seconds.size).toBe(8);
+    expect(thirds.early.size).toBe(6);
+    expect(thirds.later.size).toBe(10);
+    // Programs the old lists did not have, at either age; never a repeat at ages 3–4.
+    const oldEarly = ["jump,hello", "walk,jump", "spin,hello", "hello,dance", "walk,walk,jump", "jump,spin,hello"];
+    const oldLater = ["jump,repeat", "hello,spin,repeat", "walk,jump,repeat", "walk,repeat,pond", "dance,repeat,hello"];
+    expect([...seconds, ...thirds.early].some((code) => !oldEarly.includes(code))).toBe(true);
+    expect([...thirds.later].some((code) => !oldLater.includes(code))).toBe(true);
+  });
+
+  it("asks the move board for one goal at a time: jump then spin; then, at 5 to 7, the same again with the repeat block", () => {
+    expect(MOVE_GOALS.map((goal) => goal.blocks)).toEqual([
+      ["jump", "spin"],
+      ["jump", "spin", "repeat"],
+    ]);
+    expect(moveGoals("early").map((goal) => goal.id)).toEqual(["jump-spin"]);
+    expect(moveGoals("later").map((goal) => goal.id)).toEqual(["jump-spin", "again"]);
+    // A goal uses only the blocks its age has, among five in a row, and each goal does something.
+    for (const level of ["early", "later"] as const) {
+      for (const goal of moveGoals(level)) {
+        const blocks = goalPalette(level, goal);
+        expect(blocks).toHaveLength(5);
+        expect(new Set(blocks).size).toBe(5);
+        for (const block of goal.blocks) expect(blocks).toContain(block);
+        for (const block of blocks) expect(palette("move", level)).toContain(block);
+        expect(playSteps(goal.blocks).length).toBeGreaterThan(0);
+      }
+    }
+    expect(playSteps(MOVE_GOALS[1].blocks).map((step) => step.block)).toEqual(["jump", "spin", "repeat", "spin", "spin"]);
+    expect(GOAL_MISSES).toBe(3);
+    // Each goal's line is a recorded clip.
+    const prompts = manifest.prompts as Record<string, { say: string }>;
+    for (const goal of MOVE_GOALS) expect(prompts[goal.line]?.say).toBe(goal.say);
   });
 
   it("changes from one play to the next", () => {

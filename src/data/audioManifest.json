@@ -1078,7 +1078,6 @@
     "code-pattern": { "file": "prompts/code-pattern.mp3", "say": "What comes next?", "source": "neural" },
     "code-again": { "file": "prompts/code-again.mp3", "say": "Try again.", "source": "neural" },
     "game-again": { "file": "prompts/code-again.mp3", "say": "Try again.", "source": "neural" },
-    "build-move": { "file": "prompts/build-move.mp3", "say": "Stack the blocks, then press play.", "source": "neural" },
     "build-music": { "file": "prompts/build-music.mp3", "say": "Make a song. Press play.", "source": "neural" },
     "build-again": { "file": "prompts/build-again.mp3", "say": "Try again.", "source": "neural" },
     "build-save": { "file": "prompts/build-save.mp3", "say": "Saved on this device.", "source": "neural" },
@@ -1284,7 +1283,9 @@
     "science-home-empty": { "file": "prompts/science-home-empty.mp3", "say": "Two animals are home. Which place has no animal?", "source": "neural" },
     "science-home-nobody": { "file": "prompts/science-home-nobody.mp3", "say": "Nobody lives there. It is empty!", "source": "neural" },
     "science-float-which": { "file": "prompts/science-float-which.mp3", "say": "One floats and one sinks. Which one floats?", "source": "neural" },
-    "code-if-splash": { "file": "prompts/code-if-splash.mp3", "say": "You are at the pond. What do you do?", "source": "neural" }
+    "code-if-splash": { "file": "prompts/code-if-splash.mp3", "say": "You are at the pond. What do you do?", "source": "neural" },
+    "build-goal-jump-spin": { "file": "prompts/build-goal-jump-spin.mp3", "say": "Make your animal jump, then spin. Then press play.", "source": "neural" },
+    "build-goal-again": { "file": "prompts/build-goal-again.mp3", "say": "Now do that again. Add the again block, then press play.", "source": "neural" }
   },
   "colors": {
     "red": { "file": "colors/red.mp3", "say": "red", "source": "neural" },

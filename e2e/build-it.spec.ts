@@ -157,25 +157,34 @@ test("read the code: hello world first, then two more programs to build from wor
   await expect(page.locator("[data-game=home]")).toBeVisible();
 });
 
-test("ages 5 to 7 read the code as words alone, with a repeat line to work out", async ({ page }) => {
+test("ages 5 to 7 read the code as words alone: hello, two steps, a repeat to work out, then the pond", async ({ page }, testInfo) => {
   await install(page, "code", older);
   const board = page.locator("[data-build=code]");
   await expect(board).toHaveAttribute("data-level", "later");
   await expect(board.locator("[data-code-line] .code-line-art")).toHaveCount(0);
-  const lines: string[] = [];
-  for (const round of ["0", "1", "2"]) {
+  const lines: string[][] = [];
+  for (const round of ["0", "1", "2", "3"]) {
     await expect(board).toHaveAttribute("data-round", round);
     // Five blocks to choose between, the program's own among them.
     await expect(board.locator(".build-block")).toHaveCount(5);
-    lines.push(...(await board.locator("[data-code-line] .code-line-words").allInnerTexts()));
+    lines.push(await board.locator("[data-code-line] .code-line-words").allInnerTexts());
     await buildCode(board);
     await board.locator("[data-play=run]").click();
     await expect(board).toHaveAttribute("data-match", "true", { timeout: 15_000 });
+    if (round === "3") {
+      // The last program walks to the pond: the rule If, then taught, done on the stage.
+      await expect(board).toHaveAttribute("data-splash", "true");
+      await expect(board).toHaveAttribute("data-steps", "3");
+      if (testInfo.project.name === "chromium") await board.screenshot({ path: "test-results/screenshots/build_read_pond.png" });
+    }
     await board.locator("[data-finish=code]").click();
   }
-  expect(lines[0]).toBe("say hello");
-  // Every program for this age repeats a step.
-  expect(lines.join("\n")).toMatch(/repeat 3 times: /);
+  expect(lines[0]).toEqual(["say hello"]);
+  // Easy to hard: two plain steps, then a repeat, then the pond.
+  expect(lines[1]).toHaveLength(2);
+  expect(lines[1].join("\n")).not.toMatch(/repeat|pond/);
+  expect(lines[2].join("\n")).toMatch(/repeat 3 times: /);
+  expect(lines[3]).toEqual(["walk", "repeat 3 times: walk", "if at pond: splash"]);
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
@@ -185,7 +194,13 @@ test("a lone repeat has nothing to play: the child hears Try again", async ({ pa
   await buildCode(board);
   await board.locator("[data-play=run]").click();
   await board.locator("[data-next=code]").click();
+  // The second program is two plain steps; the repeat comes in the last one.
   await expect(board).toHaveAttribute("data-round", "1");
+  await buildCode(board);
+  await board.locator("[data-play=run]").click();
+  await expect(board).toHaveAttribute("data-match", "true", { timeout: 15_000 });
+  await board.locator("[data-finish=code]").click();
+  await expect(board).toHaveAttribute("data-round", "2");
   await board.locator("[data-block=repeat]").click();
   await board.locator("[data-play=run]").click();
   await expect(board.locator("[data-code-line='0']")).toHaveAttribute("data-miss", "true");
@@ -213,10 +228,17 @@ for (const [age, saved] of [["3 to 4", profile], ["5 to 7", older]] as const) {
   });
 }
 
-test("tapped and dragged blocks play on the animal, one step at a time", async ({ page }, testInfo) => {
+test("the move board asks for jump, then spin: a wrong block wiggles, the right ones go on by tap or drag, and the animal does them", async ({ page }, testInfo) => {
+  await installAudioSpy(page);
   await install(page, "move");
   const board = page.locator("[data-build=move]");
   await expect(board).toHaveAttribute("data-level", "early");
+  await expect(board).toHaveAttribute("data-goal", "jump,spin");
+  await expect(board).toHaveAttribute("data-round", "0");
+  // The goal is said aloud, and shown as the two blocks to build.
+  await expect.poll(() => spokenLines(page)).toContain("make your animal jump, then spin. then press play.");
+  await expect(board.locator(".build-goal [data-goal-block]")).toHaveCount(2);
+  await expect(board.locator(".build-goal [data-done=true]")).toHaveCount(0);
   // The program in words is there at every age, once there is a program.
   await expect(board).toHaveAttribute("data-lines", "on");
   await expect(board).toHaveAttribute("data-python", "off");
@@ -230,11 +252,19 @@ test("tapped and dragged blocks play on the animal, one step at a time", async (
   for (const block of ["walk", "jump", "spin", "dance", "sing"]) {
     await expect(board.locator(`[data-block=${block}] .build-name`)).toHaveText(block);
   }
+  // Walk is not the goal: it wiggles, says its name, and stays where it is.
   await board.locator("[data-block=walk]").click();
+  await expect(board.locator("[data-block=walk]")).toHaveAttribute("data-wiggle", /^(a|b)$/);
   await expect(board).toHaveAttribute("data-said", "walk");
-  await board.locator("[data-block=jump]").dragTo(board.locator("[data-drop=script]"));
-  await expect(board).toHaveAttribute("data-script", "walk,jump");
-  await expect(board.locator(".build-lines li")).toHaveText(["walk", "jump"]);
+  await expect(board).toHaveAttribute("data-script", "");
+  await expect(board).toHaveAttribute("data-misses", "1");
+  await board.locator("[data-block=jump]").click();
+  await expect(board).toHaveAttribute("data-script", "jump");
+  await expect(board.locator(".build-goal [data-done=true]")).toHaveCount(1);
+  await board.locator("[data-block=spin]").dragTo(board.locator("[data-drop=script]"));
+  await expect(board).toHaveAttribute("data-script", "jump,spin");
+  await expect(board.locator(".build-goal [data-done=true]")).toHaveCount(2);
+  await expect(board.locator(".build-lines li")).toHaveText(["jump", "spin"]);
   await expect(board.locator(".build-place")).toHaveCount(3);
   if (testInfo.project.name === "chromium") {
     await board.screenshot({ path: "test-results/screenshots/build_move.png" });
@@ -242,22 +272,44 @@ test("tapped and dragged blocks play on the animal, one step at a time", async (
   await board.locator("[data-play=run]").click();
   // The step that is running is lit, and the stage shows that move.
   await expect(board.locator("[data-index='0']")).toHaveAttribute("data-on", "true");
-  await expect(board.locator(".build-stage")).toHaveAttribute("data-pose", "walk");
-  await expect(board).toHaveAttribute("data-ran", "walk,jump");
-  await expect(board).toHaveAttribute("data-pose", "jump");
+  await expect(board.locator(".build-stage")).toHaveAttribute("data-pose", "jump");
+  await expect(board).toHaveAttribute("data-ran", "jump,spin");
+  await expect(board).toHaveAttribute("data-pose", "spin");
+  await expect(board).toHaveAttribute("data-match", "true");
+  // Ages 3 to 4 have the one goal: done.
+  await expect(board.locator("[data-next=move]")).toHaveCount(0);
   await board.locator("[data-finish=move]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("[data-step=letter]")).not.toHaveClass(/is-done/);
 });
 
+test("after three wrong blocks the right one is pointed at", async ({ page }) => {
+  await install(page, "move");
+  const board = page.locator("[data-build=move]");
+  await expect(board).toHaveAttribute("data-goal", "jump,spin");
+  for (const block of ["walk", "dance", "sing"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board).toHaveAttribute("data-misses", "3");
+  await expect(board).toHaveAttribute("data-hint", "jump");
+  await expect(board.locator("[data-block=jump]")).toHaveAttribute("data-hint", "true");
+  await expect(board.locator("[data-block=jump] .game-hand")).toBeVisible();
+  await board.locator("[data-block=jump]").click();
+  await expect(board).toHaveAttribute("data-misses", "0");
+  await expect(board.locator(".game-hand")).toHaveCount(0);
+  // A step taken out takes the ones after it with it, so the steps stay in the goal's order.
+  await board.locator("[data-block=spin]").click();
+  await expect(board).toHaveAttribute("data-script", "jump,spin");
+  await board.locator("[data-index='0']").click();
+  await expect(board).toHaveAttribute("data-script", "");
+});
+
 test("leaving while the program plays stops it: nothing more is said over the lobby", async ({ page }) => {
-  // Five steps at 700 ms each run for 3.5 s; Back after the first leaves nothing playing.
+  // Two steps at 700 ms each; Back after the first leaves nothing playing.
   await installAudioSpy(page);
   await install(page, "move");
   const board = page.locator("[data-build=move]");
-  for (const block of ["walk", "jump", "spin", "dance", "sing"]) await board.locator(`[data-block=${block}]`).click();
-  await expect(board).toHaveAttribute("data-script", "walk,jump,spin,dance,sing");
+  for (const block of ["jump", "spin"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board).toHaveAttribute("data-script", "jump,spin");
   await board.locator("[data-play=run]").click();
   await expect(board.locator("[data-index='0']")).toHaveAttribute("data-on", "true");
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -284,37 +336,57 @@ test("with Reduce Motion a program still plays one step at a time, each move hel
   await page.emulateMedia({ reducedMotion: "reduce" });
   await install(page, "move");
   const board = page.locator("[data-build=move]");
-  for (const block of ["walk", "jump", "spin"]) await board.locator(`[data-block=${block}]`).click();
-  await expect(board).toHaveAttribute("data-script", "walk,jump,spin");
+  for (const block of ["jump", "spin"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board).toHaveAttribute("data-script", "jump,spin");
   const stage = board.locator(".build-stage");
   const poses = await noting(stage, (element) => element.getAttribute("data-pose"));
   await board.locator("[data-play=run]").click();
   await expect(stage).toHaveAttribute("data-pose", "jump");
   expect(await stage.locator(".build-pose").evaluate((pose) => getComputedStyle(pose).animationName)).toBe("none");
   await expect(board).toHaveAttribute("data-played", "true");
-  expect(await poses()).toEqual(["rest", "walk", "jump", "spin", "rest"]);
+  expect(await poses()).toEqual(["rest", "jump", "spin", "rest"]);
 });
 
 test("a step tapped in Your steps comes out", async ({ page }) => {
   await install(page, "move");
   const board = page.locator("[data-build=move]");
-  for (const block of ["walk", "spin", "jump"]) await board.locator(`[data-block=${block}]`).click();
+  for (const block of ["jump", "spin"]) await board.locator(`[data-block=${block}]`).click();
   await board.locator("[data-index='1']").click();
-  await expect(board).toHaveAttribute("data-script", "walk,jump");
+  await expect(board).toHaveAttribute("data-script", "jump");
+  await expect(board.locator(".build-goal [data-done=true]")).toHaveCount(1);
 });
 
-test("a move done three times in a row is heard three times", async ({ page }) => {
+test("ages 5 to 7 go on to do it again: the repeat block, and a move done three times in a row is heard three times", async ({ page }, testInfo) => {
   // The playtest of build 3: sing, sing, sing played one sound and then silence, while the steps
-  // lit one by one. Sing was a 70 ms pop; it is named now, like every other move.
+  // lit one by one. Sing was a 70 ms pop; every move is named now, each time it happens.
   await installAudioSpy(page);
-  await install(page, "move");
+  await install(page, "move", older);
   const board = page.locator("[data-build=move]");
-  for (let step = 0; step < 3; step += 1) await board.locator("[data-block=sing]").click();
-  await expect(board).toHaveAttribute("data-script", "sing,sing,sing");
+  await expect(board).toHaveAttribute("data-level", "later");
+  await expect(board).toHaveAttribute("data-goal", "jump,spin");
+  // No saving a goal: the steps are the goal's.
+  await expect(board.locator("[data-save=device]")).toHaveCount(0);
+  for (const block of ["jump", "spin"]) await board.locator(`[data-block=${block}]`).click();
+  await board.locator("[data-play=run]").click();
+  await expect(board).toHaveAttribute("data-match", "true", { timeout: 10_000 });
+  await board.locator("[data-next=move]").click();
+  // The second goal: the same again, with the repeat block.
+  await expect(board).toHaveAttribute("data-round", "1");
+  await expect(board).toHaveAttribute("data-goal", "jump,spin,repeat");
+  await expect.poll(() => spokenLines(page)).toContain("now do that again. add the again block, then press play.");
+  await expect(board.locator(".build-block")).toHaveCount(5);
+  await expect(board.locator("[data-block=repeat]")).toBeVisible();
+  for (const block of ["jump", "spin", "repeat"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board).toHaveAttribute("data-script", "jump,spin,repeat");
+  await expect(board.locator("[data-index='2']")).toHaveAttribute("data-line", "repeat 3 times: spin");
+  if (testInfo.project.name === "chromium") await board.screenshot({ path: "test-results/screenshots/build_move_again.png" });
   const before = (await playedClips(page)).length;
   await board.locator("[data-play=run]").click();
   await expect(board).toHaveAttribute("data-played", "true", { timeout: 10_000 });
-  expect((await playedClips(page)).slice(before).filter((clip) => clip === "words/sing.mp3")).toHaveLength(3);
+  await expect(board).toHaveAttribute("data-ran", "jump,spin,repeat,spin,spin");
+  expect((await playedClips(page)).slice(before).filter((clip) => clip === "words/spin.mp3")).toHaveLength(3);
+  await board.locator("[data-finish=move]").click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
 test("a drum played three times in a row is heard three times", async ({ page }) => {
@@ -344,34 +416,28 @@ test("a repeat block plays the drum three times", async ({ page }, testInfo) => 
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
 
-test("ages 5 to 7 splash at the pond and save on this device", async ({ page }, testInfo) => {
-  await install(page, "move", older);
+test("ages 5 to 7 save a song on this device, and nothing leaves it", async ({ page }) => {
+  await install(page, "music", older);
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
-  const board = page.locator("[data-build=move]");
+  const board = page.locator("[data-build=music]");
   await expect(board).toHaveAttribute("data-level", "later");
-  await board.locator("[data-block=walk]").click();
+  await board.locator("[data-block=drum]").click();
   await board.locator("[data-block=repeat]").click();
-  await board.locator("[data-block=pond]").click();
+  await board.locator("[data-block=bell]").click();
   await board.locator("[data-play=run]").click();
-  // The stage is on screen while the program runs.
-  await expect(board.locator(".build-stage")).toBeInViewport({ ratio: 0.9 });
-  await expect(board).toHaveAttribute("data-splash", "true");
-  await expect(board).toHaveAttribute("data-steps", "3");
-  if (testInfo.project.name === "chromium") {
-    await board.screenshot({ path: "test-results/screenshots/build_splash.png" });
-  }
+  await expect(board).toHaveAttribute("data-ran", "drum,repeat,drum,drum,bell");
   const before = requests.length;
   await board.locator("[data-save=device]").click();
   await expect(board).toHaveAttribute("data-saved", "true");
   const saved = await page.evaluate(() => localStorage.getItem("littlenest.section.games.build") ?? "");
-  expect(saved).toContain("walk");
+  expect(saved).toContain("drum");
   expect(saved).not.toContain("Mia");
   expect(requests.slice(before).every((url) => url.startsWith("http://127.0.0.1") || url.startsWith("data:"))).toBe(true);
   await page.getByRole("button", { name: "All coding" }).click();
-  await page.locator("[data-game-tile=build-move]").click();
-  await expect(page.locator("[data-build=move]")).toHaveAttribute("data-script", "walk,repeat,pond");
-  await expect(page.locator("[data-build=move]")).toHaveAttribute("data-loaded", "true");
+  await page.locator("[data-game-tile=build-music]").click();
+  await expect(page.locator("[data-build=music]")).toHaveAttribute("data-script", "drum,repeat,bell");
+  await expect(page.locator("[data-build=music]")).toHaveAttribute("data-loaded", "true");
 });
 
 test("the same program shows as blocks, as words, and as read-only Python", async ({ page }, testInfo) => {
@@ -379,25 +445,29 @@ test("the same program shows as blocks, as words, and as read-only Python", asyn
   const board = page.locator("[data-build=move]");
   await expect(board).toHaveAttribute("data-lines", "on");
   await expect(board).toHaveAttribute("data-python", "on");
-  await board.locator("[data-block=walk]").click();
-  await board.locator("[data-block=repeat]").click();
-  await board.locator("[data-block=pond]").click();
-  await expect(board.locator("[data-index='1']")).toHaveAttribute("data-line", "repeat 3 times: walk");
-  await expect(board.locator("[data-index='2']")).toHaveAttribute("data-line", "if at pond: splash");
-  await expect(board.locator(".build-lines li")).toHaveText(["walk", "repeat 3 times: walk", "if at pond: splash"]);
+  for (const block of ["jump", "spin"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board.locator(".build-lines li")).toHaveText(["jump", "spin"]);
+  expect(await board.locator(".build-python").innerText()).toBe("bird.jump()\nbird.spin()");
+  await board.locator("[data-play=run]").click();
+  await expect(board).toHaveAttribute("data-match", "true", { timeout: 10_000 });
+  await board.locator("[data-next=move]").click();
+  for (const block of ["jump", "spin", "repeat"]) await board.locator(`[data-block=${block}]`).click();
+  await expect(board.locator("[data-index='2']")).toHaveAttribute("data-line", "repeat 3 times: spin");
+  await expect(board.locator(".build-lines li")).toHaveText(["jump", "spin", "repeat 3 times: spin"]);
   const python = await board.locator(".build-python").innerText();
-  expect(python).toContain("for i in range(3):\n    bird.walk()");
-  expect(python).toContain("if bird.at_pond():\n    bird.splash()");
+  expect(python).toContain("for i in range(3):\n    bird.spin()");
+  // The Python is read only: there is nothing to type into.
+  await expect(board.locator(".build-python")).toHaveAttribute("aria-readonly", "true");
+  await expect(board.locator(".build-python textarea, .build-python input, .build-python[contenteditable=true]")).toHaveCount(0);
   await board.locator("[data-index='2']").click();
-  await expect(board).toHaveAttribute("data-script", "walk,repeat");
-  await board.locator("[data-block=pond]").click();
-  await expect(board).toHaveAttribute("data-script", "walk,repeat,pond");
+  await expect(board).toHaveAttribute("data-script", "jump,spin");
+  await board.locator("[data-block=repeat]").click();
+  await expect(board).toHaveAttribute("data-script", "jump,spin,repeat");
   if (testInfo.project.name === "chromium") {
     await board.screenshot({ path: "test-results/screenshots/build_code.png" });
   }
   await board.locator("[data-play=run]").click();
   // The line that is running lights with its block.
   await expect(board.locator(".build-lines li[data-on=true]")).toHaveCount(1);
-  await expect(board).toHaveAttribute("data-splash", "true");
-  await expect(board).toHaveAttribute("data-steps", "3");
+  await expect(board).toHaveAttribute("data-match", "true", { timeout: 10_000 });
 });
