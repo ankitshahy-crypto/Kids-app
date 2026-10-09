@@ -189,19 +189,21 @@ describe("effects", () => {
   });
 
   it("play on an audio element when the context will not start", async () => {
+    stubAudio({ state: "suspended" });
+    const window = (globalThis as unknown as { window: { AudioContext: () => Record<string, unknown> } }).window;
+    const context = window.AudioContext();
+    context.resume = () => new Promise(() => undefined);
+    // The module is loaded before the clock is faked, and URL is Node's own (its createObjectURL
+    // makes a blob: address): the test runner loads modules with both.
+    const { applyAudioSettings, playEffect } = await import("./manager");
+    applyAudioSettings(DEFAULT_SETTINGS);
     vi.useFakeTimers();
     try {
-      stubAudio({ state: "suspended" });
-      const window = (globalThis as unknown as { window: { AudioContext: () => Record<string, unknown> } }).window;
-      const context = window.AudioContext();
-      context.resume = () => new Promise(() => undefined);
-      vi.stubGlobal("URL", { createObjectURL: () => "blob:effect" });
-      const { applyAudioSettings, playEffect } = await import("./manager");
-      applyAudioSettings(DEFAULT_SETTINGS);
       playEffect("boop");
       expect(FakeAudio.srcs).toEqual([]);
       await vi.advanceTimersByTimeAsync(150);
-      expect(FakeAudio.srcs).toEqual(["blob:effect"]);
+      expect(FakeAudio.srcs).toHaveLength(1);
+      expect(FakeAudio.srcs[0]).toMatch(/^blob:/);
     } finally {
       vi.useRealTimers();
     }
