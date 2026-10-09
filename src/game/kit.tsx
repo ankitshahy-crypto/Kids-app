@@ -437,9 +437,10 @@ export type SceneKind = "shop" | "room" | "garden" | "stand" | "morning" | "afte
  *    from the top. The drawn scenes have theirs where the games were built for; a painting has its
  *    own, and a game whose things stand on the line reads it (`--scene-floor`, in the styles).
  */
-type Painting = { hold: number; still: boolean; floor?: number };
+type Painting = { hold: number; still: boolean; floor?: number; front?: boolean };
 const PAINTINGS = backdropArt as Partial<Record<SceneKind, Painting>>;
 const paintingSrc = (kind: SceneKind) => `${import.meta.env.BASE_URL}backdrops/${kind}.webp`;
+const frontSrc = (kind: SceneKind) => `${import.meta.env.BASE_URL}backdrops/${kind}-front.webp`;
 /** Paintings that have been shown once in this visit (the next time they are there at once), and ones that could not be fetched (the drawn scene stays). */
 const arrived = new Set<SceneKind>();
 const missing = new Set<SceneKind>();
@@ -504,6 +505,21 @@ function Backdrop({ kind, painting, shown, settle }: { kind: SceneKind; painting
         onLoad={() => settle(kind, "in")}
         onError={() => settle(kind, "none")}
       />
+      {/* Its near layer, when it has one: the painting's own clover and flowers, larger, along the
+          bottom edge and in front of the animal, drifting a little further than the painting
+          (scripts/backdrop-front.py). Only once the painting is in, so it never stands over the
+          drawn scene. It takes no tap. */}
+      {painting.front && shown ? (
+        <img
+          key={`${kind}-front`}
+          className="game-backdrop-front"
+          src={frontSrc(kind)}
+          alt=""
+          draggable={false}
+          decoding="async"
+          data-drift={painting.still ? "false" : "true"}
+        />
+      ) : null}
     </>
   );
 }

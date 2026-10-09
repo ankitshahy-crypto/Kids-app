@@ -42,7 +42,20 @@ export function StickerBook({ profile, settingsRef, onBack }: { profile: ChildPr
       <h1>Sticker book</h1>
       <div className="sticker-page" data-page={safe + 1} data-pages={pages}>
         {slice.length === 0 ? (
-          <p className="sticker-empty">New letters, words, numbers, colors, and baby animals leave a sticker here.</p>
+          // Empty: the page shows where stickers go, four dashed places, under the line that says how
+          // they come (it was the line alone, at the top of a big empty page).
+          <>
+            <p className="sticker-empty">New letters, words, numbers, colors, and baby animals leave a sticker here.</p>
+            <ul className="sticker-grid is-empty" aria-hidden="true">
+              {Array.from({ length: PAGE }, (_, index) => (
+                <li key={index} className="sticker-slot">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M12 3.5l2.4 5 5.4.6-4 3.7 1.1 5.4L12 15.5l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6Z" />
+                  </svg>
+                </li>
+              ))}
+            </ul>
+          </>
         ) : (
           <ul className="sticker-grid">
             {slice.map((sticker) => {

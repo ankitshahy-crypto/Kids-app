@@ -9,6 +9,8 @@ with the highest N, or else the first one, `...bg-<kind>...`. This writes:
 
   public/backdrops/<kind>.webp   the painting, 1500 x 1000
   src/data/backdropArt.json      for each painted scene, how the app is to show it:
+                                   front  it has a near layer, <kind>-front.webp (made by
+                                          scripts/backdrop-front.py from the painting)
                                    hold   where it is held when the scene is narrower than the
                                           painting, as a share across from the left (50 is the middle)
                                    still  true for a scene that does not drift (indoors)
@@ -92,11 +94,14 @@ def main(folder: Path):
         entry = {"hold": how.get("hold", 50), "still": how.get("still", False)}
         if "floor" in how:
             entry["floor"] = how["floor"]
+        # A near layer made from this painting (scripts/backdrop-front.py), kept as it is.
+        if (OUT / f"{kind}-front.webp").exists():
+            entry["front"] = True
         manifest[kind] = entry
         print(f"{kind}: {source.name.replace('media-generation-', '')[:34]} -> {(OUT / f'{kind}.webp').stat().st_size // 1024} KB")
     # Nothing is left in the folder that the list does not know (a scene dropped from SCENES).
     for path in OUT.glob("*.webp"):
-        if path.stem not in manifest:
+        if path.stem not in manifest and path.stem.removesuffix("-front") not in manifest:
             path.unlink()
             print(f"removed {path.name}")
     MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n")

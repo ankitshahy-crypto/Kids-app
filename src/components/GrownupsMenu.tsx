@@ -21,7 +21,7 @@ import { storageRefusedNotice } from "../deviceStorage";
 import { storageQuotaNotice } from "../storage";
 import { AboutWordNest } from "./AboutWordNest";
 import { ChildForm } from "./ChildForm";
-import { Chevron } from "./icons";
+import { Chevron, RowGlyph, type RowGlyphName } from "./icons";
 import { OfflinePanel } from "./OfflinePanel";
 import { UnlockPanel } from "./UnlockPanel";
 import { Printables } from "./Printables";
@@ -41,18 +41,18 @@ export type GrownupsPage =
   | "offline"
   | "progress";
 
-const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string }[] = [
-  { id: "unlock", title: `Full ${PRODUCT_SHORT}`, note: "Every week and activity, one payment, and Restore", tint: tint.peach },
-  { id: "progress", title: "Progress", note: "Lessons finished, sounds they know, and teacher codes", tint: tint.mintCard },
-  { id: "settings", title: "Settings", note: "Volume, voice, lesson length, calm mode, easier reading, tips, and Explore", tint: tint.mint },
-  { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky },
-  { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach },
-  { id: "account", title: "Account", note: "None needed. Everything stays on this device", tint: tint.sky },
-  { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: tint.blush },
-  { id: "privacy", title: "Privacy", note: "What stays on this device", tint: tint.mintCard },
-  { id: "about", title: `About ${PRODUCT_NAME}`, note: "Version and who makes the app", tint: tint.sky },
-  { id: "share", title: "Tell a friend or your school", note: `Share the ${PRODUCT_SHORT} link`, tint: tint.peach },
-  { id: "printables", title: "Printables", note: "Letter tracing and blending sheets", tint: tint.sky },
+const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string; glyph: RowGlyphName }[] = [
+  { id: "unlock", title: `Full ${PRODUCT_SHORT}`, note: "Every week and activity, one payment, and Restore", tint: tint.peach, glyph: "star" },
+  { id: "progress", title: "Progress", note: "Lessons finished, sounds they know, and teacher codes", tint: tint.mintCard, glyph: "sprout" },
+  { id: "settings", title: "Settings", note: "Volume, voice, lesson length, calm mode, easier reading, tips, and Explore", tint: tint.mint, glyph: "sliders" },
+  { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky, glyph: "download" },
+  { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach, glyph: "face" },
+  { id: "account", title: "Account", note: "None needed. Everything stays on this device", tint: tint.sky, glyph: "person" },
+  { id: "help", title: "Help", note: "The daily lesson and the letter track", tint: tint.blush, glyph: "help" },
+  { id: "privacy", title: "Privacy", note: "What stays on this device", tint: tint.mintCard, glyph: "shield" },
+  { id: "about", title: `About ${PRODUCT_NAME}`, note: "Version and who makes the app", tint: tint.sky, glyph: "info" },
+  { id: "share", title: "Tell a friend or your school", note: `Share the ${PRODUCT_SHORT} link`, tint: tint.peach, glyph: "share" },
+  { id: "printables", title: "Printables", note: "Letter tracing and blending sheets", tint: tint.sky, glyph: "page" },
 ];
 
 function ProfileRow({
@@ -199,7 +199,9 @@ export function GrownupsMenu({
             {rows.map((row) => (
               <li key={row.id}>
                 <button type="button" className="grownups-row" onClick={() => setPage(row.id)}>
-                  <span className="row-icon" style={{ background: row.tint }} aria-hidden="true" />
+                  <span className="row-icon" style={{ background: row.tint }} aria-hidden="true">
+                    <RowGlyph name={row.glyph} />
+                  </span>
                   <span className="grownups-row-copy">
                     <span className="grownups-row-title">{row.title}</span>
                     {/* The installed app has nothing to download: its lessons came with it. */}

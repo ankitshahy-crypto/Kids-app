@@ -1,5 +1,6 @@
 import { Suspense, useEffect, type ReactNode } from "react";
 import { deviceStorage } from "../deviceStorage";
+import { Loading } from "../components/Loading";
 import { ExploreBoundary } from "./boundary";
 import { writeSection } from "./sectionStore";
 import type { ExploreSection } from "./sections";
@@ -30,7 +31,7 @@ export function ExploreFrame({
 }) {
   return (
     <ExploreBoundary key={section} section={section}>
-      <Suspense fallback={<p className="adult-copy" data-explore-loading={section}>Loading</p>}>
+      <Suspense fallback={<Loading section={section} />}>
         <Remember section={section} childId={childId} />
         <CrashProbe section={section} />
         {children}

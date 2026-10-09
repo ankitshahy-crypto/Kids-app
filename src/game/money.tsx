@@ -42,13 +42,13 @@ export function Coin({ id }: { id: MoneyId }) {
         <rect x="8" y="29" width="84" height="42" rx="6" fill={five ? "#ECE6F3" : "#E6F0E8"} />
         <image href={moneyArt(five ? "bill-five" : "bill")} x="3" y="25" width="94" height="50" preserveAspectRatio="xMidYMid meet" data-bill-face={five ? "five" : "one"} />
         <circle cx="50" cy="50" r="16" fill="#FFFDFB" opacity="0.8" />
-        <text x="50" y="59" textAnchor="middle" fontSize="26" fontWeight="800" fill={five ? "#5C4A86" : "#356B45"}>
+        <text x="50" y="59" textAnchor="middle" fontSize="26" fontWeight="700" fill={five ? "#5C4A86" : "#356B45"}>
           {five ? "5" : "1"}
         </text>
-        <text x="17" y="43" textAnchor="middle" fontSize="13" fontWeight="800" fill={five ? "#5C4A86" : "#356B45"}>
+        <text x="17" y="43" textAnchor="middle" fontSize="13" fontWeight="700" fill={five ? "#5C4A86" : "#356B45"}>
           $
         </text>
-        <text x="83" y="67" textAnchor="middle" fontSize="13" fontWeight="800" fill={five ? "#5C4A86" : "#356B45"}>
+        <text x="83" y="67" textAnchor="middle" fontSize="13" fontWeight="700" fill={five ? "#5C4A86" : "#356B45"}>
           $
         </text>
       </svg>
@@ -61,7 +61,7 @@ export function Coin({ id }: { id: MoneyId }) {
       {/* A plain disc under the picture: the coin has its shape and size from the first frame, before the picture arrives. */}
       <circle cx="50" cy="50" r={look.r - 1.5} fill={look.under} />
       <image href={coinFace(look.face)} x={50 - look.r} y={50 - look.r} width={look.r * 2} height={look.r * 2} data-coin-face={look.face} />
-      <text x="50" y={50 + (cents >= 10 ? look.r * 0.3 : look.r * 0.36)} textAnchor="middle" fontSize={cents >= 10 ? look.r * 0.82 : look.r} fontWeight="800" fill={look.text}>
+      <text x="50" y={50 + (cents >= 10 ? look.r * 0.3 : look.r * 0.36)} textAnchor="middle" fontSize={cents >= 10 ? look.r * 0.82 : look.r} fontWeight="700" fill={look.text}>
         {cents}
       </text>
     </svg>

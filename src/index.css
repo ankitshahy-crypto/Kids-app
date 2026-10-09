@@ -4961,7 +4961,7 @@ button:focus-visible {
 
   [data-engineer="menu"] .math-activity {
     min-height: 60px;
-    font-size: 13px;
+    font-size: 15px;
   }
 
   [data-engineer="menu"] .math-activity-art,
@@ -5796,7 +5796,7 @@ input.is-pressed,
   background: var(--paper);
   color: var(--ink);
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
   box-shadow: var(--shadow);
 }
 
@@ -5980,7 +5980,7 @@ input.is-pressed,
   place-items: center;
   color: #9db3a6;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* The arrow being walked right now. */
@@ -5993,7 +5993,7 @@ input.is-pressed,
 .code-loop {
   margin: 0 0 0 4px;
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--ink);
 }
 
@@ -6035,7 +6035,7 @@ input.is-pressed,
   border: 3px dashed #c8d9cf;
   color: #7f9a8b;
   font-size: 30px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .pattern-missing.is-filled {
@@ -6081,7 +6081,7 @@ input.is-pressed,
 .order-number {
   color: #7f9a8b;
   font-size: 30px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .order-cards {
@@ -6132,7 +6132,7 @@ input.is-pressed,
   border: 3px dashed #c8d9cf;
   color: #7f9a8b;
   font-size: 36px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .rule-then.is-filled {
@@ -6216,7 +6216,7 @@ input.is-pressed,
   border-bottom: 4px solid var(--ink);
   color: var(--ink);
   font-size: 32px;
-  font-weight: 800;
+  font-weight: 700;
   text-align: center;
   text-transform: uppercase;
 }
@@ -6709,7 +6709,7 @@ input.is-pressed,
   background: var(--paper);
   color: var(--ink);
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   box-shadow: var(--shadow);
   touch-action: manipulation;
   transition: transform 0.1s ease;
@@ -6758,7 +6758,7 @@ input.is-pressed,
 
 .pick-number {
   font-size: 34px;
-  font-weight: 800;
+  font-weight: 700;
   color: #3d6b86;
 }
 
@@ -7744,7 +7744,7 @@ input.is-pressed,
   border-radius: 12px;
   background: var(--paper);
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 700;
   box-shadow: 0 2px 0 rgba(36, 48, 86, 0.16);
 }
 
@@ -8066,7 +8066,7 @@ input.is-pressed,
   background: rgba(255, 253, 251, 0.6);
   color: #7d8ea3;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .routine-line li[data-filled="true"] {
@@ -8204,7 +8204,7 @@ input.is-pressed,
   background: var(--paper);
   color: var(--ink);
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.04em;
 }
 
@@ -9118,7 +9118,7 @@ input.is-pressed,
   background: #3d6b86;
   color: #fffdfb;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   box-shadow: 0 0 0 2px #fffdfb;
 }
@@ -9163,7 +9163,7 @@ input.is-pressed,
 
 .hear-numeral {
   font-size: 72px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   color: #243056;
   text-shadow: 0 3px 0 #fffdfb;
@@ -9284,7 +9284,7 @@ input.is-pressed,
   overflow: hidden;
   text-align: center;
   font-size: 38px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   color: #243056;
   transition: width 0.5s ease, opacity 0.3s ease;
@@ -9516,7 +9516,7 @@ input.is-pressed,
 /* A letter to tap: as big as the picture in any other choice. */
 .pick-letter {
   font-size: 50px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   color: var(--ink);
 }
@@ -9544,7 +9544,7 @@ input.is-pressed,
   box-shadow: inset 0 0 0 3px #e6dccf, var(--shadow);
   color: var(--ink);
   font-size: 38px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -9673,7 +9673,7 @@ input.is-pressed,
   top: 17%;
   text-align: center;
   font-size: 34px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   color: var(--ink);
 }
@@ -9866,7 +9866,7 @@ input.is-pressed,
 .time-group h2 {
   margin: 2px 0 6px;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-sage);
@@ -10053,7 +10053,7 @@ input.is-pressed,
   box-shadow: 0 2px 0 rgba(51, 65, 92, 0.18);
   color: var(--ink);
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
   animation: build-pop 0.25s ease;
 }
@@ -10214,7 +10214,7 @@ input.is-pressed,
 .build-label {
   margin: 0 0 6px;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-sage);
@@ -10312,7 +10312,7 @@ input.is-pressed,
 
 .build-name {
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--ink);
   text-transform: capitalize;
 }
@@ -10338,7 +10338,7 @@ input.is-pressed,
   place-items: center;
   color: #9db3a6;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* Read the code: the program to build, in words. Each line is a button that says the line. */
@@ -10378,7 +10378,7 @@ input.is-pressed,
   background: #fffdfb;
   color: var(--ink);
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.15;
   text-align: left;
 }
@@ -10463,7 +10463,7 @@ input.is-pressed,
 .code-section h2 {
   margin: 4px 0 0;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-sage);
@@ -10559,7 +10559,7 @@ input.is-pressed,
   margin: 0;
   max-width: 420px;
   text-align: center;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .sci-bit {
@@ -12336,4 +12336,351 @@ a.unlock-buy {
   .pick.is-small {
     width: min(64px, calc((100vw - 64px) / 5));
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Polish: the chrome is made of the same paper as the paintings.
+
+   The scenes are watercolours on paper; the buttons, cards and pills around them were flat fills
+   with one shadow, very wide and very faint. Here every surface of the chrome is paper too:
+
+     --grain   the paper's tooth: a faint, warm grain (src/assets/textures/paper-grain.png,
+               made by hand-rolled noise, tiled at 128px and drawn at twice that, for sharp
+               screens). On the page, on the washes behind it, and on every surface.
+     --light   a soft light from above: white to nothing a little past the middle.
+     --edge    a hairline round the edge, and a brighter one along the top, where the light is.
+
+   and sits at one of three heights, each a shadow in two parts (a close, darker one where it
+   meets the page, a wide soft one under it):
+
+     --shadow-rest    picks, tiles, stops, round buttons: on the page.
+     --shadow-raised  cards: a little above it (the old --shadow is this now).
+     --shadow-float   sheets over everything: All done, a grown-up's question.
+
+   The colours are the ones each surface already had: the light and the grain go over its fill.
+   Nothing here moves anything: no size, margin or padding changes.
+   --------------------------------------------------------------------------- */
+:root {
+  --grain: url("./assets/textures/paper-grain.png");
+  --grain-size: 128px 128px;
+  --light: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0) 58%);
+  --edge: inset 0 0 0 1px rgba(120, 90, 60, 0.07), inset 0 1.5px 0 rgba(255, 255, 255, 0.9);
+  --shadow-rest: var(--edge), 0 1px 2px rgba(120, 90, 60, 0.1), 0 6px 14px rgba(120, 90, 60, 0.07);
+  --shadow-raised: var(--edge), 0 2px 4px rgba(120, 90, 60, 0.07), 0 14px 30px rgba(120, 90, 60, 0.1);
+  --shadow-float: var(--edge), 0 6px 14px rgba(80, 60, 40, 0.08), 0 24px 52px rgba(80, 60, 40, 0.16);
+  --shadow: var(--shadow-raised);
+}
+
+/* The page is paper. */
+.app,
+.app.mode-teacher {
+  background: var(--grain) 0 0 / var(--grain-size), var(--cream);
+}
+
+.app.mode-parent,
+.app.mode-grownups {
+  background: var(--grain) 0 0 / var(--grain-size), var(--adult);
+}
+
+/* The coloured shapes behind the page are washes: lighter where the brush went first, darker
+   where the colour pooled at the edge, with the paper showing through. */
+.blob {
+  background-image:
+    radial-gradient(ellipse at 40% 38%, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 64%),
+    var(--grain);
+  background-size: auto, var(--grain-size);
+}
+
+.blob-mint {
+  box-shadow: inset 0 0 30px rgba(104, 150, 122, 0.2);
+}
+
+.blob-peach {
+  box-shadow: inset 0 0 30px rgba(204, 138, 104, 0.18);
+}
+
+.blob-sky {
+  box-shadow: inset 0 0 30px rgba(112, 146, 190, 0.18);
+}
+
+/* Every surface of the chrome: the light from above and the paper's tooth, over its own fill.
+   (One class each, so a state that changes a surface, .is-current or [data-reveal], still wins.) */
+:is(
+    .pick,
+    .game-tile,
+    .course-button,
+    .math-activity,
+    .closet-item,
+    .story-shelf-book,
+    .build-block,
+    .build-chip,
+    .code-arrow,
+    .code-chip,
+    .pattern-choice,
+    .order-card,
+    .rule-when,
+    .rule-then,
+    .picture-card,
+    .check-choice,
+    .check-word,
+    .trail-stop,
+    .dock-art,
+    .today-avatar,
+    .games-back,
+    .nav-button,
+    .hear-again,
+    .break-button,
+    .gear-face,
+    .grownup-tip,
+    .grownup-tip-chip,
+    .wrap-up-card,
+    .who-card,
+    .who,
+    .kid-enter,
+    .chunk-strip,
+    .star-count,
+    .explore-tag,
+    .held-note,
+    .code-card,
+    .letter-sign,
+    .grownups-launch
+  ) {
+  background-image: var(--light), var(--grain);
+  background-size: auto, var(--grain-size);
+}
+
+.sticker-grid li,
+.trace-practice button,
+.sticker-page,
+.game-scene > .game-hear {
+  background-image: var(--light), var(--grain);
+  background-size: auto, var(--grain-size);
+}
+
+/* Heights. Things to tap rest on the page; cards are raised; a sheet floats over it all. */
+:is(.trail-stop, .dock-art, .today-avatar, .nav-button, .gear-face, .games-back, .star-count, .chunk-strip, .explore-tag, .grownups-launch) {
+  box-shadow: var(--shadow-rest);
+}
+
+/* Two small things that cast a cool blue-grey shadow, the only ones in the app: the warm one now. */
+.garden-need,
+.build-art .build-mark {
+  box-shadow: 0 1px 2px rgba(120, 90, 60, 0.12), 0 3px 8px rgba(120, 90, 60, 0.1);
+}
+
+.game-scene > .game-hear {
+  box-shadow: var(--shadow-rest);
+}
+
+:is(.wrap-up-card, .gate-card, .sheet-card) {
+  box-shadow: var(--shadow-float);
+}
+
+/* The green buttons (Play, Read, I'm ready, One more): painted, with the light on their top edge
+   and a darker one under, so they look pressable before they are pressed. */
+.app.mode-kid :is(.play-button, .start-button, .done-button):not(:disabled) {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 62%), var(--grain);
+  background-size: auto, var(--grain-size);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -2px 0 rgba(30, 50, 36, 0.12),
+    0 2px 4px rgba(47, 74, 60, 0.18),
+    0 12px 24px rgba(47, 74, 60, 0.2);
+}
+
+/* A press is felt, not flashed: the shrink eases in and out (a tenth of a second). Only the scale
+   eases: a transition on the filter or the ring made WebKit re-render the button every frame of it,
+   on every tap, and the iPhone's test run grew by half (the lab run on branch lab/polish-wk: the
+   one variant without this transition ran clean). The scale is composited, and costs nothing. */
+button,
+[role="button"] {
+  transition: scale 0.12s ease;
+}
+
+/* A screen arrives, it does not cut in: a short fade (opacity only, so nothing on it moves while
+   it comes). Reduced motion stills it, like every other animation (see the rule for .app *). */
+.stage > [data-screen],
+.screen-body > [data-screen],
+.games > [data-screen] {
+  animation: screen-in 0.18s ease-out;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A scene's near layer (kit.tsx, Backdrop; scripts/backdrop-front.py): the painting's own clover
+   and flowers, drawn larger, along the bottom edge, in front of the animal and the scene's things
+   (z-index 3: over the animal's 2; under the speaker and the sparkles, which come after it). A
+   little wider than the scene, so its drift never shows an edge; it drifts twice as far as the
+   painting does, in time with it, which is what makes the meadow read as deep. No tap reaches it.
+
+   The coding board covers its scene, and the near layer would stand in its bottom row: not there. */
+.game-backdrop-front {
+  position: absolute;
+  left: -3%;
+  bottom: -2px;
+  z-index: 3;
+  width: 106%;
+  height: auto;
+  max-height: 32%;
+  object-fit: cover;
+  object-position: 50% 100%;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.game-backdrop-front[data-drift="true"] {
+  animation: front-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes front-drift {
+  from {
+    transform: translateX(-1.6%);
+  }
+  to {
+    transform: translateX(1.6%);
+  }
+}
+
+.game-frame[data-screen="bird"] .game-backdrop-front {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-backdrop-front {
+    animation: none !important;
+  }
+}
+
+/* Calm mode keeps its softer heights. */
+.app[data-calm="true"] {
+  --shadow-rest: var(--edge), 0 1px 2px rgba(120, 90, 60, 0.06), 0 4px 10px rgba(120, 90, 60, 0.04);
+  --shadow-raised: var(--edge), 0 6px 16px rgba(120, 90, 60, 0.05);
+  --shadow-float: var(--edge), 0 10px 24px rgba(80, 60, 40, 0.08);
+}
+
+/* Loading: three soft dots on a small paper card, in the middle of the page, after a moment (a
+   load that is quicker than that shows nothing). */
+.loading {
+  align-self: center;
+  margin: 18vh auto 0;
+  padding: 16px 22px;
+  border-radius: 999px;
+  background: var(--light), var(--grain) 0 0 / var(--grain-size), var(--paper);
+  box-shadow: var(--shadow-rest);
+  animation: loading-in 0.25s ease 0.3s both;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.loading-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sage-soft);
+  animation: loading-dot 1.2s ease-in-out infinite;
+}
+
+.loading-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.loading-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes loading-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes loading-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+/* The sticker book with nothing in it yet: four dashed places, each with a faint star, under the
+   line that says how stickers come. */
+.sticker-grid.is-empty {
+  margin-top: 14px;
+}
+
+.sticker-grid .sticker-slot {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 253, 251, 0.45);
+  box-shadow: none;
+  border: 3px dashed var(--butter-edge);
+}
+
+.sticker-slot svg {
+  width: 36%;
+  fill: var(--butter-edge);
+  opacity: 0.7;
+}
+
+.sticker-empty {
+  line-height: 1.4;
+  color: var(--text-warm);
+}
+
+/* Sentences a child or a grown-up reads: room between the lines. */
+.break-note,
+.nest-note,
+.surprise-line,
+.adult-copy {
+  line-height: 1.4;
+}
+
+/* One family of corners: a tile (a thing to tap with a picture on it) is 22px wherever it is; a card
+   or a sheet is 28px; a pill is round. The game tiles were 24px, the Dress up and sticker tiles
+   18px, beside picks and section tiles of 22px. */
+.game-tile,
+.closet-item,
+.sticker-grid li {
+  border-radius: 22px;
+}
+
+.who-card,
+.kid-enter {
+  border-radius: 28px;
+}
+
+/* The grown-up lists (Grown-ups, Parent): each tinted circle holds its row's drawing (icons.tsx,
+   RowGlyph); the circles were empty. And a row's chevron keeps its size beside a long line: it
+   shrank to make room for one, so the chevrons down the list were three sizes. */
+.row-icon {
+  display: grid;
+  place-items: center;
+  color: var(--text-sage);
+}
+
+.row-glyph {
+  width: 20px;
+  height: 20px;
+}
+
+.grownups-row .icon {
+  flex: 0 0 auto;
+}
+
+/* Dress up: a tile fills its place in the grid. Each was as wide as its own name, so the tiles down
+   the page were two or three widths (Leaf hat narrow, Round glasses wide). */
+.closet-item {
+  width: 100%;
 }
