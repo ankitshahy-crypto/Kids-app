@@ -3,10 +3,15 @@ import manifest from "./audioManifest.json";
 import { starterDeck } from "./deck";
 import { ladderClips } from "./ladder";
 import { PHONEME_IDS } from "./phonemes";
+import { SPELL_LETTERS } from "./spell";
 import { LETTER_WORDS } from "./letterWords";
 import { themedWordCatalog } from "./themeWords";
 
-export type AudioKind = "letters" | "sounds" | "words" | "sentences" | "numbers" | "prompts" | "colors" | "stories";
+/**
+ * `spell` is a letter's name on its own ("em"), in the recorded voice: Trace your name spells the
+ * child's name with these, since a name has no clip of its own and is never sent to a voice service.
+ */
+export type AudioKind = "letters" | "sounds" | "spell" | "words" | "sentences" | "numbers" | "prompts" | "colors" | "stories";
 
 export type AudioCue = {
   file: string;
@@ -20,8 +25,9 @@ export type AudioCue = {
   source: "human" | "neural";
 };
 
-type Manifest = Record<Exclude<AudioKind, "stories" | "sounds">, Record<string, AudioCue>> & {
+type Manifest = Record<Exclude<AudioKind, "stories" | "sounds" | "spell">, Record<string, AudioCue>> & {
   sounds?: Record<string, AudioCue>;
+  spell?: Record<string, AudioCue>;
   stories?: Record<string, AudioCue>;
 };
 
@@ -62,6 +68,16 @@ for (const [id, cue] of Object.entries(book.letters)) {
   assertCue("sounds", id, sound);
   if (!sound.file.startsWith("sounds/") || sound.say !== cue.say) {
     throw new Error(`Letter sound "${id}" should live under sounds/ and share the phrase "${cue.say}"`);
+  }
+}
+
+// Every plain letter has its name on its own, for spelling a name out: the clip's line is the
+// capital letter, which a device voice reads as the letter's name.
+for (const letter of SPELL_LETTERS) {
+  const cue = book.spell?.[letter];
+  assertCue("spell", letter, cue);
+  if (!cue.file.startsWith("spell/") || cue.say !== letter.toUpperCase()) {
+    throw new Error(`Letter name "${letter}" should live under spell/ and say "${letter.toUpperCase()}"`);
   }
 }
 

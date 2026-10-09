@@ -408,6 +408,18 @@ export function letterSoundCue(letter: LetterTile): Cue {
   return src ? { src, text: spokenLine("letters", letter.phraseId ?? letter.phoneme, letter.char) } : letterCue(letter);
 }
 
+/**
+ * A letter's name on its own ("em"), for spelling a child's name out in the recorded voice. With no
+ * name clip on the device yet, the letter's phrase clip ("m, as in moon") stands in: still the
+ * recorded voice, never the device's.
+ */
+export function spellCue(letter: string): Cue {
+  const id = letter.trim().toLowerCase();
+  const src = recordedSrc("spell", id);
+  if (src) return { src, text: spokenLine("spell", id, id.toUpperCase()) };
+  return { src: recordedSrc("letters", id), text: spokenLine("letters", id, id.toUpperCase()) };
+}
+
 /** A whole word from the deck. */
 export function deckWordCue(word: DeckWord): Cue {
   return { src: word.audioSrc ?? recordedSrc("words", word.id), text: spokenLine("words", word.id, word.word) };

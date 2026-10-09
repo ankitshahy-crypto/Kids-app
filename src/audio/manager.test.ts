@@ -149,7 +149,7 @@ describe("effects", () => {
 
   it("are rendered whole: a short swell, a fade to nothing, never louder than their peak", async () => {
     const { renderEffect } = await import("./manager");
-    for (const name of ["tap", "pop", "chime", "boop", "cheer", "celebrate"] as const) {
+    for (const name of ["tap", "pop", "chime", "boop", "thud", "cheer", "celebrate"] as const) {
       const samples = renderEffect(name, 22050);
       const peak = Math.max(...samples.map(Math.abs));
       expect(peak, name).toBeGreaterThan(0.01);
@@ -160,6 +160,23 @@ describe("effects", () => {
     // The pop is 70 ms and 20 ms more; the chime's second tone ends at 0.36 s.
     expect(Math.abs(renderEffect("pop", 22050).length - 0.09 * 22050)).toBeLessThanOrEqual(1);
     expect(Math.abs(renderEffect("chime", 22050).length - 0.36 * 22050)).toBeLessThanOrEqual(1);
+  });
+
+  it("make the miss two separate notes, not a hum like a voice's /n/, and keep the low beat for the drum", async () => {
+    // The playtest of build 4: the slow sounding-out of "tent" says /n/ as a flat low hum, and
+    // that hum was taken for the one-tone boop of a wrong tap. The boop is now "bo-op": two notes
+    // with a quiet gap between, pitched well above a hum.
+    const { renderEffect } = await import("./manager");
+    const rate = 22050;
+    const loud = (samples: Float32Array, from: number, to: number) => Math.max(...Array.from(samples.slice(Math.round(from * rate), Math.round(to * rate))).map(Math.abs));
+    const boop = renderEffect("boop", rate);
+    expect(loud(boop, 0.02, 0.05)).toBeGreaterThan(0.03);
+    expect(loud(boop, 0.095, 0.108)).toBeLessThan(0.004);
+    expect(loud(boop, 0.13, 0.17)).toBeGreaterThan(0.03);
+    // The drum's beat is the old low tone: one note, 140 ms and 20 ms more.
+    const thud = renderEffect("thud", rate);
+    expect(Math.abs(thud.length - 0.16 * rate)).toBeLessThanOrEqual(1);
+    expect(loud(thud, 0.02, 0.1)).toBeGreaterThan(0.03);
   });
 
   it("start at once, with no time from the context's clock, on the effects channel", async () => {

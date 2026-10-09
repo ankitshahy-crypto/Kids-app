@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { playEffect } from "../audio/manager";
-import { deviceCue, playOnDevice, playWord, promptCue, wordCue } from "../audio/player";
+import { playLine, playWord, promptCue, spellCue, wordCue, type Cue } from "../audio/player";
 import { useOpeningLine, useSpeaker } from "../hooks/useSpeaker";
 import type { DeckWord } from "../data/deck";
 import type { TracePoint } from "../data/handwriting";
@@ -17,6 +17,7 @@ import {
   type WritingMap,
   type WritingOutcome,
 } from "../data/scaffold";
+import { nameLetters } from "../data/spell";
 import { nameGlyphs, nameToTrace, wordGlyphs, type TraceGlyph } from "../data/tracePractice";
 import { followStroke, stationsAttribute, strokeComplete, traceTolerance } from "../data/trace";
 import type { Settings } from "../settings";
@@ -46,6 +47,7 @@ export function PathTrace({
   writing,
   itemId,
   memoryLine,
+  memoryCues,
   onSpeak,
   onAttempt,
   onDone,
@@ -60,6 +62,8 @@ export function PathTrace({
   writing?: WritingMap;
   itemId?: string;
   memoryLine?: string;
+  /** Recorded clips that say the memory prompt, for a screen that must not use the device voice (a name). */
+  memoryCues?: Cue[];
   onSpeak?: () => void;
   onAttempt?: (success: boolean) => WritingOutcome;
   onDone: () => void;
@@ -95,6 +99,17 @@ export function PathTrace({
   };
 
   useEffect(() => () => clearTimer(), []);
+
+  // The memory prompt from recorded clips, where there are some: the copy box then says nothing itself.
+  const memoryKey = memoryCues?.map((cue) => cue.text).join("|");
+  useEffect(() => {
+    if (phase !== "write" || level !== 5 || !memoryCues || memoryCues.length === 0) return undefined;
+    const controller = new AbortController();
+    void playLine(memoryCues, settingsRef.current, controller.signal).catch(() => undefined);
+    return () => controller.abort();
+    // The cues are rebuilt each render; their words decide when to say them again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, level, memoryKey, attempt, settingsRef]);
 
   useEffect(() => {
     if (phase !== "demo") return undefined;
@@ -270,7 +285,7 @@ export function PathTrace({
           key={`${itemId ?? title}-${attempt}`}
           template={glyphs.flatMap((item) => item.strokes)}
           prompt={level === 5 ? (memoryLine ?? memoryPrompt("word", title)) : `Copy ${title}.`}
-          speak={level === 5}
+          speak={level === 5 && !memoryCues}
           showModel={level === 4}
           ruled={ruled}
           hint={hint}
@@ -385,8 +400,11 @@ export function NameTrace({
   const title = nameToTrace(name) ?? name;
   const id = nameItemId(title);
   const speak = useSpeaker(settingsRef);
-  // The name is said by the device voice only; it is never sent anywhere.
-  useOpeningLine(speak, [promptCue("trace-name", "Trace your name."), deviceCue(title)]);
+  // The name is spelled out, a recorded clip a letter ("em", "eye", "ay"), in the same voice as the
+  // rest of the app. A name has no clip of its own and is never sent anywhere, and the device voice
+  // is not used for it: on the phone it was a different voice from the lesson's, and a robotic one.
+  const letters = nameLetters(title).map(spellCue);
+  useOpeningLine(speak, [promptCue("trace-name", "Trace your name."), ...letters]);
   return (
     <PathTrace
       screen="my-name"
@@ -398,10 +416,12 @@ export function NameTrace({
       writing={writing}
       itemId={id}
       memoryLine={memoryPrompt("name", title)}
+      memoryCues={[promptCue("trace-name", "Trace your name."), ...letters]}
       onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
       onSpeak={() => {
+        // Traced: the name spelled out once more, in the recorded voice.
         const controller = new AbortController();
-        void playOnDevice(title, settingsRef.current, controller.signal).catch(() => undefined);
+        void playLine(letters, settingsRef.current, controller.signal).catch(() => undefined);
       }}
       onDone={onDone}
     />

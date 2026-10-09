@@ -11,7 +11,7 @@ import { Illustration } from "../illustrations";
 import { Hero } from "./Hero";
 import { Chevron, SpeakerIcon, StarIcon } from "./icons";
 import { PictureCard } from "./PictureCard";
-import { SoundLabel } from "./SoundLabel";
+import { letterLine, SoundLabel } from "./SoundLabel";
 
 /** Clear a pending timeout kept in a ref. */
 function clearTimer(timer: { current: number | null }) {
@@ -231,22 +231,36 @@ export function SoundItOut({
     return hits.sort((a, b) => (movingRight ? a - b : b - a));
   };
 
+  /** How far along the track the finger is, from 0 at its left end to 1 at its right. */
+  const along = (clientX: number, rect: DOMRect) => Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+
+  /**
+   * The bar under the finger, a tile wide, between the first tile's left edge and the last tile's
+   * right edge: it is measured and placed by itself (the animal and its bubble are not part of it,
+   * and nothing else is clamped), so the finger runs the whole track, and the word fires at the end
+   * of the line, not where the bar runs out of room.
+   */
+  const barUnderFinger = (clientX: number, rect: DOMRect) => {
+    const first = tileSpan(0);
+    const last = tileSpan(word.letters.length - 1);
+    const width = first?.width ?? 20;
+    const lowest = first?.left ?? 0;
+    const highest = last ? last.left + last.width - width : 100 - width;
+    const centre = along(clientX, rect) * 100;
+    setBar({ left: Math.min(highest, Math.max(lowest, centre - width / 2)), width, under: "finger" });
+  };
+
   const moveToken = (clientX: number, fromX: number) => {
     const track = trackRef.current;
     if (!track) return;
     const rect = track.getBoundingClientRect();
     if (rect.width <= 0) return;
-    // Keep the whole hero on the track: its center stops half a token from each end.
-    const half = (tokenRef.current?.offsetWidth ?? 72) / 2;
-    const clamped = Math.min(rect.right - half, Math.max(rect.left + half, clientX));
-    setProgress((clamped - rect.left) / rect.width);
-    // Between sounds the bar rides under the finger, the width of a tile.
-    if (active === null && !blendedPass.current) {
-      const width = tileSpan(0)?.width ?? 20;
-      setBar({ left: Math.min(100 - width, Math.max(0, ((clamped - rect.left) / rect.width) * 100 - width / 2)), width, under: "finger" });
-    }
+    setProgress(along(clientX, rect));
+    // Between sounds the bar rides under the finger.
+    if (active === null && !blendedPass.current) barUnderFinger(clientX, rect);
     light(tilesCrossed(fromX, clientX));
-    if (clientX >= rect.right - 28) finishWord();
+    // The end of the line: the arrow's tip, at the track's right edge.
+    if (clientX >= rect.right - 12) finishWord();
   };
 
   /** The end of the track, once every tile has been passed: the whole word, and the step is done. */
@@ -275,17 +289,15 @@ export function SoundItOut({
     }
   };
 
-  /** Put the hero over a tile, or at the end of the track, for a step made without a finger. */
+  /** The slider's place over a tile, or at the end of the track, for a step made without a finger. */
   const placeToken = (at: number | "end") => {
     const track = trackRef.current;
     if (!track) return;
     const rect = track.getBoundingClientRect();
     if (rect.width <= 0) return;
-    const half = (tokenRef.current?.offsetWidth ?? 72) / 2;
     const tile = at === "end" ? null : tileRefs.current[at]?.getBoundingClientRect();
     const x = at === "end" ? rect.right : tile ? tile.left + tile.width / 2 : rect.left + ((at + 0.5) / word.letters.length) * rect.width;
-    const clamped = Math.min(rect.right - half, Math.max(rect.left + half, x));
-    setProgress((clamped - rect.left) / rect.width);
+    setProgress(along(x, rect));
   };
 
   /**
@@ -484,7 +496,9 @@ export function SoundItOut({
           {word.letterCard && !word.glyph ? <LetterCaption word={word} /> : null}
         </PictureCard>
       ) : null}
-      <SoundLabel />
+      {/* A letter card's heading is its line, "t, as in tent": the letter is said, then its word; nothing is
+          blended there. "Sound it out" is a word card's. */}
+      <SoundLabel text={word.letterCard ? letterLine(word.letters[0]?.char ?? word.word, word.word) : undefined} />
       <div
         className={`blend${celebrating ? " is-celebrating" : ""}${dragging ? " is-dragging" : ""}${joined ? " is-joined" : ""}`}
         data-lit-order={litOrder.join(",")}
@@ -602,11 +616,16 @@ export function SoundItOut({
             data-said={active !== null ? "true" : "false"}
             aria-hidden="true"
           />
-          {/* The child's animal waits at the edge of the track until the word is said, then comes in and says it. */}
+          {/* The child's animal waits at the edge of the track until the word is said, then comes in and says
+              it. The animal's box is the animal alone; its bubble sits beside it, in a box of its own. */}
           <div className="blend-animal" data-word-teller={blended ? "said" : "waiting"} aria-hidden="true">
             {animal ? <Hero animal={animal} outfit={outfit} /> : <StarIcon />}
-            {blended ? <span className="word-bubble">{word.word}</span> : null}
           </div>
+          {blended && !word.sentenceId ? (
+            <span className="blend-said word-bubble" aria-hidden="true">
+              {word.word}
+            </span>
+          ) : null}
         </div>
       </div>
       <p className="chunk-strip chunk-strip-word" data-word-index={index % deck.length} data-word-count={deck.length}>

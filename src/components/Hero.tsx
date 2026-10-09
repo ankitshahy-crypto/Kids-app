@@ -34,17 +34,17 @@ export function Hero({ animal, outfit, mood, view = "face" }: { animal: AnimalId
       >
         <span className="wear wear-color" />
         {(["scarf", "glasses", "hat"] as const).map((slot) => (
-          <Wear key={slot} slot={slot} id={outfit[slot]} />
+          <Wear key={slot} slot={slot} id={outfit[slot]} animal={animal} />
         ))}
       </span>
     </span>
   );
 }
 
-function Wear({ slot, id }: { slot: Exclude<OutfitSlot, "color">; id: Outfit[OutfitSlot] }) {
-  const painted = wearArt(id);
+function Wear({ slot, id, animal }: { slot: Exclude<OutfitSlot, "color">; id: Outfit[OutfitSlot]; animal: AnimalId }) {
+  const painted = wearArt(id, animal);
   if (!painted) return <span className={`wear wear-${slot}`} />;
-  const { x, y, w, h } = painted.place;
+  const { x, y, w, h, rotate } = painted.place;
   return (
     <img
       className={`wear wear-${slot} wear-painted`}
@@ -52,7 +52,7 @@ function Wear({ slot, id }: { slot: Exclude<OutfitSlot, "color">; id: Outfit[Out
       alt=""
       draggable={false}
       decoding="async"
-      style={{ left: `${x * 100}%`, top: `${y * 100}%`, width: `${w * 100}%`, height: `${h * 100}%` }}
+      style={{ left: `${x * 100}%`, top: `${y * 100}%`, width: `${w * 100}%`, height: `${h * 100}%`, transform: rotate ? `rotate(${rotate}deg)` : undefined }}
     />
   );
 }

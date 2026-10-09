@@ -180,6 +180,23 @@ export function HatchGame({
   const part = coach.saying;
   const soundingLetter = part !== null && part >= 1 && part <= voiced.length ? voiced[part - 1] : null;
   const sayingWord = part === voiced.length + 1;
+  // A letter already in the word (the N of te_t) says its own sound when tapped, and lights while it
+  // does. It is never a miss: nothing wiggles and no boop is played. The letters to tap are the
+  // tiles below; a letter on the card is there to be heard. (The playtest of build 4: the N on the
+  // tent card was taken for a wrong answer.)
+  const [heard, setHeard] = useState<number | null>(null);
+  const heardTurn = useRef(0);
+  const hearShown = (index: number) => {
+    const letter = round.word.letters[index];
+    if (!letter || letter.silent) return;
+    const mine = ++heardTurn.current;
+    const quiet = () => {
+      if (heardTurn.current === mine) setHeard(null);
+    };
+    setHeard(index);
+    coach.touch();
+    coach.speak.line([letterSoundCue(letter)], quiet, { remember: false, onStop: quiet });
+  };
   return (
     <GameFrame
       screen="hatch"
@@ -206,18 +223,26 @@ export function HatchGame({
         </span>
       }
     >
-      <p className="hatch-blanks" aria-label="Word" data-saying={sayingWord ? "word" : soundingLetter !== null ? "sound" : "none"}>
+      <p className="hatch-blanks" aria-label="Word" data-saying={sayingWord ? "word" : soundingLetter !== null ? "sound" : heard !== null ? "tapped" : "none"}>
         {round.word.letters.map((letter, index) => {
           const open = round.blanks.includes(index);
           const show = !open || filled.includes(index);
+          const lit = soundingLetter === index || sayingWord || heard === index;
+          if (!show) {
+            return <span key={`${letter.char}-${index}`} data-blank="open" data-sounding={lit ? "true" : "false"} />;
+          }
           return (
-            <span
+            <button
               key={`${letter.char}-${index}`}
-              data-blank={open ? (show ? "filled" : "open") : "shown"}
-              data-sounding={soundingLetter === index || sayingWord ? "true" : "false"}
+              type="button"
+              className="hatch-letter"
+              aria-label={`Hear ${letter.char}`}
+              data-blank={open ? "filled" : "shown"}
+              data-sounding={lit ? "true" : "false"}
+              onClick={() => hearShown(index)}
             >
-              {show ? letter.char : ""}
-            </span>
+              {letter.char}
+            </button>
           );
         })}
       </p>
@@ -353,7 +378,7 @@ export function FeedGame({ knownLetters, animal, outfit, salt, settingsRef, onDo
     const next = [...fed, item.id];
     setFed(next);
     wiggle.still();
-    playEffect("boop", settingsRef.current);
+    playEffect("thud", settingsRef.current);
     if (needed.every((food) => next.includes(food.id))) coach.right([wordCue(item.id, item.label)], rounds.next, 1100);
     else coach.touch([wordCue(item.id, item.label)]);
   };

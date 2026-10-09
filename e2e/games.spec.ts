@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { answerGate, openTeacherChild } from "./gate";
-import { installAudioSpy, spokenLines } from "./audioSpy";
+import { installAudioSpy, playedClips, playedEffects, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 import { expectWiggle, game, matchPairs, noting, onRound } from "./kit";
 
@@ -146,9 +146,9 @@ test("the round's sounding-out lights each letter of the word as its sound is sa
   await install(page, profile, { quick: false });
   const board = await openGame(page, "hatch");
   const blanks = board.locator(".hatch-blanks");
-  const letters = await blanks.locator("span").count();
+  const letters = await blanks.locator("[data-blank]").count();
   const lit = await noting(blanks, (element) =>
-    [...element.querySelectorAll("span")].flatMap((span, index) => (span.getAttribute("data-sounding") === "true" ? [index] : [])).join(","),
+    [...element.querySelectorAll("[data-blank]")].flatMap((span, index) => (span.getAttribute("data-sounding") === "true" ? [index] : [])).join(","),
   );
   const whole = Array.from({ length: letters }, (_, index) => index).join(",");
   await expect.poll(async () => (await lit()).includes(whole), { timeout: 20_000 }).toBe(true);
@@ -163,6 +163,42 @@ test("the round's sounding-out lights each letter of the word as its sound is sa
   }
   // And it lets go when the line is over.
   await expect.poll(async () => (await lit()).at(-1)).toBe("");
+});
+
+test("a letter already in the word says its own sound when tapped, and is never a miss", async ({ page }) => {
+  // The playtest of build 4: on the tent card (te_t, T to tap) the N was taken for a wrong answer. A
+  // letter on the card is there to be heard: tapped, it lights and says its sound, and no boop is
+  // played, nothing wiggles and no miss is counted. The letters to tap are the tiles under the word.
+  await installAudioSpy(page);
+  await install(page, profile, { quick: false });
+  const board = await openGame(page, "hatch");
+  const shown = board.locator('.hatch-blanks [data-blank="shown"]');
+  expect(await shown.count()).toBeGreaterThan(0);
+  // The N when the word has one (ant, tent, nest); the first letter on the card otherwise.
+  const letters = (await shown.allTextContents()).map((text) => text.trim().toLowerCase());
+  const at = Math.max(0, letters.indexOf("n"));
+  const letter = letters[at];
+  const target = shown.nth(at);
+  await expect(target).toHaveRole("button");
+  // Let the round's own sounding-out finish first, so what is counted is the tap's.
+  await expect(board.locator(".hatch-blanks")).toHaveAttribute("data-saying", "none", { timeout: 20_000 });
+  const clipsBefore = (await playedClips(page)).length;
+  const effectsBefore = (await playedEffects(page)).length;
+  await target.click();
+  await expect(target).toHaveAttribute("data-sounding", "true");
+  await expect.poll(async () => (await playedClips(page)).slice(clipsBefore)).toContain(`sounds/${letter}.mp3`);
+  await expect(target).toHaveAttribute("data-sounding", "false", { timeout: 10_000 });
+  expect((await playedEffects(page)).slice(effectsBefore)).not.toContain("boop");
+  await expect(board).toHaveAttribute("data-misses", "0");
+  await expect(board.locator('.pick[data-wiggle="a"], .pick[data-wiggle="b"]')).toHaveCount(0);
+  // The tiles still work as they did: a wrong tile is a miss, and the right one fills the gap.
+  const wrong = board.locator('.pick[data-letter][data-needed="false"]').first();
+  await wrong.click();
+  await expect(board).toHaveAttribute("data-misses", "1");
+  await expectWiggle(wrong);
+  await expect.poll(async () => (await playedEffects(page)).slice(effectsBefore)).toContain("boop");
+  await board.locator('.pick[data-letter][data-needed="true"]').first().click();
+  await expect(board).toHaveAttribute("data-solved", "true");
 });
 
 test("the egg hatches at the end, and the baby is seen before the star", async ({ page }, testInfo) => {
