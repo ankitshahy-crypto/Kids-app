@@ -45,6 +45,7 @@ if (existsSync(REPORT)) {
   for (const suite of report.suites ?? []) timeWalk(suite);
   times.sort((a, b) => b[0] - a[0]);
   lines.unshift(`passing tests: ${times.length}, median ${times[Math.floor(times.length / 2)]?.[0]}s, slowest ${times.slice(0, 6).map((t) => `${t[0]}s ${t[1]}`).join("; ")}`);
+  lines.push(`ALL ${times.map((t) => `${t[1].replace(".spec.ts", "")}=${t[0]}`).join(" ")}`);
   const text = `passed ${stats.expected} failed ${stats.unexpected} flaky ${stats.flaky} skipped ${stats.skipped}\n${lines.join("\n")}`;
   for (let at = 0, part = 1; at < text.length; at += LIMIT, part += 1) say(`WHY ${part}`, text.slice(at, at + LIMIT));
 }

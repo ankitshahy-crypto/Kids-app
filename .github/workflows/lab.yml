@@ -19,13 +19,17 @@ jobs:
   # their limit). Every browser test in WebKit at an iPhone's size, once with the polish whole,
   # once with each piece of it taken out, once with all of them out: the piece that costs the
   # time shows as the variant that runs quick (scripts/lab-polish-variant.py).
+  # The polish pass's cost in WebKit, measured three times each so the runners' own variance can be
+  # told from the CSS: the polish whole, with no transition on buttons, and with every piece out.
+  # The tap-heavy specs only, so a run is short. scripts/lab-polish-variant.py applies the variant.
   polish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        variant: [full, nograin, nolight, noblob, noshadow, notransition, nofade, nofront, none]
+        variant: [full, notransition, none]
+        turn: [1, 2, 3]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -36,12 +40,9 @@ jobs:
       - run: npx playwright install --with-deps webkit
       - name: The polish, ${{ matrix.variant }}
         run: python3 scripts/lab-polish-variant.py ${{ matrix.variant }}
-      - name: Playwright WebKit, iPhone, ${{ matrix.variant }}
+      - name: Playwright WebKit, iPhone, ${{ matrix.variant }} (${{ matrix.turn }})
         continue-on-error: true
-        run: npx playwright test --project=iphone
-      - name: What was seen (1)
+        run: npx playwright test --project=iphone --retries=0 e2e/build-it.spec.ts e2e/games.spec.ts e2e/press.spec.ts e2e/story.spec.ts e2e/think-code.spec.ts e2e/comfort.spec.ts
+      - name: What was seen
         if: ${{ !cancelled() }}
         run: node scripts/lab-notes.mjs --slice=0
-      - name: What was seen (2)
-        if: ${{ !cancelled() }}
-        run: node scripts/lab-notes.mjs --slice=1
