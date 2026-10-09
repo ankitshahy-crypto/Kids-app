@@ -1,5 +1,5 @@
 import { Chevron } from "./icons";
-import { EggNest, ToyBox } from "./sceneArt";
+import { Nest, ToyBox } from "./sceneArt";
 
 export function KidCorner({ kind, onBack }: { kind: "library" | "nest"; onBack: () => void }) {
   const library = kind === "library";
@@ -10,7 +10,7 @@ export function KidCorner({ kind, onBack }: { kind: "library" | "nest"; onBack: 
           <Chevron direction="left" />
         </span>
       </button>
-      <div className="kid-corner-art">{library ? <ToyBox /> : <EggNest />}</div>
+      <div className="kid-corner-art">{library ? <ToyBox /> : <Nest />}</div>
       <h1>{library ? "Play library" : "My Nest"}</h1>
       <span className="soon soon-large">Soon</span>
     </div>

@@ -23,7 +23,7 @@ import { EngineerBoard } from "./BuildGames";
 import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
 import { ModuleMark } from "./ModuleMark";
-import { BookMark, EggNest, Hills, PaintMark, PencilMark, ToyBox } from "./sceneArt";
+import { BookMark, Nest, Hills, PaintMark, PencilMark, ToyBox } from "./sceneArt";
 import { HoldButton } from "./HoldButton";
 
 const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
@@ -478,7 +478,9 @@ export function TodayPath({
         </button> : null}
         <button type="button" className="dock-button" data-dock="nest" onClick={onNest}>
           <span className="dock-art dock-nest">
-            <EggNest />
+            <Nest>
+              <Hero animal={profile.animal} outfit={profile.outfit} />
+            </Nest>
           </span>
           <span>My Nest</span>
         </button>

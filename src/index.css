@@ -2477,6 +2477,41 @@ button:focus-visible {
   height: 64px;
 }
 
+/* The plush nest: its back, whatever sits in it, then its front, so the animal sits in the bowl. */
+.plush-nest {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.plush-nest .nest-back,
+.plush-nest .nest-front {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* The animal's picture has air under its paws (about a sixth of its box), so it sits a little lower
+   than the rim's front edge, and the front of the nest covers that air. */
+.nest-sitter {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  width: 60%;
+  transform: translateX(-50%);
+  display: block;
+}
+
+.nest-sitter .hero,
+.nest-sitter .avatar-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+
 .kid-corner {
   flex: 1;
   display: flex;
@@ -4068,13 +4103,6 @@ button:focus-visible {
 .nest-art .mark {
   width: 100%;
   height: auto;
-}
-
-.nest-art .hero {
-  position: absolute;
-  width: 38%;
-  right: 10%;
-  bottom: 18%;
 }
 
 .nest-pieces {

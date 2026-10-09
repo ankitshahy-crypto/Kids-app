@@ -206,3 +206,20 @@ sequence and the WebM, and a small `<clip>.json`: the head's box per frame, for 
    loop), then the thirteen scenes, then the game props.
 
 Review before merge at every step, on a phone, as with the fit and polish sheets.
+
+## 6. The icon, the nest and the module tiles
+
+The animals change, and the icon, the nest and the module tiles change with them (2026-10-09):
+
+- The app icon is the dog from its idle still, sitting in a simple woven nest, on the plush green
+  `#5aa85a` (`scripts/build-plush-icon.py`: the home-screen icons, the favicon, the website's
+  `app-icon.png`, the iOS icon set and the splash). No eggs, no second bird, no gloss, no text; the
+  wordmark stays "LittleNest" in the app. The chick-and-eggs icon is retired with the script that
+  cropped it; the mockups stay in `logos/` as references.
+- My Nest and its dock button use that same nest, drawn once as `Nest` in `sceneArt.tsx` (a back, a
+  front, and the child's animal between them, sitting in the bowl). A missing animal is the current
+  drawing in the nest until its stills are in; a missing mood is idle.
+- Words, Numbers and Colors stop using the chick tiles: they are SVG marks in the style of the other
+  module marks (a book and letter blocks; 1 2 3 blocks and counting dots; a palette and a brush).
+- The live site keeps its screenshots and copy until there are phone captures of the plush animal;
+  only its icon file changed.

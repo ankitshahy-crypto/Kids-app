@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 export function LockIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="icon lock-icon">
@@ -65,16 +66,29 @@ export function ToyBox() {
   );
 }
 
-export function EggNest() {
+/**
+ * The nest of the round-plush set: a simple woven bowl, the one on the app icon, with no eggs.
+ * Whatever sits in it (the child's animal) goes between its back and its front, so it sits in the
+ * nest and not on it.
+ */
+export function Nest({ children }: { children?: ReactNode }) {
   return (
-    <svg viewBox="0 0 80 80" aria-hidden="true" className="mark">
-      <ellipse cx="40" cy="48" rx="26" ry="16" fill="#E8C4A0" />
-      <ellipse cx="32" cy="42" rx="8" ry="11" fill="#B7D7E4" />
-      <ellipse cx="48" cy="44" rx="8" ry="11" fill="#F6D3C4" />
-      <path d="M16 50c6 14 42 14 48 0" fill="none" stroke="#C9956A" strokeWidth="4" strokeLinecap="round" />
-      <path d="M18 46c10-8 16-4 22 2" fill="none" stroke="#D7A87A" strokeWidth="3" strokeLinecap="round" />
-      <path d="M22 58c12 6 24 4 34-6" fill="none" stroke="#C48B58" strokeWidth="3" strokeLinecap="round" />
-    </svg>
+    <span className="plush-nest mark" aria-hidden="true">
+      <svg className="nest-back" viewBox="0 0 80 80">
+        <ellipse cx="40" cy="52" rx="30" ry="7" fill="#8D5A3B" />
+        <path d="M13 51l-4-6M11 52l6-5M67 51l4-6M69 52l-6-5" fill="none" stroke="#8D5A3B" strokeWidth="2" strokeLinecap="round" />
+        <path d="M12 52l5-4M68 52l-5-4" fill="none" stroke="#D7A87A" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+      {children ? <span className="nest-sitter">{children}</span> : null}
+      <svg className="nest-front" viewBox="0 0 80 80">
+        <path d="M10 52c6 10 54 10 60 0c-2 14-14 20-30 20S12 66 10 52Z" fill="#A86F45" />
+        <path d="M13 56c8 9 46 9 54 0" fill="none" stroke="#7E4E30" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M16 60c8 8 40 8 48 0" fill="none" stroke="#D7A87A" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M21 64c6 6 32 6 38 0" fill="none" stroke="#7E4E30" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M22 54l-2 8M31 56l-2 10M40 57l-1 12M49 56l2 10M58 54l2 8" fill="none" stroke="#D7A87A" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M10 52c6 10 54 10 60 0" fill="none" stroke="#C48B58" strokeWidth="2.6" strokeLinecap="round" />
+      </svg>
+    </span>
   );
 }
 
