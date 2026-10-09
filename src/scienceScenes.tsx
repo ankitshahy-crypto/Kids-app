@@ -118,6 +118,30 @@ export function PondScene() {
   );
 }
 
+/**
+ * A splash in the pond: what Build's pond block does ("If at the pond, splash."), as a picture for the
+ * same rule in If, then.
+ */
+export function SplashScene() {
+  return (
+    <Frame>
+      <ellipse cx="140" cy="150" rx="116" ry="44" fill="#9BD1A8" />
+      <ellipse cx="140" cy="150" rx="96" ry="34" fill="#8EB4D6" />
+      <ellipse cx="140" cy="150" rx="54" ry="18" fill="none" stroke="#B7D7F2" strokeWidth="5" />
+      <ellipse cx="140" cy="150" rx="26" ry="9" fill="#B7D7F2" />
+      <path d="M140 136V62" fill="none" stroke="#8EB4D6" strokeWidth="14" strokeLinecap="round" />
+      <path d="M112 128c-6-20-10-36-6-54M168 128c6-20 10-36 6-54" fill="none" stroke="#8EB4D6" strokeWidth="10" strokeLinecap="round" />
+      <circle cx="140" cy="46" r="8" fill="#8EB4D6" />
+      <circle cx="100" cy="60" r="6" fill="#8EB4D6" />
+      <circle cx="180" cy="60" r="6" fill="#8EB4D6" />
+      <circle cx="82" cy="92" r="5" fill="#B7D7F2" />
+      <circle cx="198" cy="92" r="5" fill="#B7D7F2" />
+      <circle cx="124" cy="36" r="4" fill="#B7D7F2" />
+      <circle cx="158" cy="30" r="4" fill="#B7D7F2" />
+    </Frame>
+  );
+}
+
 /** A beehive on a branch. */
 export function HiveScene() {
   return (
@@ -257,6 +281,7 @@ export const scienceScenes = {
   chrysalis: ChrysalisScene,
   butterfly: ButterflyScene,
   pond: PondScene,
+  splash: SplashScene,
   hive: HiveScene,
   kennel: KennelScene,
   flower: FlowerScene,

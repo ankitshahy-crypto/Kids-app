@@ -350,11 +350,12 @@ test("a wrong plan is walked as far as the wrong arrow, and a short one stops sh
   await onRound(board, 1);
 });
 
-test("picture patterns continue AB, then ABB, then ABC, with real pictures", async ({ page }, testInfo) => {
+test("picture patterns continue AB at ages 3 to 4, three times over, with real pictures", async ({ page }, testInfo) => {
   await install(page);
   await openCoding(page);
   await page.locator("[data-game-tile=pattern]").click();
   const board = page.locator("[data-game=pattern] .game-board");
+  await expect(board).toHaveAttribute("data-level", "early");
   await expect(board).toHaveAttribute("data-rule", "AB");
   if (testInfo.project.name === "chromium") {
     await board.screenshot({ path: "test-results/screenshots/code_pattern.png" });
@@ -369,12 +370,33 @@ test("picture patterns continue AB, then ABB, then ABC, with real pictures", asy
   await board.locator(`[data-choice=${wrong}]`).click();
   await expect(board.locator(`[data-choice=${wrong}]`)).toHaveAttribute("data-wiggle", "true");
   await expect(board).toHaveAttribute("data-solved", "0");
-  for (const [index, rule] of ["AB", "ABB", "ABC"].entries()) {
+  // The harder step (ABB, then ABC) is for ages 5 to 7: here every round is AB.
+  for (const [index, rule] of ["AB", "AB", "AB"].entries()) {
     await expect(board).toHaveAttribute("data-rule", rule);
     await expect(board).toHaveAttribute("data-solved", String(index));
     const next = (await board.getAttribute("data-answer")) ?? "";
     await board.locator(`[data-choice=${next}]`).click();
     // The answer drops into the row before the next pattern comes.
+    await expect(board.locator(`.pattern-missing [data-art=${next}]`)).toBeVisible();
+    await expect(board).toHaveAttribute("data-solved", String(index + 1));
+  }
+  await board.locator("[data-finish=pattern]").click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+});
+
+test("at ages 5 to 7 the patterns go on to the harder step: AB, then ABB, then ABC", async ({ page }) => {
+  await install(page, older);
+  await openCoding(page);
+  await page.locator("[data-game-tile=pattern]").click();
+  const board = page.locator("[data-game=pattern] .game-board");
+  await expect(board).toHaveAttribute("data-level", "later");
+  for (const [index, rule] of ["AB", "ABB", "ABC"].entries()) {
+    await expect(board).toHaveAttribute("data-rule", rule);
+    await expect(board).toHaveAttribute("data-solved", String(index));
+    // The answer is still one picture, from three.
+    await expect(board.locator(".pattern-choice")).toHaveCount(3);
+    const next = (await board.getAttribute("data-answer")) ?? "";
+    await board.locator(`[data-choice=${next}]`).click();
     await expect(board.locator(`.pattern-missing [data-art=${next}]`)).toBeVisible();
     await expect(board).toHaveAttribute("data-solved", String(index + 1));
   }
@@ -409,6 +431,39 @@ test("pictures go in the order they happen, by tap or by drag, and a wrong one w
     await board.locator(`[data-card=${order[2]}]`).click();
   }
   await expect(board).toHaveAttribute("data-rounds", "2");
+  await board.locator("[data-finish=morning]").click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+});
+
+test("at ages 5 to 7 First, then ends with the harder step: four pictures in order", async ({ page }, testInfo) => {
+  await install(page, older);
+  await openCoding(page);
+  await page.locator("[data-game-tile=morning]").click();
+  const board = page.locator("[data-game=morning] .game-board");
+  await expect(board).toHaveAttribute("data-level", "later");
+  for (let round = 0; round < 4; round += 1) {
+    await expect(board).toHaveAttribute("data-rounds", String(round));
+    await expect(board).toHaveAttribute("data-sorted", "0");
+    const order = ((await board.getAttribute("data-order")) ?? "").split(",");
+    expect(order).toHaveLength(round < 3 ? 3 : 4);
+    await expect(board.locator(".order-slot")).toHaveCount(order.length);
+    await expect(board.locator(".order-card")).toHaveCount(order.length);
+    const dealt = await board.locator(".order-card").evaluateAll((cards) => cards.map((card) => card.getAttribute("data-card")));
+    expect(dealt).not.toEqual(order);
+    if (round === 3) {
+      if (testInfo.project.name === "chromium") await board.screenshot({ path: "test-results/screenshots/code_order_four.png" });
+      // Four cards still fit a phone in one row, each big enough for a finger.
+      for (const card of await board.locator(".order-card").all()) {
+        const box = await card.boundingBox();
+        expect(box?.width ?? 0).toBeGreaterThanOrEqual(60);
+      }
+      await board.locator(`[data-card=${order[3]}]`).click();
+      await expect(board.locator(`[data-card=${order[3]}]`)).toHaveAttribute("data-wiggle", "true");
+      await expect(board).toHaveAttribute("data-sorted", "0");
+    }
+    for (const card of order) await board.locator(`[data-card=${card}]`).click();
+  }
+  await expect(board).toHaveAttribute("data-rounds", "4");
   await board.locator("[data-finish=morning]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
@@ -467,6 +522,58 @@ test("if it rains, an umbrella: each picture calls for one thing", async ({ page
     await expect(board.locator(`.rule-then [data-art=${need}]`)).toBeVisible();
     if (round < 2) await board.locator("[data-next=garden]").click();
   }
+  await board.locator("[data-finish=garden]").click();
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+});
+
+test("at ages 5 to 7 If, then ends with the harder step: two rules in a row on one page", async ({ page }, testInfo) => {
+  await installAudioSpy(page);
+  await install(page, older, { quick: true });
+  await openCoding(page);
+  await page.locator("[data-game-tile=garden]").click();
+  const board = page.locator("[data-game=garden] .game-board");
+  await expect(board).toHaveAttribute("data-level", "later");
+  const pairs: Record<string, string> = { rain: "umbrella", sun: "hat", dark: "lamp", plant: "jug", dog: "bone", splash: "splash" };
+  for (let round = 0; round < 4; round += 1) {
+    await expect(board).toHaveAttribute("data-round", String(round));
+    await expect(board.locator(".rule-stage")).toHaveCount(1);
+    await board.locator(`[data-choice=${await board.getAttribute("data-need")}]`).click();
+    await expect(board).toHaveAttribute("data-done", "true");
+    await board.locator("[data-next=garden]").click();
+  }
+  // The chain: one picture asks its rule; answered, it stays, and the next picture comes under it.
+  await expect(board).toHaveAttribute("data-round", "4");
+  await expect(board).toHaveAttribute("data-step", "0");
+  await expect(board.locator(".rule-stage")).toHaveCount(1);
+  const first = (await board.locator(".rule-stage").first().getAttribute("data-rule")) ?? "";
+  const need = (await board.getAttribute("data-need")) ?? "";
+  expect(pairs[first]).toBe(need);
+  await expect(board.locator(".pattern-choice")).toHaveCount(3);
+  await board.locator(`[data-choice=${need}]`).click();
+  await expect(board.locator(".rule-stage").first().locator(`.rule-then [data-art=${need}]`)).toBeVisible();
+  // Not done yet: no Done, no Next; the second rule is asked.
+  await expect(board).toHaveAttribute("data-step", "1");
+  await expect(board).toHaveAttribute("data-done", "false");
+  await expect(board.locator("[data-finish=garden]")).toHaveCount(0);
+  await expect(board.locator(".rule-stage")).toHaveCount(2);
+  await expect(board.locator(".rule-stage").first()).toHaveAttribute("data-done", "true");
+  // The second rule is the one Build's pond block does: at the pond, splash.
+  const second = (await board.locator(".rule-stage").nth(1).getAttribute("data-rule")) ?? "";
+  expect(second).toBe("splash");
+  expect(first).not.toBe("splash");
+  await expect(board.locator(".rule-stage").nth(1).locator(".rule-when [data-art=pond]")).toBeVisible();
+  const need2 = (await board.getAttribute("data-need")) ?? "";
+  expect(need2).toBe("splash");
+  if (testInfo.project.name === "chromium") await board.screenshot({ path: "test-results/screenshots/code_rule_chain.png" });
+  // A wrong thing wiggles, as ever.
+  const wrong = await board.locator(`.pattern-choice:not([data-choice=${need2}])`).first().getAttribute("data-choice");
+  await board.locator(`[data-choice=${wrong}]`).click();
+  await expect(board.locator(`[data-choice=${wrong}]`)).toHaveAttribute("data-wiggle", "true");
+  await board.locator(`[data-choice=${need2}]`).click();
+  await expect(board).toHaveAttribute("data-done", "true");
+  await expect(board.locator(".rule-stage").nth(1).locator(`.rule-then [data-art=${need2}]`)).toBeVisible();
+  // Said back in the block's own words, from the block's own clip.
+  await expect.poll(() => requestedCues(page)).toContain("prompts/code-if-pond.mp3");
   await board.locator("[data-finish=garden]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
