@@ -178,21 +178,18 @@ def round_box(alpha, box):
 
 
 def body_marks(face):
-    """Where a round plush's body is in a face crop: the size of its lower body (the root of the area
-    below its widest row, which the ears, up or down, never reach), that row's middle, and its
-    floor (the last row with figure on it). Two renders of one animal draw the body a little bigger
-    or smaller; the lower body is the part no mood changes."""
-    alpha = face[:, :, 3] > 96
-    rows = np.where(alpha.any(axis=1))[0]
-    top, floor = rows.min(), rows.max()
-    best = None
-    for y in range(int(top + (floor - top) * 0.4), floor + 1):
-        on = np.where(alpha[y])[0]
-        if on.size and (best is None or on.max() - on.min() > best[0]):
-            best = (on.max() - on.min(), (on.max() + on.min()) / 2, y)
-    width, middle, widest = best
-    lower = float(alpha[widest:].sum())
-    return np.sqrt(lower), middle, floor
+    """Where a round plush's body is in a face crop, with the ears, paws and tufts taken off: the
+    figure opened with a disc a fifth of the crop wide keeps only what is wider than that, the body.
+    Its size (the root of its area, the same whichever way it tips), its middle, and its floor. Two
+    renders of one animal draw the body a little bigger or smaller; the body is what every mood keeps."""
+    alpha = (face[:, :, 3] > 96).astype(np.uint8)
+    k = int(FACE_PX * 0.2) | 1
+    disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+    body = cv2.morphologyEx(alpha, cv2.MORPH_OPEN, disc)
+    if not body.any():
+        body = alpha
+    ys, xs = np.where(body > 0)
+    return float(np.sqrt(len(xs))), float(xs.mean()), int(ys.max())
 
 
 def fit_body(face, idle):
@@ -326,10 +323,14 @@ def eyes_only(blink, idle):
     n, labels, stats, centres = cv2.connectedComponentsWithStats(hot)
     blobs = sorted(range(1, n), key=lambda i: -stats[i, cv2.CC_STAT_AREA])
     blobs = [i for i in blobs if stats[i, cv2.CC_STAT_AREA] > 180]
-    # Two eyes: the two biggest that sit side by side, one each side of the middle.
+    # Two eyes: the two biggest that sit side by side, one each side of the middle, each clear of
+    # the middle (a mouth that opened too lies in the middle, under the eyes), the most level pair.
     level = lambda i, j: abs(centres[i][1] - centres[j][1]) < FACE_PX * 0.08
     either_side = lambda i, j: (centres[i][0] - FACE_PX / 2) * (centres[j][0] - FACE_PX / 2) < 0
-    pair = next(((i, j) for i, j in combinations(blobs[:4], 2) if level(i, j) and either_side(i, j)), None)
+    # ...and not out at the sides, where an ear that fell differs too (the bunny's blink render).
+    clear = lambda i: FACE_PX * 0.06 < abs(centres[i][0] - FACE_PX / 2) < FACE_PX * 0.2
+    pairs = [(i, j) for i, j in combinations(blobs[:5], 2) if level(i, j) and either_side(i, j) and clear(i) and clear(j)]
+    pair = min(pairs, key=lambda ij: abs(centres[ij[0]][1] - centres[ij[1]][1])) if pairs else None
     if pair is None:
         return None, "no two eyes found"
     mask = np.zeros(diff.shape, np.uint8)
@@ -376,6 +377,15 @@ def main(folder: Path, with_body: bool):
         shipped = OUT / animal / "idle-face.webp"
         if "idle" not in have and shipped.exists():
             idle_face = np.array(Image.open(shipped).convert("RGBA"))
+        elif "idle" in have and animal in manifest:
+            # A new idle is a new set: the frames shipped before were lined up with the old idle, and a
+            # mood frame not rendered again would show the old animal. They go, until rendered again.
+            for frame in [f for f in manifest[animal]["frames"] if f not in have]:
+                print(animal, frame, "gone: not in the new set (the mood shows the idle face until it is rendered)")
+                for name in (f"{frame}-face.webp", f"{frame}.webp"):
+                    (OUT / animal / name).unlink(missing_ok=True)
+                manifest[animal]["frames"] = [f for f in manifest[animal]["frames"] if f != frame]
+                manifest[animal].get("places", {}).pop(frame, None)
         for frame in [f for f in FRAMES if f in have]:
             rgba = cut_out(have[frame])
             box = figure_box(rgba[:, :, 3])
@@ -395,6 +405,9 @@ def main(folder: Path, with_body: bool):
                 # the painted portraits) lines it up to the pixel, which the eyes need. The other
                 # moods change the outline (ears, a tilt): fitted by the body instead.
                 warp, note = fit_body(face, idle_face) if ROUND and frame != "blink" else fit(face, idle_face, frame)
+                if warp is None and ROUND and frame == "blink":
+                    # A blink render whose ears fell (the bunny's) has no outline to fit: by the body, then.
+                    warp, note = fit_body(face, idle_face)
                 if warp is None:
                     leave_out(animal, frame, note)
                     continue
