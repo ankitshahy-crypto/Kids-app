@@ -14,7 +14,7 @@ import {
 } from "../data/schedule";
 import type { Settings } from "../settings";
 import { ChildForm } from "./ChildForm";
-import { Chevron, StarIcon } from "./icons";
+import { Chevron, RowGlyph, StarIcon, type RowGlyphName } from "./icons";
 import { MODULE_COLORS, MODULE_NUMBERS, MODULE_TIME } from "../brand";
 import { tint } from "../palette";
 import { COLORS, colorIntroduced } from "../data/colors";
@@ -37,13 +37,13 @@ import { heldBack } from "../explore/flags";
 
 type ParentPage = "home" | "children" | "progress" | "teacher" | "rewards" | "settings" | "privacy";
 
-const rows: { id: ParentPage; label: string; tint: string }[] = [
-  { id: "children", label: "Children", tint: tint.mintCard },
-  { id: "progress", label: "Progress", tint: tint.peach },
-  { id: "teacher", label: "From Teacher", tint: tint.sky },
-  { id: "rewards", label: "Home Rewards", tint: tint.blush },
-  { id: "settings", label: "Settings", tint: tint.mint },
-  { id: "privacy", label: "Privacy", tint: tint.sky },
+const rows: { id: ParentPage; label: string; tint: string; glyph: RowGlyphName }[] = [
+  { id: "children", label: "Children", tint: tint.mintCard, glyph: "children" },
+  { id: "progress", label: "Progress", tint: tint.peach, glyph: "sprout" },
+  { id: "teacher", label: "From Teacher", tint: tint.sky, glyph: "apple" },
+  { id: "rewards", label: "Home Rewards", tint: tint.blush, glyph: "gift" },
+  { id: "settings", label: "Settings", tint: tint.mint, glyph: "sliders" },
+  { id: "privacy", label: "Privacy", tint: tint.sky, glyph: "shield" },
 ];
 
 export function ParentView({
@@ -160,7 +160,9 @@ export function ParentView({
           {rows.map((row) => (
             <li key={row.id}>
               <button type="button" className="parent-row" onClick={() => setPage(row.id)}>
-                <span className="row-icon" style={{ background: row.tint }} aria-hidden="true" />
+                <span className="row-icon" style={{ background: row.tint }} aria-hidden="true">
+                  <RowGlyph name={row.glyph} />
+                </span>
                 <span>{row.label}</span>
               </button>
             </li>
@@ -501,7 +503,9 @@ function ParentHome({
         {rows.map((row) => (
           <li key={row.id}>
             <button type="button" className="parent-row" onClick={() => onOpen(row.id)}>
-              <span className="row-icon" style={{ background: row.tint }} aria-hidden="true" />
+              <span className="row-icon" style={{ background: row.tint }} aria-hidden="true">
+                  <RowGlyph name={row.glyph} />
+                </span>
               <span>{row.label}</span>
             </button>
           </li>

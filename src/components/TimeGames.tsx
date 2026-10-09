@@ -145,7 +145,7 @@ function ClockFace({
           >
             {/* A wide circle to tap, bigger than the number it holds. */}
             <circle cx={x} cy={y} r="7.6" className="clock-spot" />
-            <text x={x} y={y + 3.3} textAnchor="middle" fontSize="9.2" fontWeight="800" fill="#243056">
+            <text x={x} y={y + 3.3} textAnchor="middle" fontSize="9.2" fontWeight="700" fill="#243056">
               {value}
             </text>
           </g>

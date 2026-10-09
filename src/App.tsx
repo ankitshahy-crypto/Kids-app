@@ -5,6 +5,7 @@ import { deviceStorage } from "./deviceStorage";
 import { BreakScreen } from "./components/BreakScreen";
 import { HearAgainButton, BreakButton } from "./components/ComfortButtons";
 import { WrapUpSheet } from "./components/WrapUpSheet";
+import { Loading } from "./components/Loading";
 import { extraAllowed, noteExtra } from "./data/extras";
 import { themeForDay } from "./data/themes";
 import { storyChoices, storyForDay } from "./data/stories";
@@ -1069,7 +1070,7 @@ export default function App() {
                 />
               ) : null}
               {screen === "moment" ? (
-                <Suspense fallback={<p className="adult-copy">Loading</p>}>
+                <Suspense fallback={<Loading />}>
                   <div className="color-moment" data-screen="moment">
                     <NameActivity lesson={colorLesson} brief ageRange={active.ageRange} animal={active.animal} outfit={active.outfit} settingsRef={settingsRef} onDone={(label) => finishMoment(label)} />
                   </div>

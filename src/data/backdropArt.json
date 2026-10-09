@@ -1,7 +1,8 @@
 {
   "field": {
     "hold": 50,
-    "still": false
+    "still": false,
+    "front": true
   },
   "garden": {
     "hold": 50,

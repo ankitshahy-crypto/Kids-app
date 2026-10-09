@@ -47,8 +47,8 @@ async function press(page: Page, locator: Locator) {
   await page.mouse.down();
   await expect(locator).toHaveClass(/is-pressed/);
   await expect(locator).toHaveAttribute("data-pressed", "true");
-  const scale = await locator.evaluate((element) => getComputedStyle(element).scale);
-  expect(scale === "0.95" || scale.startsWith("0.95")).toBe(true);
+  // The press eases in over a tenth of a second (a transition on scale): the shrink is there by then.
+  await expect.poll(() => locator.evaluate((element) => getComputedStyle(element).scale), { timeout: 2000 }).toMatch(/^0\.95/);
   await page.mouse.up();
   if ((await locator.count()) > 0) {
     await expect(locator).not.toHaveClass(/is-pressed/);
