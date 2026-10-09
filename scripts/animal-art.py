@@ -306,6 +306,50 @@ def moved(rgba, head, warp):
     return cv2.warpAffine(rgba, full, (rgba.shape[1], rgba.shape[0]), flags=cv2.INTER_CUBIC | cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
 
 
+def eyes_of(idle):
+    """A round plush's two open eyes on its idle face: the two dark, compact spots in the upper
+    middle of the face that sit level, one each side of the middle and clear of it (the nose is dark
+    too, and in the middle). None when no such pair is there."""
+    lab = cv2.cvtColor(idle[:, :, :3], cv2.COLOR_RGB2LAB)
+    dark = ((lab[:, :, 0] < 70) & (idle[:, :, 3] > 200)).astype(np.uint8)
+    band = np.zeros_like(dark)
+    band[int(FACE_PX * 0.18) : int(FACE_PX * 0.72)] = 1
+    dark = cv2.morphologyEx(dark * band, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    n, labels, stats, centres = cv2.connectedComponentsWithStats(dark)
+    spots = [i for i in range(1, n) if FACE_PX * FACE_PX * 0.0004 < stats[i, cv2.CC_STAT_AREA] < FACE_PX * FACE_PX * 0.02]
+    # Compact: about as wide as tall (a mouth is a thin line; a stripe is long).
+    spots = [i for i in spots if 0.5 < stats[i, cv2.CC_STAT_WIDTH] / max(1, stats[i, cv2.CC_STAT_HEIGHT]) < 2.0]
+    level = lambda i, j: abs(centres[i][1] - centres[j][1]) < FACE_PX * 0.06
+    either_side = lambda i, j: (centres[i][0] - FACE_PX / 2) * (centres[j][0] - FACE_PX / 2) < 0
+    clear = lambda i: FACE_PX * 0.03 < abs(centres[i][0] - FACE_PX / 2) < FACE_PX * 0.22
+    alike = lambda i, j: 0.4 < stats[i, cv2.CC_STAT_AREA] / stats[j, cv2.CC_STAT_AREA] < 2.5
+    pairs = [(i, j) for i, j in combinations(spots, 2) if level(i, j) and either_side(i, j) and clear(i) and clear(j) and alike(i, j)]
+    if not pairs:
+        return None
+    # The biggest such pair: the eyes, not two flecks.
+    i, j = max(pairs, key=lambda ij: stats[ij[0], cv2.CC_STAT_AREA] + stats[ij[1], cv2.CC_STAT_AREA])
+    return [(int(stats[k, 0]), int(stats[k, 1]), int(stats[k, 2]), int(stats[k, 3])) for k in (i, j)]
+
+
+def eyes_only_round(blink, idle):
+    """The blink's shut eyes alone, for a round plush: the two places where the idle face has its
+    open eyes (found on the idle face itself, so a belly or an ear that differs between the two
+    renders does not count), each widened to take in the shut eye drawn there, eased out into nothing."""
+    eyes = eyes_of(idle)
+    if eyes is None:
+        return None, "no two eyes found on the idle face"
+    mask = np.zeros((FACE_PX, FACE_PX), np.uint8)
+    for x, y, w, h in eyes:
+        grow = int(max(w, h) * 0.7)
+        cv2.ellipse(mask, (int(x + w / 2), int(y + h / 2)), (w // 2 + grow + 6, h // 2 + grow), 0, 0, 360, 1, -1)
+    soft = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), 7)
+    soft[soft < 0.004] = 0
+    out = blink.copy()
+    out[:, :, 3] = np.round(soft * idle[:, :, 3]).astype(np.uint8)
+    out[out[:, :, 3] == 0] = 0
+    return out, f"eyes at {[(int(x + w / 2), int(y + h / 2)) for x, y, w, h in eyes]}"
+
+
 def eyes_only(blink, idle):
     """
     The blink render's eyes and nothing else, on a see-through picture the size of the face: the two
@@ -328,7 +372,7 @@ def eyes_only(blink, idle):
     level = lambda i, j: abs(centres[i][1] - centres[j][1]) < FACE_PX * 0.08
     either_side = lambda i, j: (centres[i][0] - FACE_PX / 2) * (centres[j][0] - FACE_PX / 2) < 0
     # ...and not out at the sides, where an ear that fell differs too (the bunny's blink render).
-    clear = lambda i: FACE_PX * 0.06 < abs(centres[i][0] - FACE_PX / 2) < FACE_PX * 0.2
+    clear = lambda i: FACE_PX * 0.03 < abs(centres[i][0] - FACE_PX / 2) < FACE_PX * 0.2
     pairs = [(i, j) for i, j in combinations(blobs[:5], 2) if level(i, j) and either_side(i, j) and clear(i) and clear(j)]
     pair = min(pairs, key=lambda ij: abs(centres[ij[0]][1] - centres[ij[1]][1])) if pairs else None
     if pair is None:
@@ -418,7 +462,7 @@ def main(folder: Path, with_body: bool):
                 else:
                     face = face_image(moved(rgba, head, warp), head)
                 if frame == "blink":
-                    face, found = eyes_only(face, idle_face)
+                    face, found = eyes_only_round(face, idle_face) if ROUND else eyes_only(face, idle_face)
                     note = f"{note}; {found}"
                     if face is None:
                         leave_out(animal, frame, note)
