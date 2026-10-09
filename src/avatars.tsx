@@ -2,6 +2,7 @@ import { useState, type CSSProperties, type JSX } from "react";
 import type { AnimalId } from "./data/animals";
 import art from "./data/animalArt.json";
 import type { Mood } from "./game/kit";
+import { AnimalClip } from "./components/AnimalClip";
 
 const INK = "#2C3A4F";
 
@@ -263,6 +264,9 @@ const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
  * else. One that is given a mood is alive on the page (the one in a game), and is a stack:
  *
  *   the idle face, always there underneath;
+ *   its idle life as video, when the animal has clips (components/AnimalClip.tsx): over the idle
+ *   face once it plays, under everything else; the blink and the mood faces below carry on where
+ *   it does not play;
  *   the blink, which is only the closed eyes, see-through everywhere else, shown for a moment now
  *   and then (CSS), each animal on the page starting its turn at a moment of its own, so two of
  *   them do not blink in step;
@@ -275,6 +279,8 @@ const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
 export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
   // Where in its turn this animal's blink starts: its own, kept for as long as it is on the page.
   const [blinkAt] = useState(() => Math.floor(Math.random() * BLINK_EVERY * 100) / 100);
+  // Whether its idle life is playing as video (then the CSS blink stays off: the video blinks).
+  const [clipPlaying, setClipPlaying] = useState(false);
   const entry = ART[animal];
   const look = mood ?? "idle";
   if (!entry) {
@@ -308,10 +314,13 @@ export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood
       data-mood={look}
       data-view={shown}
       data-frame={frame}
+      data-clip={clipPlaying ? "playing" : undefined}
       aria-hidden="true"
       style={alive ? ({ "--blink-at": blinkAt } as CSSProperties) : undefined}
     >
       {face("idle", "avatar-face")}
+      {/* Alive, with clips: its idle life as video over the still (components/AnimalClip.tsx). */}
+      {alive && shown === "face" ? <AnimalClip animal={animal} onPlaying={setClipPlaying} /> : null}
       {alive && entry.frames.includes("blink") ? face("blink", "avatar-blink") : null}
       {alive ? MOOD_FRAMES.filter((name) => entry.frames.includes(name)).map((name) => face(name, "avatar-over", frame === name)) : null}
     </span>

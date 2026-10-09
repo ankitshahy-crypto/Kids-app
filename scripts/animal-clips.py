@@ -19,14 +19,19 @@ the idle pose. For each one this writes:
                                             ffmpeg -framerate 24 -i f%04d.png -c:v hevc_videotoolbox
                                               -alpha_quality 0.75 -tag:v hvc1 -pix_fmt bgra <clip>.mov
 
-and src/data/animalClips.json: which clips each animal has, with each one's length and loop.
+and src/data/animalClips.json: which clips each animal has, with each one's length and loop, and
+`still`: where the still's frame sits in the clip frame (x, y, side, as fractions of it).
 
 The key is the same for every frame of a clip (the backdrop colour is taken from the frame edges of
-the whole clip, and one threshold is used throughout), so the matte does not flicker. The crop is one
-box over the whole clip, so the animal never shifts between clips of one animal; the box is the
-union of the figure over every frame, made square, with a little air, and all clips of an animal
-share the widest box (the idle frames, which the stills come from, set the scale). Needs:
-pip install opencv-python-headless pillow numpy; ffmpeg with libvpx-vp9 on PATH.
+the whole clip, and one threshold is used throughout), so the matte does not flicker.
+
+The crop is one square for all of an animal's clips, so the animal never shifts between them, and
+it is set from the shipped still: the idle clip's first frame (the idle pose) is fitted to
+public/animals/<id>/idle-face.webp, so that the pose in the video lies exactly where the still's
+does. The square is then as wide as every clip needs (a jump leaves a tight frame), and the
+manifest records where the still's frame sits inside it (`still`, fractions of the clip frame);
+the app sizes the video from that, so the still underneath and the video over it are one animal.
+Needs: pip install opencv-python-headless pillow numpy; ffmpeg with libvpx-vp9 on PATH.
 """
 import json
 import re
@@ -163,6 +168,34 @@ def square(box: tuple[int, int, int, int], shape: tuple[int, int]) -> tuple[int,
     return int(round(cx - side / 2)), int(round(cy - side / 2)), side
 
 
+def still_box(animal: str) -> tuple[float, float, float, float] | None:
+    """Where the figure is in the shipped idle still, as fractions of its frame: x, y, w, h."""
+    path = OUT / animal / "idle-face.webp"
+    if not path.exists():
+        return None
+    still = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+    if still is None or still.shape[2] < 4:
+        return None
+    ys, xs = np.where(still[..., 3] > 127)
+    if len(xs) == 0:
+        return None
+    h, w = still.shape[:2]
+    return xs.min() / w, ys.min() / h, (xs.max() - xs.min() + 1) / w, (ys.max() - ys.min() + 1) / h
+
+
+def frame_of_still(pose: np.ndarray, still: tuple[float, float, float, float]) -> tuple[float, float, float]:
+    """The still's frame laid over the clip, so the idle pose lies where the still's figure does: the
+    frame's x, y and side in clip pixels. Fitted by width (the still and the clip are two renders:
+    the same animal, not quite the same shape) and centred on the figure."""
+    ys, xs = np.where(pose > 0.5)
+    pw, ph = xs.max() - xs.min() + 1, ys.max() - ys.min() + 1
+    side = pw / still[2]
+    cx, cy = xs.min() + pw / 2, ys.min() + ph / 2
+    fx = cx - (still[0] + still[2] / 2) * side
+    fy = cy - (still[1] + still[3] / 2) * side
+    return fx, fy, side
+
+
 def crop(image: np.ndarray, x: int, y: int, side: int) -> np.ndarray:
     """The square from the image, padded with transparent where it runs past the frame."""
     h, w = image.shape[:2]
@@ -217,8 +250,21 @@ def main(folder: Path, keep_frames: bool) -> None:
             box_union = (x, y, w, h) if box_union is None else (min(box_union[0], x), min(box_union[1], y), max(box_union[0] + box_union[2], x + w) - min(box_union[0], x), max(box_union[1] + box_union[3], y + h) - min(box_union[1], y))
             print(f"{animal} {clip}: {len(frames)} frames from {path.name}, figure {w}x{h} at {x},{y}")
         assert box_union is not None
-        sx, sy, side = square(box_union, keyed[next(iter(keyed))][0][0].shape[:2])
+        still = still_box(animal)
+        pose = keyed["idle"][1][0] if "idle" in keyed else keyed[next(iter(keyed))][1][0]
+        if still:
+            fx, fy, fside = frame_of_still(pose, still)
+            # The crop holds the still's frame and every move: the union of both, square, with air.
+            ux, uy = min(box_union[0], fx), min(box_union[1], fy)
+            ux2, uy2 = max(box_union[0] + box_union[2], fx + fside), max(box_union[1] + box_union[3], fy + fside)
+            sx, sy, side = square((int(ux), int(uy), int(ux2 - ux), int(uy2 - uy)), pose.shape)
+            still_in_clip = [round((fx - sx) / side, 4), round((fy - sy) / side, 4), round(fside / side, 4)]
+        else:
+            sx, sy, side = square(box_union, pose.shape)
+            still_in_clip = [0.0, 0.0, 1.0]
+            print(f"{animal}: no idle-face.webp to fit to; the clip frame is the still's frame")
         entry = manifest.setdefault(animal, {"clips": {}})
+        entry["still"] = still_in_clip
         for clip, (colours, alphas) in keyed.items():
             frames_dir = (BUILD / animal / clip) if keep_frames else Path(tempfile.mkdtemp(prefix=f"clip-{animal}-{clip}-"))
             frames_dir.mkdir(parents=True, exist_ok=True)

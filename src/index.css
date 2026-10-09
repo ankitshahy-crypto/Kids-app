@@ -1069,6 +1069,27 @@ button:focus-visible {
   opacity: 0;
 }
 
+/* The idle life as video (components/AnimalClip.tsx): over the idle still, placed and sized by the
+   clip's own numbers (its idle pose on the still's), seen only once it plays, and not while a mood
+   face is over the still (the mood faces know nothing of it yet). A picture, not a control. */
+.avatar-painted .avatar-clip {
+  position: absolute;
+  object-fit: contain;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.avatar-painted[data-clip="playing"][data-frame="idle"] .avatar-clip {
+  opacity: 1;
+}
+
+/* While the video blinks for it, the CSS blink stays off. */
+.avatar-painted[data-clip="playing"] .avatar-blink {
+  visibility: hidden;
+}
+
 /* Each animal starts its blink's turn at a moment of its own (--blink-at, seconds into the turn),
    so two on one screen do not blink in step. */
 .game-host .avatar-painted .avatar-blink {
@@ -3837,7 +3858,8 @@ button:focus-visible {
 
 /* The sky colour: the animal itself turns powder blue, by its own filter (animalArt.json), so
    every frame of it does. The drawn animal keeps the soft blue glow behind it instead. */
-.hero[data-color="color-sky"] .avatar-painted img {
+.hero[data-color="color-sky"] .avatar-painted img,
+.hero[data-color="color-sky"] .avatar-painted video {
   filter: var(--sky, none);
 }
 
