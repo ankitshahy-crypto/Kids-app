@@ -118,14 +118,13 @@ test("the bar starts under the first tile, whole on the screen and on the track"
   const track = page.locator(".blend-track");
   await expect(track).toBeVisible();
   const trackBox = await track.boundingBox();
-  const barBox = await page.locator("[data-blend-token]").boundingBox();
+  const bar = page.locator("[data-blend-token]");
   const tileBox = await page.locator(".letters .tile-wrap").first().boundingBox();
   // Not cut off by the screen's edge or the track's: its whole width is inside both, under the first tile.
-  expect(barBox!.x).toBeGreaterThanOrEqual(0);
-  expect(barBox!.x).toBeGreaterThanOrEqual(trackBox!.x - 1);
-  expect(barBox!.x + barBox!.width).toBeLessThanOrEqual(trackBox!.x + trackBox!.width + 1);
-  expect(Math.abs(barBox!.x - tileBox!.x)).toBeLessThanOrEqual(3);
-  expect(Math.abs(barBox!.width - tileBox!.width)).toBeLessThanOrEqual(3);
+  await expect.poll(async () => {
+    const box = await bar.boundingBox();
+    return box ? [box.x >= 0, box.x >= trackBox!.x - 1, box.x + box.width <= trackBox!.x + trackBox!.width + 1, Math.abs(box.x - tileBox!.x) <= 3, Math.abs(box.width - tileBox!.width) <= 3] : [];
+  }).toEqual([true, true, true, true, true]);
   // The animal waits at the edge of the track, whole on the screen.
   const animalBox = await page.locator(".blend-animal").boundingBox();
   expect(animalBox!.x).toBeGreaterThanOrEqual(0);

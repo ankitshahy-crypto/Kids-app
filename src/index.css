@@ -693,6 +693,11 @@ button:focus-visible {
     opacity 0.2s ease;
 }
 
+/* A new card puts the bar under its first tile at once, with no slide from where the last one left it. */
+.blend-bar[data-under="none"] {
+  transition: none;
+}
+
 .blend-bar[data-said="true"] {
   opacity: 1;
 }
