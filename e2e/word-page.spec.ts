@@ -152,6 +152,46 @@ for (const [age, calm] of [
   });
 }
 
+test("a pulsing hand marks the drag until the first slide to the end of the track on this visit", async ({ page }) => {
+  // The phone pass of build 5: the animal at the end of a thin arrow did not say "drag me" to every
+  // child. A hand (the kit's) sits at the end of the bar, on the arrow, until the child's first slide
+  // the whole way; then it is gone for the rest of the visit, every card. The animal is still placed
+  // on its own, and the finger still runs the full track.
+  await install(page);
+  const activity = page.locator(".activity");
+  const hint = activity.locator("[data-blend-hint]");
+  const track = activity.locator(".blend-track");
+  const animal = activity.locator(".blend-animal");
+  await expect(hint).toBeVisible();
+  // On the arrow, to the right of the waiting animal, inside the track.
+  const hintBox = await hint.boundingBox();
+  const trackBox = await track.boundingBox();
+  const animalBox = await animal.boundingBox();
+  expect(hintBox!.x).toBeGreaterThanOrEqual(animalBox!.x + animalBox!.width / 2);
+  expect(hintBox!.x + hintBox!.width).toBeLessThanOrEqual(trackBox!.x + trackBox!.width);
+  expect(hintBox!.y).toBeGreaterThanOrEqual(trackBox!.y);
+  expect(hintBox!.y + hintBox!.height).toBeLessThanOrEqual(trackBox!.y + trackBox!.height + 8);
+  // The hand is never part of the animal's box (the animal is placed on its own).
+  expect(await hint.evaluate((element) => Boolean(element.closest(".blend-animal")))).toBe(false);
+  // A slide to the end: the hand goes while the finger is down, and stays gone once the word is said.
+  await slide(page, track, async () => {
+    await expect(hint).toHaveCount(0);
+  });
+  await expect(activity).toHaveAttribute("data-blended", "true");
+  await expect(hint).toHaveCount(0);
+  // The next card on this visit: no hand.
+  await page.getByRole("button", { name: "Next word" }).click();
+  await expect(activity).toHaveAttribute("data-blended", "false");
+  await expect(hint).toHaveCount(0);
+  await page.getByRole("button", { name: "Next word" }).click();
+  await expect(hint).toHaveCount(0);
+  // A new visit starts over.
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
+  await page.getByRole("button", { name: "Letters" }).click();
+  await expect(activity.locator("[data-blend-hint]")).toBeVisible();
+});
+
 test("a letter card: the letter is the largest thing, the bar under it as it is said", async ({ page }) => {
   await install(page);
   const activity = page.locator(".activity");

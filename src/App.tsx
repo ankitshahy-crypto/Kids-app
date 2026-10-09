@@ -81,7 +81,7 @@ import { LockSheet } from "./components/LockSheet";
 import { ParentGate } from "./components/ParentGate";
 import { PinPromptSheet } from "./components/PinPromptSheet";
 import { hasGrownupPin } from "./data/grownupPin";
-import { PIN_OFFERED_KEY } from "./storage";
+import { PIN_OFFER_PENDING_KEY, PIN_OFFERED_KEY } from "./storage";
 import { READING } from "./data/subject";
 import { lettersOnly, traceLetters } from "./data/units";
 import { blendList, countsForLadder, ladderCap, phonicsOpen, wordsToTrace, type LadderStep } from "./data/ladder";
@@ -289,6 +289,8 @@ export default function App() {
   const lessonHeld = Boolean(placedLesson && lessonPlace && lessonPlace.weekIndex !== placedLesson.weekIndex);
   const [askingGrownup, setAskingGrownup] = useState(false);
   const [offerPin, setOfferPin] = useState(false);
+  /** The first child was saved this visit and the PIN offer is still to be made (kept here too, for a device that blocks storage). */
+  const pinPending = useRef(false);
   // A shared class iPad: switching child goes through the grown-up check.
   const [askingSwitch, setAskingSwitch] = useState(false);
   const askSwitch = () => {
@@ -752,6 +754,11 @@ export default function App() {
     setGrownupsPage(page);
     setGrownupsReturn(mode === "kid" ? "kid" : "start");
     setMode("grownups");
+    // Once, after the grown-up check: offer a PIN, so a classroom is not relying on the typed sum
+    // alone. The offer was set up when the first child was saved; it is made here, on the Grown-ups
+    // menu, never on a child's screen. Until a PIN is saved, the check stays the typed sum.
+    const pending = pinPending.current || readFlag(PIN_OFFER_PENDING_KEY) === "1";
+    if (page === "menu" && pending && !hasGrownupPin() && readFlag(PIN_OFFERED_KEY) !== "1") setOfferPin(true);
   };
 
   /** The first child on a device goes straight to their Today screen. */
@@ -762,8 +769,12 @@ export default function App() {
       primeSpeech();
       setScreen("today");
       setMode("kid");
-      // Once: offer a PIN, so a classroom is not relying on the typed sum alone.
-      if (!hasGrownupPin() && readFlag(PIN_OFFERED_KEY) !== "1") setOfferPin(true);
+      // The PIN offer waits for the next visit to Grown-ups (see openGrownups): a sheet for a
+      // grown-up has no place over the child's Today.
+      if (!hasGrownupPin() && readFlag(PIN_OFFERED_KEY) !== "1") {
+        pinPending.current = true;
+        writeFlag(PIN_OFFER_PENDING_KEY, "1");
+      }
     }
   };
 
@@ -1240,10 +1251,12 @@ export default function App() {
             onClose={() => setMode("start")}
           />
         ) : null}
-        {offerPin ? (
+        {mode === "grownups" && offerPin ? (
           <PinPromptSheet
             onDone={() => {
+              pinPending.current = false;
               writeFlag(PIN_OFFERED_KEY, "1");
+              writeFlag(PIN_OFFER_PENDING_KEY, "0");
               setOfferPin(false);
             }}
           />
