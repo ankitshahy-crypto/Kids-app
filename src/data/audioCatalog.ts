@@ -3,7 +3,7 @@ import manifest from "./audioManifest.json";
 import { starterDeck } from "./deck";
 import { ladderClips } from "./ladder";
 import { PHONEME_IDS } from "./phonemes";
-import { LETTER_NAMES } from "./letterNames";
+import { SPELL_LETTERS } from "./spell";
 import { LETTER_WORDS } from "./letterWords";
 import { themedWordCatalog } from "./themeWords";
 
@@ -71,12 +71,13 @@ for (const [id, cue] of Object.entries(book.letters)) {
   }
 }
 
-// Every plain letter has its name on its own, for spelling a name out.
-for (const [letter, name] of Object.entries(LETTER_NAMES)) {
+// Every plain letter has its name on its own, for spelling a name out: the clip's line is the
+// capital letter, which a device voice reads as the letter's name.
+for (const letter of SPELL_LETTERS) {
   const cue = book.spell?.[letter];
   assertCue("spell", letter, cue);
-  if (!cue.file.startsWith("spell/") || cue.say !== name) {
-    throw new Error(`Letter name "${letter}" should live under spell/ and say "${name}"`);
+  if (!cue.file.startsWith("spell/") || cue.say !== letter.toUpperCase()) {
+    throw new Error(`Letter name "${letter}" should live under spell/ and say "${letter.toUpperCase()}"`);
   }
 }
 

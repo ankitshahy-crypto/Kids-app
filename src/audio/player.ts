@@ -1,6 +1,5 @@
 import { recordedSrc, spokenLine } from "../data/audioCatalog";
 import type { DeckWord, LetterTile } from "../data/deck";
-import { letterName } from "../data/letterNames";
 import { beginVoice, endVoice, playOnBus, unlockAudio, warmClips } from "./manager";
 import { deviceSpeechFollowsSlider } from "./platform";
 import { pickVoice } from "./voices";
@@ -417,8 +416,8 @@ export function letterSoundCue(letter: LetterTile): Cue {
 export function spellCue(letter: string): Cue {
   const id = letter.trim().toLowerCase();
   const src = recordedSrc("spell", id);
-  if (src) return { src, text: spokenLine("spell", id, letterName(id)) };
-  return { src: recordedSrc("letters", id), text: spokenLine("letters", id, letterName(id)) };
+  if (src) return { src, text: spokenLine("spell", id, id.toUpperCase()) };
+  return { src: recordedSrc("letters", id), text: spokenLine("letters", id, id.toUpperCase()) };
 }
 
 /** A whole word from the deck. */

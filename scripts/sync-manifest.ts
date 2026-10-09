@@ -5,8 +5,8 @@
  *  - `letters` and `sounds` say each letter's picture word from
  *    src/data/letterWords.ts ("t, as in tent"), and get an entry for every
  *    sound unit in src/data/units.ts ("sh, as in ship", and the bare "sh");
- *  - `spell` says each letter's name on its own ("em"), from
- *    src/data/letterNames.ts, for spelling a child's name out;
+ *  - `spell` says each letter's name on its own ("em" for M), from
+ *    src/data/spell.ts, for spelling a child's name out;
  *  - `prompts` gets the big-and-little line for each letter
  *    (src/data/letterPairs.ts);
  *  - `words` gets an entry for every ladder word, unit example word, story
@@ -30,7 +30,6 @@ import { fileURLToPath } from "node:url";
 import { animals } from "../src/data/animals";
 import { ladderClips } from "../src/data/ladder";
 import { pairLine, pairPromptId } from "../src/data/letterPairs";
-import { LETTER_NAMES } from "../src/data/letterNames";
 import { LETTER_WORDS } from "../src/data/letterWords";
 import { buildManifestEntries, buildWords } from "../src/data/build";
 import { logicManifestEntries, logicWords } from "../src/data/logic";
@@ -39,6 +38,7 @@ import { engineerManifestEntries, engineerWords } from "../src/data/engineer";
 import { playManifestEntries } from "../src/data/games";
 import { numberManifestEntries, numberWords } from "../src/data/numberGames";
 import { scienceManifestEntries, scienceWords, wordId } from "../src/data/science";
+import { SPELL_LETTERS } from "../src/data/spell";
 import { surpriseManifestEntries } from "../src/data/surprise";
 import { timeGameManifestEntries, timeGameWords } from "../src/data/timeGames";
 import { STORIES, storyLineId, storyText, storyTitleId, storyWordList } from "../src/data/stories";
@@ -107,12 +107,14 @@ for (const { letter, word } of Object.values(LETTER_WORDS)) {
   manifest.prompts[pair] = { file: `prompts/${pair}.mp3`, say: line, source: "neural" };
 }
 
-// A letter's name on its own ("em"), for spelling a child's name out (src/data/letterNames.ts).
+// A letter's name on its own, for spelling a child's name out (src/data/spell.ts). The line is the
+// capital letter; the voice workflow says it through its own pronunciation (SPELL_PLAN there).
 manifest.spell ??= {};
-for (const [letter, name] of Object.entries(LETTER_NAMES)) {
+for (const letter of SPELL_LETTERS) {
+  const say = letter.toUpperCase();
   const before = manifest.spell[letter];
-  if (before && before.say !== name) drop(before.file);
-  manifest.spell[letter] = { file: `spell/${letter}.mp3`, say: name, source: "neural" };
+  if (before && before.say !== say) drop(before.file);
+  manifest.spell[letter] = { file: `spell/${letter}.mp3`, say, source: "neural" };
 }
 
 // Themed letter phrases ("d, as in dinosaur") are gone: a letter has one

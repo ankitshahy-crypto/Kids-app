@@ -17,7 +17,7 @@ import {
   type WritingMap,
   type WritingOutcome,
 } from "../data/scaffold";
-import { nameLetters } from "../data/letterNames";
+import { nameLetters } from "../data/spell";
 import { nameGlyphs, nameToTrace, wordGlyphs, type TraceGlyph } from "../data/tracePractice";
 import { followStroke, stationsAttribute, strokeComplete, traceTolerance } from "../data/trace";
 import type { Settings } from "../settings";

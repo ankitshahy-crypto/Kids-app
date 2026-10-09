@@ -240,6 +240,17 @@ const LETTER_NAMES = {
   v: "vee", w: "double you", x: "ex", y: "why", z: "zee",
 };
 
+/**
+ * How each letter's name is said for the `spell` clips (Trace your name spells the child's name
+ * with them). The line is the capital letter, and the voice is given the name's sounds outright:
+ * read as text, "A." came out as the word "I", "em" as "am" and "aitch" as "each".
+ */
+const SPELL_PLAN = {
+  a: "eɪ", b: "biː", c: "siː", d: "diː", e: "iː", f: "ɛf", g: "dʒiː", h: "eɪtʃ", i: "aɪ", j: "dʒeɪ", k: "keɪ",
+  l: "ɛl", m: "ɛm", n: "ɛn", o: "oʊ", p: "piː", q: "kjuː", r: "ɑɹ", s: "ɛs", t: "tiː", u: "juː",
+  v: "viː", w: "dʌbəljuː", x: "ɛks", y: "waɪ", z: "ziː",
+};
+
 function escapeXml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -328,6 +339,17 @@ function planFor(kind, id, say, main, letters, style, attempt = 0) {
   if (kind === "prompts" && /^pair-[a-z]$/.test(id)) {
     const plan = pairPlan(say.trim(), main, letters);
     if (plan) return plan;
+  }
+  // A letter's name on its own, after a lead-in that is cut away (as a short word is), with the
+  // name's sounds given outright. The lead-in is tried in turn, like a word's.
+  if (kind === "spell") {
+    const ipa = SPELL_PLAN[id.toLowerCase()];
+    if (!ipa) throw new Error(`No pronunciation for the letter name "${id}"`);
+    const token = say.trim().replace(/\.$/, "");
+    const lead = LEAD_INS[attempt % LEAD_INS.length];
+    const step = syllable(main, token, ipa, ".");
+    if (step.ssml) return { say: [{ ssml: step.ssml.replace("<speak>", `<speak>${escapeXml(lead)} `), voice: main, after: "lead-in" }] };
+    return { say: [{ ...step, text: `${lead} ${token}.`, after: "lead-in" }] };
   }
   const letter = letterOf(kind, id, say);
   if (letter) {

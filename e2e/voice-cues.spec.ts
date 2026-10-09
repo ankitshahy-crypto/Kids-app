@@ -146,11 +146,11 @@ state: ${JSON.stringify(state)}`);
 
 test("Trace my name says what to do, then spells the name in the recorded voice, and Again repeats both", async ({ page }) => {
   // The phone pass of build 4: the name came from the phone's own voice, a different one from the
-  // lesson's. It is spelled out now, a recorded clip a letter: "em", "eye", "ay".
+  // lesson's. It is spelled out now, a recorded clip a letter: M, I, A.
   const requested: string[] = [];
   page.on("request", (request) => requested.push(request.url()));
   await install(page);
-  await expectOpeningLine(page, () => page.getByRole("button", { name: "Trace my name" }).click(), "my-name", [/^trace your name\.$/, /^em$/, /^eye$/, /^ay$/]);
+  await expectOpeningLine(page, () => page.getByRole("button", { name: "Trace my name" }).click(), "my-name", [/^trace your name\.$/, /^m$/, /^i$/, /^a$/]);
   await expect.poll(() => playedClips(page)).toEqual(expect.arrayContaining(["spell/m.mp3", "spell/i.mp3", "spell/a.mp3"]));
   // Nothing with the name in it is fetched, and the device voice is never asked to say it.
   expect(sentAddresses(requested)).not.toMatch(/mia/i);

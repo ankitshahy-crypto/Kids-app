@@ -1,19 +1,17 @@
 import { describe, expect, it } from "vitest";
 import manifest from "./audioManifest.json";
-import { LETTER_NAMES, letterName, nameLetters } from "./letterNames";
+import { nameLetters, SPELL_LETTERS } from "./spell";
 import { nameGlyphs } from "./tracePractice";
 
 const spell = (manifest as unknown as { spell: Record<string, { file: string; say: string }> }).spell;
 
-describe("letter names", () => {
-  it("names every letter, and the clip list spells each one the same way", () => {
-    expect(Object.keys(LETTER_NAMES).join("")).toBe("abcdefghijklmnopqrstuvwxyz");
-    for (const [letter, name] of Object.entries(LETTER_NAMES)) {
-      expect(spell[letter], letter).toEqual({ file: `spell/${letter}.mp3`, say: name, source: "neural" });
-      expect(letterName(letter)).toBe(name);
-      expect(letterName(letter.toUpperCase())).toBe(name);
+describe("spelling a name", () => {
+  it("has a clip for every letter's name, each saying the capital letter", () => {
+    expect(SPELL_LETTERS.join("")).toBe("abcdefghijklmnopqrstuvwxyz");
+    for (const letter of SPELL_LETTERS) {
+      expect(spell[letter], letter).toEqual({ file: `spell/${letter}.mp3`, say: letter.toUpperCase(), source: "neural" });
     }
-    expect(letterName("-")).toBe("-");
+    expect(Object.keys(spell)).toEqual(SPELL_LETTERS);
   });
 
   it("spells a name with the letters it traces, in order", () => {
