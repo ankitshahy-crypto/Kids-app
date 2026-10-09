@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+
 export function HomeIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="icon">
