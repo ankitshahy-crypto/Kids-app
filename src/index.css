@@ -10506,6 +10506,37 @@ input.is-pressed,
   padding-left: 12px;
 }
 
+/* On the goal row: the play button alone, round, and Next in its place once the steps match. */
+.build-goal .build-goal-run {
+  display: flex;
+  align-items: center;
+}
+
+.build-goal .build-run.is-icon {
+  width: 52px;
+  height: 52px;
+  min-height: 52px;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.build-goal .build-run.is-icon .build-run-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.build-goal .start-button {
+  width: auto;
+  max-width: none;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 18px;
+  font-size: 16px;
+  flex: 0 0 auto;
+}
+
 .build-run:disabled {
   opacity: 0.5;
   box-shadow: none;

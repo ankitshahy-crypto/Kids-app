@@ -469,14 +469,23 @@ function Builder({
   const more = (code || goal) && !last;
 
   /**
-   * The run control. On a board with steps it sits in the steps card, beside "Your steps", so it is
-   * on the screen with the steps it runs. (It was the big button under the palette: on the move
-   * board, with the goal card above the stage, that put it under the bottom of a phone's screen. In
-   * the playtest of build 4 jump and spin sat ticked in Your steps with nothing to play them.)
-   * Reading code has no steps card, and its button under the palette is in view.
+   * The run control. On the move board it is the play button at the end of the goal row ("Make
+   * your animal jump, then spin. Then press play."), where it adds no height to the board; on a free
+   * board it sits in the steps card beside "Your steps". Either way it is on the screen with the
+   * steps it runs. (It was the big button under the palette: on the move board, with the goal card
+   * above the stage, that put it under the bottom of a phone's screen. In the playtest of build 4
+   * jump and spin sat ticked in Your steps with nothing to play them.) Reading code has no steps
+   * card, and its button under the palette is in view.
    */
   const runButton = (
-    <button type="button" className={code ? "start-button" : "start-button build-run"} data-play="run" disabled={script.length === 0} onClick={play}>
+    <button
+      type="button"
+      className={code ? "start-button" : goal ? "start-button build-run is-icon" : "start-button build-run"}
+      data-play="run"
+      aria-label="Play"
+      disabled={script.length === 0}
+      onClick={play}
+    >
       {code ? null : (
         <span className="build-run-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="22" height="22">
@@ -484,7 +493,7 @@ function Builder({
           </svg>
         </span>
       )}
-      Play
+      {goal ? null : "Play"}
     </button>
   );
   const finishButton = (
@@ -546,6 +555,8 @@ function Builder({
               </span>
             </button>
           </li>
+          {/* "Then press play": the play button ends the row. Once the steps match, Next takes its place. */}
+          <li className="build-goal-run">{done ? finishButton : runButton}</li>
         </ol>
       ) : null}
       {code ? (
@@ -594,8 +605,7 @@ function Builder({
         <div className="build-steps">
           <div className="build-steps-head">
             <p className="build-label">Your steps</p>
-            {/* Once the steps match the goal, Next takes Play's place, where the child just tapped. */}
-            {goal && done ? finishButton : runButton}
+            {goal ? null : runButton}
           </div>
           <div className="build-script" data-drop="script" aria-label="Your steps">
             {/* Five numbered places to fill, and room for up to eight steps. A tap on a step takes it out. */}

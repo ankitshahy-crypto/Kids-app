@@ -28,6 +28,10 @@ async function install(page: Page, board: "hello" | "move" | "music" | "code", s
   await page.addInitScript((payload) => {
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(payload.saved));
     localStorage.removeItem("kids-app-silent-hint-v1");
+    // The note about the silent switch has been read. On an iPhone it comes up after the first tap,
+    // across the bottom of the screen, over the blocks, and takes the taps meant for them until OK
+    // is tapped (as the Think & Code tests found). None of these tests is about the note.
+    localStorage.setItem("littlenest-silent-hint-v1", "1");
     if (!sessionStorage.getItem("build-test-started")) localStorage.removeItem("littlenest.section.games.build");
     sessionStorage.setItem("build-test-started", "1");
     if (payload.settings) localStorage.setItem("littlenest-settings-v1", JSON.stringify(payload.settings));
@@ -329,7 +333,7 @@ for (const [age, saved] of [["3 to 4", profile], ["5 to 7", older]] as const) {
     test.setTimeout(60_000);
     // A phone's screen less its status bar and home bar, with the grown-up tip still showing above the board.
     // The playtest of build 4: jump and spin sat ticked in Your steps and nothing played them. Play was
-    // the big button under the palette, below the bottom of the screen; it is in the steps card now.
+    // the big button under the palette, below the bottom of the screen; it ends the goal row now.
     await page.setViewportSize({ width: 390, height: 763 });
     await install(page, "move", saved);
     const board = page.locator("[data-build=move]");
@@ -349,7 +353,7 @@ for (const [age, saved] of [["3 to 4", profile], ["5 to 7", older]] as const) {
       for (const block of goal) await board.locator(`[data-block=${block}]`).click();
       await expect(board).toHaveAttribute("data-script", goal.join(","));
       await expect(board.locator(".build-goal [data-done=true]")).toHaveCount(goal.length);
-      // The places after the steps stay empty, and Play is beside the steps, in view and ready.
+      // The places after the steps stay empty, and Play, at the end of the goal row, is in view and ready.
       await expect(board.locator(".build-place")).toHaveText(Array.from({ length: 5 - goal.length }, (_, index) => String(goal.length + index + 1)));
       await expect(board.locator("[data-play=run]")).toBeEnabled();
       await expect(board.locator("[data-play=run]")).toBeInViewport({ ratio: 1 });
@@ -360,11 +364,11 @@ for (const [age, saved] of [["3 to 4", profile], ["5 to 7", older]] as const) {
       await expect(board).toHaveAttribute("data-match", "true", { timeout: 15_000 });
       const moves = goal.filter((block) => block !== "repeat");
       await expect(board).toHaveAttribute("data-pose", moves.at(-1) ?? "");
-      // Next (or Done) takes Play's place in the steps card, in view.
+      // Next (or Done) takes Play's place on the goal row, in view.
       await expect(board.locator("[data-play=run]")).toHaveCount(0);
       const finish = board.locator("[data-finish=move]");
       await expect(finish).toBeInViewport({ ratio: 1 });
-      expect(await finish.evaluate((button) => Boolean(button.closest(".build-steps")))).toBe(true);
+      expect(await finish.evaluate((button) => Boolean(button.closest(".build-goal")))).toBe(true);
       const next = await finish.getAttribute("data-next");
       await finish.click();
       if (!next) break;
