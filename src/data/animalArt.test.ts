@@ -34,12 +34,13 @@ describe("the painted animals", () => {
         expect(entry.frames, `${id}'s ${frame} is placed`).toContain(frame);
         expect(place).toHaveLength(3);
         const [x, y, side] = place;
+        // Two renders draw the body up to a quarter bigger or smaller than each other.
         expect(side, `${id} ${frame}`).toBeGreaterThan(0.5);
-        expect(side, `${id} ${frame}`).toBeLessThanOrEqual(1.05);
-        expect(x, `${id} ${frame}`).toBeGreaterThanOrEqual(-0.1);
-        expect(y, `${id} ${frame}`).toBeGreaterThanOrEqual(-0.1);
-        expect(x + side, `${id} ${frame}`).toBeLessThanOrEqual(1.1);
-        expect(y + side, `${id} ${frame}`).toBeLessThanOrEqual(1.1);
+        expect(side, `${id} ${frame}`).toBeLessThanOrEqual(1.3);
+        expect(x, `${id} ${frame}`).toBeGreaterThanOrEqual(-0.2);
+        expect(y, `${id} ${frame}`).toBeGreaterThanOrEqual(-0.2);
+        expect(x + side, `${id} ${frame}`).toBeLessThanOrEqual(1.2);
+        expect(y + side, `${id} ${frame}`).toBeLessThanOrEqual(1.2);
       }
     }
   });
