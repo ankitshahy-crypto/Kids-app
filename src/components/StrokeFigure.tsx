@@ -1,19 +1,42 @@
 import { directionArrow, letterForm, numberSpot, strokePath, type LetterCase, type TracePoint } from "../data/handwriting";
 import { strokeStations } from "../data/trace";
 
-/** Strokes that start at the same point get their numbers nudged apart, so M reads 1 2, not 21. */
-export function spreadSpots(spots: TracePoint[], gap = 9): TracePoint[] {
+/** How far a number keeps from the other numbers. */
+const NUMBER_GAP = 9;
+/** How far a number keeps from a stroke's start dot (the dot's radius is 4.2, a digit's half-width about 3). */
+const DOT_GAP = 8;
+
+/**
+ * Strokes that start at the same point get their numbers moved apart, so M reads 1 2, not 21. The
+ * second number goes beside its start dot, on the side away from the letter's middle (left of M's
+ * top-left corner, right of A's apex), where it is clear of the dot, the other numbers and the
+ * strokes. It used to be pushed straight down, onto the dot and the first stroke's line, so on M the
+ * 1 and the 2 read as one mark at the top of the letter.
+ */
+export function spreadSpots(spots: TracePoint[], gap = NUMBER_GAP, starts: TracePoint[] = []): TracePoint[] {
   const placed: TracePoint[] = [];
-  for (const spot of spots) {
-    let next = { ...spot };
-    for (let tries = 0; tries < 4; tries += 1) {
-      const clash = placed.find((other) => Math.hypot(other.x - next.x, other.y - next.y) < gap);
-      if (!clash) break;
-      next = { x: next.x, y: Math.min(96, next.y + gap) };
-      if (next.y >= 96) next = { x: Math.min(94, next.x + gap), y: clash.y };
+  const inside = (point: TracePoint) => point.x >= 6 && point.x <= 94 && point.y >= 8 && point.y <= 96;
+  const clear = (point: TracePoint) =>
+    inside(point) &&
+    placed.every((other) => Math.hypot(other.x - point.x, other.y - point.y) >= gap) &&
+    starts.every((start) => Math.hypot(start.x - point.x, start.y - point.y) >= DOT_GAP);
+  spots.forEach((spot, index) => {
+    if (clear(spot) || placed.every((other) => Math.hypot(other.x - spot.x, other.y - spot.y) >= gap)) {
+      placed.push({ ...spot });
+      return;
     }
-    placed.push(next);
-  }
+    const start = starts[index] ?? spot;
+    const away = start.x < 50 ? -1 : 1;
+    const candidates: TracePoint[] = [
+      { x: start.x + away * (gap + 1), y: start.y },
+      { x: start.x - away * (gap + 1), y: start.y },
+      { x: spot.x, y: spot.y + gap },
+      { x: spot.x + gap, y: spot.y },
+      { x: spot.x, y: spot.y + 2 * gap },
+    ];
+    const next = candidates.find(clear) ?? candidates.find((point) => inside(point) && placed.every((other) => Math.hypot(other.x - point.x, other.y - point.y) >= gap)) ?? spot;
+    placed.push({ x: Math.round(next.x * 10) / 10, y: Math.round(next.y * 10) / 10 });
+  });
   return placed;
 }
 
@@ -52,7 +75,11 @@ export function StrokeFigure({
 }) {
   const form = strokes ? { letter: label ?? "", strokes } : letterForm(letter ?? "a", casing);
   const glyph = label || form.letter;
-  const spots = spreadSpots(form.strokes.map(numberSpot));
+  const spots = spreadSpots(
+    form.strokes.map(numberSpot),
+    NUMBER_GAP,
+    form.strokes.flatMap((stroke) => (stroke[0] ? [stroke[0]] : [])),
+  );
   const caption = glyph.length === 1 ? glyph : "";
   return (
     <svg className="trace-glyph" viewBox="0 0 100 100" data-case={strokes ? undefined : casing} role="img" aria-label={glyph || "shape"}>

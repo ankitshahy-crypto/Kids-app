@@ -4,6 +4,7 @@ import { resumeSpeech } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import { starterDeck, type DeckWord } from "../data/deck";
 import { emptyOutfit, type Outfit } from "../data/wardrobe";
+import { Hand } from "../game/kit";
 import { usePlayback } from "../hooks/usePlayback";
 import { useSpeaker } from "../hooks/useSpeaker";
 import type { Settings } from "../settings";
@@ -67,6 +68,10 @@ export function SoundItOut({
   const [celebrating, setCelebrating] = useState(false);
   const [progress, setProgress] = useState(0.06);
   const [dragging, setDragging] = useState(false);
+  // A pulsing hand on the track until the child's first slide to the end of it on this visit: the
+  // animal at the end of a thin arrow did not say "drag me" to every child in the phone pass of
+  // build 5. The hand marks the bar and nudges to the right, the way the finger should go.
+  const [dragShown, setDragShown] = useState(false);
   /**
    * The one bar under the part being said, as a share of the track: under the letter whose sound
    * plays, under the whole word when the word is said, and otherwise where the finger or the last
@@ -269,6 +274,8 @@ export function SoundItOut({
     if (!allSounded || blendedPass.current) return;
     blendedPass.current = true;
     setBlended(true);
+    // The child has dragged the whole way once: the hand has done its job for this visit.
+    if (draggingRef.current) setDragShown(true);
     // Single letters and sound units join; a sentence's word chunks wrap onto rows and stay put.
     setJoined(!word.sentenceId);
     // The chime, the bounce and the reward are for the card's first finish. Finishing it again
@@ -616,6 +623,11 @@ export function SoundItOut({
             data-said={active !== null ? "true" : "false"}
             aria-hidden="true"
           />
+          {!dragShown && !dragging && !blended ? (
+            <span className="blend-hint" data-blend-hint="true" aria-hidden="true" style={{ left: `${Math.min(88, bar.left + bar.width)}%` }}>
+              <Hand />
+            </span>
+          ) : null}
           {/* The child's animal waits at the edge of the track until the word is said, then comes in and says
               it. The animal's box is the animal alone; its bubble sits beside it, in a box of its own. */}
           <div className="blend-animal" data-word-teller={blended ? "said" : "waiting"} aria-hidden="true">

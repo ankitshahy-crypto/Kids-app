@@ -660,6 +660,33 @@ button:focus-visible {
   cursor: grabbing;
 }
 
+/* The drag hint: a hand at the end of the bar, on the arrow, nudging to the right until the child's
+   first slide to the end of the track on this visit. Only ever a hint: the finger can start anywhere. */
+.blend-hint {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 40px;
+  margin-top: -6px;
+  pointer-events: none;
+}
+
+.blend-hint .game-hand {
+  position: static;
+  width: 40px;
+  animation: blend-hand 1.1s ease-in-out infinite;
+}
+
+@keyframes blend-hand {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(18px);
+  }
+}
+
 .blend-track:focus-visible {
   outline: 3px solid var(--sage-soft);
   /* Inside the track, so the ring is not cut off at a phone's edge. */
@@ -2257,8 +2284,12 @@ button:focus-visible {
   color: var(--text-warm);
 }
 
-/* "This week: M and A". Not upper-cased: a sound unit is shown as it is written (sh, a-e). */
+/* "This week: M and A". Not upper-cased: a sound unit is shown as it is written (sh, a-e). It sits
+   at the left, clear of the Grown-ups pill's column (the top row keeps that column free, and so
+   does this): right-aligned, it slid under the pill when the phone's page scrolled. */
 .today-focus {
+  align-self: flex-start;
+  max-width: calc(100% - 136px);
   font-size: 15px;
   letter-spacing: 0.02em;
   text-transform: none;

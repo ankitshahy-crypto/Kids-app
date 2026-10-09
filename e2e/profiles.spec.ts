@@ -36,10 +36,15 @@ async function addSam(page: Page) {
   await page.getByRole("button", { name: "Fox", exact: true }).click();
   await page.getByRole("button", { name: "Save child" }).click();
   await expect(page.locator("[data-screen=today]")).toBeVisible();
-  // The first child brings a one-time offer to set a grown-up PIN.
-  await expect(page.locator("[data-pin-prompt=true]")).toBeVisible();
-  await page.locator("[data-pin-skip=true]").click();
+  // Nothing for a grown-up opens over the child's screen: the one-time PIN offer waits in Grown-ups.
   await expect(page.locator("[data-pin-prompt=true]")).toHaveCount(0);
+}
+
+/** Open Grown-ups from the child's screen, and pass the check. */
+async function openGrownupsMenu(page: Page) {
+  await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
+  await passGate(page);
+  await expect(page.locator("[data-screen=grownups]")).toBeVisible();
 }
 
 test("a first run adds a child and starts their day", async ({ page }) => {
@@ -87,9 +92,9 @@ test("removing a child clears them from the start screen", async ({ page }) => {
 test("removing the child who is on screen goes back to the first screen, never a blank one", async ({ page }) => {
   await page.goto("./");
   await addSam(page);
-  // Sam is on Today. Open Grown-ups from there and remove Sam.
-  await page.getByRole("button", { name: "Grown-ups" }).click();
-  await passGate(page);
+  // Sam is on Today. Open Grown-ups from there (the one-time PIN offer comes here; not now) and remove Sam.
+  await openGrownupsMenu(page);
+  await page.locator("[data-pin-skip=true]").click();
   await page.getByRole("button", { name: /Child profiles/ }).click();
   await page.locator("[data-confirm=ask]").click();
   await page.locator("[data-confirm=ready]").click();
@@ -100,15 +105,27 @@ test("removing the child who is on screen goes back to the first screen, never a
   await expect(page.locator("[data-screen=today]")).toHaveCount(0);
 });
 
-test("the first child offers a PIN once, and a saved PIN guards the next grown-up check", async ({ page }) => {
+test("the PIN offer never opens on the child's screen: it waits inside Grown-ups, after the check, and a saved PIN guards the next check", async ({ page }) => {
+  // The phone pass of build 5: a four-digit PIN sheet opened over the first child's Today, with the
+  // silent-switch note under it. The sheet is for a grown-up, so it comes once a grown-up is through
+  // the check, on the Grown-ups menu. Until a PIN is saved, the check stays the typed sum.
   await page.goto("./");
-  await page.getByRole("button", { name: "Add a child", exact: true }).click();
-  await passGate(page);
-  await page.getByLabel("First name or initial").fill("Sam");
-  await page.getByRole("button", { name: "4", exact: true }).click();
-  await page.getByRole("button", { name: "Fox", exact: true }).click();
-  await page.getByRole("button", { name: "Save child" }).click();
+  await addSam(page);
   const prompt = page.locator("[data-pin-prompt=true]");
+  // On Today, and into a lesson and back: no PIN sheet, and the Grown-ups button is the only grown-up thing.
+  await page.waitForTimeout(800);
+  await expect(prompt).toHaveCount(0);
+  await expect(page.locator("[data-mode=kid]")).toHaveCount(1);
+  await page.locator("[data-step=letter]").click();
+  await expect(page.locator(".blend-track")).toBeVisible();
+  await expect(prompt).toHaveCount(0);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
+  // The grown-up check is still the typed sum (no PIN exists yet), and the offer comes after it.
+  await page.getByRole("button", { name: "Grown-ups", exact: true }).click();
+  await expect(page.locator("[data-gate=math]")).toBeVisible();
+  await passGate(page);
+  await expect(page.locator("[data-screen=grownups]")).toBeVisible();
   await expect(prompt).toBeVisible();
   await expect(prompt).toContainText("Recommended for classrooms");
   await prompt.getByLabel("New PIN").fill("2468");
@@ -121,14 +138,39 @@ test("the first child offers a PIN once, and a saved PIN guards the next grown-u
   await save.click();
   await expect(prompt).toHaveCount(0);
 
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
   await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Parent", exact: true }).click();
   await expect(page.locator("[data-gate=pin]")).toBeVisible();
   await expect(page.getByLabel("Answer")).toHaveCount(0);
   await page.getByRole("button", { name: "Cancel" }).click();
-  // The offer does not come back.
+  // The offer does not come back, on the child's screen or in Grown-ups.
   await page.reload();
   await expect(page.locator("[data-pin-prompt=true]")).toHaveCount(0);
+  await page.getByRole("button", { name: "Sam", exact: true }).click();
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
+  await expect(page.locator("[data-pin-prompt=true]")).toHaveCount(0);
+});
+
+test("the PIN offer is made once in Grown-ups, and Not now ends it; a classroom can still set one in Settings", async ({ page }) => {
+  await page.goto("./");
+  await addSam(page);
+  await openGrownupsMenu(page);
+  const prompt = page.locator("[data-pin-prompt=true]");
+  await expect(prompt).toBeVisible();
+  await prompt.locator("[data-pin-skip=true]").click();
+  await expect(prompt).toHaveCount(0);
+  await expect(page.locator("[data-screen=grownups]")).toBeVisible();
+  // Not again: back to the child, and into Grown-ups once more.
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
+  await expect(prompt).toHaveCount(0);
+  await openGrownupsMenu(page);
+  await expect(prompt).toHaveCount(0);
+  // The PIN can still be set in Settings.
+  await page.getByRole("button", { name: /^Settings/ }).click();
+  await expect(page.locator("[data-setting=pin]")).toBeVisible();
 });
 
 test("a shared class iPad asks the grown-up check before switching child", async ({ page }) => {

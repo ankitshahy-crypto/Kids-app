@@ -138,12 +138,15 @@ test("a browser that refuses its storage still opens the app, and the grown-ups 
   await page.getByRole("button", { name: "Fox", exact: true }).click();
   await page.getByRole("button", { name: "Save child" }).click();
   await expect(page.locator("[data-screen=today]")).toBeVisible();
-  await page.locator("[data-pin-skip=true]").click();
+  // No PIN sheet on the child's screen; it waits for Grown-ups.
+  await expect(page.locator("[data-pin-prompt=true]")).toHaveCount(0);
   // A lesson opens and a setting can be changed, both of which write.
   await page.locator("[data-step=letter]").click();
   await expect(page.locator(".blend-track")).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await openGrownups(page);
+  // The PIN offer, made here even with storage blocked (it is kept in memory for this visit).
+  await page.locator("[data-pin-skip=true]").click();
   await expect(page.locator("[data-notice=storage]")).toContainText("not letting LittleNest save");
   await page.getByRole("button", { name: /^Settings/ }).click();
   await expect(page.locator("[data-setting=explore]")).toBeVisible();

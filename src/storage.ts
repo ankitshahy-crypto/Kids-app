@@ -49,6 +49,12 @@ export const OUTBOX_KEY = "littlenest-outbox-v1";
 /** "1" once the PIN offer after the first child has been shown, so it never nags. */
 export const PIN_OFFERED_KEY = "littlenest-pin-offered-v1";
 /**
+ * "1" from the first child being saved until the PIN offer has been shown: the offer waits for the
+ * next time a grown-up opens Grown-ups, after the grown-up check, and is never put on a child's
+ * screen. (It used to open over the first child's Today, with the silent-switch note under it.)
+ */
+export const PIN_OFFER_PENDING_KEY = "littlenest-pin-offer-pending-v1";
+/**
  * "1" once Shared class iPad has been set, by a grown-up in Settings or by the
  * Teacher screen turning it on the first time. After that the Teacher screen
  * leaves it alone, so a grown-up who turned it off keeps it off.
