@@ -24,8 +24,20 @@ function clipSrc(animal: AnimalId, clip: ClipName, kind: "mov" | "webm"): string
   return `${import.meta.env.BASE_URL}animals/${animal}/clips/${clip}.${kind}`;
 }
 
-function reducedMotion(): boolean {
-  return typeof window !== "undefined" && Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+/** Whether the person asks for reduced motion, followed while the animal is on the page: turned on
+ * after the animal appeared, the clips stop and the stills are what is seen. */
+function useReducedMotion(): boolean {
+  const query = () => (typeof window !== "undefined" ? window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? null : null);
+  const [reduced, setReduced] = useState(() => Boolean(query()?.matches));
+  useEffect(() => {
+    const media = query();
+    if (!media) return;
+    const follow = () => setReduced(media.matches);
+    follow();
+    media.addEventListener("change", follow);
+    return () => media.removeEventListener("change", follow);
+  }, []);
+  return reduced;
 }
 
 /** WebKit (Safari, the installed app, every browser on an iPhone), which plays the HEVC file and
@@ -53,16 +65,22 @@ export function AnimalClip({ animal, mood, onPlaying }: { animal: AnimalId; mood
   // A one-shot clip that has started plays to its end, whatever the mood does meanwhile: a cheer cut
   // off mid-bounce is worse than one that runs a moment past the mood.
   const [holding, setHolding] = useState<ClipName | null>(null);
+  const reduced = useReducedMotion();
   const wanted = MOOD_CLIP[mood];
-  const have = entry && !reducedMotion() ? (Object.keys(entry.clips) as ClipName[]) : [];
+  const have = entry && !reduced ? (Object.keys(entry.clips) as ClipName[]) : [];
   // The clip for this mood, when the animal has it and it has not just played out; else the idle loop.
   const asked: ClipName | null = wanted && have.includes(wanted) && overDone !== wanted ? wanted : have.includes("idle") ? "idle" : null;
-  const active = holding ?? asked;
+  // (With no clips to play, reduced motion among the reasons, nothing is held either.)
+  const active = have.length ? (holding ?? asked) : null;
 
+  // What is playing is reported to whoever asked, through the latest callback they gave; a new
+  // callback is never a reason to stop and start a clip (only a change of mood or animal is).
+  const report = useRef(onPlaying);
+  report.current = onPlaying;
   useEffect(() => {
-    onPlaying(showing);
-  }, [showing, onPlaying]);
-  useEffect(() => () => onPlaying(null), [onPlaying]);
+    report.current(showing);
+  }, [showing]);
+  useEffect(() => () => report.current(null), []);
 
   // A new mood: a one-shot clip that had played out may play again.
   useEffect(() => {
@@ -72,6 +90,7 @@ export function AnimalClip({ animal, mood, onPlaying }: { animal: AnimalId; mood
   useEffect(() => {
     if (!active) {
       setShowing(null);
+      setHolding(null);
       return;
     }
     const element = videos.current[active];
