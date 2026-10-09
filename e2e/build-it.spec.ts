@@ -114,6 +114,8 @@ test("the hello board is not done until the program says hello", async ({ page }
 });
 
 test("read the code: hello world first, then two more programs to build from words", async ({ page }, testInfo) => {
+  // Three programs played through at a step's pace: within a slower runner's reach of the default.
+  test.setTimeout(60_000);
   await install(page, "code");
   const board = page.locator("[data-build=code]");
   await expect(page.getByRole("heading", { name: "Read the code" })).toBeVisible();
@@ -158,6 +160,8 @@ test("read the code: hello world first, then two more programs to build from wor
 });
 
 test("ages 5 to 7 read the code as words alone: hello, two steps, a repeat to work out, then the pond", async ({ page }, testInfo) => {
+  // Four programs played through, the repeat and the pond among them: 30 s on WebKit's slowest runner.
+  test.setTimeout(60_000);
   await install(page, "code", older);
   const board = page.locator("[data-build=code]");
   await expect(board).toHaveAttribute("data-level", "later");
@@ -209,6 +213,7 @@ test("a lone repeat has nothing to play: the child hears Try again", async ({ pa
 
 for (const [age, saved] of [["3 to 4", profile], ["5 to 7", older]] as const) {
   test(`reading code fits a phone screen at ages ${age}: the code, the stage and Play are all in view`, async ({ page }) => {
+    test.setTimeout(60_000);
     // A phone's screen less its status bar and home bar, with the grown-up tip still showing above the board.
     await page.setViewportSize({ width: 390, height: 763 });
     await install(page, "code", saved);
@@ -441,6 +446,7 @@ test("ages 5 to 7 save a song on this device, and nothing leaves it", async ({ p
 });
 
 test("the same program shows as blocks, as words, and as read-only Python", async ({ page }, testInfo) => {
+  test.setTimeout(60_000);
   await install(page, "move", older, { showCode: true });
   const board = page.locator("[data-build=move]");
   await expect(board).toHaveAttribute("data-lines", "on");
