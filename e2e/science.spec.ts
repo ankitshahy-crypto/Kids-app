@@ -331,9 +331,10 @@ test("growing at 5 to 7: the garden, two lives of three pictures, then a life of
     if (round === 3) {
       expect(order).toEqual(["seed", "sprout", "plant", "flower"]);
       if (testInfo.project.name === "chromium") await grow.screenshot({ path: "test-results/screenshots/science_life_four.png" });
-      // The third picture before the second: it wiggles.
-      await expect(grow).toHaveAttribute("data-ready", "true");
+      // The third picture before the second: it wiggles. (The first is placed, and its praise said, first.)
       await nextStep(grow);
+      await expect(grow).toHaveAttribute("data-step", "1");
+      await expect(grow).toHaveAttribute("data-ready", "true");
       await grow.locator(`.pick[data-pick=${order[2]}]`).click();
       await expectWiggle(grow.locator(`.pick[data-pick=${order[2]}]`));
       await expect(grow).toHaveAttribute("data-step", "1");

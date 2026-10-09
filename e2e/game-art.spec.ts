@@ -236,8 +236,8 @@ async function openLifeInOrder(page: Page, salt: number) {
 
 test("the plant's life is put in order with the painted seed, sprout and flower", async ({ page }) => {
   const missing = watchArt(page);
-  // Salt 3 deals the plant's life: its three pictures are the paintings, loaded.
-  const plant = await openLifeInOrder(page, 3);
+  // Salt 4 deals the plant's life: its three pictures are the paintings, loaded.
+  const plant = await openLifeInOrder(page, 4);
   await expect(plant).toHaveAttribute("data-cycle", "plant");
   for (const [art, painting] of [["seed", "seed"], ["sprout", "sprout"], ["flower", "bloom"]] as const) {
     const picture = plant.locator(`.game-tray .pick[data-pick=${art}] img.prop-art`);
@@ -276,6 +276,17 @@ for (const [life, salt, stages] of [
     expect(missing).toEqual([]);
   });
 }
+
+test("the nut's life into a tree is drawn, not painted: no painting stands in for a drawing", async ({ page }) => {
+  const missing = watchArt(page);
+  // Salt 2 deals the tree's life.
+  const tree = await openLifeInOrder(page, 2);
+  await expect(tree).toHaveAttribute("data-cycle", "tree");
+  await expect(tree).toHaveAttribute("data-order", "nut,sprout,tree");
+  await expect(tree.locator(".game-tray .pick img.prop-art")).toHaveCount(0);
+  await expect(tree.locator(".game-tray .pick svg.art")).toHaveCount(3);
+  expect(missing).toEqual([]);
+});
 
 /** A thing's painting is on the page, loaded, in its square box. */
 async function expectThing(art: Locator, thing: string) {
