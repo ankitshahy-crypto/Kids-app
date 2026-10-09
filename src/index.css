@@ -8355,6 +8355,42 @@ input.is-pressed,
   width: 110px;
 }
 
+/* The harder homes step: two animals, each at its home. The empty place is among the choices. */
+.science-at-home {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+}
+
+.science-at {
+  position: relative;
+  display: block;
+  width: 112px;
+}
+
+.science-at > .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The animal sits on its home, a little above the middle, smaller than the place. */
+.science-at-animal {
+  position: absolute;
+  left: 50%;
+  bottom: 34%;
+  width: 58%;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 2px 2px rgba(60, 50, 40, 0.25));
+}
+
+.science-at-animal .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* The bird, with each part its own thing to tap. Its scene is taller, like the clock's. */
 .game-frame[data-screen="body"] {
   --scene-h: clamp(250px, 38svh, 330px);
@@ -8440,6 +8476,24 @@ input.is-pressed,
 
 .float-thing[data-result="sink"] {
   top: 66%;
+}
+
+/* The harder step: two things held up side by side. The one tapped goes in first, the other follows. */
+.float-thing.is-paired {
+  width: 88px;
+}
+
+.float-thing.is-paired[data-side="left"] {
+  left: 30%;
+}
+
+.float-thing.is-paired[data-side="right"] {
+  left: 70%;
+}
+
+.float-thing.is-paired[data-after="true"] {
+  transition-delay: 0.6s;
+  animation-delay: 1.5s;
 }
 
 /* On the painted pond a thing that has sunk is seen through the water: paler, and a little blue,

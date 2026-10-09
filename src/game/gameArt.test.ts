@@ -46,17 +46,25 @@ describe("the games' painted props", () => {
     for (const name of list) expect(existsSync(file(`garden/${name}.webp`)), `garden/${name}.webp`).toBe(true);
   });
 
-  it("the three lives put in order are painted, each stage from the garden or the life folder", () => {
+  it("the painted lives put in order have each stage from the garden or the life folder; the nut's life is drawn", () => {
     const life = source("../components/ScienceGames.tsx").match(/PAINTED_LIFE[^=]*= (\{[^}]+\})/)?.[1] ?? "";
     const stages: Record<string, string> = Object.fromEntries([...life.matchAll(/(\w+): (gardenArt|lifeArt)\("(\w+)"\)/g)].map((match) => [match[1], `${match[2] === "gardenArt" ? "garden" : "life"}/${match[3]}.webp`]));
-    expect(Object.keys(stages).sort()).toEqual(["butterfly", "caterpillar", "chick", "chrysalis", "egg", "flower", "hen", "seed", "sprout"]);
+    expect(Object.keys(stages).sort()).toEqual(["butterfly", "caterpillar", "chick", "chrysalis", "egg", "flower", "hen", "plant", "seed", "sprout"]);
     expect(stages.flower).toBe("garden/bloom.webp");
+    expect(stages.plant).toBe("garden/plant.webp");
     for (const [stage, path] of Object.entries(stages)) expect(existsSync(file(path)), `${stage}: ${path}`).toBe(true);
-    // And every stage of every life the data knows is among them.
+    // And every stage of every painted life the data knows is among them (the fourth, `more`, included);
+    // the one drawn life, the nut's, is not painted at all.
     const cycles = source("../data/science.ts").match(/LIFE_CYCLES[^=]*= \[([\s\S]+?)\];/)?.[1] ?? "";
-    const arts = [...cycles.matchAll(/art: "(\w+)"/g)].map((match) => match[1]);
-    expect(arts.length).toBe(9);
-    for (const art of arts) expect(stages, art).toHaveProperty(art);
+    const lives = cycles.split(/\n\s*\{ id: |\n\s*\{\n\s*id: /).slice(1);
+    expect(lives).toHaveLength(4);
+    for (const text of lives) {
+      const painted = /painted: true/.test(text);
+      const arts = [...text.matchAll(/art: "(\w+)"/g)].map((match) => match[1]);
+      expect(arts.length).toBe(painted && /more:/.test(text) ? 4 : 3);
+      if (painted) for (const art of arts) expect(stages, art).toHaveProperty(art);
+      else expect(arts.some((art) => art in stages && art !== "sprout")).toBe(false);
+    }
     expect(lifeNames().sort()).toEqual(["butterfly", "caterpillar", "chick", "chrysalis", "egg", "hen"]);
   });
 
