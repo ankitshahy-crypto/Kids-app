@@ -86,6 +86,31 @@ Clips (video, 24 fps, square, camera locked, the same dog and backdrop; `animal-
 One render at a time, so the animal is never quite the same twice: the script's line-up handles small
 differences; a frame that cannot be lined up is reported, not shipped.
 
+### The other eleven, as sent
+
+The same words as the dog's, with the second sentence swapped for the animal's own, and the
+appendage named in the cheer, think, wait and sleepy lines. Files named `animal-<id>-<frame>`, with
+the ids exactly as below. The six stills and the two clips (idle 8 s, cheer 1 s) per animal, on
+the same green.
+
+| id | the animal's sentence | appendage (the word for "ears" in the mood lines) |
+| --- | --- | --- |
+| cat | grey tabby fur with soft darker stripes, a white muzzle and chest, two small pointed ears, a tiny pink nose | ears |
+| fox | warm orange fur with a white muzzle, chest and ear tips, two big pointed ears, a small black nose | ears |
+| bear | warm brown fur with a lighter round muzzle, two small round ears, a small black nose | ears |
+| bunny | soft grey fur with a white muzzle and belly, two long upright ears with pink insides, a tiny pink nose | ears |
+| owl | soft brown feathers with a cream face and belly, two little feather tufts above the eyes, a small yellow beak for a nose | brow tufts |
+| frog | soft green fur with a lighter green belly, two round eyes sitting on top of the head, a tiny smile, no nose | eyes (they sit on top: in a cheer they lift, in a think one dips) |
+| duck | soft yellow fur with a small orange beak for a nose and mouth, two little wings at the sides | wings |
+| pig | soft pink fur, a small round snout with two dots for a nose, two small floppy ears | ears |
+| penguin | black fur with a white belly and face, a small orange beak for a nose and mouth, two little flippers at the sides | flippers |
+| lion | golden fur with a soft tawny mane all round the face, two small round ears in the mane, a small brown nose | ears and the mane's tufts |
+| koala | soft grey fur with a white chest, two big round fluffy ears, a large dark oval nose | ears |
+
+The dog's lines, for reference: "cream fur with a warm brown patch over one eye and two brown floppy
+ears, a tiny face set low: two black dot eyes with a small white shine, a small black nose, a tiny
+stitched smile, two soft pink blush spots".
+
 ## 3. Video: idle life and the moves
 
 ### Timing, from the reference (`avatar-reference.mp4`, measured frame by frame)
