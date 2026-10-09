@@ -12488,13 +12488,13 @@ a.unlock-buy {
     0 12px 24px rgba(47, 74, 60, 0.2);
 }
 
-/* A press is felt, not flashed: it eases in and out (a tenth of a second), with the same ring. */
+/* A press is felt, not flashed: the shrink eases in and out (a tenth of a second). Only the scale
+   eases: a transition on the filter or the ring made WebKit re-render the button every frame of it,
+   on every tap, and the iPhone's test run grew by half (the lab run on branch lab/polish-wk: the
+   one variant without this transition ran clean). The scale is composited, and costs nothing. */
 button,
 [role="button"] {
-  transition:
-    scale 0.12s ease,
-    filter 0.16s ease,
-    box-shadow 0.16s ease;
+  transition: scale 0.12s ease;
 }
 
 /* A screen arrives, it does not cut in: a short fade (opacity only, so nothing on it moves while
