@@ -23,6 +23,11 @@ import type { AgeRange } from "./profiles";
  *
  * The game ids (bird, pattern, morning, garden) are unchanged because stars
  * already earned are saved under them.
+ *
+ * At ages 5–7 the pattern, order and rule games each end with a harder step:
+ * the same game asking for more once the easy rounds are done (an ABB and an
+ * ABC pattern after AB, an order of four pictures, two rules in a row). Ages
+ * 3–4 stay on the short rounds.
  */
 
 /** Ages 3–4 play short puzzles. Ages 5–7 add longer paths, a routine to use again, a repeat, and a bug fix. */
@@ -86,7 +91,7 @@ export type PatternRound = {
 /** One picture in an order or rule game: the drawing, and the word said when it is tapped. */
 export type PictureCard = { art: IllustrationName; name: string };
 
-/** Pictures with one true order, dealt out of order. */
+/** Pictures with one true order, dealt out of order: three of them, or four in the harder step. */
 export type OrderRound = {
   id: string;
   cards: PictureCard[];
@@ -94,7 +99,7 @@ export type OrderRound = {
 };
 
 /** If this is so, then you need that. */
-export type RuleRound = {
+export type RuleStep = {
   id: string;
   when: PictureCard;
   need: PictureCard;
@@ -103,6 +108,12 @@ export type RuleRound = {
   ask: string;
   rule: string;
 };
+
+/**
+ * A rule to apply; in the harder step at ages 5–7, a rule and `then` a second one that follows on
+ * the same page once the first is answered: two rules in a row, each its own picture and question.
+ */
+export type RuleRound = RuleStep & { then?: RuleStep };
 
 const DIRS: Dir[] = ["up", "down", "left", "right"];
 
@@ -646,16 +657,28 @@ export const PATTERN_SETS: IllustrationName[][] = [
   ["bee", "bug", "ant"],
 ];
 
-const PATTERN_RULES: { rule: PatternRule; shown: number }[] = [
-  { rule: "AB", shown: 4 },
-  { rule: "ABB", shown: 5 },
-  { rule: "ABC", shown: 5 },
-];
+/**
+ * The rounds of a play. Ages 3–4 continue AB three times, from three sets of pictures, the answer
+ * A, then B, then A. Ages 5–7 continue AB, then the harder step: ABB, then ABC. The answer is one
+ * picture either way.
+ */
+const PATTERN_RULES: Record<LogicLevel, { rule: PatternRule; shown: number }[]> = {
+  early: [
+    { rule: "AB", shown: 4 },
+    { rule: "AB", shown: 5 },
+    { rule: "AB", shown: 4 },
+  ],
+  later: [
+    { rule: "AB", shown: 4 },
+    { rule: "ABB", shown: 5 },
+    { rule: "ABC", shown: 5 },
+  ],
+};
 
-/** Three patterns, each from its own set of pictures: AB, then ABB, then ABC. */
-export function patternRounds(salt = 0): PatternRound[] {
+/** Three patterns, each from its own set of pictures. */
+export function patternRounds(level: LogicLevel, salt = 0): PatternRound[] {
   const sets = shuffle(PATTERN_SETS, salt);
-  return PATTERN_RULES.map((spec, index) => {
+  return PATTERN_RULES[level].map((spec, index) => {
     const tokens = shuffle(sets[index % sets.length], salt + index);
     const sequence = patternSequence(spec.rule, tokens, spec.shown);
     return { rule: spec.rule, choices: shuffle(tokens, salt + 31 * (index + 1)), ...sequence };
@@ -671,6 +694,17 @@ export const ORDER_SETS: { id: string; cards: PictureCard[] }[] = [
   { id: "tower", cards: [{ art: "stacked", name: "blocks" }, { art: "tower", name: "tower" }, { art: "tumble", name: "crash" }] },
 ];
 
+/**
+ * Four things that happen in one order, for the harder step at ages 5–7: a seed to a flower, a
+ * day from waking to bed, a tower built, tumbled and tidied away. Each picture is a drawing the
+ * app already has.
+ */
+export const LONG_ORDER_SETS: { id: string; cards: PictureCard[] }[] = [
+  { id: "bloom", cards: [{ art: "seed", name: "seed" }, { art: "sprout", name: "sprout" }, { art: "plant", name: "plant" }, { art: "flower", name: "flower" }] },
+  { id: "day", cards: [{ art: "wake", name: "wake" }, { art: "shirt", name: "shirt" }, { art: "school", name: "school" }, { art: "bed", name: "bed" }] },
+  { id: "tidy", cards: [{ art: "stacked", name: "blocks" }, { art: "tower", name: "tower" }, { art: "tumble", name: "crash" }, { art: "toybox", name: "toybox" }] },
+];
+
 /** Cards out of order: never the order that is the answer. */
 function dealt(cards: PictureCard[], salt: number): IllustrationName[] {
   const order = cards.map((card) => card.art);
@@ -681,12 +715,21 @@ function dealt(cards: PictureCard[], salt: number): IllustrationName[] {
   return [...order].reverse();
 }
 
-/** Two sets to order at ages 3–4, three at 5–7, different sets from one play to the next. */
+/**
+ * Two sets of three to order at ages 3–4; at 5–7 three, and then the harder step, a set of four.
+ * Different sets from one play to the next, and no set of three that is most of the four (the
+ * tower set beside the tidying one would be the same pictures twice).
+ */
 export function orderRounds(level: LogicLevel, salt = 0): OrderRound[] {
   const count = level === "later" ? 3 : 2;
-  return shuffle(ORDER_SETS, salt)
+  const long = level === "later" ? shuffle(LONG_ORDER_SETS, salt + 3)[0] : null;
+  const longArts = new Set(long?.cards.map((card) => card.art) ?? []);
+  const short = ORDER_SETS.filter((set) => set.cards.filter((card) => longArts.has(card.art)).length < 2);
+  const rounds = shuffle(short, salt)
     .slice(0, count)
     .map((set, index) => ({ id: set.id, cards: set.cards, deal: dealt(set.cards, salt + index) }));
+  if (long) rounds.push({ id: long.id, cards: long.cards, deal: dealt(long.cards, salt + 7) });
+  return rounds;
 }
 
 /** Only the next picture in the order fits the next place. */
@@ -696,7 +739,7 @@ export function orderFits(order: string[], placed: string[], card: string, slot:
 
 // Each rule's picture shows the "if" plainly (rain, a hot sun, a night sky, a small plant, a dog), and no
 // two rules could share an answer, so a wrong tap is wrong and not just another good idea.
-const RULES: { id: string; when: PictureCard; need: PictureCard; ask: string; rule: string }[] = [
+const LIFE_RULES: { id: string; when: PictureCard; need: PictureCard; ask: string; rule: string }[] = [
   { id: "rain", when: { art: "rain", name: "rain" }, need: { art: "umbrella", name: "umbrella" }, ask: "It is raining. What do you need?", rule: "If it rains, take an umbrella." },
   { id: "sun", when: { art: "sun", name: "sun" }, need: { art: "hat", name: "hat" }, ask: "The sun is hot. What do you need?", rule: "If the sun is hot, wear a hat." },
   { id: "dark", when: { art: "night", name: "night" }, need: { art: "lamp", name: "lamp" }, ask: "It is dark. What do you need?", rule: "If it is dark, turn on a lamp." },
@@ -704,25 +747,52 @@ const RULES: { id: string; when: PictureCard; need: PictureCard; ask: string; ru
   { id: "dog", when: { art: "dog", name: "dog" }, need: { art: "bone", name: "bone" }, ask: "The dog is hungry. What does it need?", rule: "If the dog is hungry, give it a bone." },
 ];
 
-/** The rules for one play: three at ages 3–4, four at 5–7. Each offers the right thing among two others. */
+/**
+ * The one rule If, then shares with Build: Build's pond block is "If at the pond, splash." (its move
+ * board walks the animal to a pond), and here the same rule is asked of the child, said back in the
+ * same words from the same clip (`line`, the block's). Ages 5–7, where the pond block is.
+ */
+export const POND_RULE: (typeof LIFE_RULES)[number] & { line: string } = {
+  id: "splash",
+  when: { art: "pond", name: "pond" },
+  need: { art: "splash", name: "splash" },
+  ask: "You are at the pond. What do you do?",
+  rule: "If at the pond, splash.",
+  line: "code-if-pond",
+};
+
+const RULES: ((typeof LIFE_RULES)[number] & { line?: string })[] = [...LIFE_RULES, POND_RULE];
+
+/** A rule as asked: the right thing among two things other rules call for, so every choice is a sensible thing to want. */
+function ruleStep(rule: (typeof RULES)[number], pool: (typeof RULES)[number][], salt: number): RuleStep {
+  const others = shuffle(
+    pool.filter((other) => other.id !== rule.id).map((other) => other.need),
+    salt + 13,
+  ).slice(0, 2);
+  return {
+    id: rule.id,
+    when: rule.when,
+    need: rule.need,
+    choices: shuffle([rule.need, ...others], salt + 5),
+    ask: `code-if-${rule.id}`,
+    rule: rule.line ?? `code-then-${rule.id}`,
+  };
+}
+
+/**
+ * The rules for one play: three of the life rules at ages 3–4; at 5–7 four, and then the harder step,
+ * two rules in a row on one page, each a picture and a question like the rest: the life rule not yet
+ * asked, then the pond rule, the one Build's pond block does.
+ */
 export function ruleRounds(level: LogicLevel, salt = 0): RuleRound[] {
   const count = level === "later" ? 4 : 3;
-  const picked = shuffle(RULES, salt).slice(0, count);
-  return picked.map((rule, index) => {
-    // Wrong answers are the things other rules need, so every choice is a sensible thing to want.
-    const others = shuffle(
-      RULES.filter((other) => other.id !== rule.id).map((other) => other.need),
-      salt + 13 * (index + 1),
-    ).slice(0, 2);
-    return {
-      id: rule.id,
-      when: rule.when,
-      need: rule.need,
-      choices: shuffle([rule.need, ...others], salt + 5 * (index + 1)),
-      ask: `code-if-${rule.id}`,
-      rule: `code-then-${rule.id}`,
-    };
-  });
+  const pool = level === "later" ? RULES : LIFE_RULES;
+  const dealtRules = shuffle(LIFE_RULES, salt);
+  const rounds: RuleRound[] = dealtRules.slice(0, count).map((rule, index) => ruleStep(rule, pool, salt + 17 * (index + 1)));
+  if (level !== "later") return rounds;
+  const first = dealtRules[count] ?? dealtRules[0];
+  rounds.push({ ...ruleStep(first, pool, salt + 101), then: ruleStep(POND_RULE, pool, salt + 103) });
+  return rounds;
 }
 
 /** Every drawing the coding games show. */
@@ -730,7 +800,7 @@ export function logicPictures(): IllustrationName[] {
   return [
     ...new Set([
       ...PATTERN_SETS.flat(),
-      ...ORDER_SETS.flatMap((set) => set.cards.map((card) => card.art)),
+      ...[...ORDER_SETS, ...LONG_ORDER_SETS].flatMap((set) => set.cards.map((card) => card.art)),
       ...RULES.flatMap((rule) => [rule.when.art, rule.need.art]),
     ]),
   ];
@@ -738,7 +808,7 @@ export function logicPictures(): IllustrationName[] {
 
 /** Every word the coding games say when a picture is tapped: each needs a recorded word clip. */
 export function logicWords(): string[] {
-  return [...new Set([...ORDER_SETS.flatMap((set) => set.cards.map((card) => card.name)), ...RULES.flatMap((rule) => [rule.when.name, rule.need.name])])];
+  return [...new Set([...[...ORDER_SETS, ...LONG_ORDER_SETS].flatMap((set) => set.cards.map((card) => card.name)), ...RULES.flatMap((rule) => [rule.when.name, rule.need.name])])];
 }
 
 /** The games' spoken lines. scripts/sync-manifest.ts writes these into the clip list. */
@@ -757,10 +827,8 @@ export function logicManifestEntries(): { id: string; say: string }[] {
     { id: "code-go", say: "Now press go." },
     { id: "code-pattern", say: "What comes next?" },
     { id: "code-order", say: "What comes first? Put the pictures in order." },
-    ...RULES.flatMap((rule) => [
-      { id: `code-if-${rule.id}`, say: rule.ask },
-      { id: `code-then-${rule.id}`, say: rule.rule },
-    ]),
+    // The pond rule's own line is Build's (code-if-pond, in src/data/build.ts): one clip for one rule.
+    ...RULES.flatMap((rule) => [{ id: `code-if-${rule.id}`, say: rule.ask }, ...(rule.line ? [] : [{ id: `code-then-${rule.id}`, say: rule.rule }])]),
     { id: "code-again", say: "Try again." },
     { id: "code-off", say: "That way goes off the edge." },
     { id: "code-away", say: "That way goes away from the nest." },

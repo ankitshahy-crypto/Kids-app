@@ -14,10 +14,12 @@ import {
   logicManifestEntries,
   logicPictures,
   logicWords,
+  LONG_ORDER_SETS,
   orderFits,
   orderRounds,
   patternRounds,
   patternSequence,
+  POND_RULE,
   program,
   reachesNest,
   reuseBoards,
@@ -336,7 +338,7 @@ describe("guide the bird home", () => {
 });
 
 describe("patterns, order, and if-then", () => {
-  it("continues AB, then ABB, then ABC, with pictures the app has", () => {
+  it("continues AB at ages 3 to 4; at 5 to 7 AB, then the harder step, ABB and then ABC", () => {
     expect(patternSequence("AB", ["red", "blue"], 4)).toEqual({ shown: ["red", "blue", "red", "blue"], answer: "red" });
     expect(patternSequence("ABB", ["circle", "square"], 5)).toEqual({
       shown: ["circle", "square", "square", "circle", "square"],
@@ -345,34 +347,52 @@ describe("patterns, order, and if-then", () => {
     expect(patternSequence("ABC", ["fox", "bird", "nest"], 5)).toEqual({ shown: ["fox", "bird", "nest", "fox", "bird"], answer: "nest" });
     const firsts = new Set<string>();
     for (let salt = 0; salt < 20; salt += 1) {
-      const rounds = patternRounds(salt);
-      expect(rounds.map((round) => round.rule)).toEqual(["AB", "ABB", "ABC"]);
-      for (const round of rounds) {
-        // The answer is one of the choices, each choice is offered once, and every choice is a drawing.
-        expect(round.choices).toContain(round.answer);
-        expect(new Set(round.choices).size).toBe(round.choices.length);
-        expect(round.choices).toHaveLength(3);
+      const early = patternRounds("early", salt);
+      const later = patternRounds("later", salt);
+      expect(early.map((round) => round.rule)).toEqual(["AB", "AB", "AB"]);
+      expect(later.map((round) => round.rule)).toEqual(["AB", "ABB", "ABC"]);
+      // Three times AB is not the same row three times: the answer is A, then B, then A.
+      expect(early.map((round) => round.shown.length)).toEqual([4, 5, 4]);
+      for (const rounds of [early, later]) {
+        for (const round of rounds) {
+          // The answer is one of the choices, each choice is offered once, and every choice is a drawing.
+          expect(round.choices).toContain(round.answer);
+          expect(new Set(round.choices).size).toBe(round.choices.length);
+          expect(round.choices).toHaveLength(3);
+        }
+        // Three rounds, three different sets of pictures.
+        expect(new Set(rounds.map((round) => [...round.choices].sort().join())).size).toBe(3);
       }
-      // Three rounds, three different sets of pictures.
-      expect(new Set(rounds.map((round) => [...round.choices].sort().join())).size).toBe(3);
-      firsts.add(rounds[0].shown[0]);
+      firsts.add(later[0].shown[0]);
     }
     expect(firsts.size).toBeGreaterThan(3);
   });
 
   it("deals pictures out of order, and accepts only the next one", () => {
     const sets = new Set<string>();
+    const longs = new Set<string>();
     for (let salt = 0; salt < 20; salt += 1) {
-      expect(orderRounds("early", salt)).toHaveLength(2);
-      expect(orderRounds("later", salt)).toHaveLength(3);
-      for (const round of orderRounds("later", salt)) {
+      const early = orderRounds("early", salt);
+      const later = orderRounds("later", salt);
+      expect(early).toHaveLength(2);
+      expect(later).toHaveLength(4);
+      // Ages 3–4 stay on three pictures; at 5–7 the last round is the harder step, four pictures.
+      expect(early.map((round) => round.cards.length)).toEqual([3, 3]);
+      expect(later.map((round) => round.cards.length)).toEqual([3, 3, 3, 4]);
+      for (const round of [...early, ...later]) {
         const order = round.cards.map((card) => card.art);
         expect([...round.deal].sort()).toEqual([...order].sort());
         expect(round.deal).not.toEqual(order);
-        sets.add(round.id);
+        if (round.cards.length === 3) sets.add(round.id);
+        else longs.add(round.id);
       }
+      // No set of three in a play is most of its set of four.
+      const longArts = new Set(later[3].cards.map((card) => card.art));
+      for (const round of later.slice(0, 3)) expect(round.cards.filter((card) => longArts.has(card.art)).length).toBeLessThan(2);
     }
     expect(sets.size).toBe(5);
+    expect(longs.size).toBe(LONG_ORDER_SETS.length);
+    for (const set of LONG_ORDER_SETS) expect(set.cards).toHaveLength(4);
     const order = ["egg", "chick", "hen"];
     expect(orderFits(order, [], "hen", 0)).toBe(false);
     expect(orderFits(order, [], "egg", 0)).toBe(true);
@@ -383,11 +403,14 @@ describe("patterns, order, and if-then", () => {
 
   it("offers the thing a rule calls for among two things other rules call for", () => {
     for (let salt = 0; salt < 20; salt += 1) {
-      expect(ruleRounds("early", salt)).toHaveLength(3);
+      const early = ruleRounds("early", salt);
+      expect(early).toHaveLength(3);
+      expect(early.every((round) => !round.then)).toBe(true);
       const rounds = ruleRounds("later", salt);
-      expect(rounds).toHaveLength(4);
-      expect(new Set(rounds.map((round) => round.id)).size).toBe(4);
-      for (const round of rounds) {
+      expect(rounds).toHaveLength(5);
+      expect(new Set(rounds.map((round) => round.id)).size).toBe(5);
+      const steps = [...early, ...rounds.flatMap((round) => (round.then ? [round, round.then] : [round]))];
+      for (const round of steps) {
         const arts = round.choices.map((choice) => choice.art);
         expect(arts).toHaveLength(3);
         expect(new Set(arts).size).toBe(3);
@@ -395,7 +418,37 @@ describe("patterns, order, and if-then", () => {
         // The picture that sets the scene is never one of the answers.
         expect(arts).not.toContain(round.when.art);
       }
+      // The harder step is the last round at 5–7: two rules in a row, the life rule not yet asked and
+      // then the pond rule, the one Build's pond block does.
+      expect(rounds.slice(0, 4).every((round) => !round.then)).toBe(true);
+      const chain = rounds[4];
+      expect(chain.then).toBeTruthy();
+      expect(rounds.slice(0, 4).map((round) => round.id)).not.toContain(chain.id);
+      expect(chain.id).not.toBe("splash");
+      expect(chain.ask).toBe(`code-if-${chain.id}`);
+      expect(chain.then?.id).toBe("splash");
+      // The pond is for ages 5–7 only: never asked, and never a wrong answer, at 3–4.
+      for (const round of early) {
+        expect(round.id).not.toBe("splash");
+        expect(round.choices.map((choice) => choice.art)).not.toContain("splash");
+      }
     }
+  });
+
+  it("shares one rule with Build's pond block, said from the block's own clip", () => {
+    expect(POND_RULE.rule).toBe("If at the pond, splash.");
+    expect(POND_RULE.line).toBe("code-if-pond");
+    const prompts = manifest.prompts as Record<string, { say: string }>;
+    expect(prompts["code-if-pond"]?.say).toBe(POND_RULE.rule);
+    expect(prompts["code-if-splash"]?.say).toBe(POND_RULE.ask);
+    const chain = ruleRounds("later", 3)[4];
+    expect(chain.then?.rule).toBe("code-if-pond");
+    expect(chain.then?.ask).toBe("code-if-splash");
+    expect(chain.then?.when.art).toBe("pond");
+    expect(chain.then?.need.art).toBe("splash");
+    // No rule of its own in the list: the clip is Build's.
+    expect(logicManifestEntries().map((entry) => entry.id)).not.toContain("code-then-splash");
+    expect(logicManifestEntries().map((entry) => entry.id)).toContain("code-if-splash");
   });
 
   it("names its pictures: a tapped picture is a word the app can say", () => {

@@ -160,39 +160,102 @@ export function lineCues(script: BuildBlock[], index: number): LineCue[] {
   return [{ kind: "prompt", id: "code-repeat", say: "Repeat three times." }, ...(prev ? step(prev) : [])];
 }
 
-// Read the code: a program written in words, for the child to build with blocks. The first one, at any
-// age, is hello world.
-const CODE_EARLY: BuildBlock[][] = [
+// Read the code: programs written in words, for the child to build with blocks, in the same form at
+// every age (words the child hears, blocks the animal acts out) and ordered easy to hard: one block,
+// then two, then three (ages 3–4), or a repeat and then the pond (ages 5–7). The first one, at any
+// age, is hello world. Three lines at most: the code, the stage and Play then fit a phone without
+// scrolling.
+
+/** Two blocks, each a step. */
+const CODE_TWO: BuildBlock[][] = [
   ["jump", "hello"],
   ["walk", "jump"],
   ["spin", "hello"],
   ["hello", "dance"],
-  ["walk", "walk", "jump"],
-  ["jump", "spin", "hello"],
+  ["dance", "spin"],
+  ["walk", "dance"],
+  ["spin", "walk"],
+  ["jump", "dance"],
 ];
 
-// Three lines at most, at either age: the code, the stage and Play then fit a phone without scrolling.
-const CODE_LATER: BuildBlock[][] = [
+/** Three steps, for ages 3–4: a step done twice, or three different ones. */
+const CODE_THREE: BuildBlock[][] = [
+  ["walk", "walk", "jump"],
+  ["jump", "spin", "hello"],
+  ["hello", "jump", "dance"],
+  ["dance", "dance", "spin"],
+  ["walk", "spin", "walk"],
+  ["spin", "hello", "jump"],
+];
+
+/** A repeat to work out, for ages 5–7: on its own, before another step, or after one. */
+const CODE_REPEAT: BuildBlock[][] = [
   ["jump", "repeat"],
+  ["spin", "repeat"],
+  ["walk", "repeat"],
+  ["dance", "repeat"],
+  ["hello", "repeat"],
   ["hello", "spin", "repeat"],
   ["walk", "jump", "repeat"],
-  ["walk", "repeat", "pond"],
   ["dance", "repeat", "hello"],
+  ["jump", "repeat", "spin"],
+  ["spin", "repeat", "jump"],
 ];
+
+/**
+ * The pond, last, for ages 5–7: the rule If, then taught ("If at the pond, splash."), done. The pond is
+ * three walks away, and a program is three lines at most, so this is the one program that gets there.
+ */
+const CODE_POND: BuildBlock[][] = [["walk", "repeat", "pond"]];
 
 function turn(salt: number, step: number): number {
   const value = Math.imul((salt | 0) + 1 + step * 7919, 2654435761) >>> 0;
   return (value ^ (value >>> 15)) >>> 0;
 }
 
-/** Three programs to read: hello world first, then two more, shorter before longer, different each play. */
+/**
+ * The programs to read, easy to hard: hello world first, then one of two blocks, then one of three
+ * (ages 3–4), or one with a repeat and then the one that reaches the pond (ages 5–7). Different ones
+ * each play.
+ */
 export function codeRounds(level: LogicLevel, salt = 0): BuildBlock[][] {
-  const pool = level === "later" ? CODE_LATER : CODE_EARLY;
-  const first = turn(salt, 1) % pool.length;
-  let second = turn(salt, 2) % pool.length;
-  if (second === first) second = (second + 1) % pool.length;
-  const picked = [pool[first], pool[second]].sort((a, b) => a.length - b.length);
-  return [["hello"], ...picked];
+  const two = CODE_TWO[turn(salt, 1) % CODE_TWO.length];
+  if (level !== "later") return [["hello"], two, CODE_THREE[turn(salt, 2) % CODE_THREE.length]];
+  return [["hello"], two, CODE_REPEAT[turn(salt, 2) % CODE_REPEAT.length], CODE_POND[turn(salt, 3) % CODE_POND.length]];
+}
+
+/** A goal for the move board: the blocks to build, and the line that asks for them. */
+export type MoveGoal = { id: string; blocks: BuildBlock[]; line: string; say: string };
+
+/**
+ * The move board asks for one thing at a time, said aloud, instead of a free stack with no ask: jump,
+ * then spin; and then, at ages 5–7, the same again with the repeat block (the "again" block, as it is
+ * named when tapped), which they already have. The animal acts each one out.
+ */
+export const MOVE_GOALS: MoveGoal[] = [
+  { id: "jump-spin", blocks: ["jump", "spin"], line: "build-goal-jump-spin", say: "Make your animal jump, then spin. Then press play." },
+  { id: "again", blocks: ["jump", "spin", "repeat"], line: "build-goal-again", say: "Now do that again. Add the again block, then press play." },
+];
+
+export function moveGoals(level: LogicLevel): MoveGoal[] {
+  return level === "later" ? MOVE_GOALS : MOVE_GOALS.slice(0, 1);
+}
+
+/** After this many wrong blocks, the right one is pointed at. */
+export const GOAL_MISSES = 3;
+
+/**
+ * The blocks on offer for a goal: the move board's, with the goal's own among them, five in all so they
+ * sit in one row on a phone, in the board's own order.
+ */
+export function goalPalette(level: LogicLevel, goal: MoveGoal): BuildBlock[] {
+  const pool = palette("move", level);
+  const keep = new Set<BuildBlock>(goal.blocks);
+  for (const block of pool) {
+    if (keep.size >= 5) break;
+    keep.add(block);
+  }
+  return pool.filter((block) => keep.has(block));
 }
 
 /**
@@ -333,7 +396,7 @@ export function buildWords(): string[] {
 export function buildManifestEntries(): { id: string; say: string }[] {
   return [
     { id: "build-hello", say: "Make your animal say hello. Tap hello, then press play." },
-    { id: "build-move", say: "Stack the blocks, then press play." },
+    ...MOVE_GOALS.map((goal) => ({ id: goal.line, say: goal.say })),
     { id: "build-music", say: "Make a song. Press play." },
     { id: "build-again", say: "Try again." },
     { id: "build-save", say: "Saved on this device." },

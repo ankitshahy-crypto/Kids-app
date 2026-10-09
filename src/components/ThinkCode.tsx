@@ -28,6 +28,7 @@ import {
   type Dir,
   type LogicLevel,
   type PictureCard,
+  type RuleStep,
 } from "../data/logic";
 import { GameFrame, Hand, lookOf, Pick, useCoach, useFinish, useRoundState, useRounds, useWiggle, type Mood, type SceneKind } from "../game/kit";
 import { Illustration, type IllustrationName } from "../illustrations";
@@ -135,7 +136,7 @@ export function ThinkGame({
 }) {
   const level = logicLevel(ageRange);
   if (kind === "bird") return <BirdGame level={level} salt={salt} animal={animal} outfit={outfit} settingsRef={settingsRef} onDone={onDone} />;
-  if (kind === "pattern") return <PatternGame salt={salt} settingsRef={settingsRef} onDone={onDone} />;
+  if (kind === "pattern") return <PatternGame level={level} salt={salt} settingsRef={settingsRef} onDone={onDone} />;
   if (kind === "morning") return <OrderGame level={level} salt={salt} settingsRef={settingsRef} onDone={onDone} />;
   return <RuleGame level={level} salt={salt} animal={animal} outfit={outfit} settingsRef={settingsRef} onDone={onDone} />;
 }
@@ -1010,17 +1011,22 @@ function useLater() {
   };
 }
 
-/** What comes next: a row of pictures follows a rule, and the child picks the picture that continues it. */
+/**
+ * What comes next: a row of pictures follows a rule, and the child picks the picture that continues
+ * it. AB at ages 3–4; at 5–7 AB, then the harder step, ABB and then ABC.
+ */
 function PatternGame({
+  level,
   salt,
   settingsRef,
   onDone,
 }: {
+  level: LogicLevel;
   salt: number;
   settingsRef: { current: Settings };
   onDone: () => void;
 }) {
-  const rounds = useMemo(() => patternRounds(salt), [salt]);
+  const rounds = useMemo(() => patternRounds(level, salt), [level, salt]);
   const speak = useSpeaker(settingsRef);
   const [index, setIndex] = useState(0);
   const [wiggle, setWiggle] = useState("");
@@ -1061,7 +1067,7 @@ function PatternGame({
   const done = solved >= rounds.length;
 
   return (
-    <div className="game-board code-board" data-rule={round.rule} data-answer={round.answer} data-solved={solved} data-filled={filled ? "true" : "false"}>
+    <div className="game-board code-board" data-level={level} data-rule={round.rule} data-answer={round.answer} data-solved={solved} data-filled={filled ? "true" : "false"}>
       <h1>What comes next?</h1>
       <div className="pattern-row" aria-label="Pattern">
         {round.shown.map((token, tokenIndex) => (
@@ -1095,7 +1101,10 @@ function PatternGame({
   );
 }
 
-/** First, then: three pictures of something that happens in one order, to be put in that order. */
+/**
+ * First, then: three pictures of something that happens in one order, to be put in that order. At
+ * ages 5–7 the last round is the harder step, four pictures.
+ */
 function OrderGame({
   level,
   salt,
@@ -1162,7 +1171,7 @@ function OrderGame({
       data-rounds={finishedRounds}
     >
       <h1>First, then</h1>
-      <div className="order-slots">
+      <div className="order-slots" data-count={order.length}>
         {order.map((_, slot) => (
           <div key={`${round.id}-${slot}`} className="order-slot" data-slot={slot} data-filled={placed[slot] ?? ""}>
             {placed[slot] ? <Picture art={placed[slot]} /> : <span className="order-number">{slot + 1}</span>}
@@ -1170,7 +1179,7 @@ function OrderGame({
         ))}
       </div>
       {done ? null : (
-        <div className="order-cards">
+        <div className="order-cards" data-count={round.deal.length}>
           {round.deal.map((id) => (
             <button
               key={`${round.id}-${id}`}
@@ -1224,7 +1233,14 @@ function OrderGame({
   );
 }
 
-/** If, then: the picture shows what is so (it is raining), and the child picks what that calls for. */
+/** How long the rule, said in full, is given before the second picture of a chain comes. */
+const CHAIN_MS = 2400;
+
+/**
+ * If, then: the picture shows what is so (it is raining), and the child picks what that calls for.
+ * The harder step at ages 5–7 is two rules in a row: once the first is answered and said, the next
+ * picture comes under it and asks the next rule.
+ */
 function RuleGame({
   level,
   salt,
@@ -1243,20 +1259,35 @@ function RuleGame({
   const rounds = useMemo(() => ruleRounds(level, salt), [level, salt]);
   const speak = useSpeaker(settingsRef);
   const [index, setIndex] = useState(0);
+  /** Which rule of the round is asked: the second only in a chain, once the first is answered. */
+  const [step, setStep] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [wiggle, setWiggle] = useState("");
+  const timer = useRef(0);
   const round = rounds[index] ?? rounds[0];
+  const steps: RuleStep[] = round.then ? [round, round.then] : [round];
+  const current = steps[Math.min(step, steps.length - 1)];
   const last = index >= rounds.length - 1;
+  // The round is done when its last rule is answered.
+  const done = answered && step >= steps.length - 1;
 
   useEffect(() => {
+    setStep(0);
     setAnswered(false);
     setWiggle("");
     speak.prompt(round.ask, "What do you need?");
   }, [index]);
+  useEffect(() => {
+    if (step === 0) return;
+    setAnswered(false);
+    setWiggle("");
+    speak.prompt(current.ask, "What do you need?");
+  }, [step]);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const tap = (choice: PictureCard) => {
     if (answered) return;
-    if (choice.art !== round.need.art) {
+    if (choice.art !== current.need.art) {
       setWiggle(choice.art);
       speak.prompt("code-again", "Try again.");
       return;
@@ -1264,29 +1295,47 @@ function RuleGame({
     setWiggle("");
     setAnswered(true);
     // The whole rule, said back: "If it rains, take an umbrella."
-    speak.prompt(round.rule, "");
+    speak.prompt(current.rule, "");
+    // In a chain, the next picture comes once the rule has been said.
+    if (step < steps.length - 1) timer.current = window.setTimeout(() => setStep(step + 1), quickRounds() ? 0 : CHAIN_MS);
   };
 
   return (
-    <div className="game-board code-board" data-rule={round.id} data-need={round.need.art} data-answered={answered ? "true" : "false"} data-round={index}>
+    <div
+      className="game-board code-board"
+      data-level={level}
+      data-rule={round.id}
+      data-step={step}
+      data-need={current.need.art}
+      data-answered={answered ? "true" : "false"}
+      data-done={done ? "true" : "false"}
+      data-round={index}
+    >
       <h1>If, then</h1>
-      <div className="rule-stage">
-        <span className="rule-when" data-when={round.when.art}>
-          <Picture art={round.when.art} />
-        </span>
-        <span className="rule-arrow" aria-hidden="true">
-          <ArrowIcon dir="right" />
-        </span>
-        <span className={`rule-then${answered ? " is-filled" : ""}`} data-then={answered ? round.need.art : ""}>
-          {answered ? <Picture art={round.need.art} /> : "?"}
-        </span>
+      <div className="rule-chain" data-rules={steps.length}>
+        {steps.slice(0, step + 1).map((rule, at) => {
+          const filled = at < step || answered;
+          return (
+            <div key={rule.id} className="rule-stage" data-rule={rule.id} data-done={at < step ? "true" : "false"}>
+              <span className="rule-when" data-when={rule.when.art}>
+                <Picture art={rule.when.art} />
+              </span>
+              <span className="rule-arrow" aria-hidden="true">
+                <ArrowIcon dir="right" />
+              </span>
+              <span className={`rule-then${filled ? " is-filled" : ""}`} data-then={filled ? rule.need.art : ""}>
+                {filled ? <Picture art={rule.need.art} /> : "?"}
+              </span>
+            </div>
+          );
+        })}
       </div>
       <div className="rule-who" aria-hidden="true">
         <Hero animal={animal} outfit={outfit} />
       </div>
       {answered ? null : (
         <div className="rule-choices">
-          {round.choices.map((choice) => (
+          {current.choices.map((choice) => (
             <button
               key={choice.art}
               type="button"
@@ -1301,12 +1350,12 @@ function RuleGame({
           ))}
         </div>
       )}
-      {answered && !last ? (
+      {done && !last ? (
         <button type="button" className="start-button" data-next="garden" onClick={() => setIndex((current) => current + 1)}>
           Next
         </button>
       ) : null}
-      {answered && last ? <FinishButton id="garden" onDone={onDone} /> : null}
+      {done && last ? <FinishButton id="garden" onDone={onDone} /> : null}
     </div>
   );
 }

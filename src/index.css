@@ -6105,6 +6105,25 @@ input.is-pressed,
   opacity: 0.25;
 }
 
+/* The harder step: four pictures, which share a phone's width in one row. */
+.order-slots[data-count="4"] {
+  gap: 6px;
+}
+
+.order-slots[data-count="4"] .order-slot {
+  max-width: 92px;
+}
+
+.order-cards[data-count="4"] {
+  gap: 10px;
+}
+
+.order-cards[data-count="4"] .order-card {
+  width: 76px;
+  min-height: 70px;
+  border-radius: 18px;
+}
+
 .rule-stage {
   display: flex;
   align-items: center;
@@ -6144,6 +6163,31 @@ input.is-pressed,
 .rule-arrow svg {
   width: 36px;
   height: 36px;
+}
+
+/* Two rules in a row (the harder step): the first stays, answered and smaller, and the next picture
+   comes under it to ask the next rule. */
+.rule-chain {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.rule-stage[data-done="true"] .rule-when,
+.rule-stage[data-done="true"] .rule-then {
+  max-width: 92px;
+  border-radius: 18px;
+}
+
+.rule-stage[data-done="true"] .rule-arrow svg {
+  width: 26px;
+  height: 26px;
+}
+
+.rule-chain .rule-stage + .rule-stage {
+  animation: build-pop 0.25s ease;
 }
 
 .rule-who {
@@ -7660,6 +7704,7 @@ input.is-pressed,
   .game-sparkles svg,
   .game-tray .pick,
   .pick,
+  .build-block,
   .game-hand {
     animation: none !important;
   }
@@ -8355,6 +8400,42 @@ input.is-pressed,
   width: 110px;
 }
 
+/* The harder homes step: two animals, each at its home. The empty place is among the choices. */
+.science-at-home {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+}
+
+.science-at {
+  position: relative;
+  display: block;
+  width: 112px;
+}
+
+.science-at > .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The animal sits on its home, a little above the middle, smaller than the place. */
+.science-at-animal {
+  position: absolute;
+  left: 50%;
+  bottom: 34%;
+  width: 58%;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 2px 2px rgba(60, 50, 40, 0.25));
+}
+
+.science-at-animal .art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* The bird, with each part its own thing to tap. Its scene is taller, like the clock's. */
 .game-frame[data-screen="body"] {
   --scene-h: clamp(250px, 38svh, 330px);
@@ -8440,6 +8521,24 @@ input.is-pressed,
 
 .float-thing[data-result="sink"] {
   top: 66%;
+}
+
+/* The harder step: two things held up side by side. The one tapped goes in first, the other follows. */
+.float-thing.is-paired {
+  width: 88px;
+}
+
+.float-thing.is-paired[data-side="left"] {
+  left: 30%;
+}
+
+.float-thing.is-paired[data-side="right"] {
+  left: 70%;
+}
+
+.float-thing.is-paired[data-after="true"] {
+  transition-delay: 0.6s;
+  animation-delay: 1.5s;
 }
 
 /* On the painted pond a thing that has sunk is seen through the water: paler, and a little blue,
@@ -10315,6 +10414,75 @@ input.is-pressed,
   font-weight: 700;
   color: var(--ink);
   text-transform: capitalize;
+}
+
+/* The move board's goal: the blocks to build, in order, each ticked as it goes on; and a button that says it again. */
+.build-goal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: min(100%, 440px);
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 22px;
+  background: rgba(255, 253, 251, 0.75);
+  list-style: none;
+}
+
+.build-goal li[data-goal-block] {
+  position: relative;
+  width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 16px;
+  border: 3px dashed #c8d9cf;
+}
+
+.build-goal li[data-goal-block] .build-name {
+  font-size: 12px;
+}
+
+.build-goal li[data-done="true"] {
+  border-style: solid;
+  border-color: #9bd1a8;
+  background: #e3f3e8;
+}
+
+.build-goal li[data-done="true"]::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3f9b6b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m5.5 10.5 3 3 6-7' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 20px no-repeat;
+}
+
+.build-goal .build-goal-hear .code-line {
+  min-height: 40px;
+  padding: 2px 8px;
+}
+
+/* A wrong block for the goal wiggles where it is; after three, the right one is pointed at. */
+.build-block {
+  position: relative;
+}
+
+.build-block[data-wiggle="a"] {
+  animation: game-wiggle-a 0.4s ease;
+}
+
+.build-block[data-wiggle="b"] {
+  animation: game-wiggle-b 0.4s ease;
+}
+
+.build-block[data-hint="true"] {
+  box-shadow: 0 0 0 5px var(--gold), var(--shadow);
 }
 
 .build-chip {

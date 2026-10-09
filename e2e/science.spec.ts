@@ -158,7 +158,7 @@ for (const [id, rounds] of [
 
 test("the weather is the scene itself", async ({ page }) => {
   const weather = await openScience(page, "weather");
-  const scenes: Record<string, string> = { rain: "rainy", sun: "afternoon", snow: "snowy", wind: "windy" };
+  const scenes: Record<string, string> = { rain: "rainy", sun: "afternoon", snow: "snowy", wind: "windy", cold: "snowy", hot: "afternoon", windy: "windy", chilly: "snowy" };
   for (let round = 0; round < 3; round += 1) {
     await onRound(weather, round);
     const kind = (await weather.getAttribute("data-item")) ?? "";
@@ -219,15 +219,15 @@ test("sink or float: a guess, then the thing is dropped, and a wrong guess is no
   await expectStar(page);
 });
 
-test("ages 5 to 7 play more rounds: two lives to order, five parts of the bird, six things in the pond", async ({ page }) => {
+test("ages 5 to 7 play more rounds, each game ending with a harder step", async ({ page }) => {
   await install(page, { ageRange: "6-7" });
   await page.locator("[data-course=science]").click();
   await expect(page.locator("[data-science=menu]")).toHaveAttribute("data-level", "later");
   for (const [id, rounds] of [
-    ["life", "3"],
-    ["homes", "4"],
+    ["life", "4"],
+    ["homes", "5"],
     ["body", "5"],
-    ["weather", "4"],
+    ["weather", "5"],
     ["senses", "5"],
     ["float", "6"],
   ]) {
@@ -236,6 +236,146 @@ test("ages 5 to 7 play more rounds: two lives to order, five parts of the bird, 
     await expect(game(page, id)).toHaveAttribute("data-level", "later");
     await page.getByRole("button", { name: "Back", exact: true }).click();
   }
+});
+
+test("ages 3 to 4 stay on the short games: no harder step anywhere", async ({ page }) => {
+  await install(page);
+  await page.locator("[data-course=science]").click();
+  // Homes: every round asks where one animal lives, and never for the empty place.
+  await page.locator("[data-science=menu] [data-activity=homes]").click();
+  const homes = game(page, "homes");
+  for (let round = 0; round < 3; round += 1) {
+    await onRound(homes, round);
+    await expect(homes).not.toHaveAttribute("data-item", "empty");
+    await expect(homes.locator(".science-at")).toHaveCount(0);
+    await expect(homes.locator(".game-tray .pick")).toHaveCount(3);
+    await homes.locator(`.pick[data-pick=${await homes.getAttribute("data-answer")}]`).click();
+  }
+  await expectStar(page);
+  // The pond: one thing at a time, never a pair.
+  await page.locator("[data-science=menu] [data-activity=float]").click();
+  const float = game(page, "float");
+  await expect(float).toHaveAttribute("data-rounds", "4");
+  for (let round = 0; round < 4; round += 1) {
+    await expect(float).toHaveAttribute("data-round", String(round));
+    await expect(float).toHaveAttribute("data-task", "one");
+    await expect(float.locator(".float-thing")).toHaveCount(1);
+    await float.locator(`.pick[data-guess=${await float.getAttribute("data-answer")}]`).click();
+    await expect(float).toHaveAttribute("data-dropped", "true");
+  }
+  await expectStar(page, 2);
+});
+
+test("homes at 5 to 7: four animals, then two animals at home and the empty place to find", async ({ page }, testInfo) => {
+  const homes = await openScience(page, "homes", { ageRange: "6-7" });
+  await expect(homes).toHaveAttribute("data-rounds", "5");
+  for (let round = 0; round < 4; round += 1) {
+    await onRound(homes, round);
+    await expect(homes.locator(".science-subject")).toHaveCount(1);
+    await homes.locator(`.pick[data-pick=${await homes.getAttribute("data-answer")}]`).click();
+  }
+  // The harder step: two animals, each on its home, and three places to choose from.
+  await onRound(homes, 4);
+  await expect(homes).toHaveAttribute("data-item", "empty");
+  await expect(homes.locator(".science-at")).toHaveCount(2);
+  await expect(homes.locator(".game-tray .pick")).toHaveCount(3);
+  const taken = await homes.locator(".science-at").evaluateAll((spots) => spots.map((spot) => spot.getAttribute("data-home")));
+  const answer = (await homes.getAttribute("data-answer")) ?? "";
+  expect(taken).not.toContain(answer);
+  const picks = await homes.locator(".game-tray .pick").evaluateAll((picks) => picks.map((pick) => pick.getAttribute("data-pick")));
+  expect([...picks].sort()).toEqual([...taken, answer].sort());
+  if (testInfo.project.name === "chromium") await homes.screenshot({ path: "test-results/screenshots/science_homes_empty.png" });
+  // A place with an animal in it wiggles; the empty one is the answer.
+  await homes.locator(`.pick[data-pick=${taken[0]}]`).click();
+  await expectWiggle(homes.locator(`.pick[data-pick=${taken[0]}]`));
+  await expect(homes).toHaveAttribute("data-solved", "false");
+  await homes.locator(`.pick[data-pick=${answer}]`).click();
+  await expect(homes).toHaveAttribute("data-solved", "true");
+  await expectStar(page);
+});
+
+test("weather at 5 to 7: the last two rounds have one more wrong thing among the choices", async ({ page }, testInfo) => {
+  const weather = await openScience(page, "weather", { ageRange: "6-7" });
+  await expect(weather).toHaveAttribute("data-rounds", "5");
+  for (let round = 0; round < 5; round += 1) {
+    await onRound(weather, round);
+    await expect(weather.locator(".game-tray .pick")).toHaveCount(round < 3 ? 3 : 4);
+    const answer = (await weather.getAttribute("data-answer")) ?? "";
+    if (round === 3) {
+      if (testInfo.project.name === "chromium") await weather.screenshot({ path: "test-results/screenshots/science_weather_four.png" });
+      // Four choices still fit a phone, each big enough for a finger.
+      for (const pick of await weather.locator(".game-tray .pick").all()) {
+        const box = await pick.boundingBox();
+        expect(box?.width ?? 0).toBeGreaterThanOrEqual(60);
+      }
+      const wrong = weather.locator(`.pick:not([data-pick=${answer}])`).first();
+      await wrong.click();
+      await expectWiggle(wrong);
+    }
+    await weather.locator(`.pick[data-pick=${answer}]`).click();
+  }
+  await expectStar(page);
+});
+
+test("growing at 5 to 7: the garden, two lives of three pictures, then a life of four", async ({ page }, testInfo) => {
+  const grow = await openScience(page, "life", { ageRange: "6-7" });
+  await expect(grow).toHaveAttribute("data-rounds", "4");
+  for (let step = 0; step < 4; step += 1) await nextStep(grow);
+  for (const round of [1, 2, 3]) {
+    await expect(grow).toHaveAttribute("data-round", String(round));
+    await expect(grow).toHaveAttribute("data-task", "order");
+    const order = ((await grow.getAttribute("data-order")) ?? "").split(",");
+    expect(order).toHaveLength(round === 3 ? 4 : 3);
+    await expect(grow.locator(".order-line li")).toHaveCount(order.length);
+    await expect(grow.locator(".game-tray .pick")).toHaveCount(order.length);
+    if (round === 3) {
+      expect(order).toEqual(["seed", "sprout", "plant", "flower"]);
+      if (testInfo.project.name === "chromium") await grow.screenshot({ path: "test-results/screenshots/science_life_four.png" });
+      // The third picture before the second: it wiggles. (The first is placed, and its praise said, first.)
+      await nextStep(grow);
+      await expect(grow).toHaveAttribute("data-step", "1");
+      await expect(grow).toHaveAttribute("data-ready", "true");
+      await grow.locator(`.pick[data-pick=${order[2]}]`).click();
+      await expectWiggle(grow.locator(`.pick[data-pick=${order[2]}]`));
+      await expect(grow).toHaveAttribute("data-step", "1");
+      for (let step = 1; step < 4; step += 1) await nextStep(grow);
+    } else {
+      for (const _ of order) await nextStep(grow);
+    }
+  }
+  await expectStar(page);
+});
+
+test("sink or float at 5 to 7: then two things at once, and the one tapped goes in first", async ({ page }, testInfo) => {
+  const float = await openScience(page, "float", { ageRange: "6-7" });
+  await expect(float).toHaveAttribute("data-rounds", "6");
+  for (let round = 0; round < 4; round += 1) {
+    await expect(float).toHaveAttribute("data-round", String(round));
+    await expect(float).toHaveAttribute("data-task", "one");
+    await float.locator(`.pick[data-guess=${await float.getAttribute("data-answer")}]`).click();
+    await expect(float).toHaveAttribute("data-dropped", "true");
+  }
+  for (const round of [4, 5]) {
+    await expect(float).toHaveAttribute("data-round", String(round));
+    await expect(float).toHaveAttribute("data-task", "pair");
+    await expect(float).toHaveAttribute("data-dropped", "false");
+    // Two things held up, and the two of them to choose between.
+    await expect(float.locator(".float-thing")).toHaveCount(2);
+    await expect(float.locator(".float-thing[data-result=held]")).toHaveCount(2);
+    await expect(float.locator(".game-tray .pick")).toHaveCount(2);
+    const answer = (await float.getAttribute("data-answer")) ?? "";
+    const things = ((await float.getAttribute("data-item")) ?? "").split(",");
+    expect(things).toContain(answer);
+    const other = things.find((thing) => thing !== answer) ?? "";
+    if (round === 4 && testInfo.project.name === "chromium") await float.screenshot({ path: "test-results/screenshots/science_float_pair.png" });
+    // The first time, the one that sinks: no miss, both go in, and each does what it really does.
+    await float.locator(`.pick[data-guess=${round === 4 ? other : answer}]`).click();
+    await expect(float).toHaveAttribute("data-dropped", "true");
+    await expect(float.locator(`.float-thing[data-thing=${answer}]`)).toHaveAttribute("data-result", "float");
+    await expect(float.locator(`.float-thing[data-thing=${other}]`)).toHaveAttribute("data-result", "sink");
+    await expect(float).toHaveAttribute("data-misses", "0");
+  }
+  await expectStar(page);
 });
 
 for (const id of ["life", "homes", "body", "weather", "senses", "float"]) {

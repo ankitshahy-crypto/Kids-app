@@ -192,10 +192,10 @@ test("the weather is its painting, the rain painted in", async ({ page }) => {
   const missing = watchArt(page);
   await install(page, { ageRange: "6-7" });
   const weather = await openScience(page, "weather");
-  await expect(weather).toHaveAttribute("data-rounds", "4");
-  const scenes: Record<string, string> = { rain: "rainy", sun: "afternoon", snow: "snowy", wind: "windy" };
+  await expect(weather).toHaveAttribute("data-rounds", "5");
+  const scenes: Record<string, string> = { rain: "rainy", sun: "afternoon", snow: "snowy", wind: "windy", cold: "snowy", hot: "afternoon", windy: "windy", chilly: "snowy" };
   const seen: string[] = [];
-  for (let round = 0; round < 4; round += 1) {
+  for (let round = 0; round < 5; round += 1) {
     await onRound(weather, round);
     const kind = scenes[(await weather.getAttribute("data-item")) ?? ""];
     seen.push(kind);
@@ -206,7 +206,9 @@ test("the weather is its painting, the rain painted in", async ({ page }) => {
     if (kind === "afternoon") expect(await art.evaluate((img) => getComputedStyle(img).objectPosition)).toBe("75% 100%");
     await weather.locator(`.pick[data-pick=${await weather.getAttribute("data-answer")}]`).click();
   }
-  expect([...seen].sort()).toEqual(["afternoon", "rainy", "snowy", "windy"]);
+  // Five kinds of weather out of eight, each on one of the four painted scenes.
+  expect(seen).toHaveLength(5);
+  for (const kind of seen) expect(["afternoon", "rainy", "snowy", "windy"]).toContain(kind);
   expect(missing).toEqual([]);
 });
 

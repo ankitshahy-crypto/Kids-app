@@ -9,8 +9,11 @@ import {
   codePalette,
   codeRounds,
   firstDifference,
+  GOAL_MISSES,
+  goalPalette,
   lineCues,
   loadBuild,
+  moveGoals,
   moveResult,
   palette,
   playSteps,
@@ -23,7 +26,9 @@ import {
   SCRIPT_LIMIT,
   type BuildActivity,
   type BuildBlock,
+  type MoveGoal,
 } from "../data/build";
+import { Hand, useWiggle } from "../game/kit";
 import { Illustration } from "../illustrations";
 import type { AgeRange } from "../data/profiles";
 import type { Outfit } from "../data/wardrobe";
@@ -167,6 +172,48 @@ export function ReadCode({
 }
 
 /**
+ * The move board: one spoken goal at a time, not a free stack with no ask. Jump, then spin; then, at
+ * ages 5–7, the same again with the repeat block. Each goal is its own round of the board.
+ */
+function MoveBoard({
+  childId,
+  level,
+  animal,
+  outfit,
+  settingsRef,
+  showCode,
+  onDone,
+}: {
+  childId: string;
+  level: ReturnType<typeof buildLevel>;
+  animal: AnimalId;
+  outfit: Outfit;
+  settingsRef: { current: Settings };
+  showCode: boolean;
+  onDone: () => void;
+}) {
+  const goals = useMemo(() => moveGoals(level), [level]);
+  const [index, setIndex] = useState(0);
+  const last = index >= goals.length - 1;
+  return (
+    <Builder
+      key={index}
+      activity="move"
+      childId={childId}
+      level={level}
+      animal={animal}
+      outfit={outfit}
+      settingsRef={settingsRef}
+      showCode={showCode}
+      goal={goals[index] ?? goals[0]}
+      round={index}
+      last={last}
+      onDone={() => (last ? onDone() : setIndex((current) => current + 1))}
+    />
+  );
+}
+
+/**
  * One Build It board. Each board is its own tile in the Coding list ("Make a dance", "Make a song"); there
  * was a menu in between, which put three rows of buttons above the game.
  */
@@ -189,12 +236,16 @@ export function BuildIt({
   showCode: boolean;
   onDone: (step: string) => void;
 }) {
+  const level = buildLevel(ageRange);
+  if (activity === "move") {
+    return <MoveBoard childId={childId} level={level} animal={animal} outfit={outfit} settingsRef={settingsRef} showCode={showCode} onDone={() => onDone("game-build-move")} />;
+  }
   return (
     <Builder
       key={activity}
       activity={activity}
       childId={childId}
-      level={buildLevel(ageRange)}
+      level={level}
       animal={animal}
       outfit={outfit}
       settingsRef={settingsRef}
@@ -213,6 +264,7 @@ function Builder({
   settingsRef,
   showCode,
   code,
+  goal,
   round = 0,
   last = true,
   onDone,
@@ -226,14 +278,19 @@ function Builder({
   showCode: boolean;
   /** Read the code: the program, in words, that the child is to build. Absent on a free board. */
   code?: BuildBlock[];
+  /** The move board: the blocks asked for aloud. Only the next one goes on; a wrong one wiggles. */
+  goal?: MoveGoal;
   round?: number;
   last?: boolean;
   onDone: () => void;
 }) {
   const speak = useSpeaker(settingsRef);
-  const blocks = code ? codePalette(level, code) : palette(activity, level);
+  const blocks = code ? codePalette(level, code) : goal ? goalPalette(level, goal) : palette(activity, level);
   /** After a Play that did not match the code: the first line that differs. */
   const [miss, setMiss] = useState(-1);
+  /** The move board's goal: wrong blocks tapped since the last right one; at three, the right one is pointed at. */
+  const [misses, setMisses] = useState(0);
+  const wiggle = useWiggle();
   const [script, setScript] = useState<BuildBlock[]>([]);
   const [playing, setPlaying] = useState(-1);
   const [ran, setRan] = useState<string[]>([]);
@@ -256,8 +313,12 @@ function Builder({
       speak.lines(code, code.map((_, index) => index), { id: "code-read", say: "Listen to the code. Then build it." });
       return;
     }
+    if (goal) {
+      // The goal, said aloud: what to build, then press play.
+      speak.prompt(goal.line, goal.say);
+      return;
+    }
     if (activity === "hello") speak.prompt("build-hello", "Make your animal say hello. Tap hello, then press play.");
-    else if (activity === "move") speak.prompt("build-move", "Stack the blocks, then press play.");
     else speak.prompt("build-music", "Make a song. Press play.");
     if (level !== "later") return;
     const stored = loadBuild(childId, activity, readSection("games", "build"));
@@ -269,16 +330,28 @@ function Builder({
 
   const append = (kind: BuildBlock) => {
     if (playing >= 0) return;
-    // Reading code: one block for each line, and no more. A block tapped after that still says its name.
-    if (!code || script.length < code.length) {
+    setSaid(BLOCK_NAMES[kind]);
+    speak.word(BLOCK_NAMES[kind]);
+    // A goal: only the block the goal asks for next goes on. A wrong one wiggles and stays where it is,
+    // and after three wrong ones the right one is pointed at, as in the other games.
+    if (goal && script.length < goal.blocks.length) {
+      if (kind !== goal.blocks[script.length]) {
+        wiggle.shake(kind);
+        setMisses((count) => count + 1);
+        return;
+      }
+      wiggle.still();
+      setMisses(0);
+    }
+    // Reading code, or a goal: one block for each line, and no more. A block tapped after that still says its name.
+    const limit = code?.length ?? goal?.blocks.length;
+    if (limit === undefined || script.length < limit) {
       setScript((current) => addBlock(current, kind));
       setSaved(false);
       setPlayed(false);
       setMiss(-1);
       setFrame(REST);
     }
-    setSaid(BLOCK_NAMES[kind]);
-    speak.word(BLOCK_NAMES[kind]);
   };
 
   /** One of the child's steps. A tap takes it out. */
@@ -294,7 +367,9 @@ function Builder({
       aria-label={BLOCK_NAMES[kind]}
       onClick={() => {
         if (playing >= 0) return;
-        setScript((current) => removeBlock(current, index));
+        // On a goal the steps stay in the goal's order: a step taken out takes the ones after it with it.
+        setScript((current) => (goal ? current.slice(0, index) : removeBlock(current, index)));
+        setMisses(0);
         setPlayed(false);
         setSaved(false);
         setMiss(-1);
@@ -363,10 +438,11 @@ function Builder({
       setPlaying(-1);
       setPlayed(true);
       setFrame((current) => ({ ...current, pose: current.pose === "splash" ? "splash" : "rest" }));
-      if (code) {
-        if (sameProgram(script, code)) playEffect("chime", settingsRef.current);
+      const asked = code ?? goal?.blocks;
+      if (asked) {
+        if (sameProgram(script, asked)) playEffect("chime", settingsRef.current);
         else {
-          setMiss(firstDifference(script, code));
+          setMiss(firstDifference(script, asked));
           speak.prompt("build-again", "Try again.");
         }
       }
@@ -381,11 +457,16 @@ function Builder({
   };
 
   const motion = moveResult(script);
-  // A free board is done once a program has played (the first one, once it has said hello). Reading code
-  // is done when the blocks say what the code says.
-  const done = played && script.length > 0 && (code ? sameProgram(script, code) : activity !== "hello" || script.includes("hello"));
+  // A free board is done once a program has played (the first one, once it has said hello). Reading code,
+  // or a goal, is done when the blocks say what was asked for.
+  const asked = code ?? goal?.blocks;
+  const done = played && script.length > 0 && (asked ? sameProgram(script, asked) : activity !== "hello" || script.includes("hello"));
   const live = playing >= 0 ? script[playing] : null;
   const title = code ? "Read the code" : BUILD_TITLES[activity];
+  /** The block to point at: the goal's next one, after three wrong ones. */
+  const hint = goal && misses >= GOAL_MISSES && script.length < goal.blocks.length ? goal.blocks[script.length] : null;
+  /** More rounds after this one: Next takes Done's place. */
+  const more = (code || goal) && !last;
 
   return (
     <div
@@ -394,8 +475,11 @@ function Builder({
       data-build={code ? "code" : activity}
       data-level={level}
       data-code={code ? code.join(",") : undefined}
-      data-round={code ? round : undefined}
-      data-match={code && played ? (sameProgram(script, code) ? "true" : "false") : undefined}
+      data-goal={goal ? goal.blocks.join(",") : undefined}
+      data-misses={goal ? misses : undefined}
+      data-hint={hint ?? undefined}
+      data-round={code || goal ? round : undefined}
+      data-match={asked && played ? (sameProgram(script, asked) ? "true" : "false") : undefined}
       data-script={script.join(",")}
       data-playing={playing >= 0 ? String(playing) : ""}
       data-ran={ran.join(",")}
@@ -411,6 +495,24 @@ function Builder({
       data-said={said}
     >
       <h1>{title}</h1>
+      {/* The goal, as the blocks to build in order; each is ticked as it goes on. */}
+      {goal ? (
+        <ol className="build-goal" aria-label="What to build">
+          {goal.blocks.map((kind, index) => (
+            <li key={`${kind}-${index}`} data-goal-block={kind} data-done={index < script.length ? "true" : "false"}>
+              <BlockArt kind={kind} animal={animal} outfit={outfit} />
+              <span className="build-name">{kind === "repeat" ? "× 3" : BLOCK_NAMES[kind]}</span>
+            </li>
+          ))}
+          <li className="build-goal-hear">
+            <button type="button" className="code-line" aria-label="Hear the goal again" onClick={() => speak.prompt(goal.line, goal.say)}>
+              <span className="code-line-hear" aria-hidden="true">
+                <SpeakerIcon />
+              </span>
+            </button>
+          </li>
+        </ol>
+      ) : null}
       {code ? (
         <div className="code-card" data-code-card>
           {/* Each line of the code has a place beside it for the child's block, so the words and the block
@@ -495,6 +597,8 @@ function Builder({
             type="button"
             className="build-block"
             data-block={kind}
+            data-wiggle={wiggle.id === kind ? (wiggle.count % 2 === 1 ? "a" : "b") : "false"}
+            data-hint={hint === kind ? "true" : "false"}
             aria-label={BLOCK_NAMES[kind]}
             onPointerDown={(event) => {
               event.currentTarget.setPointerCapture(event.pointerId);
@@ -526,16 +630,17 @@ function Builder({
           >
             <BlockArt kind={kind} animal={animal} outfit={outfit} />
             <span className="build-name">{kind === "repeat" ? "× 3" : BLOCK_NAMES[kind]}</span>
+            {hint === kind ? <Hand /> : null}
           </button>
         ))}
       </div>
-      {/* Once the blocks match the code, Next takes Play's place, so it is on screen where the child just tapped. */}
-      {code && done ? null : (
+      {/* Once the blocks match the code or the goal, Next takes Play's place, so it is on screen where the child just tapped. */}
+      {asked && done ? null : (
         <button type="button" className="start-button" data-play="run" disabled={script.length === 0} onClick={play}>
           Play
         </button>
       )}
-      {level === "later" && !code ? (
+      {level === "later" && !code && !goal ? (
         <button type="button" className="game-back" data-save="device" onClick={store}>
           Save
         </button>
@@ -545,14 +650,14 @@ function Builder({
           type="button"
           className="start-button"
           data-finish={code ? "code" : activity}
-          data-next={code && !last ? "code" : undefined}
+          data-next={more ? (code ? "code" : activity) : undefined}
           onClick={() => {
             if (finished.current) return;
             finished.current = true;
             onDone();
           }}
         >
-          {code && !last ? "Next" : "Done"}
+          {more ? "Next" : "Done"}
         </button>
       ) : null}
     </div>

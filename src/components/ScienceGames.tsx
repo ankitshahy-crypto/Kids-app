@@ -3,6 +3,7 @@ import { promptCue, wordCue, type Cue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import {
   bodyRounds,
+  floater,
   floatResult,
   floatRounds,
   GROW_NEEDS,
@@ -17,6 +18,7 @@ import {
   wordId,
   type BodyPart,
   type FloatGuess,
+  type FloatRound,
   type GrowNeed,
   type ScienceActivity as ScienceId,
   type SciencePicture,
@@ -73,10 +75,14 @@ function Picture({ picture, painted = false }: { picture: SciencePicture; painte
 /** The hen's and the butterfly's lives, painted (public/games/life, made by scripts/game-art.py from the owner's renders). */
 const lifeArt = (name: "egg" | "chick" | "hen" | "caterpillar" | "chrysalis" | "butterfly") => `${import.meta.env.BASE_URL}games/life/${name}.webp`;
 
-/** The three lives, painted: the plant's seed and sprout are the garden's, its flower a painting of its own. */
+/**
+ * The painted lives: the plant's seed, sprout and leafy plant are the garden's, its flower a
+ * painting of its own. (The nut's life into a tree is drawn, not painted.)
+ */
 const PAINTED_LIFE: Partial<Record<string, string>> = {
   seed: gardenArt("seed"),
   sprout: gardenArt("sprout"),
+  plant: gardenArt("plant"),
   flower: gardenArt("bloom"),
   egg: lifeArt("egg"),
   chick: lifeArt("chick"),
@@ -151,7 +157,10 @@ function GardenBed({ step, need, effect, turn }: { step: number; need?: GrowNeed
   );
 }
 
-/** Growing: the garden first, then a life put in order. */
+/**
+ * Growing: the garden first, then a life put in order; at ages 5–7 the last life has four
+ * pictures (the plant's, with the leafy plant between the sprout and the flower).
+ */
 function LifeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const [salt] = useState(newSalt);
   const list = useMemo(() => lifeRounds(level, salt), [level, salt]);
@@ -225,7 +234,7 @@ function LifeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
           <ol className="routine-line order-line" aria-label="In order so far">
             {round.stages.map((stage, index) => (
               <li key={stage.art} data-slot={index} data-filled={index < done ? "true" : "false"}>
-                {index < done ? <Picture picture={stage} painted /> : <span>{index + 1}</span>}
+                {index < done ? <Picture picture={stage} painted={round.painted} /> : <span>{index + 1}</span>}
               </li>
             ))}
           </ol>
@@ -252,7 +261,8 @@ function LifeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
               key={picture.art}
               id={picture.art}
               name={picture.name}
-              art={<Picture picture={picture} painted />}
+              art={<Picture picture={picture} painted={round.painted} />}
+              size={round.deal.length > 3 ? "mid" : "big"}
               used={round.stages.findIndex((stage) => stage.art === picture.art) < done}
               wiggle={wiggle.id === picture.art ? wiggle.count : 0}
               reveal={coach.reveal && picture.art === round.stages[done]?.art}
@@ -265,7 +275,10 @@ function LifeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
 
 // ------------------------------------------------------------------ picture questions
 
-/** A question about a picture, answered by tapping one of three pictures: homes, weather and senses are all this. */
+/**
+ * A question about a picture, answered by tapping one of three pictures (four, where the harder
+ * step puts one more wrong thing in): homes, weather and senses are all this.
+ */
 function AskGame<Round extends { id: string; choices: SciencePicture[] }>({
   id,
   name,
@@ -330,6 +343,7 @@ function AskGame<Round extends { id: string; choices: SciencePicture[] }>({
           id={picture.art}
           name={picture.name}
           art={<Picture picture={picture} />}
+          size={round.choices.length > 3 ? "mid" : "big"}
           wiggle={wiggle.id === picture.art ? wiggle.count : 0}
           reveal={coach.reveal && picture.art === right.art}
           onPick={() => tap(picture)}
@@ -352,16 +366,40 @@ function HomesGame(props: PlayProps) {
       line={(round) => [say(round.ask)]}
       answer={(round) => round.home}
       praise={(round) => [say(round.answer)]}
-      stage={(round) => (
-        <span className="science-subject" data-subject={round.animal.art}>
-          <Picture picture={round.animal} />
-        </span>
-      )}
+      // The animal that is asked about; in the harder step, two animals each at their home, and the
+      // empty place is among the choices.
+      stage={(round) =>
+        round.kind === "lives" ? (
+          <span className="science-subject" data-subject={round.animal.art}>
+            <Picture picture={round.animal} />
+          </span>
+        ) : (
+          <div className="science-at-home" aria-label="Two animals at home">
+            {round.at.map(({ animal, home }) => (
+              <span key={animal.art} className="science-at" data-animal={animal.art} data-home={home.art}>
+                <Picture picture={home} />
+                <span className="science-at-animal">
+                  <Picture picture={animal} />
+                </span>
+              </span>
+            ))}
+          </div>
+        )
+      }
     />
   );
 }
 
-const WEATHER_SCENE: Record<string, SceneKind> = { rain: "rainy", sun: "afternoon", snow: "snowy", wind: "windy" };
+const WEATHER_SCENE: Record<string, SceneKind> = {
+  rain: "rainy",
+  sun: "afternoon",
+  snow: "snowy",
+  wind: "windy",
+  cold: "snowy",
+  hot: "afternoon",
+  windy: "windy",
+  chilly: "snowy",
+};
 
 function WeatherGame(props: PlayProps) {
   const [salt] = useState(newSalt);
@@ -539,25 +577,42 @@ function WaterMark({ kind }: { kind: FloatGuess }) {
 /** How long the thing is left where it came to rest before the next one is held up. */
 const SETTLE_MS = 700;
 
-/** Sink or float: a guess, then the thing is dropped in the pond and the child sees what it does. */
+/**
+ * Sink or float: a guess, then the thing is dropped in the pond and the child sees what it does.
+ * The harder step holds up two things at once, one that floats and one that sinks, and asks which
+ * one floats: the one tapped is dropped first, then the other, and both are seen. A wrong tap is
+ * not a miss here either: the child has just found something out.
+ */
 function FloatGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const [salt] = useState(newSalt);
   const list = useMemo(() => floatRounds(level, salt), [level, salt]);
   const rounds = useRounds(list);
   const round = rounds.round;
-  const [guess, setGuess] = useRoundState<FloatGuess | "">(rounds.index, "");
-  const coach = useCoach(settingsRef, [word(round.picture.name), say("science-float")], rounds.index);
+  // The guess made (float or sink), or in a pair the art of the thing tapped.
+  const [guess, setGuess] = useRoundState<string>(rounds.index, "");
+  const coach = useCoach(settingsRef, floatLine(round), rounds.index);
   useFinish(rounds.finished, settingsRef, coach, onDone);
   const result = floatResult(round);
+  const dropped = guess !== "";
+
+  // The thing takes a moment to settle on the water or the bottom; the next one waits for it.
+  const next = () => window.setTimeout(rounds.next, SETTLE_MS);
 
   const tap = (kind: FloatGuess) => {
-    if (guess) return;
+    if (dropped || round.kind !== "one") return;
     setGuess(kind);
     const said = [say(result === "float" ? "science-floats" : "science-sinks")];
-    // The thing takes a moment to settle on the water or the bottom; the next one waits for it.
-    const next = () => window.setTimeout(rounds.next, SETTLE_MS);
     // A right guess is cheered. A wrong one is not a miss: the child has just found something out.
     if (kind === result) coach.right(said, next);
+    else coach.tell(said, next);
+  };
+
+  const choose = (picture: SciencePicture) => {
+    if (dropped || round.kind !== "pair") return;
+    setGuess(picture.art);
+    const thing = round.things.find((item) => item.picture.art === picture.art);
+    const said = [word(picture.name), say(thing?.floats ? "science-floats" : "science-sinks")];
+    if (thing?.floats) coach.right(said, next);
     else coach.tell(said, next);
   };
 
@@ -573,31 +628,66 @@ function FloatGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
       attrs={{
         "data-science": "float",
         "data-level": level,
-        "data-item": round.picture.art,
-        "data-answer": result,
+        "data-task": round.kind,
+        "data-item": round.kind === "one" ? round.picture.art : round.things.map((thing) => thing.picture.art).join(","),
+        "data-answer": round.kind === "one" ? result : floater(round).art,
         "data-guess": guess || "none",
-        "data-dropped": guess ? "true" : "false",
+        "data-dropped": dropped ? "true" : "false",
       }}
       stage={
-        <span className="float-thing" data-result={guess ? result : "held"}>
-          <Picture picture={round.picture} />
-        </span>
+        round.kind === "one" ? (
+          <span className="float-thing" data-result={dropped ? result : "held"}>
+            <Picture picture={round.picture} />
+          </span>
+        ) : (
+          round.things.map((thing, index) => (
+            <span
+              key={thing.picture.art}
+              className="float-thing is-paired"
+              data-thing={thing.picture.art}
+              data-side={index === 0 ? "left" : "right"}
+              data-result={dropped ? (thing.floats ? "float" : "sink") : "held"}
+              // The one tapped goes in first; the other follows.
+              data-after={dropped && guess !== thing.picture.art ? "true" : "false"}
+            >
+              <Picture picture={thing.picture} />
+            </span>
+          ))
+        )
       }
     >
-      {(["float", "sink"] as const).map((kind) => (
-        <Pick
-          key={kind}
-          id={kind}
-          name={kind}
-          art={<WaterMark kind={kind} />}
-          label={title(kind)}
-          chosen={guess === kind}
-          onPick={() => tap(kind)}
-          attrs={{ "data-guess": kind }}
-        />
-      ))}
+      {round.kind === "one"
+        ? (["float", "sink"] as const).map((kind) => (
+            <Pick
+              key={kind}
+              id={kind}
+              name={kind}
+              art={<WaterMark kind={kind} />}
+              label={title(kind)}
+              chosen={guess === kind}
+              onPick={() => tap(kind)}
+              attrs={{ "data-guess": kind }}
+            />
+          ))
+        : round.things.map((thing) => (
+            <Pick
+              key={thing.picture.art}
+              id={thing.picture.art}
+              name={thing.picture.name}
+              art={<Picture picture={thing.picture} />}
+              chosen={guess === thing.picture.art}
+              onPick={() => choose(thing.picture)}
+              attrs={{ "data-guess": thing.picture.art }}
+            />
+          ))}
     </GameFrame>
   );
+}
+
+/** What is said as the thing (or the two things) is held up. */
+function floatLine(round: FloatRound): Cue[] {
+  if (round.kind === "one") return [word(round.picture.name), say("science-float")];
+  return [...round.things.map((thing) => word(thing.picture.name)), say("science-float-which")];
 }
 
 // ------------------------------------------------------------------ the section
