@@ -12361,13 +12361,13 @@ a.unlock-buy {
    Nothing here moves anything: no size, margin or padding changes.
    --------------------------------------------------------------------------- */
 :root {
-  --grain: none;
+  --grain: url("./assets/textures/paper-grain.png");
   --grain-size: 128px 128px;
-  --light: none;
-  --edge: 0 0 0 0 transparent;
-  --shadow-rest: 0 8px 20px rgba(90, 70, 50, 0.08);
-  --shadow-raised: 0 16px 40px rgba(120, 90, 60, 0.08);
-  --shadow-float: 0 16px 40px rgba(120, 90, 60, 0.08);
+  --light: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0) 58%);
+  --edge: inset 0 0 0 1px rgba(120, 90, 60, 0.07), inset 0 1.5px 0 rgba(255, 255, 255, 0.9);
+  --shadow-rest: var(--edge), 0 1px 2px rgba(120, 90, 60, 0.1), 0 6px 14px rgba(120, 90, 60, 0.07);
+  --shadow-raised: var(--edge), 0 2px 4px rgba(120, 90, 60, 0.07), 0 14px 30px rgba(120, 90, 60, 0.1);
+  --shadow-float: var(--edge), 0 6px 14px rgba(80, 60, 40, 0.08), 0 24px 52px rgba(80, 60, 40, 0.16);
   --shadow: var(--shadow-raised);
 }
 
@@ -12384,9 +12384,24 @@ a.unlock-buy {
 
 /* The coloured shapes behind the page are washes: lighter where the brush went first, darker
    where the colour pooled at the edge, with the paper showing through. */
+.blob {
+  background-image:
+    radial-gradient(ellipse at 40% 38%, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 64%),
+    var(--grain);
+  background-size: auto, var(--grain-size);
+}
 
+.blob-mint {
+  box-shadow: inset 0 0 30px rgba(104, 150, 122, 0.2);
+}
 
+.blob-peach {
+  box-shadow: inset 0 0 30px rgba(204, 138, 104, 0.18);
+}
 
+.blob-sky {
+  box-shadow: inset 0 0 30px rgba(112, 146, 190, 0.18);
+}
 
 /* Every surface of the chrome: the light from above and the paper's tooth, over its own fill.
    (One class each, so a state that changes a surface, .is-current or [data-reveal], still wins.) */
@@ -12473,10 +12488,22 @@ a.unlock-buy {
     0 12px 24px rgba(47, 74, 60, 0.2);
 }
 
-/* A press is felt, not flashed: it eases in and out (a tenth of a second), with the same ring. */
+/* A press is felt, not flashed: the shrink eases in and out (a tenth of a second). Only the scale
+   eases: a transition on the filter or the ring made WebKit re-render the button every frame of it,
+   on every tap, and the iPhone's test run grew by half (the lab run on branch lab/polish-wk: the
+   one variant without this transition ran clean). The scale is composited, and costs nothing. */
+button,
+[role="button"] {
+  transition: scale 0.12s ease;
+}
 
 /* A screen arrives, it does not cut in: a short fade (opacity only, so nothing on it moves while
    it comes). Reduced motion stills it, like every other animation (see the rule for .app *). */
+.stage > [data-screen],
+.screen-body > [data-screen],
+.games > [data-screen] {
+  animation: screen-in 0.18s ease-out;
+}
 
 @keyframes screen-in {
   from {
@@ -12506,6 +12533,9 @@ a.unlock-buy {
   -webkit-user-drag: none;
 }
 
+.game-backdrop-front[data-drift="true"] {
+  animation: front-drift 26s ease-in-out infinite alternate;
+}
 
 @keyframes front-drift {
   from {
