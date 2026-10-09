@@ -347,10 +347,12 @@ function Builder({
         // Every sound is the app's own: a drum, a bell, a note. The note used to be the phone's voice saying "la".
         if (step.block === "drum") playEffect("boop", settingsRef.current);
         if (step.block === "bell") playEffect("chime", settingsRef.current);
-        if (step.block === "note" || step.block === "sing") playEffect("pop", settingsRef.current);
+        if (step.block === "note") playEffect("pop", settingsRef.current);
         // Hello world: the animal says it. The other moves are named as they happen, so the program is
-        // heard in words while it runs.
-        if (step.block === "hello" || step.block === "walk" || step.block === "jump" || step.block === "spin" || step.block === "dance") {
+        // heard in words while it runs, every time, however many of one move come in a row. Sing is
+        // named too: it was a pop alone, 70 ms long, and in the playtest of build 3 a row of sings
+        // was heard as one sound and then silence (see renderEffect for why the pops were lost).
+        if (step.block === "hello" || step.block === "walk" || step.block === "jump" || step.block === "spin" || step.block === "dance" || step.block === "sing") {
           speak.word(BLOCK_NAMES[step.block]);
         }
         if (splash) speak.prompt("build-splash", "Splash!");

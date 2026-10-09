@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { answerGate } from "./gate";
 import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
+import { noting } from "./kit";
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -103,6 +104,39 @@ test("week one's reader stars the child's animal, blends the words it can, and e
   // The story's closing question arrives as a chip, since the child has just finished; a grown-up opens it.
   await page.getByRole("button", { name: "For grown-ups: show tip" }).click();
   await expect(page.locator(".grownup-tip")).toContainText("what did Fox say");
+});
+
+test("a tapped word is sounded out and then said, whatever letters the child has met; a word like a is said whole", async ({ page }) => {
+  // The playtest of build 3: tapping a word said it whole, except "a", which said the a of ant.
+  // It asked for "l-oo-k... look!", the way the app sounds words out everywhere else.
+  await install(page, child(), 0);
+  await openReader(page, "w01-am-i-big");
+  await page.getByRole("button", { name: "Read", exact: true }).click();
+  const line = page.locator(".story-line");
+  await expect(line).toHaveAttribute("data-page-text", "Look, a little one!");
+  const look = page.locator(".story-word[data-word=look]");
+  await expect(look).toHaveAttribute("data-sounded", "true");
+  await expect(look).toHaveAttribute("aria-label", "Sound out Look");
+  const lit = await noting(look, (element) => element.querySelector(".is-sounding")?.textContent ?? "");
+  const before = (await playedClips(page)).length;
+  await look.click();
+  await expect.poll(async () => (await playedClips(page)).slice(before), { timeout: 20_000 }).toEqual(expect.arrayContaining(["words/look.mp3"]));
+  // Its sounds lit one at a time as they were said.
+  expect((await lit()).filter((piece) => piece !== "")).toEqual(["L", "oo", "k"]);
+  const sounded = (await playedClips(page)).slice(before);
+  if (clipShipped("sounds/oo.mp3")) {
+    expect(sounded.filter((clip) => clip.startsWith("sounds/"))).toEqual(["sounds/l.mp3", "sounds/oo.mp3", "sounds/k.mp3"]);
+  }
+  expect(sounded.indexOf("words/look.mp3")).toBe(sounded.length - 1);
+  // "a" is said whole: no sound of its own first.
+  const a = page.locator(".story-word[data-word=a]");
+  await expect(a).toHaveAttribute("data-sounded", "false");
+  const atA = (await playedClips(page)).length;
+  await a.click();
+  await expect.poll(async () => (await playedClips(page)).slice(atA), { timeout: 10_000 }).toEqual(["words/a.mp3"]);
+  // A word whose spelling says other sounds than the app teaches is said whole too.
+  await expect(page.locator(".story-word[data-word=little]")).toHaveAttribute("data-sounded", "false");
+  await expect(page.locator(".story-word[data-word=one]")).toHaveAttribute("data-sounded", "false");
 });
 
 test("later weeks read harder words, and the reader is read aloud page by page", async ({ page }) => {

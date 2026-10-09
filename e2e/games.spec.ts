@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { answerGate, openTeacherChild } from "./gate";
 import { installAudioSpy, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
-import { expectWiggle, game, matchPairs, onRound } from "./kit";
+import { expectWiggle, game, matchPairs, noting, onRound } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -137,6 +137,32 @@ test("hatch the egg wiggles a miss, glows the right letter, and hatches a baby a
   await expect(page.locator("[data-step=letter]")).toHaveAttribute("data-current", "true");
   await page.locator("[data-dock=stickers]").click();
   await expect(page.locator("[data-kind=animal]")).toHaveCount(1);
+});
+
+test("the round's sounding-out lights each letter of the word as its sound is said, then the whole word", async ({ page }) => {
+  // The playtest of build 3: the word's sounds, said as the round opens (a... n... t... for _NT),
+  // were taken for the answer to a tap, and the flat hum of /n/ for a buzzer. Lit one letter at a
+  // time, the blank first, they are seen to be the word's own sounds.
+  await install(page, profile, { quick: false });
+  const board = await openGame(page, "hatch");
+  const blanks = board.locator(".hatch-blanks");
+  const letters = await blanks.locator("span").count();
+  const lit = await noting(blanks, (element) =>
+    [...element.querySelectorAll("span")].flatMap((span, index) => (span.getAttribute("data-sounding") === "true" ? [index] : [])).join(","),
+  );
+  const whole = Array.from({ length: letters }, (_, index) => index).join(",");
+  await expect.poll(async () => (await lit()).includes(whole), { timeout: 20_000 }).toBe(true);
+  const seen = (await lit()).filter((entry) => entry !== "");
+  const sounds = seen.slice(0, seen.indexOf(whole));
+  // One letter at a time, from the first (the blank, on level 1), each after the one before.
+  expect(sounds.length).toBeGreaterThanOrEqual(2);
+  expect(sounds[0]).toBe("0");
+  for (const [at, entry] of sounds.entries()) {
+    expect(entry, seen.join(" | ")).toMatch(/^\d+$/);
+    if (at > 0) expect(Number(entry)).toBeGreaterThan(Number(sounds[at - 1]));
+  }
+  // And it lets go when the line is over.
+  await expect.poll(async () => (await lit()).at(-1)).toBe("");
 });
 
 test("the egg hatches at the end, and the baby is seen before the star", async ({ page }, testInfo) => {
@@ -456,7 +482,11 @@ test("spin and say lands on learned challenges and keeps the star after a miss",
       }
       await board.locator(".pick[data-keep]").click();
     } else {
+      const answer = (await board.locator(".game-frame").getAttribute("data-target")) ?? "";
       await board.locator('[data-answer="true"]').click();
+      // The right letter goes into the word, as in Hatch the Egg (in a playtest it stayed empty, and
+      // the right letter looked refused).
+      if (kind === "word") await expect(board.locator('[data-blank="filled"]')).toHaveText(answer, { ignoreCase: true });
     }
     await expect(board).toHaveAttribute("data-phase", "ready");
     await expect(page.locator(".star-count")).toHaveAttribute("data-stars", String(2 + offset));

@@ -195,31 +195,146 @@ export function endVoice(): void {
   refreshGains();
 }
 
-function envGain(ctx: AudioContext, start: number, peak: number, seconds: number): GainNode {
-  const node = ctx.createGain();
-  const bus = effectsGain ?? ctx.destination;
-  node.connect(bus);
-  node.gain.setValueAtTime(0.0001, start);
-  node.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), start + 0.02);
-  node.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
-  return node;
+/**
+ * One tone of an effect: a sine that glides from one pitch to another (an exponential glide), `at`
+ * seconds into the effect, for `seconds`. It swells to `peak` over its first 20 ms and fades to
+ * nothing by its end.
+ */
+type Tone = { from: number; to: number; at: number; seconds: number; peak: number };
+
+const PEAK = 0.12;
+const SWELL = 0.02;
+const FLOOR = 0.0001;
+
+const EFFECT_TONES: Record<EffectName, Tone[]> = {
+  tap: [{ from: 740, to: 560, at: 0, seconds: 0.035, peak: PEAK * 0.22 }],
+  pop: [{ from: 520, to: 760, at: 0, seconds: 0.07, peak: PEAK }],
+  chime: [
+    { from: 784, to: 784, at: 0, seconds: 0.28, peak: PEAK * 0.7 },
+    { from: 1175, to: 1175, at: 0.02, seconds: 0.32, peak: PEAK * 0.35 },
+  ],
+  boop: [{ from: 240, to: 180, at: 0, seconds: 0.14, peak: PEAK * 0.55 }],
+  cheer: [
+    { from: 523, to: 523, at: 0, seconds: 0.12, peak: PEAK * 0.45 },
+    { from: 659, to: 659, at: 0.1, seconds: 0.12, peak: PEAK * 0.45 },
+    { from: 784, to: 784, at: 0.2, seconds: 0.16, peak: PEAK * 0.5 },
+    { from: 1046, to: 1046, at: 0.32, seconds: 0.22, peak: PEAK * 0.4 },
+  ],
+  celebrate: [
+    { from: 523, to: 523, at: 0, seconds: 0.16, peak: PEAK * 0.55 },
+    { from: 659, to: 659, at: 0.14, seconds: 0.16, peak: PEAK * 0.55 },
+    { from: 784, to: 784, at: 0.28, seconds: 0.28, peak: PEAK * 0.6 },
+  ],
+};
+
+function envelope(t: number, seconds: number, peak: number): number {
+  const top = Math.max(FLOOR * 2, peak);
+  if (t <= SWELL) return FLOOR * Math.pow(top / FLOOR, t / SWELL);
+  if (t <= seconds) return top * Math.pow(FLOOR / top, (t - SWELL) / Math.max(SWELL, seconds - SWELL));
+  return FLOOR;
 }
 
-function tone(
-  ctx: AudioContext,
-  fromHz: number,
-  toHz: number,
-  start: number,
-  seconds: number,
-  peak: number,
-): void {
-  const osc = ctx.createOscillator();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(fromHz, start);
-  osc.frequency.exponentialRampToValueAtTime(Math.max(40, toHz), start + seconds);
-  osc.connect(envGain(ctx, start, peak, seconds));
-  osc.start(start);
-  osc.stop(start + seconds + 0.02);
+/**
+ * An effect as samples, at `rate` samples a second: its tones added together, each 20 ms longer
+ * than its fade (as the oscillators were stopped then).
+ *
+ * The effects used to be oscillators started at the context's clock (`currentTime`) with their
+ * swell and fade scheduled from it. On an iPhone that clock can trail the sound being played: the
+ * start, and the whole of a short effect, then lay in the past. In the playtest of build 3 a
+ * chime came out as its last tenth of a second, and a tap, a pop or a boop (35 to 140 ms) not at
+ * all: Make a dance's sing steps were silent. Rendered once and started with no time (as the voice
+ * clips are, which were heard every time), an effect is played whole.
+ */
+export function renderEffect(name: EffectName, rate: number): Float32Array {
+  const tones = EFFECT_TONES[name];
+  const length = Math.max(...tones.map((tone) => tone.at + tone.seconds + 0.02));
+  const out = new Float32Array(Math.ceil(length * rate));
+  for (const tone of tones) {
+    const first = Math.round(tone.at * rate);
+    const count = Math.round((tone.seconds + 0.02) * rate);
+    let phase = 0;
+    for (let index = 0; index < count && first + index < out.length; index += 1) {
+      const t = index / rate;
+      const hz = tone.from * Math.pow(tone.to / tone.from, Math.min(1, t / tone.seconds));
+      phase += (2 * Math.PI * hz) / rate;
+      out[first + index] += Math.sin(phase) * envelope(t, tone.seconds, tone.peak);
+    }
+  }
+  return out;
+}
+
+/** The rendered effects of the context, made the first time each is played. */
+const rendered = new Map<EffectName, AudioBuffer>();
+
+function effectBuffer(ctx: AudioContext, name: EffectName): AudioBuffer {
+  const kept = rendered.get(name);
+  if (kept && kept.sampleRate === ctx.sampleRate) return kept;
+  const samples = renderEffect(name, ctx.sampleRate);
+  const buffer = ctx.createBuffer(1, samples.length, ctx.sampleRate);
+  buffer.getChannelData(0).set(samples);
+  rendered.set(name, buffer);
+  return buffer;
+}
+
+/** A WAV file of 16-bit samples, for an effect played on an audio element. */
+function wavFile(samples: Float32Array, rate: number): ArrayBuffer {
+  const bytes = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(bytes);
+  const text = (at: number, value: string) => [...value].forEach((char, index) => view.setUint8(at + index, char.charCodeAt(0)));
+  text(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  text(8, "WAVE");
+  text(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  text(36, "data");
+  view.setUint32(40, samples.length * 2, true);
+  samples.forEach((sample, index) => view.setInt16(44 + index * 2, Math.max(-1, Math.min(1, sample)) * 0x7fff, true));
+  return bytes;
+}
+
+/** Effects as files, by effect and loudness (an audio element's volume cannot be set on iOS). */
+const effectFiles = new Map<string, string>();
+
+/**
+ * An effect played on an audio element: when the context is suspended or interrupted and does not
+ * start again at once (it starts again only inside a tap on iOS), as the voice clips do then.
+ */
+function playEffectElement(name: EffectName, level: number): void {
+  // A test browser has no audio device, and an element played there can bring WebKit down.
+  if (level <= 0 || typeof Audio === "undefined" || (typeof navigator !== "undefined" && navigator.webdriver)) return;
+  announceEffect(name);
+  try {
+    const key = `${name}@${Math.round(level * 20)}`;
+    let url = effectFiles.get(key);
+    if (!url) {
+      const rate = 22050;
+      const samples = renderEffect(name, rate).map((sample) => sample * level);
+      url = URL.createObjectURL(new Blob([wavFile(samples, rate)], { type: "audio/wav" }));
+      effectFiles.set(key, url);
+    }
+    const audio = new Audio(url);
+    void audio.play().catch(() => undefined);
+  } catch {
+    // No element either: the lesson goes on without the effect.
+  }
+}
+
+/**
+ * An effect has started. Nothing in the app listens: this is how the end-to-end tests count the
+ * effects a screen played (they used to count the oscillators the effects started).
+ */
+function announceEffect(name: EffectName): void {
+  try {
+    window.dispatchEvent(new CustomEvent("littlenest:effect", { detail: name }));
+  } catch {
+    // No window, or no CustomEvent: nothing to tell.
+  }
 }
 
 /** Short, soft effects. The effects slider is the bus gain, not this peak. */
@@ -233,49 +348,56 @@ export function playEffect(name: EffectName, settings?: Settings): void {
   if (settings) latest = settings;
   const current = latest;
   if (!current?.effects || clampVolume(current.effectsVolume) <= 0) return;
-  const ctx = ensure();
-  if (!ctx) return;
   const sound = calmEffect(name, current);
-  const run = () => {
-    if (ctx.state !== "running") return;
+  const ctx = ensure();
+  if (!ctx) {
+    playEffectElement(sound, effectsLevel());
+    return;
+  }
+  if (ctx.state === "running") {
+    refreshGains();
+    startEffect(ctx, sound);
+    return;
+  }
+  // Suspended or interrupted: inside a tap it starts again at once. If it has not by the time a
+  // short effect would be over, the effect is played on an audio element instead.
+  let played = false;
+  const viaContext = () => {
+    if (played || ctx.state !== "running") return;
+    played = true;
     refreshGains();
     startEffect(ctx, sound);
   };
-  if (isBlocked(ctx.state)) void ctx.resume().then(run).catch(() => undefined);
-  else run();
+  void ctx.resume().then(viaContext).catch(() => undefined);
+  setTimeout(() => {
+    if (played) return;
+    played = true;
+    playEffectElement(sound, effectsLevel());
+  }, 120);
+}
+
+/**
+ * A source for an effect, made with its own constructor rather than createBufferSource, which is
+ * the voice's: what watches the voice clips (the end-to-end tests) sees the voice alone, as it did
+ * when effects were oscillators. (createBufferSource where the constructor is missing.)
+ */
+function effectSource(ctx: AudioContext, buffer: AudioBuffer): AudioBufferSourceNode {
+  try {
+    return new AudioBufferSourceNode(ctx, { buffer });
+  } catch {
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    return source;
+  }
 }
 
 function startEffect(ctx: AudioContext, name: EffectName): void {
-  const now = ctx.currentTime;
-  const peak = 0.12;
   try {
-    if (name === "tap") {
-      tone(ctx, 740, 560, now, 0.035, peak * 0.22);
-      return;
-    }
-    if (name === "pop") {
-      tone(ctx, 520, 760, now, 0.07, peak);
-      return;
-    }
-    if (name === "chime") {
-      tone(ctx, 784, 784, now, 0.28, peak * 0.7);
-      tone(ctx, 1175, 1175, now + 0.02, 0.32, peak * 0.35);
-      return;
-    }
-    if (name === "boop") {
-      tone(ctx, 240, 180, now, 0.14, peak * 0.55);
-      return;
-    }
-    if (name === "cheer") {
-      tone(ctx, 523, 523, now, 0.12, peak * 0.45);
-      tone(ctx, 659, 659, now + 0.1, 0.12, peak * 0.45);
-      tone(ctx, 784, 784, now + 0.2, 0.16, peak * 0.5);
-      tone(ctx, 1046, 1046, now + 0.32, 0.22, peak * 0.4);
-      return;
-    }
-    tone(ctx, 523, 523, now, 0.16, peak * 0.55);
-    tone(ctx, 659, 659, now + 0.14, 0.16, peak * 0.55);
-    tone(ctx, 784, 784, now + 0.28, 0.28, peak * 0.6);
+    const source = effectSource(ctx, effectBuffer(ctx, name));
+    source.connect(effectsGain ?? ctx.destination);
+    // No start time: see renderEffect.
+    source.start();
+    announceEffect(name);
   } catch {
     // A browser can refuse the audio graph. The lesson still continues.
   }

@@ -139,3 +139,71 @@ describe("playOnBus", () => {
     await expect(playOnBus("/clip.mp3", "voice", new AbortController().signal)).rejects.toThrow(/blocked|play/i);
   });
 });
+
+describe("effects", () => {
+  afterEach(() => {
+    FakeAudio.srcs = [];
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  it("are rendered whole: a short swell, a fade to nothing, never louder than their peak", async () => {
+    const { renderEffect } = await import("./manager");
+    for (const name of ["tap", "pop", "chime", "boop", "cheer", "celebrate"] as const) {
+      const samples = renderEffect(name, 22050);
+      const peak = Math.max(...samples.map(Math.abs));
+      expect(peak, name).toBeGreaterThan(0.01);
+      expect(peak, name).toBeLessThanOrEqual(0.13);
+      expect(Math.abs(samples[0]), name).toBeLessThan(0.001);
+      expect(Math.abs(samples[samples.length - 1]), name).toBeLessThan(0.001);
+    }
+    // The pop is 70 ms and 20 ms more; the chime's second tone ends at 0.36 s.
+    expect(Math.abs(renderEffect("pop", 22050).length - 0.09 * 22050)).toBeLessThanOrEqual(1);
+    expect(Math.abs(renderEffect("chime", 22050).length - 0.36 * 22050)).toBeLessThanOrEqual(1);
+  });
+
+  it("start at once, with no time from the context's clock, on the effects channel", async () => {
+    // On an iPhone the clock could trail the sound being played: an effect started at it was cut,
+    // or not heard at all (the playtest of build 3: Make a dance's sing steps were silent).
+    const { gains, source } = stubAudio({});
+    const started: unknown[][] = [];
+    source.start = (...args: unknown[]) => {
+      started.push(args);
+    };
+    const made: { length: number }[] = [];
+    const ctx = (globalThis as unknown as { window: { AudioContext: () => Record<string, unknown> } }).window.AudioContext();
+    ctx.createBuffer = (_channels: number, length: number) => {
+      const data = new Float32Array(length);
+      made.push(data);
+      return { sampleRate: 22050, getChannelData: () => data };
+    };
+    const { applyAudioSettings, playEffect } = await import("./manager");
+    applyAudioSettings(DEFAULT_SETTINGS);
+    playEffect("pop");
+    playEffect("pop");
+    expect(started).toEqual([[], []]);
+    expect(source.connected).toBe(gains[1]);
+    // Rendered once, and played from that.
+    expect(made).toHaveLength(1);
+    expect(Math.max(...Array.from(made[0] as Float32Array, Math.abs))).toBeGreaterThan(0.05);
+  });
+
+  it("play on an audio element when the context will not start", async () => {
+    vi.useFakeTimers();
+    try {
+      stubAudio({ state: "suspended" });
+      const window = (globalThis as unknown as { window: { AudioContext: () => Record<string, unknown> } }).window;
+      const context = window.AudioContext();
+      context.resume = () => new Promise(() => undefined);
+      vi.stubGlobal("URL", { createObjectURL: () => "blob:effect" });
+      const { applyAudioSettings, playEffect } = await import("./manager");
+      applyAudioSettings(DEFAULT_SETTINGS);
+      playEffect("boop");
+      expect(FakeAudio.srcs).toEqual([]);
+      await vi.advanceTimersByTimeAsync(150);
+      expect(FakeAudio.srcs).toEqual(["blob:effect"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

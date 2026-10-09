@@ -50,7 +50,7 @@ test("Show Explore off hides Numbers, Colors, and Games and stays off after relo
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator("[data-screen='today']")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reading", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reading", exact: true })).toBeVisible();
   await expect(page.locator("[data-step=letter]")).toBeVisible();
   await expect(page.locator("[data-area=explore] [data-course=reading]")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "LittleNest Numbers" })).toBeVisible();
@@ -72,18 +72,18 @@ test("Show Explore off hides Numbers, Colors, and Games and stays off after relo
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("[data-screen='today']")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reading", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reading", exact: true })).toBeVisible();
   await expect(page.locator("[data-step=letter]")).toBeVisible();
   await expect(page.locator("[data-area=explore]")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "LittleNest Numbers" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "LittleNest Colors" })).toHaveCount(0);
   await expect(page.locator("[data-dock='games']")).toHaveCount(0);
-  await expect(page.locator("[data-course='reading']")).toBeVisible();
+  await expect(page.locator("[data-section-title=reading]")).toBeVisible();
 
   await page.reload();
   await page.getByRole("button", { name: "Mia" }).click();
   await expect(page.locator("[data-screen='today']")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reading", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reading", exact: true })).toBeVisible();
   await expect(page.locator("[data-step=letter]")).toBeVisible();
   await expect(page.locator("[data-area=explore]")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "LittleNest Numbers" })).toHaveCount(0);

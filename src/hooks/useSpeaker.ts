@@ -51,11 +51,11 @@ export function useSpeaker(settingsRef: { current: Settings }) {
        * `onDone` runs only when the whole line is said, not when it is stopped. `onStop` runs when it
        * is stopped before its end by something else being said (not when the screen closes). A line is
        * kept for "Hear it again" unless `remember` is false (what a tap says, right or wrong, is not
-       * the question).
+       * the question). `onCue` is told which part of the line is being said, as each starts.
        */
-      line(cues: Cue[], onDone?: () => void, options: { remember?: boolean; onStop?: () => void } = {}) {
+      line(cues: Cue[], onDone?: () => void, options: { remember?: boolean; onStop?: () => void; onCue?: (index: number) => void } = {}) {
         play((settings, signal) =>
-          playLine(cues, settings, signal, { remember: options.remember }).then(
+          playLine(cues, settings, signal, { remember: options.remember, onCue: options.onCue }).then(
             () => {
               if (!signal.aborted) onDone?.();
               else if (!gone.current) options.onStop?.();

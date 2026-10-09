@@ -95,6 +95,51 @@ test("bridge: a plank that is too short falls in, and the one that fits lets the
   await expectStar(page);
 });
 
+test("bridge: the planks lie in rows under the river, lined up with it: too short, just right and too long are seen at a glance", async ({ page }) => {
+  // The playtest of build 3: the planks were drawn in tiles, each to its own scale, and all three
+  // looked as if they would reach. In rows under the river, to its scale, they are seen against it.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const bridge = await openBuild(page, "bridge");
+  for (let round = 0; round < 3; round += 1) {
+    await onRound(bridge, round);
+    const gap = Number(await bridge.getAttribute("data-gap"));
+    const seen = await bridge.evaluate((frame) => {
+      const near = frame.querySelector(".bridge-bank:not(.is-far)")!.getBoundingClientRect();
+      const far = frame.querySelector(".bridge-bank.is-far")!.getBoundingClientRect();
+      const rows = [...frame.querySelectorAll(".game-tray .pick")].map((pick) => {
+        const water = pick.querySelector(".plank-row-water")!.getBoundingClientRect();
+        const plank = pick.querySelector(".plank-row-plank")!.getBoundingClientRect();
+        return { length: Number(pick.getAttribute("data-plank")), top: pick.getBoundingClientRect().top, water: [water.left, water.right], plank: [plank.left, plank.right] };
+      });
+      return { river: [near.right, far.left], rows };
+    });
+    const [riverStart, riverEnd] = seen.river;
+    const width = riverEnd - riverStart;
+    // Three rows, one under another.
+    expect(new Set(seen.rows.map((row) => Math.round(row.top))).size).toBe(3);
+    for (const row of seen.rows) {
+      // Each row's river is the river above it.
+      expect(Math.abs(row.water[0] - riverStart)).toBeLessThanOrEqual(1.5);
+      expect(Math.abs(row.water[1] - riverEnd)).toBeLessThanOrEqual(1.5);
+      const end = row.plank[1];
+      if (row.length === gap) {
+        // Just right: from bank to bank, resting a little on each.
+        expect(row.plank[0]).toBeLessThan(riverStart);
+        expect(end).toBeGreaterThan(riverEnd);
+        expect(end - riverEnd).toBeLessThan(width * 0.2);
+      } else if (row.length < gap) {
+        // Plainly too short: it ends well inside the river.
+        expect(riverEnd - end).toBeGreaterThan(width * 0.2);
+      } else {
+        // Plainly too long: it runs well onto the far bank.
+        expect(end - riverEnd).toBeGreaterThan(width * 0.4);
+      }
+    }
+    await bridge.locator(`.pick[data-plank="${gap}"]`).click();
+  }
+  await expectStar(page);
+});
+
 test("bridge: the third miss points at the plank that fits", async ({ page }) => {
   // Not hurried: the crossing at the end has to stay on screen long enough to be seen.
   const bridge = await openBuild(page, "bridge", { quick: false });

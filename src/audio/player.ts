@@ -338,8 +338,17 @@ function announceLine(cues: Cue[]): void {
   }
 }
 
-/** Say each part in turn, with a beat between, and remember the whole line for "Hear again". */
-async function playCues(cues: Cue[], settings: Settings, signal: AbortSignal, options: { remember?: boolean; follow?: ReadAlong } = {}): Promise<void> {
+/**
+ * Say each part in turn, with a beat between, and remember the whole line for "Hear again".
+ * `onCue` is told which part is being said, as each one starts (a game can light what it is about:
+ * Hatch the Egg lights each letter of the word as its sound is said).
+ */
+async function playCues(
+  cues: Cue[],
+  settings: Settings,
+  signal: AbortSignal,
+  options: { remember?: boolean; follow?: ReadAlong; onCue?: (index: number) => void } = {},
+): Promise<void> {
   if (signal.aborted) throw abortError();
   if (cues.length === 0) return;
   announceLine(cues);
@@ -347,6 +356,8 @@ async function playCues(cues: Cue[], settings: Settings, signal: AbortSignal, op
   const voice = takeVoice(signal);
   for (let index = 0; index < cues.length; index += 1) {
     if (index > 0) await sleep(BETWEEN_CUES_MS, voice);
+    if (voice.aborted) throw abortError();
+    options.onCue?.(index);
     await playOne(cues[index], settings, voice, options.follow);
   }
 }
@@ -359,7 +370,7 @@ function playCue(cue: Cue, settings: Settings, signal: AbortSignal, options: { r
  * An instruction and what it is about, as one line: "Tap the color you hear."
  * then "orange". Tapping "Hear again" says the whole line, not just the end.
  */
-export function playLine(cues: Cue[], settings: Settings, signal: AbortSignal, options: { remember?: boolean } = {}): Promise<void> {
+export function playLine(cues: Cue[], settings: Settings, signal: AbortSignal, options: { remember?: boolean; onCue?: (index: number) => void } = {}): Promise<void> {
   return playCues(cues, settings, signal, options);
 }
 

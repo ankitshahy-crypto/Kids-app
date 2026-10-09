@@ -794,6 +794,9 @@ export default function App() {
             onPick={(id) => {
               primeSpeech();
               select(id);
+              // A child picked from the start screen begins at home, on the reading path, not on
+              // whichever section was open when the last child left (a playtest came back to Build).
+              setCourse("reading");
               setScreen("today");
               setMode("kid");
             }}
@@ -939,9 +942,13 @@ export default function App() {
                       askSwitch();
                       return;
                     }
+                    // At home, All done is home: the reading path. It used to be the start screen,
+                    // and the child's own face there was the one thing to tap, which opened the
+                    // section the sheet came up on (Build, in the playtest of build 3), and Back
+                    // from there was home.
                     setOffer(false);
                     setTip(null);
-                    setMode("start");
+                    setCourse("reading");
                   }}
                 />
               ) : null}
@@ -996,7 +1003,7 @@ export default function App() {
               {screen === "closet" ? (
                 <Closet profile={active} onWear={(itemId) => wear(active.id, itemId)} onBack={() => setScreen("today")} />
               ) : null}
-              {screen === "stickers" ? <StickerBook profile={active} onBack={() => setScreen("today")} /> : null}
+              {screen === "stickers" ? <StickerBook profile={active} settingsRef={settingsRef} onBack={() => setScreen("today")} /> : null}
               {screen === "letter" ? (
                 <SoundItOut
                   settingsRef={settingsRef}

@@ -73,10 +73,26 @@ export function plankFit(gap: number, plank: number): PlankFit {
   return plank > gap ? "long" : "fits";
 }
 
-/** Rivers of each width, in a new order each play. The planks stay in size order, so they can be compared. */
+/** A length to the nearest half plank. */
+const half = (length: number) => Math.round(length * 2) / 2;
+
+/**
+ * Rivers of each width, in a new order each play. Each river has three planks: one plainly too
+ * short, the one that fits, and one plainly too long. The first build had planks one length apart
+ * (2, 3 and 4 for every river), and in a playtest all three looked as if they would reach across.
+ * Now the short one is half the river (two thirds of it from age 5) and the long one is half as
+ * long again as the river and more, so a child can see the difference before trying. In size order
+ * the one that fits would always be in the middle, so it takes each place in turn, river by river,
+ * and the other two change sides.
+ */
 export function bridgeRounds(level: LogicLevel, salt = 0): BridgeRound[] {
   const widths = level === "later" ? [2, 3, 4, 5] : [2, 3, 4];
-  return shuffle(widths, salt).map((gap) => ({ gap, planks: widths.length > 3 ? among(gap, widths, 3, salt + gap).sort((a, b) => a - b) : [...widths] }));
+  const [short, long] = level === "later" ? [0.6, 1.5] : [0.5, 1.75];
+  return shuffle(widths, salt).map((gap, at) => {
+    const planks = shuffle([half(gap * short), half(gap * long)], salt + gap * 7 + at);
+    planks.splice((Math.abs(salt) + at) % 3, 0, gap);
+    return { gap, planks };
+  });
 }
 
 // ---------------------------------------------------------------- tower

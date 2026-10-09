@@ -3,8 +3,8 @@ import { playEffect } from "../audio/manager";
 import { cancelSpeech, isAbortError, playLetterSound, playStoryLine, playWordId, sleep, type ReadAlong } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import { estimateTimes, fitsLine, lineWords, speechMs, wordAtChar, wordAtTime, wordOffsets, type LineTimes } from "../data/readAlong";
-import { storyLineId, storyText, storyTitleId, storyTokens, type Story, type StoryHero, type StoryToken } from "../data/stories";
-import { splitSounds } from "../data/units";
+import { soundOut, storyLineId, storyText, storyTitleId, storyTokens, type Story, type StoryHero, type StoryToken } from "../data/stories";
+import type { SoundPiece } from "../data/units";
 import type { Outfit } from "../data/wardrobe";
 import { phonemeOf } from "../data/wordBuild";
 import type { Settings } from "../settings";
@@ -20,8 +20,7 @@ const SILENT_E_MS = 320;
  * "cake" is c-a-k-e with a silent e. Marks between letters stay with the
  * piece before them.
  */
-function shownPieces(text: string, word: string): string[] {
-  const pieces = splitSounds(word);
+function shownPieces(text: string, pieces: readonly SoundPiece[]): string[] {
   const out: string[] = [];
   let at = 0;
   for (const piece of pieces) {
@@ -60,8 +59,10 @@ function loadStoryTimes(): Promise<void> {
 /**
  * A decodable reader. The narrator reads each page and each word lights up
  * as it is read, so a child's eyes follow the words; every word can be
- * tapped. A word the child can sound out plays its letter sounds, then the
- * word. Other words are read whole. There is no timer and no wrong tap.
+ * tapped. A tapped word is sounded out, one sound at a time with its letters
+ * lit, then said: "l-oo-k... look!", as the app teaches everywhere else. A
+ * word that would come out wrong is said whole (soundOut in stories.ts).
+ * There is no timer and no wrong tap.
  */
 export function StoryReader({
   story,
@@ -186,9 +187,9 @@ export function StoryReader({
     setSpeaking(index);
     setActiveLetter(null);
     try {
-      if (token.role === "target") {
-        // One sound at a time: a digraph or vowel team is one piece, the e of cake is silent.
-        const pieces = splitSounds(token.word);
+      // One sound at a time: a digraph or vowel team is one piece, the e of cake is silent.
+      const pieces = soundOut(token.word);
+      if (pieces) {
         for (let at = 0; at < pieces.length; at += 1) {
           if (signal.aborted) return;
           const piece = pieces[at];
@@ -266,6 +267,7 @@ export function StoryReader({
               // This word's place among the page's words, to match the narrator's.
               const wordIndex = tokens.slice(0, index).filter((item) => item.kind === "word").length;
               const read = reading === wordIndex && speaking === null;
+              const pieces = soundOut(token.word);
               return (
                 <button
                   key={index}
@@ -274,11 +276,12 @@ export function StoryReader({
                   data-word={token.word}
                   data-role={token.role}
                   data-word-index={wordIndex}
-                  aria-label={token.role === "target" ? `Sound out ${token.text}` : token.text}
+                  data-sounded={pieces ? "true" : "false"}
+                  aria-label={pieces ? `Sound out ${token.text}` : token.text}
                   onClick={() => void sayWord(token, index)}
                 >
-                  {token.role === "target" && speaking === index
-                    ? shownPieces(token.text, token.word).map((piece, at) => (
+                  {pieces && speaking === index
+                    ? shownPieces(token.text, pieces).map((piece, at) => (
                         <span key={at} className={activeLetter === at ? "is-sounding" : ""}>
                           {piece}
                         </span>

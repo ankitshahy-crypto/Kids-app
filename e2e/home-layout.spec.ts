@@ -28,7 +28,9 @@ async function openHome(page: Page) {
 
 test("the reading lesson leads, and Explore sits below it", async ({ page }) => {
   await openHome(page);
-  const pilot = page.getByRole("button", { name: "Reading", exact: true });
+  // Home says it is Reading, as a name: it was a pill that looked like a button and did nothing.
+  const pilot = page.getByRole("heading", { name: "Reading", exact: true });
+  await expect(page.getByRole("button", { name: "Reading", exact: true })).toHaveCount(0);
   const explore = page.locator("[data-area=explore]");
   await expect(pilot).toBeVisible();
   await expect(page.locator("[data-step=letter]")).toBeVisible();

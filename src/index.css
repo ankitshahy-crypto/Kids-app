@@ -2215,22 +2215,6 @@ button:focus-visible {
   min-height: 32px;
 }
 
-.pilot-label {
-  position: relative;
-  align-self: flex-start;
-  margin: 0;
-  min-height: 32px;
-  padding: 2px 12px;
-  border-radius: 999px;
-  background: #f3faf4;
-  color: var(--text-sage);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* A 64px touch area around the 32px pill, without taking more room. */
 /* An Explore section's page: one column, with room for all of its activities, on any screen. */
 .today.is-section {
   display: flex;
@@ -2256,16 +2240,6 @@ button:focus-visible {
   line-height: 1.2;
   font-weight: 700;
   color: var(--ink);
-}
-
-.pilot-label::before {
-  content: "";
-  position: absolute;
-  inset: -16px 0;
-}
-
-.pilot-label.is-selected {
-  box-shadow: inset 0 0 0 2px var(--sage-soft);
 }
 
 .explore-area {
@@ -2359,6 +2333,64 @@ button:focus-visible {
 
 .trail-stop.is-done {
   background: #f3faf4;
+}
+
+/* A finished stop has a tick on its shoulder, so the one still to do is plain to see. */
+.trail-done {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sage);
+  color: var(--paper);
+  box-shadow: 0 0 0 3px var(--paper);
+}
+
+.trail-done svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* A tap on "3 of 4 · 1 more!": the stops still to do pulse, twice. Two names, so each tap pulses again. */
+.trail-stop[data-point="a"] {
+  animation: trail-point-a 0.7s ease 2;
+}
+
+.trail-stop[data-point="b"] {
+  animation: trail-point-b 0.7s ease 2;
+}
+
+@keyframes trail-point-a {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.14);
+  }
+}
+
+@keyframes trail-point-b {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trail-stop[data-point] {
+    animation: none;
+    box-shadow:
+      0 0 0 8px rgba(126, 174, 134, 0.28),
+      0 0 22px rgba(242, 193, 78, 0.85);
+  }
 }
 
 .trail-animal {
@@ -3942,6 +3974,48 @@ button:focus-visible {
 .sticker-grid li[data-kind="word"] {
   color: var(--text-warm);
   font-size: 20px;
+}
+
+/* A sticker is a button: tapped, it says what it is, with a little bounce. */
+.sticker-say {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  padding: 4px;
+  overflow-wrap: anywhere;
+}
+
+.sticker-say[data-said="a"] {
+  animation: sticker-said-a 0.45s ease;
+}
+
+.sticker-say[data-said="b"] {
+  animation: sticker-said-b 0.45s ease;
+}
+
+@keyframes sticker-said-a {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes sticker-said-b {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
 }
 
 .sticker-nav {
@@ -6881,11 +6955,7 @@ input.is-pressed,
   bottom: auto;
   width: calc(100% / var(--cols));
   height: calc(100% / var(--rows));
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
   z-index: 2;
-  padding: 4px 6px;
   box-sizing: border-box;
   /* Moved by its transform (set inline, in cells), over a step's time (--step, set inline). */
   transition: transform var(--step, 0.48s) var(--calm);
@@ -6893,12 +6963,28 @@ input.is-pressed,
   pointer-events: none;
 }
 
+/* The animal is drawn from its width, as in every other game: most of the tile's width, centered,
+   standing 4px above the tile's bottom edge (the tiles are square, measured in ThinkCode.tsx, so
+   it is that much of the tile's height too).
+
+   It used to be drawn from its height, through four boxes each as wide as what was inside it: a
+   width the browser had to work out from a height worked out from a percentage. On an iPhone
+   (playtest of build 3) it came out as nothing, and the board had a nest and no animal. Every box
+   here now has its width given, and its height follows from the picture's square. */
+.code-pet .game-host-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  display: block;
+  width: 78%;
+  margin: 0 auto;
+}
+
 /* The hop and the bump live here, between the mood (on the body) and the face. */
 .code-pet-move {
-  display: flex;
-  justify-content: center;
-  height: 100%;
-  max-width: 100%;
+  display: block;
+  width: 100%;
   transform-origin: 50% 90%;
 }
 
@@ -6907,27 +6993,11 @@ input.is-pressed,
   transform: scaleX(-1);
 }
 
-/* As tall as the cell allows, and never wider than it: the cells are taller than they are wide on a
-   phone, and wider than tall on an iPad in landscape. */
-.code-pet .game-host-body {
-  display: flex;
-  justify-content: center;
-  height: 86%;
-  max-width: 92%;
-}
-
-.code-pet .hero {
-  display: flex;
-  justify-content: center;
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-}
-
+.code-pet .hero,
 .code-pet .hero .avatar-art {
-  height: 100%;
-  width: auto;
-  max-width: 100%;
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* One hop with each step, a step's time long: a squash as it pushes off, a stretch at the top, a
@@ -8624,10 +8694,96 @@ input.is-pressed,
   }
 }
 
-.plank-art {
-  display: block;
+/* Bridge: the planks lie in rows under the river (BuildGames.tsx, PlankRow). Three rows, each 60px
+   tall as a child sees it, like every other thing to tap (an iPad on its side draws the game at
+   1.2, so 50px there), and the gaps between them. Three rows are taller than a row of pictures, so
+   the scene may be as short as 184px, as in the other games with two rows: on an iPhone SE with
+   the grown-ups' tip open, the scene is 196px and the last row is on the screen. */
+.game-frame[data-engineer="bridge"] {
+  --plank-row: 60px;
+  --tray-h: calc(var(--plank-row) * 3 + 12px);
+  --scene-h: clamp(184px, min(max(33svh, 100svh - 470px), var(--scene-fit)), 360px);
+}
+
+@media (min-width: 768px) and (orientation: landscape) {
+  .game-frame[data-engineer="bridge"] {
+    --plank-row: 50px;
+  }
+}
+
+.game-frame[data-engineer="bridge"] .game-tray {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.game-frame[data-engineer="bridge"] .game-tray .pick {
   width: 100%;
-  height: auto;
+  min-height: var(--plank-row);
+  padding: 0;
+  border-radius: 16px;
+}
+
+/* A wide row shakes from side to side when it does not fit; the tiles' tilt would swing its ends. */
+.game-frame[data-engineer="bridge"] .game-tray .pick[data-wiggle="a"] {
+  animation-name: plank-shake-a;
+}
+
+.game-frame[data-engineer="bridge"] .game-tray .pick[data-wiggle="b"] {
+  animation-name: plank-shake-b;
+}
+
+@keyframes plank-shake-a {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+
+@keyframes plank-shake-b {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+
+.plank-row {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+/* The river, faint, where it is in the scene above. */
+.plank-row-water {
+  position: absolute;
+  top: 14%;
+  bottom: 14%;
+  border-radius: 6px;
+  background: #dcedf8;
+}
+
+/* The plank as it lies in the scene: the same height, colour and edge. */
+.plank-row-plank {
+  position: absolute;
+  top: 50%;
+  height: 13px;
+  margin-top: -7px;
+  border-radius: 6px;
+  background: #c48f5c;
+  box-shadow: inset 0 -3px 0 #a8743f;
 }
 
 .block-art,
@@ -9429,6 +9585,30 @@ input.is-pressed,
 .game-tray .hatch-blanks span {
   min-height: 38px;
   font-size: 28px;
+}
+
+/* The word sounded out: the letter whose sound is being said lights, the blank too (a sound with no
+   letter yet), and the whole word lights as it is said. */
+.hatch-blanks span[data-sounding] {
+  border-radius: 10px 10px 0 0;
+  transition:
+    background-color 0.12s ease,
+    transform 0.12s ease;
+}
+
+.hatch-blanks span[data-sounding="true"] {
+  background: rgba(246, 213, 107, 0.6);
+  transform: translateY(-3px);
+}
+
+.app[data-calm="true"] .hatch-blanks span[data-sounding="true"] {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hatch-blanks span[data-sounding="true"] {
+    transform: none;
+  }
 }
 
 .egg-rock {
@@ -10478,9 +10658,13 @@ input.is-pressed,
   }
 }
 
-/* The short progress strip: "2 of 4 · 2 more!" No clock, no countdown. */
+/* The short progress strip: "2 of 4 · 2 more!" No clock, no countdown. While something is left it
+   is a button: a tap makes the stops still to do pulse on the path. */
 .chunk-strip {
   margin: 0;
+  border: 0;
+  font-family: inherit;
+  line-height: inherit;
   text-align: center;
   font-size: 15px;
   font-weight: 700;
@@ -11934,7 +12118,7 @@ a.unlock-buy {
 }
 
 /* Labels with no larger size of their own on a wide screen. */
-.app.mode-kid :is(.build-name, .explore-tag, .letter-hear, .trace-practice button, .pilot-label, .today-focus, .chunk-strip, .hear-again-text, .break-text, .code-section h2) {
+.app.mode-kid :is(.build-name, .explore-tag, .letter-hear, .trace-practice button, .today-focus, .chunk-strip, .hear-again-text, .break-text, .code-section h2) {
   font-size: 16px;
 }
 
@@ -11955,10 +12139,6 @@ a.unlock-buy {
   .app.mode-kid .dock-button {
     font-size: 16px;
   }
-}
-
-.app.mode-kid .pilot-label {
-  min-height: 44px;
 }
 
 .grownup-tip-hide {

@@ -1,7 +1,7 @@
 import type { IllustrationName } from "../illustrations";
 import { PHONICS_READERS } from "./readersPhonics";
 import type { ThemeId } from "./themes";
-import { soundMet, soundsNeeded } from "./units";
+import { soundMet, soundsNeeded, splitSounds, type SoundPiece } from "./units";
 
 /**
  * Decodable readers. Each week's story uses only the letters taught so far
@@ -805,6 +805,48 @@ const STORY_READ = new Set(
     " ",
   ),
 );
+
+/**
+ * Words a tapped word is said whole for, not sounded out, because sounding them out would teach a
+ * wrong sound: the sight words above (all but look and good, whose oo is the oo of moon, near
+ * enough to blend), "a" and "I" (as words they do not say their letter's sound: tapped, "a" used to
+ * say the a of ant), story words whose letters do not say what this app teaches them to (the a of
+ * ball and water, the long i of kind, the o of hello, the le of whistle, the ed of harmed), the
+ * hero names that are not spelled as they sound, and sounds that are not words (ahh, hmm, shh).
+ */
+const SAID_WHOLE = new Set([
+  ...[...STORY_READ].filter((word) => word !== "look" && word !== "good"),
+  ...`a i ahh hmm shh zzz zzzip ball small calm buy hello hero gold kind tiny cozy eight water wash wasp wants harmed whistle bear lion koala penguin`.split(" "),
+]);
+
+/**
+ * A tapped word sounded out: the pieces it is said in, one sound each, then the word. Null for a
+ * word that is said whole (SAID_WHOLE, or one with a spelling this app teaches no sound for).
+ *
+ * Every word that can be is sounded out, whatever letters the child has met: in the playtest of
+ * build 3 a tapped word was only sounded out when the child knew all its letters, so in the first
+ * weeks almost every word was said whole, and "a" (the one that was not) said a sound.
+ *
+ * A doubled letter is one sound (e-gg, b-u-zz, d-i-nn-er), and the u after q is part of the q's
+ * own sound (qu-i-ck).
+ */
+export function soundOut(word: string): SoundPiece[] | null {
+  const plain = word.toLowerCase().replace(/[^a-z]/g, "");
+  if (!plain || SAID_WHOLE.has(plain)) return null;
+  const pieces: SoundPiece[] = [];
+  for (const piece of splitSounds(plain)) {
+    if (piece.untaught) return null;
+    const last = pieces[pieces.length - 1];
+    const doubled = last && !last.silent && !piece.silent && piece.text.length === 1 && last.text === piece.text && !/[aeiou]/.test(piece.text);
+    const qu = last && last.text === "q" && piece.text === "u";
+    if (last && (doubled || qu)) {
+      pieces[pieces.length - 1] = { ...last, text: last.text + piece.text };
+      continue;
+    }
+    pieces.push(piece);
+  }
+  return pieces;
+}
 
 export type StoryToken =
   | { kind: "word"; text: string; word: string; role: "target" | "glue" | "hero" }

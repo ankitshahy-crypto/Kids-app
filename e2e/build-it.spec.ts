@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { installAudioSpy, spokenLines } from "./audioSpy";
+import { installAudioSpy, playedClips, playedEffects, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 import { noting } from "./kit";
 
@@ -301,6 +301,32 @@ test("a step tapped in Your steps comes out", async ({ page }) => {
   for (const block of ["walk", "spin", "jump"]) await board.locator(`[data-block=${block}]`).click();
   await board.locator("[data-index='1']").click();
   await expect(board).toHaveAttribute("data-script", "walk,jump");
+});
+
+test("a move done three times in a row is heard three times", async ({ page }) => {
+  // The playtest of build 3: sing, sing, sing played one sound and then silence, while the steps
+  // lit one by one. Sing was a 70 ms pop; it is named now, like every other move.
+  await installAudioSpy(page);
+  await install(page, "move");
+  const board = page.locator("[data-build=move]");
+  for (let step = 0; step < 3; step += 1) await board.locator("[data-block=sing]").click();
+  await expect(board).toHaveAttribute("data-script", "sing,sing,sing");
+  const before = (await playedClips(page)).length;
+  await board.locator("[data-play=run]").click();
+  await expect(board).toHaveAttribute("data-played", "true", { timeout: 10_000 });
+  expect((await playedClips(page)).slice(before).filter((clip) => clip === "words/sing.mp3")).toHaveLength(3);
+});
+
+test("a drum played three times in a row is heard three times", async ({ page }) => {
+  await installAudioSpy(page);
+  await install(page, "music");
+  const board = page.locator("[data-build=music]");
+  for (let step = 0; step < 3; step += 1) await board.locator("[data-block=drum]").click();
+  await expect(board).toHaveAttribute("data-script", "drum,drum,drum");
+  const before = (await playedEffects(page)).length;
+  await board.locator("[data-play=run]").click();
+  await expect(board).toHaveAttribute("data-played", "true", { timeout: 10_000 });
+  expect((await playedEffects(page)).slice(before).filter((effect) => effect === "boop")).toHaveLength(3);
 });
 
 test("a repeat block plays the drum three times", async ({ page }, testInfo) => {
