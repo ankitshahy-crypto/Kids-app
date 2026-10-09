@@ -172,6 +172,14 @@ export function HatchGame({
 
   const stillNeeded = new Set(round.blanks.filter((index) => !filled.includes(index)).map(charAt));
   const done = rounds.finished ? list.length : rounds.index + (solved ? 1 : 0);
+  // The round's line sounds the word out ("Tap the missing letters", then a... n... t..., then "ant"),
+  // and each letter lights as its sound is said, the blank too; the whole word lights as it is said.
+  // In the playtest of build 3 the sounding-out was taken for answers: /n/ is a flat hum, and it was
+  // heard as a buzzer for the A just tapped. Lit, the sounds are seen to be the word's own.
+  const voiced = round.word.letters.flatMap((letter, index) => (letter.silent ? [] : [index]));
+  const part = coach.saying;
+  const soundingLetter = part !== null && part >= 1 && part <= voiced.length ? voiced[part - 1] : null;
+  const sayingWord = part === voiced.length + 1;
   return (
     <GameFrame
       screen="hatch"
@@ -198,12 +206,16 @@ export function HatchGame({
         </span>
       }
     >
-      <p className="hatch-blanks" aria-label="Word">
+      <p className="hatch-blanks" aria-label="Word" data-saying={sayingWord ? "word" : soundingLetter !== null ? "sound" : "none"}>
         {round.word.letters.map((letter, index) => {
           const open = round.blanks.includes(index);
           const show = !open || filled.includes(index);
           return (
-            <span key={`${letter.char}-${index}`} data-blank={open ? (show ? "filled" : "open") : "shown"}>
+            <span
+              key={`${letter.char}-${index}`}
+              data-blank={open ? (show ? "filled" : "open") : "shown"}
+              data-sounding={soundingLetter === index || sayingWord ? "true" : "false"}
+            >
               {show ? letter.char : ""}
             </span>
           );

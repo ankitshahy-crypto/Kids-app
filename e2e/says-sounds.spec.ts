@@ -144,18 +144,14 @@ async function onThisCard(page: Page): Promise<() => Promise<Clip[]>> {
   return async () => (await clips(page)).filter((clip) => clip.word === word);
 }
 
-/** The finishing chime and other effects are synthesized: count the oscillators they start. */
+/** The finishing chime and other effects: the app announces each one it plays ("littlenest:effect"). */
 async function countEffects(page: Page) {
   await page.addInitScript(() => {
-    const target = window as Window & { __tones?: number; webkitAudioContext?: typeof AudioContext };
+    const target = window as Window & { __tones?: number };
     target.__tones = 0;
-    const Ctor = window.AudioContext ?? target.webkitAudioContext;
-    if (!Ctor) return;
-    const create = Ctor.prototype.createOscillator;
-    Ctor.prototype.createOscillator = function (this: AudioContext) {
+    window.addEventListener("littlenest:effect", () => {
       target.__tones = (target.__tones ?? 0) + 1;
-      return create.apply(this);
-    };
+    });
   });
 }
 

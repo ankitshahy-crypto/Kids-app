@@ -58,7 +58,7 @@ test("each Explore section opens as a page with its name and a Back button", asy
     expect(box!.width).toBeGreaterThanOrEqual(64);
     await back.click();
     await expect(page.locator("[data-step=letter]")).toBeVisible();
-    await expect(page.locator("[data-section-title]")).toHaveCount(0);
+    await expect(page.locator("[data-section-title]")).toHaveText("Reading");
   }
 });
 

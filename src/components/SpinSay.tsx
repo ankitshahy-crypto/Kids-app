@@ -378,8 +378,8 @@ function PickChallenge({
   choices: Choice[];
   praise: Cue[];
   stage: ReactNode;
-  /** Something set over the choices, across the tray (a word with a letter missing). */
-  top?: ReactNode;
+  /** Something set over the choices, across the tray (a word with a letter missing), drawn again once it is solved. */
+  top?: (solved: boolean) => ReactNode;
   animal: AnimalId;
   outfit: Outfit;
   settingsRef: { current: Settings };
@@ -414,7 +414,7 @@ function PickChallenge({
       stage={stage}
       attrs={{ "data-challenge": kind, "data-target": target, "data-solved": solved ? "true" : "false", ...attrs }}
     >
-      {top}
+      {top?.(solved)}
       {choices.map((choice) => (
         <Pick
           key={choice.id}
@@ -519,15 +519,20 @@ function Challenge({
             <span className="hatch-picture">{round.word.illustration ? <Illustration name={round.word.illustration} /> : null}</span>
           </span>
         }
-        top={
+        // The right letter goes into the blank, as in Hatch the Egg. It stayed empty while the word was
+        // said and the wheel came back, and in a playtest the right letter looked refused.
+        top={(solved) => (
           <p className="hatch-blanks" aria-label="Word">
-            {round.word.letters.map((letter, letterIndex) => (
-              <span key={`${letter.char}-${letterIndex}`} data-blank={letterIndex === round.blank ? "open" : "shown"}>
-                {letterIndex === round.blank ? "" : letter.char}
-              </span>
-            ))}
+            {round.word.letters.map((letter, letterIndex) => {
+              const open = letterIndex === round.blank;
+              return (
+                <span key={`${letter.char}-${letterIndex}`} data-blank={open ? (solved ? "filled" : "open") : "shown"}>
+                  {open && !solved ? "" : letter.char}
+                </span>
+              );
+            })}
           </p>
-        }
+        )}
         onDone={() => onDone([{ kind: "word", label: round.word.word }])}
       />
     );

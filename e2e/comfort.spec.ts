@@ -291,8 +291,13 @@ test("finishing the lesson offers One more? up to the parent's limit, then All d
   await expect(sheet).toHaveAttribute("data-more", "false");
   await expect(sheet).toContainText("All done for now");
   await expect(page.getByRole("button", { name: "One more" })).toHaveCount(0);
+  // All done is home: the reading path, with nothing over it (it was the start screen, and the
+  // child's own face there led back into the section the sheet came up on).
   await page.locator(".wrap-up-done").click();
-  await expect(page.locator("[data-screen=start]")).toBeVisible();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.locator("[data-screen=start]")).toHaveCount(0);
+  await expect(page.locator("[data-section-title=reading]")).toBeVisible();
+  await expect(page.locator("[data-step=letter]")).toBeVisible();
 });
 
 test("the lesson length ends with a friendly wrap-up and no clock", async ({ page }) => {
@@ -311,7 +316,51 @@ test("the lesson length ends with a friendly wrap-up and no clock", async ({ pag
   await expect(sheet).not.toContainText(/\d+:\d\d|minute|second/i);
   await expect(page.locator(".goal-ring")).toBeVisible();
   await page.locator(".wrap-up-done").click();
-  await expect(page.locator("[data-screen=start]")).toBeVisible();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.locator("[data-section-title=reading]")).toBeVisible();
+});
+
+test("3 of 4 says which one is left: finished stops have a tick, and a tap on the strip makes the one left pulse", async ({ page }) => {
+  // The playtest of build 3: "3 of 4 · 1 more!" gave no way to find the fourth.
+  await install(page, child({ days: { [today]: { reading: { letter: true, draw: true, story: false, moment: true } } } }));
+  await page.getByRole("button", { name: "Mia" }).click();
+  const strip = page.locator(".chunk-strip");
+  await expect(strip).toHaveText("3 of 4 · 1 more!");
+  for (const step of ["letter", "draw", "moment"]) await expect(page.locator(`[data-step=${step}] .trail-done`)).toBeVisible();
+  await expect(page.locator("[data-step=story] .trail-done")).toHaveCount(0);
+  await expect(page.locator("[data-step=draw]")).toHaveAttribute("aria-label", "Draw, done");
+  await expect(page.locator("[data-step=story]")).toHaveAttribute("aria-label", "Story");
+  await strip.click();
+  await expect(page.locator("[data-step=story]")).toHaveAttribute("data-point", "a");
+  for (const step of ["letter", "draw", "moment"]) await expect(page.locator(`[data-step=${step}]`)).not.toHaveAttribute("data-point", /./);
+  // Again, and it pulses again.
+  await strip.click();
+  await expect(page.locator("[data-step=story]")).toHaveAttribute("data-point", "b");
+});
+
+test("All done on a section's page goes home to the reading path, not to the start screen and back", async ({ page }) => {
+  // The playtest of build 3: the sheet came up on Build, All done went to the start screen, the
+  // child's face there went back to Build, and Back from Build was home.
+  await install(page, child({ readingMs: { [today]: 118_500 } }), { readingGoal: 2, extraChunks: 0 });
+  await page.getByRole("button", { name: "Mia" }).click();
+  await page.locator("[data-area=explore] [data-course=build]").click();
+  await expect(page.locator("[data-section-title=build]")).toBeVisible();
+  // Active time counts while the child is tapping: a few taps cross the two-minute mark, and the
+  // sheet comes up on the page the child is on.
+  for (let tick = 0; tick < 4; tick += 1) {
+    await page.mouse.click(10, 300);
+    await page.waitForTimeout(700);
+  }
+  const sheet = page.locator("[data-wrap-up]");
+  await expect(sheet).toHaveAttribute("data-wrap-up", "time");
+  await expect(sheet).toHaveAttribute("data-more", "false");
+  await expect(page.locator("[data-section-title=build]")).toBeVisible();
+  await page.locator("[data-goal-met] .cheer-done").click({ timeout: 3_000 }).catch(() => undefined);
+  await page.locator(".wrap-up-done").click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.locator("[data-screen=start]")).toHaveCount(0);
+  await expect(page.locator("[data-section-title=reading]")).toBeVisible();
+  await expect(page.locator("[data-step=letter]")).toBeVisible();
 });
 
 test("the daily surprise is the same visitor all day and brings the theme object", async ({ page }) => {

@@ -44,9 +44,16 @@ describe("the bridge", () => {
         for (const round of rounds) {
           expect(round.planks).toHaveLength(3);
           expect(round.planks.filter((plank) => plankFit(round.gap, plank) === "fits")).toHaveLength(1);
-          // Shortest to longest, so the eye can compare them.
-          expect([...round.planks].sort((a, b) => a - b)).toEqual(round.planks);
+          // One plainly too short and one plainly too long: in a playtest, planks one length apart all
+          // looked as if they would reach across.
+          const short = round.planks.find((plank) => plankFit(round.gap, plank) === "short")!;
+          const long = round.planks.find((plank) => plankFit(round.gap, plank) === "long")!;
+          expect(short / round.gap).toBeLessThanOrEqual(level === "later" ? 0.67 : 0.5);
+          expect(long / round.gap).toBeGreaterThanOrEqual(1.5);
         }
+        // The one that fits is not always in the same place (in size order it was always the middle).
+        const places = rounds.map((round) => round.planks.indexOf(round.gap));
+        expect(new Set(places).size).toBe(3);
       }
     }
     expect(plankFit(3, 2)).toBe("short");

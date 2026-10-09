@@ -93,6 +93,9 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
   const [misses, setMisses] = useState(0);
   const [nudge, setNudge] = useState(false);
   const [mood, setMood] = useState<Mood>("idle");
+  // Which part of the round's line is being said (its index in `line`), while it is said: a game can
+  // light what that part is about. Null between lines, and while a tap's answer is said.
+  const [saying, setSaying] = useState<number | null>(null);
   const lineRef = useRef(line);
   lineRef.current = line;
   const missRef = useRef(0);
@@ -108,15 +111,38 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
     idle.current = null;
   }, []);
 
+  /** Which saying of the round's line `saying` follows: a line stopped by the next one tells nothing. */
+  const lineTurn = useRef(0);
+
+  /** The round's line, said with the part being said followed (`saying`). */
+  const sayLine = useCallback(() => {
+    const mine = ++lineTurn.current;
+    const done = () => {
+      if (lineTurn.current === mine) setSaying(null);
+    };
+    speak.line(lineRef.current, done, {
+      onCue: (index) => {
+        if (lineTurn.current === mine) setSaying(index);
+      },
+      onStop: done,
+    });
+  }, [speak]);
+
+  /** Something other than the round's line is about to be said: nothing of the line is lit. */
+  const leaveLine = () => {
+    lineTurn.current += 1;
+    setSaying(null);
+  };
+
   /** Start waiting again. If the child does nothing, the line is said once more and the choices pulse. */
   const arm = useCallback(() => {
     stopIdle();
     if (quiet.current) return;
     idle.current = window.setTimeout(() => {
       setNudge(true);
-      speak.line(lineRef.current);
+      sayLine();
     }, IDLE_MS);
-  }, [speak, stopIdle]);
+  }, [sayLine, stopIdle]);
 
   const feel = useCallback((next: Mood) => {
     setMood(next);
@@ -129,11 +155,11 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
     missRef.current = 0;
     setMisses(0);
     setNudge(false);
-    speak.line(lineRef.current);
+    sayLine();
     arm();
     return stopIdle;
     // A new round is a new line; the words themselves are read from the ref.
-  }, [round, speak, arm, stopIdle]);
+  }, [round, sayLine, arm, stopIdle]);
 
   useEffect(
     () => () => {
@@ -160,6 +186,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
    */
   const afterLine = (said: Cue[], then: () => void, { hold = 0, pause = 0, cap }: { hold?: number; pause?: number; cap: number }) => {
     const mine = ++turn.current;
+    leaveLine();
     if (after.current !== null) window.clearTimeout(after.current);
     // What a tap's answer says is not kept for "Hear it again": that button repeats the question.
     if (quick()) {
@@ -199,6 +226,8 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
     speak,
     mood,
     misses,
+    /** The part of the round's line being said, by its place in the line; null when none is. */
+    saying,
     /** The child has waited: the choices pulse to show what can be tapped. */
     nudge,
     /** Three misses: the answer is shown. */
@@ -206,13 +235,16 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
     /** Say the round's line again (the speaker button). */
     again() {
       setNudge(false);
-      speak.line(lineRef.current);
+      sayLine();
       arm();
     },
     /** A tap that is neither right nor wrong (picking something up, a step on the way). */
     touch(said?: Cue[]) {
       setNudge(false);
-      if (said) speak.line(said, undefined, { remember: false });
+      if (said) {
+        leaveLine();
+        speak.line(said, undefined, { remember: false });
+      }
       arm();
     },
     /**
@@ -237,7 +269,10 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
       feel("think");
       const again = missRef.current >= 2 ? lineRef.current.filter((cue) => !said.some((it) => it.text === cue.text)) : [];
       // What a wrong tap says is not kept for "Hear it again": that button repeats the question.
-      if (said.length + again.length > 0) speak.line([...said, ...again], undefined, { remember: false });
+      if (said.length + again.length > 0) {
+        leaveLine();
+        speak.line([...said, ...again], undefined, { remember: false });
+      }
       arm();
     },
     /**
@@ -257,7 +292,10 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
       playEffect("chime", settingsRef.current);
       feel("cheer");
       if (!then) {
-        if (said.length > 0) speak.line(said, undefined, { remember: false });
+        if (said.length > 0) {
+          leaveLine();
+          speak.line(said, undefined, { remember: false });
+        }
         return;
       }
       afterLine(said, then, { hold: reducedMotion() ? 300 : hold, cap });

@@ -1156,6 +1156,55 @@ for (const [name, setup] of [
   });
 }
 
+/**
+ * The animal is on the board at the start of every round: in the start tile, most of the tile
+ * high and wide. In the playtest of build 3 (an iPhone, a dog in its leaf hat and scarf) the board
+ * had its nest and no animal: the animal was drawn from a height its boxes had to work out, and
+ * came out as nothing. It is drawn from its width now, as in every other game.
+ */
+for (const ageRange of ["4", "6-7"]) {
+  test(`the animal stands in its start tile at the start of every round, as big as most of the tile (ages ${ageRange})`, async ({ page }) => {
+    test.setTimeout(60_000);
+    const dog = { activeId: "mia", profiles: [{ ...profile.profiles[0], ageRange, animal: "dog", outfit: { hat: "hat-leaf", scarf: "scarf-stripe" } }] };
+    await install(page, dog, { quick: true });
+    await openCoding(page);
+    await page.locator("[data-game-tile=bird]").click();
+    const board = page.locator(".game-frame[data-screen=bird]");
+    const rounds = Number(await board.getAttribute("data-rounds"));
+    for (let round = 0; round < rounds; round += 1) {
+      await onRound(board, round);
+      const mode = (await board.getAttribute("data-mode")) ?? "";
+      // Still (the last round's cheer, a bounce, can carry into the first moment of the next).
+      await expect(board.locator(".code-pet")).toHaveAttribute("data-mood", "idle");
+      const fit = await board.evaluate((frame) => {
+        const box = (element: Element | null) => {
+          const rect = element?.getBoundingClientRect();
+          return rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height } : null;
+        };
+        return { start: box(frame.querySelector(".code-cell[data-animal=true]")), art: box(frame.querySelector(".code-pet .avatar-art")) };
+      });
+      const { start, art } = fit as { start: NonNullable<typeof fit.start>; art: NonNullable<typeof fit.art> };
+      const where = `round ${round} (${mode}): ${JSON.stringify(fit)}`;
+      expect(start, where).toBeTruthy();
+      expect(art, where).toBeTruthy();
+      expect(art.width, where).toBeGreaterThanOrEqual(start.width * 0.7);
+      expect(art.height, where).toBeGreaterThanOrEqual(start.height * 0.7);
+      // In the start tile (its middle, across; standing on its floor, give or take the tile's margin).
+      expect((art.left + art.right) / 2, where).toBeGreaterThan(start.left);
+      expect((art.left + art.right) / 2, where).toBeLessThan(start.right);
+      expect(art.bottom, where).toBeLessThanOrEqual(start.bottom + 4);
+      expect(art.top, where).toBeGreaterThanOrEqual(start.top - 8);
+      // Play the round, to get to the next.
+      if (mode === "predict") await solvePredict(board);
+      else if (mode === "bug") {
+        await mendPlan(board);
+        await board.locator("[data-go=run]").click();
+        await roundOver(board, String(round));
+      } else await runPath(board);
+    }
+  });
+}
+
 test("the scene moves a little on its own, and the animal breathes and blinks", async ({ page }) => {
   await install(page, profile, { quick: true, salt: 4 });
   await openCoding(page);

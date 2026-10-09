@@ -79,17 +79,22 @@ function useLater() {
 const SPAN = 9;
 const BANK = 28;
 
-function PlankArt({ length }: { length: number }) {
-  const width = length * 20;
-  const left = 55 - width / 2;
+/**
+ * A plank in its row under the river: drawn where it would lie, to the river's own scale, over a
+ * faint river at the river's place. The tray is as wide as the scene, so a share of the row is the
+ * same share of the scene, and each plank is lined up with the river above it.
+ *
+ * The planks were drawn in square tiles, each to its own scale: on a phone the plank that fits was
+ * half as long as the river looked, and the long one looked about right. In the playtest of build 3
+ * all three looked as if they would reach. In rows, too short, just right and too long are seen
+ * at a glance, before trying.
+ */
+function PlankRow({ plank, gap }: { plank: number; gap: number }) {
   return (
-    <svg className="plank-art" viewBox="0 0 110 56" aria-hidden="true" focusable="false">
-      <rect x={left} y="18" width={width} height="20" rx="6" fill="#c48f5c" />
-      <rect x={left} y="32" width={width} height="6" rx="3" fill="#a8743f" />
-      <path d={`M${left + 7} 25h${width - 14}`} stroke="#dab088" strokeWidth="3" strokeLinecap="round" />
-      <circle cx={left + 7} cy="29" r="2" fill="#8a6a4a" />
-      <circle cx={left + width - 7} cy="29" r="2" fill="#8a6a4a" />
-    </svg>
+    <span className="plank-row" aria-hidden="true">
+      <span className="plank-row-water" style={{ left: `${BANK}%`, width: `${gap * SPAN}%` }} />
+      <span className="plank-row-plank" style={{ left: `${BANK - 3}%`, width: `${plank * SPAN + 6}%` }} />
+    </span>
   );
 }
 
@@ -164,8 +169,8 @@ function BridgeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
         <Pick
           key={plank}
           id={String(plank)}
-          name={`plank ${plank} long`}
-          art={<PlankArt length={plank} />}
+          name={plank === Math.min(...round.planks) ? "the shortest plank" : plank === Math.max(...round.planks) ? "the longest plank" : "the middle plank"}
+          art={<PlankRow plank={plank} gap={round.gap} />}
           wiggle={wiggle.id === String(plank) ? wiggle.count : 0}
           reveal={coach.reveal && plank === round.gap}
           onPick={() => lay(plank)}

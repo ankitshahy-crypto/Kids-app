@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { answerGate, openTeacherChild } from "./gate";
 import { finishLetterTracing } from "./traceFlow";
+import { clipShipped, installAudioSpy, playedClips } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
@@ -135,6 +136,32 @@ test("blending a word adds a sticker", async ({ page }, testInfo) => {
   await expect(page.locator("[data-kind=word]").first()).toBeVisible();
   if (testInfo.project.name === "iphone") {
     await page.screenshot({ path: "test-results/screenshots/sticker-book-iphone.png" });
+  }
+});
+
+test("a sticker says what it is when tapped: a letter, a word, a number, a colour", async ({ page }) => {
+  // The playtest of build 3: a tapped sticker did nothing. Hearing it is the payoff for earning it.
+  await installAudioSpy(page);
+  await page.addInitScript((created) => {
+    const stickers = [
+      { subject: "reading", kind: "letter", label: "m" },
+      { subject: "reading", kind: "word", label: "mat" },
+      { subject: "math", kind: "number", label: "3" },
+      { subject: "colors", kind: "color", label: "red" },
+    ];
+    localStorage.setItem("littlenest-profiles-v1", JSON.stringify({ activeId: "mia", profiles: [{ id: "mia", name: "Mia", ageRange: "4", animal: "fox", createdAt: created, stars: 4, days: {}, stickers }] }));
+    localStorage.setItem("littlenest-silent-hint-v1", "1");
+  }, createdThisWeek());
+  await page.goto("./");
+  await page.getByRole("button", { name: "Mia" }).click();
+  await page.locator("[data-dock=stickers]").click();
+  await expect(page.locator("[data-screen=stickers]")).toHaveAttribute("data-sticker-count", "4");
+  for (const [label, clip] of [["m", "letters/m.mp3"], ["mat", "words/mat.mp3"], ["3", "numbers/3.mp3"], ["red", "colors/red.mp3"]]) {
+    const sticker = page.locator(`[data-sticker="${label}"] button`);
+    const before = (await playedClips(page)).length;
+    await sticker.click();
+    await expect(sticker).toHaveAttribute("data-said", /^(a|b)$/);
+    if (clipShipped(clip)) await expect.poll(async () => (await playedClips(page)).slice(before), { timeout: 10_000 }).toContain(clip);
   }
 });
 

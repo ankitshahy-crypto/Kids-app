@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import manifest from "./audioManifest.json";
 import { animals } from "./animals";
 import { lettersIntroduced } from "./schedule";
-import { STORIES, STORY_GLUE, decodable, readerWeeks, storiesForWeek, storyChoices, storyForDay, storyForWeek, storyLineId, storyText, storyTokens, storyWordList, weekdayOf } from "./stories";
+import { STORIES, STORY_GLUE, decodable, readerWeeks, soundOut, storiesForWeek, storyChoices, storyForDay, storyForWeek, storyLineId, storyText, storyTokens, storyWordList, weekdayOf } from "./stories";
+import { phonemeOf } from "./wordBuild";
 import { THEME_IDS } from "./themes";
 
 const hero = { name: "Fox", kind: "fox" };
@@ -145,5 +146,42 @@ describe("decodable readers", () => {
     const words = manifest.words as Record<string, { say: string }>;
     for (const word of storyWordList()) expect(words[word], word).toBeTruthy();
     for (const animal of animals) expect(words[animal.id], animal.id).toBeTruthy();
+  });
+});
+
+describe("a tapped word in a reader", () => {
+  const pieces = (word: string) => soundOut(word)?.map((piece) => (piece.silent ? `(${piece.text})` : piece.text)).join("-") ?? null;
+
+  it("is sounded out, then said, whatever letters the child has met", () => {
+    // The playtest of build 3 asked for "l-oo-k... look!"
+    expect(pieces("look")).toBe("l-oo-k");
+    expect(pieces("ship")).toBe("sh-i-p");
+    expect(pieces("cake")).toBe("c-a-k-(e)");
+    expect(pieces("night")).toBe("n-igh-t");
+    // A doubled letter is one sound, and qu is the q's own sound.
+    expect(pieces("egg")).toBe("e-gg");
+    expect(pieces("buzz")).toBe("b-u-zz");
+    expect(pieces("dinner")).toBe("d-i-nn-er");
+    expect(pieces("quick")).toBe("qu-i-ck");
+    expect(pieces("squeak")).toBe("s-qu-ea-k");
+  });
+
+  it("is said whole when sounding it out would teach a wrong sound", () => {
+    // "a" said the a of ant when tapped.
+    for (const word of ["a", "i", "the", "said", "one", "was", "you", "ball", "water", "kind", "hello", "little", "whistle", "ahh", "shh"]) {
+      expect(soundOut(word), word).toBeNull();
+    }
+    // A spelling the app teaches no sound for.
+    expect(soundOut("cow")).toBeNull();
+    expect(soundOut("nice")).toBeNull();
+  });
+
+  it("has a sound for every piece of every story word it sounds out", () => {
+    for (const word of storyWordList()) {
+      for (const piece of soundOut(word) ?? []) {
+        if (piece.silent) continue;
+        expect(() => phonemeOf(piece.sound), `${word}: ${piece.text}`).not.toThrow();
+      }
+    }
   });
 });

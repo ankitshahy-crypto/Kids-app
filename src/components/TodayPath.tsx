@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MODULE_BUILD, MODULE_CODE, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
@@ -160,6 +161,11 @@ export function TodayPath({
   const finishedCount = stops.filter((stop) => done[stop.id]).length;
   const left = stops.length - finishedCount;
   const strip = left === 0 ? "All done today!" : finishedCount === 0 ? `${left} more!` : `${finishedCount} of ${stops.length} · ${left} more!`;
+  // "3 of 4 · 1 more!" did not say which one was left (playtest of build 3). A finished stop now has
+  // a tick, and a tap on the strip makes the ones still to do pulse on the path (each tap again).
+  // (Each stop says "done" to a screen reader once it is; the strip's own name is what it shows, so
+  // that it is never mistaken for a stop: "Draw" is a stop, not the strip.)
+  const [pointed, setPointed] = useState(0);
 
   return (
     <div
@@ -213,24 +219,23 @@ export function TodayPath({
       <div className="today-body">
         <section className="lesson">
           <div className="lesson-head">
-            {shown === "reading" ? (
+            {/* The page says which section it is, as a name, not a button. Home's name was a pill that
+                looked like a button and did nothing (it was once one of a row of sections to pick from);
+                in the playtest of build 3 it was tapped, and nothing happened. */}
+            <h1 className="section-title" data-section-title={shown}>
+              {shown === "reading" ? "Reading" : SECTION_TITLE[shown]}
+            </h1>
+            {shown === "reading" && left > 0 ? (
               <button
                 type="button"
-                className="pilot-label is-selected"
-                data-area="pilot"
-                data-course="reading"
-                aria-pressed="true"
-                onClick={() => onCourse("reading")}
+                className="chunk-strip"
+                data-done={finishedCount}
+                data-left={left}
+                onClick={() => setPointed((count) => count + 1)}
               >
-                Reading
+                {strip}
               </button>
-            ) : (
-              // The page says which section it is. The pill used to read "READING" on the Science page.
-              <h1 className="section-title" data-section-title={shown}>
-                {SECTION_TITLE[shown]}
-              </h1>
-            )}
-            {shown === "reading" ? (
+            ) : shown === "reading" ? (
               <p className="chunk-strip" data-done={finishedCount} data-left={left} aria-live="polite">
                 {strip}
               </p>
@@ -267,9 +272,18 @@ export function TodayPath({
               style={{ left: stop.left, top: stop.top }}
               data-step={stop.id}
               data-current={active ? "true" : "false"}
-              aria-label={stop.label}
+              // Two names for the pulse, turn about, so a second tap on the strip pulses again.
+              data-point={!finished && pointed > 0 ? (pointed % 2 === 1 ? "a" : "b") : undefined}
+              aria-label={finished ? `${stop.label}, done` : stop.label}
               onClick={() => onOpen(stop.id)}
             >
+              {finished ? (
+                <span className="trail-done" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="m6.5 12.5 3.5 3.5 7.5-8" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              ) : null}
               {stop.id === "letter" ? (
                 <span className={`trail-letter${letter.length > 1 ? " is-unit" : ""}`}>{letter}</span>
               ) : null}

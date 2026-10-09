@@ -38,6 +38,10 @@ export async function installAudioSpy(page: Page): Promise<void> {
       const src = String((event as CustomEvent<string>).detail ?? "");
       target.__audioAttempts?.push({ kind: "clip", detail: new URL(src, location.href).href, at: performance.now() });
     });
+    // An effect played (a tap, a pop, a chime): the app announces each one.
+    window.addEventListener("littlenest:effect", (event) => {
+      target.__audioAttempts?.push({ kind: "effect", detail: String((event as CustomEvent<string>).detail ?? ""), at: performance.now() });
+    });
     // A line asked for, part by part, whether or not it got to be heard (see askedLines).
     window.addEventListener("littlenest:line", (event) => {
       for (const text of (event as CustomEvent<string[]>).detail ?? []) target.__audioAttempts?.push({ kind: "line", detail: String(text), at: performance.now() });
@@ -129,4 +133,12 @@ export async function clipSeconds(page: Page, file: string): Promise<number> {
       await context.close();
     }
   }, file);
+}
+
+/** The effects the app played, in order ("tap", "pop", "chime"...). */
+export async function playedEffects(page: Page): Promise<string[]> {
+  const attempts = await page.evaluate(
+    () => (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [],
+  );
+  return attempts.filter((item) => item.kind === "effect").map((item) => item.detail);
 }
