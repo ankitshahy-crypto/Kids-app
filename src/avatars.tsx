@@ -7,10 +7,11 @@ import { AnimalClip, type ClipName } from "./components/AnimalClip";
 const INK = "#2C3A4F";
 
 /**
- * The painted animals (public/animals/<id>/, made by scripts/animal-art.py): which frames each has
- * and where its head sits in the whole figure. A mood with no frame of its own shows the idle frame
- * (the mood still shows in how the animal moves), so frames can land one at a time; an animal with
- * no entry at all is drawn (the shapes below), so nothing is ever blank.
+ * The round-plush animals (public/animals/<id>/, made by scripts/animal-art.py --round): which
+ * frames each has and where its head sits in the whole figure. Every animal has every mood frame
+ * (idle, cheer, think, wait, blink, sleepy; src/data/animalArt.test.ts holds it to that), so a mood
+ * shows its own face and never falls back to the idle one. An animal with no entry at all would be
+ * drawn (the shapes below); none is, now.
  */
 export type ArtFrame = "idle" | "cheer" | "think" | "wait" | "blink" | "sleepy" | "wave" | "silly";
 export type ArtView = "face" | "body";
@@ -31,10 +32,9 @@ export function artOf(animal: AnimalId): ArtEntry | null {
   return ART[animal] ?? null;
 }
 
-/** The frame a mood shows: its own when the animal has it, else idle (a walk is the idle face hopping). */
-export function frameFor(animal: AnimalId, mood: Mood): ArtFrame {
-  const frames = ART[animal]?.frames ?? [];
-  return mood !== "idle" && mood !== "walk" && frames.includes(mood) ? mood : "idle";
+/** The frame a mood shows: its own face (a walk is the idle face hopping). No falling back to idle. */
+export function frameFor(_animal: AnimalId, mood: Mood): ArtFrame {
+  return mood === "walk" ? "idle" : mood;
 }
 
 /** The view an animal can show: its whole figure only when that is shipped (animalArt.json), else its face. */

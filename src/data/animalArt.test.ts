@@ -4,14 +4,16 @@ import art from "./animalArt.json";
 import { animals } from "./animals";
 
 const FRAMES = ["idle", "cheer", "think", "wait", "blink", "sleepy", "wave", "silly"];
+/** The moods the app asks for: every animal has a face for each (there is no falling back to idle). */
+const MOODS = ["idle", "cheer", "think", "wait", "blink", "sleepy"];
 const file = (id: string, name: string) => existsSync(new URL(`../../public/animals/${id}/${name}`, import.meta.url));
 
 describe("the painted animals", () => {
-  it("every animal has a painted idle face, and every frame listed is there", () => {
+  it("every animal has every mood's face, and every frame listed is there", () => {
     for (const { id } of animals) {
       const entry = (art as Record<string, { frames: string[]; body: boolean; head: Record<string, number>; places?: Record<string, number[]> }>)[id];
       expect(entry, `${id} has art`).toBeDefined();
-      expect(entry.frames).toContain("idle");
+      for (const mood of MOODS) expect(entry.frames, `${id} has a ${mood} face`).toContain(mood);
       for (const frame of entry.frames) {
         expect(FRAMES, `${id}'s ${frame} is a frame the app knows`).toContain(frame);
         expect(file(id, `${frame}-face.webp`), `${id}/${frame}-face.webp`).toBe(true);

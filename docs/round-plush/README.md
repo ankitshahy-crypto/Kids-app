@@ -204,6 +204,13 @@ sequence and the WebM, and a small `<clip>.json`: the head's box per frame, for 
 3. The dog's moves (nine clips). Make a dance and Take me home with them. Review.
 4. The other eleven animals, stills first (one sheet), then clips (one sheet with stills from each
    loop), then the thirteen scenes, then the game props.
+   (Stills done 2026-10-09: the first batch brought the cat whole and the fox, bear and bunny in
+   part; the second brought the other 50, all six moods for all twelve. Two things the full set
+   taught the pipeline: the frog's eyes sit on bumps at the sides of its head, further from the
+   middle than the eye finder reached (now a quarter of the face); and a pastel of the backdrop's
+   own hue (the mint frog) was being taken for the backdrop's shadow, so the shadow rule now asks
+   for the backdrop's saturation as well as its hue. With every frame in, the app no longer falls
+   back from a mood to the idle face.)
 
 Review before merge at every step, on a phone, as with the fit and polish sheets.
 

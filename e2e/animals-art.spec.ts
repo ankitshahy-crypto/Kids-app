@@ -115,7 +115,7 @@ test("every animal on the picker is painted, and each one's face is a different 
   expect(missing).toEqual([]);
 });
 
-test("a miss shows the puzzled face over the idle one; a mood with no face of its own keeps the idle face", async ({ page }) => {
+test("a miss shows the puzzled face over the idle one; waiting shows the waiting face", async ({ page }) => {
   const missing = watchArt(page);
   await install(page, profile("bear"));
   await page.getByRole("button", { name: "Mia" }).click();
@@ -125,10 +125,10 @@ test("a miss shows the puzzled face over the idle one; a mood with no face of it
   await expect(host).toHaveAttribute("data-mood", "idle");
   await expect(host).toHaveAttribute("data-frame", "idle");
   // The faces a mood can bring are on the page from the start, see-through, so none is asked for
-  // when its mood comes. The bear has a cheering and a puzzled face, and no waiting face.
-  await expect(host.locator("img.avatar-over")).toHaveCount(2);
+  // when its mood comes: a cheering, a puzzled, a waiting and a sleepy face. Every animal has them all.
+  await expect(host.locator("img.avatar-over")).toHaveCount(4);
   await expect(host.locator("img.avatar-over[data-face=think]")).toHaveAttribute("data-on", "false");
-  await expect(host.locator("img.avatar-over[data-face=wait]")).toHaveCount(0);
+  await expect(host.locator("img.avatar-over[data-face=wait]")).toHaveAttribute("data-on", "false");
   // A wrong tap: the coach's puzzled look, which is the bear's own puzzled face (eyes aside, head
   // tipped a little) faded in over the idle one, with the tilt on the box as well.
   const frame = page.locator(".game-frame").first();
@@ -141,12 +141,14 @@ test("a miss shows the puzzled face over the idle one; a mood with no face of it
   await expect(host).toHaveAttribute("data-frame", "think");
   await expect(host.locator("img.avatar-over[data-face=think]")).toHaveAttribute("data-on", "true");
   await expect(host.locator("img.avatar-over[data-face=think]")).toHaveAttribute("src", /\/animals\/bear\/think-face\.webp$/);
-  // Waiting (the nudge, after a while with nothing tapped) has no face of its own: the idle face
-  // stays, and the sway is on the box.
+  // Waiting (the nudge, after a while with nothing tapped) is the bear's own waiting face (eyes up),
+  // faded in over the idle one; no mood falls back to the idle face.
   await page.clock.runFor(9000);
   await expect(host).toHaveAttribute("data-mood", "wait");
-  await expect(host).toHaveAttribute("data-frame", "idle");
-  await expect(host.locator("img.avatar-over[data-on=true]")).toHaveCount(0);
+  await expect(host).toHaveAttribute("data-frame", "wait");
+  await expect(host.locator("img.avatar-over[data-face=wait]")).toHaveAttribute("data-on", "true");
+  await expect(host.locator("img.avatar-over[data-face=wait]")).toHaveAttribute("src", /\/animals\/bear\/wait-face\.webp$/);
+  await expect(host.locator("img.avatar-over[data-on=true]")).toHaveCount(1);
   expect(missing).toEqual([]);
 });
 
@@ -402,12 +404,12 @@ test("two animals on one screen do not blink in step: each starts its turn at a 
   expect(starts.size).toBeGreaterThan(1);
 });
 
-test("every animal has a cheering face, a puzzled face and a blink, the size of its idle face", async ({ page }) => {
+test("every animal has every mood's face (idle, cheer, think, wait, blink, sleepy), the size of its idle face", async ({ page }) => {
   // The list the app itself goes by (made with the pictures, by scripts/animal-art.py).
   const art = JSON.parse(readFileSync(new URL("../src/data/animalArt.json", import.meta.url), "utf8")) as Record<string, { frames: string[] }>;
   const animals = Object.entries(art);
   expect(animals).toHaveLength(12);
-  for (const [animal, entry] of animals) expect(entry.frames, animal).toEqual(expect.arrayContaining(["idle", "cheer", "think", "blink"]));
+  for (const [animal, entry] of animals) expect(entry.frames, animal).toEqual(expect.arrayContaining(["idle", "cheer", "think", "wait", "blink", "sleepy"]));
   await page.goto("./");
   const sizes = await page.evaluate(
     async ({ base, names }) => {

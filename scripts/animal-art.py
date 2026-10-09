@@ -103,10 +103,12 @@ def cut_out(path: Path):
     foot = np.zeros((h, w), bool)
     foot[int(h * 0.78) :] = True
     if bghsv[1] > 60:
-        # A coloured backdrop (the round-plush renders: green). Its shadow is the same hue, darker
-        # and greyer, anywhere in the picture: backdrop. Nothing of an animal is that colour.
+        # A coloured backdrop (the round-plush renders: green). Its shadow is the same hue, darker,
+        # and about as saturated, anywhere in the picture: backdrop. Nothing of an animal is that
+        # colour: a plush of the backdrop's own hue (the mint frog) is a pastel, well under the
+        # backdrop's saturation (measured: the shadow stays above 0.9 of it; the frog is under 0.65).
         hue_off = np.abs(((hsv[:, :, 0].astype(np.float32) - bghsv[0]) + 90) % 180 - 90)
-        shadow = (hue_off < 14) & (sat > 40) & (L < bglab[0] + 4)
+        shadow = (hue_off < 14) & (sat > bghsv[1] * 0.8) & (L < bglab[0] + 4)
         mask[shadow] = cv2.GC_BGD
         sure = cv2.erode(((dist > 40) & ~shadow).astype(np.uint8), np.ones((9, 9), np.uint8)) > 0
         mask[sure] = cv2.GC_FGD
@@ -309,7 +311,8 @@ def moved(rgba, head, warp):
 def eyes_of(idle):
     """A round plush's two open eyes on its idle face: the two dark, compact spots in the upper
     middle of the face that sit level, one each side of the middle and clear of it (the nose is dark
-    too, and in the middle). None when no such pair is there."""
+    too, and in the middle), and no further out than a quarter of the face. None when no such pair
+    is there."""
     lab = cv2.cvtColor(idle[:, :, :3], cv2.COLOR_RGB2LAB)
     dark = ((lab[:, :, 0] < 70) & (idle[:, :, 3] > 200)).astype(np.uint8)
     band = np.zeros_like(dark)
@@ -321,7 +324,9 @@ def eyes_of(idle):
     spots = [i for i in spots if 0.5 < stats[i, cv2.CC_STAT_WIDTH] / max(1, stats[i, cv2.CC_STAT_HEIGHT]) < 2.0]
     level = lambda i, j: abs(centres[i][1] - centres[j][1]) < FACE_PX * 0.06
     either_side = lambda i, j: (centres[i][0] - FACE_PX / 2) * (centres[j][0] - FACE_PX / 2) < 0
-    clear = lambda i: FACE_PX * 0.03 < abs(centres[i][0] - FACE_PX / 2) < FACE_PX * 0.22
+    # (Clear of the middle by a little, and no further out than the frog's eyes, which sit on bumps
+    # at the sides of its head: 0.223 of the face from the middle.)
+    clear = lambda i: FACE_PX * 0.03 < abs(centres[i][0] - FACE_PX / 2) < FACE_PX * 0.26
     alike = lambda i, j: 0.4 < stats[i, cv2.CC_STAT_AREA] / stats[j, cv2.CC_STAT_AREA] < 2.5
     pairs = [(i, j) for i, j in combinations(spots, 2) if level(i, j) and either_side(i, j) and clear(i) and clear(j) and alike(i, j)]
     if not pairs:
