@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { unlockAudio } from "../audio/manager";
 import { resumeSpeech } from "../audio/player";
 import type { AnimalId } from "../data/animals";
@@ -67,6 +67,12 @@ export function SoundItOut({
   const [celebrating, setCelebrating] = useState(false);
   const [progress, setProgress] = useState(0.06);
   const [dragging, setDragging] = useState(false);
+  /**
+   * The one bar under the part being said, as a share of the track: under the letter whose sound
+   * plays, under the whole word when the word is said, and otherwise where the finger or the last
+   * sound left it. At rest it waits under the first tile.
+   */
+  const [bar, setBar] = useState<{ left: number; width: number; under: string }>({ left: 0, width: 0, under: "none" });
   const gesture = useRef<{ x: number; y: number; interactive: boolean } | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const tokenRef = useRef<HTMLDivElement | null>(null);
@@ -85,6 +91,50 @@ export function SoundItOut({
   };
 
   useEffect(() => () => clearTimer(celebrationTimer), []);
+
+  /** Where a tile sits on the track, as shares of the track's width (its left edge and its width). */
+  const tileSpan = (tileIndex: number): { left: number; width: number } | null => {
+    const track = trackRef.current;
+    const tile = tileRefs.current[tileIndex];
+    if (!track || !tile) return null;
+    const rect = track.getBoundingClientRect();
+    if (rect.width <= 0) return null;
+    const box = tile.getBoundingClientRect();
+    return { left: ((box.left - rect.left) / rect.width) * 100, width: (box.width / rect.width) * 100 };
+  };
+
+  /** The span from the first tile to the last: the whole word. Joined tiles have slid toward the middle. */
+  const wordSpan = (): { left: number; width: number } | null => {
+    const first = tileSpan(0);
+    const last = tileSpan(word.letters.length - 1);
+    if (!first || !last) return null;
+    return { left: first.left, width: last.left + last.width - first.left };
+  };
+
+  // The bar follows the sound: under the letter being said, under the whole word while it is said. The
+  // whole word is measured once the tiles have slid together (they take 0.55 s), and again as they do.
+  useLayoutEffect(() => {
+    if (active === "all") {
+      const place = () => {
+        const span = wordSpan();
+        if (span) setBar({ ...span, under: "word" });
+      };
+      place();
+      const timers = [120, 320, 600].map((ms) => window.setTimeout(place, ms));
+      return () => timers.forEach((timer) => window.clearTimeout(timer));
+    }
+    if (typeof active === "number") {
+      const span = tileSpan(active);
+      if (span) setBar({ ...span, under: String(active) });
+    }
+    return undefined;
+  }, [active, joined]);
+
+  // A new card: the bar waits under the first tile. (Measured after the tiles are on the page.)
+  useLayoutEffect(() => {
+    const span = tileSpan(0);
+    setBar(span ? { ...span, under: "none" } : { left: 0, width: 0, under: "none" });
+  }, [word]);
 
   useEffect(() => {
     sounded.current = new Set();
@@ -190,6 +240,11 @@ export function SoundItOut({
     const half = (tokenRef.current?.offsetWidth ?? 72) / 2;
     const clamped = Math.min(rect.right - half, Math.max(rect.left + half, clientX));
     setProgress((clamped - rect.left) / rect.width);
+    // Between sounds the bar rides under the finger, the width of a tile.
+    if (active === null && !blendedPass.current) {
+      const width = tileSpan(0)?.width ?? 20;
+      setBar({ left: Math.min(100 - width, Math.max(0, ((clamped - rect.left) / rect.width) * 100 - width / 2)), width, under: "finger" });
+    }
     light(tilesCrossed(fromX, clientX));
     if (clientX >= rect.right - 28) finishWord();
   };
@@ -404,32 +459,31 @@ export function SoundItOut({
         gesture.current = null;
       }}
     >
-      <PictureCard label={word.word}>
-        {focus ? (
-          <span className="lesson-focus" data-lesson-focus>
-            {focus}
-          </span>
-        ) : null}
-        {word.photoSrc ? (
-          <img className="photo" src={word.photoSrc} alt="" />
-        ) : word.glyph ? (
-          <span className="letter-glyph" data-glyph={word.glyph} data-glyph-long={word.glyph.length > 1 ? "true" : undefined} aria-hidden="true">
-            {word.glyph}
-            <small>{word.word}</small>
-          </span>
-        ) : word.illustration ? (
-          <Illustration name={word.illustration} />
-        ) : (
-          // A word with no drawing of its own ("am", "sat"). The card used to borrow another word's picture
-          // (a smiling child for "sad", an ant for "an"); now the child's animal waits, and says the word
-          // once it has been read.
-          <span className="word-teller" data-word-teller={blended ? "said" : "waiting"} aria-hidden="true">
-            <span className="word-bubble">{blended ? word.word : "?"}</span>
-            {animal ? <Hero animal={animal} outfit={outfit} /> : <StarIcon />}
-          </span>
-        )}
-        {word.letterCard && !word.glyph ? <LetterCaption word={word} /> : null}
-      </PictureCard>
+      {/* What the lesson is about, for the grown-up, small and out of the way of the word. */}
+      {focus ? (
+        <span className="lesson-focus" data-lesson-focus>
+          {focus}
+        </span>
+      ) : null}
+      {/* The word is the page: its picture, when it has one, sits small above it. A word with no drawing of
+          its own ("am", "sat") has nothing above it; the child's animal waits at the edge of the track and
+          says the word once it has been read. (The card used to borrow another word's picture, then
+          showed the animal big, above a small word.) */}
+      {word.photoSrc || word.glyph || word.illustration ? (
+        <PictureCard label={word.word}>
+          {word.photoSrc ? (
+            <img className="photo" src={word.photoSrc} alt="" />
+          ) : word.glyph ? (
+            <span className="letter-glyph" data-glyph={word.glyph} data-glyph-long={word.glyph.length > 1 ? "true" : undefined} aria-hidden="true">
+              {word.glyph}
+              <small>{word.word}</small>
+            </span>
+          ) : word.illustration ? (
+            <Illustration name={word.illustration} />
+          ) : null}
+          {word.letterCard && !word.glyph ? <LetterCaption word={word} /> : null}
+        </PictureCard>
+      ) : null}
       <SoundLabel />
       <div
         className={`blend${celebrating ? " is-celebrating" : ""}${dragging ? " is-dragging" : ""}${joined ? " is-joined" : ""}`}
@@ -537,8 +591,21 @@ export function SoundItOut({
             <line x1="2" y1="12" x2="90" y2="12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             <path d="M86 5 L97 12 L86 19" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>
-          <div className="blend-token" ref={tokenRef} style={{ "--blend-at": `${progress * 100}%` } as CSSProperties} data-blend-token>
+          {/* The one bar: under the letter being said, under the whole word when it is said. The finger
+              drags it along the track. */}
+          <div
+            className="blend-bar"
+            ref={tokenRef}
+            style={{ "--bar-left": `${bar.left}%`, "--bar-width": `${bar.width}%`, "--blend-at": `${progress * 100}%` } as CSSProperties}
+            data-blend-token
+            data-under={bar.under}
+            data-said={active !== null ? "true" : "false"}
+            aria-hidden="true"
+          />
+          {/* The child's animal waits at the edge of the track until the word is said, then comes in and says it. */}
+          <div className="blend-animal" data-word-teller={blended ? "said" : "waiting"} aria-hidden="true">
             {animal ? <Hero animal={animal} outfit={outfit} /> : <StarIcon />}
+            {blended ? <span className="word-bubble">{word.word}</span> : null}
           </div>
         </div>
       </div>
