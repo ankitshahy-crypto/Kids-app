@@ -1,0 +1,34 @@
+name: Lab
+
+# The measuring bench. It runs only for branches named lab/..., which are never merged: a push
+# there runs what is being looked at and prints what it found as notices.
+on:
+  push:
+    branches:
+      - "lab/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The unit tests, with what failed (and anything the run caught outside a test) as notices.
+  unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        continue-on-error: true
+        run: npx vitest run --reporter=default --reporter=json --outputFile=unit.json > unit.log 2>&1
+      - name: What failed
+        if: ${{ !cancelled() }}
+        run: node scripts/lab-unit.mjs
