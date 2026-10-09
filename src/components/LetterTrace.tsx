@@ -67,12 +67,15 @@ export function LetterTrace({
   settingsRef,
   writing,
   onAttempt = (id, success) => recordWritingAttempt(writing, id, success),
+  onCard,
   onDone,
 }: {
   letters: string[];
   settingsRef: { current: Settings };
   writing?: WritingMap;
   onAttempt?: (id: string, success: boolean) => WritingOutcome;
+  /** Which card is up (tracing, matching, or the look-alike tap), for the grown-up line beside it. */
+  onCard?: (card: "trace" | "match" | "reversal", letter: string, partner: string | null) => void;
   onDone: () => void;
 }) {
   const plan = lessonLetters(letters);
@@ -115,6 +118,15 @@ export function LetterTrace({
   };
 
   useEffect(() => () => clearTimer(), []);
+
+  // The card on screen, coarser than the phase: the demo, the tracing, the copy box and the cheer
+  // are all the tracing card. Reported once per card and letter, not per render.
+  const card = phase === "reversal" ? "reversal" : phase === "match" ? "match" : "trace";
+  const onCardRef = useRef(onCard);
+  onCardRef.current = onCard;
+  useEffect(() => {
+    onCardRef.current?.(card, letter, partner);
+  }, [card, letter, partner]);
 
   useEffect(() => {
     const controller = new AbortController();

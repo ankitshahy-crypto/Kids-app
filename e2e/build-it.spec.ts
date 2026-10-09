@@ -324,16 +324,54 @@ test("leaving while the program plays stops it: nothing more is said over the lo
   expect((await spokenLines(page)).slice(said)).toEqual([]);
 });
 
-test("the whole board fits a phone screen: the stage and Play are both in view", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await install(page, "move");
-  const board = page.locator("[data-build=move]");
-  await expect(board.locator(".build-stage")).toBeInViewport({ ratio: 1 });
-  await expect(board.locator("[data-play=run]")).toBeInViewport({ ratio: 1 });
-  // Five blocks in one row.
-  const tops = await board.locator(".build-block").evaluateAll((blocks) => blocks.map((block) => Math.round(block.getBoundingClientRect().top)));
-  expect(new Set(tops).size).toBe(1);
-});
+for (const [age, saved] of [["3 to 4", profile], ["5 to 7", older]] as const) {
+  test(`the move board fits a phone screen at ages ${age}: the goal, the stage, the steps and Play are in view, and Play runs the steps`, async ({ page }) => {
+    test.setTimeout(60_000);
+    // A phone's screen less its status bar and home bar, with the grown-up tip still showing above the board.
+    // The playtest of build 4: jump and spin sat ticked in Your steps and nothing played them. Play was
+    // the big button under the palette, below the bottom of the screen; it is in the steps card now.
+    await page.setViewportSize({ width: 390, height: 763 });
+    await install(page, "move", saved);
+    const board = page.locator("[data-build=move]");
+    await expect(page.locator("[data-tip=game-build-start]")).toHaveAttribute("data-tip-open", "true");
+    for (let round = 0; ; round += 1) {
+      await expect(board).toHaveAttribute("data-round", String(round));
+      await expect(board.locator(".build-goal")).toBeInViewport({ ratio: 1 });
+      await expect(board.locator(".build-stage")).toBeInViewport({ ratio: 1 });
+      await expect(board.locator(".build-steps")).toBeInViewport({ ratio: 1 });
+      await expect(board.locator("[data-play=run]")).toBeInViewport({ ratio: 1 });
+      await expect(board.locator("[data-play=run]")).toBeDisabled();
+      // Five blocks in one row, in view.
+      const tops = await board.locator(".build-block").evaluateAll((blocks) => blocks.map((block) => Math.round(block.getBoundingClientRect().top)));
+      expect(new Set(tops).size).toBe(1);
+      await expect(board.locator(".build-palette")).toBeInViewport({ ratio: 1 });
+      const goal = ((await board.getAttribute("data-goal")) ?? "").split(",").filter(Boolean);
+      for (const block of goal) await board.locator(`[data-block=${block}]`).click();
+      await expect(board).toHaveAttribute("data-script", goal.join(","));
+      await expect(board.locator(".build-goal [data-done=true]")).toHaveCount(goal.length);
+      // The places after the steps stay empty, and Play is beside the steps, in view and ready.
+      await expect(board.locator(".build-place")).toHaveText(Array.from({ length: 5 - goal.length }, (_, index) => String(goal.length + index + 1)));
+      await expect(board.locator("[data-play=run]")).toBeEnabled();
+      await expect(board.locator("[data-play=run]")).toBeInViewport({ ratio: 1 });
+      await board.locator("[data-play=run]").click();
+      // The steps run in order and the animal does each one.
+      await expect(board.locator("[data-index='0']")).toHaveAttribute("data-on", "true");
+      await expect(board.locator(".build-stage")).toHaveAttribute("data-pose", goal[0]);
+      await expect(board).toHaveAttribute("data-match", "true", { timeout: 15_000 });
+      const moves = goal.filter((block) => block !== "repeat");
+      await expect(board).toHaveAttribute("data-pose", moves.at(-1) ?? "");
+      // Next (or Done) takes Play's place in the steps card, in view.
+      await expect(board.locator("[data-play=run]")).toHaveCount(0);
+      const finish = board.locator("[data-finish=move]");
+      await expect(finish).toBeInViewport({ ratio: 1 });
+      expect(await finish.evaluate((button) => Boolean(button.closest(".build-steps")))).toBe(true);
+      const next = await finish.getAttribute("data-next");
+      await finish.click();
+      if (!next) break;
+    }
+    await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+  });
+}
 
 test("with Reduce Motion a program still plays one step at a time, each move held still", async ({ page }) => {
   // Reduce Motion stills the moves, not the program. Played all at once, the stage never moved and
@@ -403,7 +441,7 @@ test("a drum played three times in a row is heard three times", async ({ page })
   const before = (await playedEffects(page)).length;
   await board.locator("[data-play=run]").click();
   await expect(board).toHaveAttribute("data-played", "true", { timeout: 10_000 });
-  expect((await playedEffects(page)).slice(before).filter((effect) => effect === "boop")).toHaveLength(3);
+  expect((await playedEffects(page)).slice(before).filter((effect) => effect === "thud")).toHaveLength(3);
 });
 
 test("a repeat block plays the drum three times", async ({ page }, testInfo) => {

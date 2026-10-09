@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
 import { game, onRound } from "./kit";
 import { showWordCard } from "./lesson";
+import { pairOne, traceCurrentStroke } from "./traceFlow";
 
 /**
  * Grown-up tips: open in full the first time an activity opens for a child, then a small
@@ -68,6 +69,53 @@ test("a tip opens in full once per activity per child, then waits as a chip", as
   if (await leo.count()) await leo.click();
   await page.getByRole("button", { name: "Draw" }).click();
   await expect(tip).toHaveAttribute("data-tip-open", "true");
+});
+
+test("the grown-up line follows the Draw card: tracing copy while tracing, then the tap on the look-alike card", async ({ page }) => {
+  // The phone pass of build 4: "Trace the big letter, then the little one" stayed up over the card
+  // that asks for a tap on little m, with w beside it. Each card says what it does now.
+  test.setTimeout(90_000);
+  await open(page);
+  await page.getByRole("button", { name: "Draw" }).click();
+  const root = page.locator("[data-screen=draw]");
+  const tip = page.locator(".grownup-tip");
+  const text = page.locator(".grownup-tip-text");
+  await expect(tip).toHaveAttribute("data-tip", "draw-start");
+  await expect(text).toContainText("Trace the big letter, then the little one.");
+  // Mia's letters are m and a: m has a look-alike (w), so its tracing ends on that card.
+  for (let step = 0; step < 80; step += 1) {
+    const phase = await root.getAttribute("data-phase");
+    if (phase === "reversal") break;
+    if (phase === null) throw new Error("Draw ended before a look-alike card");
+    if (phase === "demo") {
+      await root.getByRole("button", { name: "Your turn" }).click({ timeout: 1500 }).catch(() => undefined);
+      await expect(root).not.toHaveAttribute("data-phase", "demo", { timeout: 15_000 });
+    } else if (phase === "trace") {
+      await expect(tip).toHaveAttribute("data-tip", "draw-start");
+      await traceCurrentStroke(page);
+    } else if (phase === "cheer") {
+      await root.getByRole("button", { name: "Match" }).click();
+      await expect(root).toHaveAttribute("data-phase", "match");
+      await expect(tip).toHaveAttribute("data-tip", "draw-match");
+      await expect(text).toContainText("match");
+      await expect(text).not.toContainText(/trace/i);
+    } else if (phase === "match") {
+      await pairOne(page);
+    } else {
+      throw new Error(`Unexpected tracing phase ${phase}`);
+    }
+  }
+  const letter = await root.getAttribute("data-reversal");
+  expect(letter).toBe("m");
+  await expect(tip).toHaveAttribute("data-tip", "draw-reversal");
+  await expect(tip).toHaveAttribute("data-tip-open", "true");
+  await expect(text).toHaveText("Tap the little letter, m. Little w looks alike and is there to pass over.");
+  // The decoy is still there to pass over, and the right tap moves on to the next letter's tracing copy.
+  await expect(root.locator("[data-reversal-choice=w]")).toBeVisible();
+  await root.locator("[data-reversal-choice=m]").click();
+  await expect(root).toHaveAttribute("data-letter", "a");
+  await expect(tip).toHaveAttribute("data-tip", "draw-start");
+  await expect(text).toContainText("Trace the big letter");
 });
 
 test("after a game, the section page's tip is a chip clear of the Grown-ups button, and Hide can be tapped", async ({ page }) => {

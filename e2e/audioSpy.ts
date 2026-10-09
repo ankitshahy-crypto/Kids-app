@@ -80,6 +80,14 @@ export async function requestedCues(page: Page): Promise<string[]> {
     .map((item) => (item.kind === "speech" ? item.detail.toLowerCase() : (item.detail.split("/audio/")[1] ?? item.detail)));
 }
 
+/** What the device's own voice was asked to say, in order; empty when every line came from a clip. */
+export async function deviceSpeech(page: Page): Promise<string[]> {
+  const attempts = await page.evaluate(
+    () => (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [],
+  );
+  return attempts.filter((item) => item.kind === "speech" && item.detail.trim() !== "").map((item) => item.detail);
+}
+
 /** Clip files the app played, in order (letters/m.mp3), leaving out device speech. */
 export async function playedClips(page: Page): Promise<string[]> {
   const attempts = await page.evaluate(

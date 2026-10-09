@@ -120,7 +120,7 @@ async function leftPhase(page: Page, phase: string, screen = "draw"): Promise<bo
   return (await screenPhase(page, screen)) !== phase;
 }
 
-async function pairOne(page: Page) {
+export async function pairOne(page: Page) {
   const root = page.locator("[data-screen=draw]");
   const waiting = root.locator("[data-match-upper][data-paired=false]");
   if ((await waiting.count()) === 0) {

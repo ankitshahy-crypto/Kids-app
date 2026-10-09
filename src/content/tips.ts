@@ -285,3 +285,24 @@ export function readTip(step: LessonStep, when: "start" | "end", letter?: string
   if (tip) return { id: `letter-${key}-end`, text: tip };
   return { id: `${step}-${when}`, text: stepTips[step][when] };
 }
+
+/** The three cards of the Draw step, as the grown-up line tells them apart. */
+export type DrawCard = "trace" | "match" | "reversal";
+
+/**
+ * The grown-up line for the Draw card on screen. The step's line is about tracing, and it stayed
+ * up through the matching and the look-alike cards: "Trace the big letter, then the little one"
+ * sat over a card that asked for a tap on little m, with w beside it. Each card now says what it
+ * does. The tracing card keeps the step's own line (and its id, so the first-time opening is
+ * counted once per child, as before).
+ */
+export function drawTip(card: DrawCard, letter: string, partner?: string | null): ReadTip {
+  const key = letter.trim().toLowerCase();
+  if (card === "match") return { id: "draw-match", text: "They match each big letter to its little letter. Tap one, then the other." };
+  if (card === "reversal") {
+    const decoy = partner?.trim().toLowerCase();
+    const aside = decoy ? ` Little ${decoy} looks alike and is there to pass over.` : "";
+    return { id: "draw-reversal", text: `Tap the little letter, ${key}.${aside}` };
+  }
+  return readTip("draw", "start");
+}

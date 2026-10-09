@@ -894,8 +894,8 @@ async function startListener() {
   listener = { ask: (file, text) => ask({ file, text }), stop: () => child.stdin.end() };
 }
 
-/** Letter phrases and bare sounds are not words a recognizer knows; scripts/hear-clips.py reports on those. */
-const canHear = (kind) => kind !== "letters" && kind !== "sounds";
+/** Letter phrases, bare sounds and letter names are not words a recognizer knows; scripts/hear-clips.py reports on those. */
+const canHear = (kind) => kind !== "letters" && kind !== "sounds" && kind !== "spell";
 
 async function hear(file, job) {
   if (!listener || !canHear(job.kind)) return { ok: true, heard: "", why: "" };

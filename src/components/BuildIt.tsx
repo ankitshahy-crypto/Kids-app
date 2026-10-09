@@ -420,7 +420,7 @@ function Builder({
           setFrame({ steps: stepsWalked, pose: step.block === "pond" ? (splash ? "splash" : "pond") : step.block, splash, beat });
         }
         // Every sound is the app's own: a drum, a bell, a note. The note used to be the phone's voice saying "la".
-        if (step.block === "drum") playEffect("boop", settingsRef.current);
+        if (step.block === "drum") playEffect("thud", settingsRef.current);
         if (step.block === "bell") playEffect("chime", settingsRef.current);
         if (step.block === "note") playEffect("pop", settingsRef.current);
         // Hello world: the animal says it. The other moves are named as they happen, so the program is
@@ -467,6 +467,41 @@ function Builder({
   const hint = goal && misses >= GOAL_MISSES && script.length < goal.blocks.length ? goal.blocks[script.length] : null;
   /** More rounds after this one: Next takes Done's place. */
   const more = (code || goal) && !last;
+
+  /**
+   * The run control. On a board with steps it sits in the steps card, beside "Your steps", so it is
+   * on the screen with the steps it runs. (It was the big button under the palette: on the move
+   * board, with the goal card above the stage, that put it under the bottom of a phone's screen. In
+   * the playtest of build 4 jump and spin sat ticked in Your steps with nothing to play them.)
+   * Reading code has no steps card, and its button under the palette is in view.
+   */
+  const runButton = (
+    <button type="button" className={code ? "start-button" : "start-button build-run"} data-play="run" disabled={script.length === 0} onClick={play}>
+      {code ? null : (
+        <span className="build-run-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <path d="M8 5.5v13l10-6.5z" fill="currentColor" />
+          </svg>
+        </span>
+      )}
+      Play
+    </button>
+  );
+  const finishButton = (
+    <button
+      type="button"
+      className="start-button"
+      data-finish={code ? "code" : activity}
+      data-next={more ? (code ? "code" : activity) : undefined}
+      onClick={() => {
+        if (finished.current) return;
+        finished.current = true;
+        onDone();
+      }}
+    >
+      {more ? "Next" : "Done"}
+    </button>
+  );
 
   return (
     <div
@@ -557,7 +592,11 @@ function Builder({
       <Stage activity={activity} animal={animal} outfit={outfit} level={level} live={live} frame={frame} />
       {code ? null : (
         <div className="build-steps">
-          <p className="build-label">Your steps</p>
+          <div className="build-steps-head">
+            <p className="build-label">Your steps</p>
+            {/* Once the steps match the goal, Next takes Play's place, where the child just tapped. */}
+            {goal && done ? finishButton : runButton}
+          </div>
           <div className="build-script" data-drop="script" aria-label="Your steps">
             {/* Five numbered places to fill, and room for up to eight steps. A tap on a step takes it out. */}
             {Array.from({ length: Math.max(5, Math.min(SCRIPT_LIMIT, script.length + 1)) }, (_, index) => {
@@ -634,32 +673,14 @@ function Builder({
           </button>
         ))}
       </div>
-      {/* Once the blocks match the code or the goal, Next takes Play's place, so it is on screen where the child just tapped. */}
-      {asked && done ? null : (
-        <button type="button" className="start-button" data-play="run" disabled={script.length === 0} onClick={play}>
-          Play
-        </button>
-      )}
+      {/* Reading code: Play under the palette, and once the blocks match the code, Next in its place. */}
+      {code && !done ? runButton : null}
       {level === "later" && !code && !goal ? (
         <button type="button" className="game-back" data-save="device" onClick={store}>
           Save
         </button>
       ) : null}
-      {done ? (
-        <button
-          type="button"
-          className="start-button"
-          data-finish={code ? "code" : activity}
-          data-next={more ? (code ? "code" : activity) : undefined}
-          onClick={() => {
-            if (finished.current) return;
-            finished.current = true;
-            onDone();
-          }}
-        >
-          {more ? "Next" : "Done"}
-        </button>
-      ) : null}
+      {done && !goal ? finishButton : null}
     </div>
   );
 }

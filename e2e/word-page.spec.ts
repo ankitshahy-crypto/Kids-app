@@ -57,8 +57,11 @@ async function showWord(page: Page, id: string): Promise<Locator> {
   throw new Error(`No card for ${id} in this lesson`);
 }
 
-/** A child's slide along the track, slow enough for each sound to be heard as the finger passes its letter. */
-async function slide(page: Page, track: Locator) {
+/**
+ * A child's slide along the track, slow enough for each sound to be heard as the finger passes its
+ * letter. `partWay` is run with the finger still down at four fifths of the track.
+ */
+async function slide(page: Page, track: Locator, partWay?: () => Promise<void>) {
   const box = await track.boundingBox();
   if (!box) throw new Error("track has no box");
   const y = box.y + box.height / 2;
@@ -67,6 +70,7 @@ async function slide(page: Page, track: Locator) {
   for (let step = 1; step <= 40; step += 1) {
     await page.mouse.move(box.x + 8 + ((box.width - 12) * step) / 40, y);
     await page.waitForTimeout(45);
+    if (step === 32) await partWay?.();
   }
   await page.mouse.up();
 }
@@ -90,6 +94,9 @@ for (const [age, calm] of [
     expect(first!.height).toBeGreaterThanOrEqual(card!.height * 0.6);
     expect(row!.width).toBeGreaterThan(card!.width);
     if (testInfo.project.name === "chromium" && age === "4") await page.screenshot({ path: "test-results/screenshots/word_page_cat.png" });
+    // A word card is headed Sound it out.
+    await expect(activity.locator(".sound-label h1")).toHaveText(/^sound it out$/i);
+    await expect(activity.locator(".sound-label")).toHaveAttribute("data-sound-label", "blend");
     // One bar, under the first tile, before anything is said; the animal waits at the edge of the track.
     const bar = activity.locator("[data-blend-token]");
     await expect(bar).toHaveCount(1);
@@ -103,11 +110,25 @@ for (const [age, calm] of [
     expect(waiting!.x).toBeLessThan(trackBox!.x + trackBox!.width / 4);
     // The slide: the bar goes under c, then a, then t as each sound plays, then under the whole word.
     const under = await noting(bar, (element) => element.getAttribute("data-under"));
-    await slide(page, track);
+    // The bar's edges against the word's, as the finger goes.
+    const edges = await noting(activity, (element) => {
+      const row = element.querySelector(".letters")!.getBoundingClientRect();
+      const box = element.querySelector("[data-blend-token]")!.getBoundingClientRect();
+      return Math.round(Math.max(0, row.left - box.left, box.right - row.right));
+    });
+    // The phone pass of build 4: the slide hit a wall before the end of the track, and the word came
+    // when the bar ran out of room. The finger runs the whole track: at four fifths of it, every sound
+    // has been passed and the word is still to come; it fires at the end of the line.
+    await slide(page, track, async () => {
+      await expect(activity).toHaveAttribute("data-blended", "false");
+      await expect(activity).toHaveAttribute("data-revealed", "3");
+    });
     await expect(activity).toHaveAttribute("data-blended", "true");
     await expect(bar).toHaveAttribute("data-under", "word");
     const seen = (await under()).filter((note) => note !== "finger" && note !== "none");
     expect(seen).toEqual(["0", "1", "2", "word"]);
+    // The bar never leaves the word's extent, whatever the finger does.
+    expect(Math.max(...(await edges()))).toBeLessThanOrEqual(4);
     // Under the whole word: from the first tile's edge to the last one's.
     await expect.poll(async () => {
       const box = await bar.boundingBox();
@@ -115,10 +136,15 @@ for (const [age, calm] of [
       const right = await tiles.last().boundingBox();
       return Math.abs(box!.x - left!.x) <= 4 && Math.abs(box!.x + box!.width - (right!.x + right!.width)) <= 4;
     }).toBe(true);
-    // And the animal after that: it comes in under the word and says it.
+    // And the animal after that: it comes in under the word and says it, the bubble beside it (not part
+    // of what the finger moves, so the bubble never holds the animal back).
     await expect(animal).toHaveAttribute("data-word-teller", "said");
-    await expect(animal.locator(".word-bubble")).toHaveText("cat");
+    const bubble = activity.locator(".blend-said");
+    await expect(bubble).toHaveText("cat");
+    await expect(animal.locator(".word-bubble")).toHaveCount(0);
     await expect.poll(async () => (await animal.boundingBox())!.x).toBeGreaterThan(waiting!.x + 40);
+    const said = await animal.boundingBox();
+    expect((await bubble.boundingBox())!.x).toBeGreaterThan(said!.x + said!.width / 2);
     if (testInfo.project.name === "chromium" && age === "4") await page.screenshot({ path: "test-results/screenshots/word_page_cat_said.png" });
     // The bar stayed visible throughout, and in calm mode it did not flash.
     await expect(bar).toBeVisible();
@@ -130,6 +156,14 @@ test("a letter card: the letter is the largest thing, the bar under it as it is 
   await install(page);
   const activity = page.locator(".activity");
   await expect(activity).toHaveAttribute("data-letter-card", "true");
+  // The heading is the letter's own line ("o, as in octopus"), not SOUND IT OUT: there is nothing to
+  // blend on a letter card. (The phone pass of build 4: the t card was headed SOUND IT OUT.)
+  const letter = ((await activity.getAttribute("data-word")) ?? "").replace(/^letter-/, "");
+  expect(letter).toMatch(/^[a-z]+$/);
+  const heading = activity.locator(".sound-label h1");
+  await expect(activity.locator(".sound-label")).toHaveAttribute("data-sound-label", "letter");
+  await expect(heading).toHaveText(new RegExp(`^${letter}, as in [a-z-]+$`));
+  await expect(activity.getByText(/sound it out/i)).toHaveCount(0);
   const tile = activity.locator(".letters .tile-wrap").first();
   const tileBox = await tile.boundingBox();
   const card = await activity.locator(".picture-card").boundingBox();

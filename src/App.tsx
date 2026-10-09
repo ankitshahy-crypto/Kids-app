@@ -39,7 +39,7 @@ import { SurpriseView } from "./components/SurpriseView";
 import { TeacherView } from "./components/TeacherView";
 import type { GameId, GamesLobby } from "./components/Games";
 import { TodayPath } from "./components/TodayPath";
-import { colorTip, engineerTip, gameTip, mathTip, readTip, scienceTip, timeTip, type ReadTip } from "./content/tips";
+import { colorTip, drawTip, engineerTip, gameTip, mathTip, readTip, scienceTip, timeTip, type ReadTip } from "./content/tips";
 import type { DeckWord } from "./data/deck";
 import { ExploreFrame } from "./explore/frame";
 import {
@@ -1024,6 +1024,9 @@ export default function App() {
                   settingsRef={settingsRef}
                   writing={active.writing}
                   onAttempt={(itemId, success) => recordWriting(active.id, itemId, success)}
+                  // The grown-up line follows the card: tracing copy on the tracing card, the tap on
+                  // the look-alike card. In place, so the chip or card stays as the grown-up left it.
+                  onCard={(card, letter, partner) => presentTip(drawTip(card, letter, partner), "in-place")}
                   onDone={() => {
                     const learned = (drawLetters.length > 0 ? drawLetters : ["a"]).map((label) => ({
                       kind: "letter" as const,

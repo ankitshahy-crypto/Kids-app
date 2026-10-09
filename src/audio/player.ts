@@ -1,5 +1,6 @@
 import { recordedSrc, spokenLine } from "../data/audioCatalog";
 import type { DeckWord, LetterTile } from "../data/deck";
+import { letterName } from "../data/letterNames";
 import { beginVoice, endVoice, playOnBus, unlockAudio, warmClips } from "./manager";
 import { deviceSpeechFollowsSlider } from "./platform";
 import { pickVoice } from "./voices";
@@ -406,6 +407,18 @@ export function letterCue(letter: LetterTile): Cue {
 export function letterSoundCue(letter: LetterTile): Cue {
   const src = recordedSrc("sounds", letter.phoneme);
   return src ? { src, text: spokenLine("letters", letter.phraseId ?? letter.phoneme, letter.char) } : letterCue(letter);
+}
+
+/**
+ * A letter's name on its own ("em"), for spelling a child's name out in the recorded voice. With no
+ * name clip on the device yet, the letter's phrase clip ("m, as in moon") stands in: still the
+ * recorded voice, never the device's.
+ */
+export function spellCue(letter: string): Cue {
+  const id = letter.trim().toLowerCase();
+  const src = recordedSrc("spell", id);
+  if (src) return { src, text: spokenLine("spell", id, letterName(id)) };
+  return { src: recordedSrc("letters", id), text: spokenLine("letters", id, letterName(id)) };
 }
 
 /** A whole word from the deck. */

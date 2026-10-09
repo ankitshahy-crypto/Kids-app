@@ -12,7 +12,11 @@ import { isIos, isNativeApp } from "./platform";
  * logged in ASSETS.md. Tracing focus (`focus`) stays silent.
  */
 
-export type EffectName = "tap" | "pop" | "chime" | "boop" | "celebrate" | "cheer";
+/**
+ * `boop` is the soft "try again" of a wrong tap; `thud` is a low beat that means nothing is wrong
+ * (Build It's drum, a bite taken in Feed). The two used to be one low tone.
+ */
+export type EffectName = "tap" | "pop" | "chime" | "boop" | "thud" | "celebrate" | "cheer";
 
 export type MusicArea = "today" | "play" | "story" | "focus" | "none";
 
@@ -213,7 +217,15 @@ const EFFECT_TONES: Record<EffectName, Tone[]> = {
     { from: 784, to: 784, at: 0, seconds: 0.28, peak: PEAK * 0.7 },
     { from: 1175, to: 1175, at: 0.02, seconds: 0.32, peak: PEAK * 0.35 },
   ],
-  boop: [{ from: 240, to: 180, at: 0, seconds: 0.14, peak: PEAK * 0.55 }],
+  // Two short falling notes, "bo-op", a fourth and more above any voice's hum. The miss used to be
+  // one low tone (240 to 180 Hz, 140 ms), and in the playtest of build 4 the flat hum of /n/ in the
+  // slow sounding-out of "tent" (a 150 Hz hum, a third of a second) was heard as that buzzer, so the
+  // N on the card seemed to be called wrong. Two separate notes are not a sound a mouth makes.
+  boop: [
+    { from: 392, to: 349, at: 0, seconds: 0.07, peak: PEAK * 0.5 },
+    { from: 330, to: 262, at: 0.11, seconds: 0.1, peak: PEAK * 0.5 },
+  ],
+  thud: [{ from: 240, to: 180, at: 0, seconds: 0.14, peak: PEAK * 0.55 }],
   cheer: [
     { from: 523, to: 523, at: 0, seconds: 0.12, peak: PEAK * 0.45 },
     { from: 659, to: 659, at: 0.1, seconds: 0.12, peak: PEAK * 0.45 },
