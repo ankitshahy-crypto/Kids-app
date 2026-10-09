@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import art from "./animalArt.json";
 import { animals } from "./animals";
 
-const FRAMES = ["idle", "cheer", "think", "wait", "blink", "wave", "silly"];
+const FRAMES = ["idle", "cheer", "think", "wait", "blink", "sleepy", "wave", "silly"];
 const file = (id: string, name: string) => existsSync(new URL(`../../public/animals/${id}/${name}`, import.meta.url));
 
 describe("the painted animals", () => {
   it("every animal has a painted idle face, and every frame listed is there", () => {
     for (const { id } of animals) {
-      const entry = (art as Record<string, { frames: string[]; body: boolean; head: Record<string, number> }>)[id];
+      const entry = (art as Record<string, { frames: string[]; body: boolean; head: Record<string, number>; places?: Record<string, number[]> }>)[id];
       expect(entry, `${id} has art`).toBeDefined();
       expect(entry.frames).toContain("idle");
       for (const frame of entry.frames) {
@@ -28,6 +28,19 @@ describe("the painted animals", () => {
       expect(entry.head.x).toBeGreaterThan(-0.25);
       expect(entry.head.x + entry.head.w).toBeLessThan(1.25);
       expect(entry.head.w).toBeGreaterThan(0.4);
+      // A round plush's mood frames keep their own crop; each says where the idle frame sits in it
+      // (x, y, side as fractions): inside it, and not far off the idle's size.
+      for (const [frame, place] of Object.entries(entry.places ?? {})) {
+        expect(entry.frames, `${id}'s ${frame} is placed`).toContain(frame);
+        expect(place).toHaveLength(3);
+        const [x, y, side] = place;
+        expect(side, `${id} ${frame}`).toBeGreaterThan(0.5);
+        expect(side, `${id} ${frame}`).toBeLessThanOrEqual(1.05);
+        expect(x, `${id} ${frame}`).toBeGreaterThanOrEqual(-0.1);
+        expect(y, `${id} ${frame}`).toBeGreaterThanOrEqual(-0.1);
+        expect(x + side, `${id} ${frame}`).toBeLessThanOrEqual(1.1);
+        expect(y + side, `${id} ${frame}`).toBeLessThanOrEqual(1.1);
+      }
     }
   });
 });

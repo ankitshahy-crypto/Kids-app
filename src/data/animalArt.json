@@ -20,16 +20,40 @@
       "idle",
       "cheer",
       "think",
-      "blink"
+      "wait",
+      "blink",
+      "sleepy"
     ],
     "body": false,
     "head": {
-      "x": 0.0293,
-      "y": 0.028,
-      "w": 0.9414,
-      "h": 0.5997
+      "x": 0.0277,
+      "y": 0.0282,
+      "w": 0.9447,
+      "h": 0.9436
     },
-    "sky": "hue-rotate(185deg) saturate(0.26) contrast(0.85) brightness(1.12)"
+    "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
+    "places": {
+      "cheer": [
+        0.1207,
+        0.2192,
+        0.8168
+      ],
+      "think": [
+        0.1225,
+        0.2714,
+        0.7565
+      ],
+      "wait": [
+        0.1044,
+        0.1743,
+        0.873
+      ],
+      "sleepy": [
+        0.0441,
+        0.1102,
+        0.9077
+      ]
+    }
   },
   "fox": {
     "frames": [

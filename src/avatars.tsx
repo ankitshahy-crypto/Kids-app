@@ -2,7 +2,7 @@ import { useState, type CSSProperties, type JSX } from "react";
 import type { AnimalId } from "./data/animals";
 import art from "./data/animalArt.json";
 import type { Mood } from "./game/kit";
-import { AnimalClip } from "./components/AnimalClip";
+import { AnimalClip, type ClipName } from "./components/AnimalClip";
 
 const INK = "#2C3A4F";
 
@@ -12,9 +12,19 @@ const INK = "#2C3A4F";
  * (the mood still shows in how the animal moves), so frames can land one at a time; an animal with
  * no entry at all is drawn (the shapes below), so nothing is ever blank.
  */
-export type ArtFrame = "idle" | "cheer" | "think" | "wait" | "blink" | "wave" | "silly";
+export type ArtFrame = "idle" | "cheer" | "think" | "wait" | "blink" | "sleepy" | "wave" | "silly";
 export type ArtView = "face" | "body";
-type ArtEntry = { frames: ArtFrame[]; body: boolean; head: { x: number; y: number; w: number; h: number }; sky: string };
+type ArtEntry = {
+  frames: ArtFrame[];
+  body: boolean;
+  head: { x: number; y: number; w: number; h: number };
+  sky: string;
+  /** Round plush (animal-art.py --round): where the idle frame sits in a mood frame's own crop (x, y,
+   * side, fractions of it). The mood face is drawn that much larger than its box and shifted, so its
+   * body lies on the idle one's while its ears may rise past the box. A frame not listed is cut to
+   * the idle frame already. */
+  places?: Partial<Record<ArtFrame, [number, number, number]>>;
+};
 const ART: Partial<Record<AnimalId, ArtEntry>> = art as Partial<Record<AnimalId, ArtEntry>>;
 
 export function artOf(animal: AnimalId): ArtEntry | null {
@@ -37,7 +47,7 @@ export function artSrc(animal: AnimalId, frame: ArtFrame, view: ArtView): string
 }
 
 /** The faces a mood can show besides the idle one, in the order they lie over it. */
-const MOOD_FRAMES: ArtFrame[] = ["cheer", "think", "wait"];
+const MOOD_FRAMES: ArtFrame[] = ["cheer", "think", "wait", "sleepy"];
 /** A blink comes round this often (the CSS animation's length), in seconds. */
 const BLINK_EVERY = 4.8;
 
@@ -279,8 +289,8 @@ const avatars: Record<AnimalId, (face: Face) => JSX.Element> = {
 export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood?: Mood; view?: ArtView }) {
   // Where in its turn this animal's blink starts: its own, kept for as long as it is on the page.
   const [blinkAt] = useState(() => Math.floor(Math.random() * BLINK_EVERY * 100) / 100);
-  // Whether its idle life is playing as video (then the CSS blink stays off: the video blinks).
-  const [clipPlaying, setClipPlaying] = useState(false);
+  // The clip playing as video over the stills, if one is (then the stills it stands for stay hidden).
+  const [clipPlaying, setClipPlaying] = useState<ClipName | null>(null);
   const entry = ART[animal];
   const look = mood ?? "idle";
   if (!entry) {
@@ -293,12 +303,19 @@ export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood
   // The face underneath is decoded before it is painted when the animal is alive: a new animal on
   // the coding board each round must not show one empty frame first. (A mood face fades in from
   // nothing, so a late frame of it is not seen.)
+  const placed = (name: ArtFrame): CSSProperties | undefined => {
+    const place = shown === "face" ? entry.places?.[name] : undefined;
+    if (!place) return undefined;
+    const [x, y, side] = place;
+    return { width: `${100 / side}%`, height: `${100 / side}%`, left: `${(-x / side) * 100}%`, top: `${(-y / side) * 100}%` };
+  };
   const face = (name: ArtFrame, className: string, on?: boolean) => (
     <img
       key={name}
       className={className}
       data-face={name}
       data-on={on === undefined ? undefined : on ? "true" : "false"}
+      style={placed(name)}
       src={artSrc(animal, name, shown)}
       // The size attributes give the box its shape before the picture arrives (a face is square), so nothing jumps.
       width={shown === "face" ? 512 : undefined}
@@ -314,13 +331,13 @@ export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood
       data-mood={look}
       data-view={shown}
       data-frame={frame}
-      data-clip={clipPlaying ? "playing" : undefined}
+      data-clip={clipPlaying ?? undefined}
       aria-hidden="true"
       style={alive ? ({ "--blink-at": blinkAt } as CSSProperties) : undefined}
     >
       {face("idle", "avatar-face")}
       {/* Alive, with clips: its idle life as video over the still (components/AnimalClip.tsx). */}
-      {alive && shown === "face" ? <AnimalClip animal={animal} onPlaying={setClipPlaying} /> : null}
+      {alive && shown === "face" ? <AnimalClip animal={animal} mood={look} onPlaying={setClipPlaying} /> : null}
       {alive && entry.frames.includes("blink") ? face("blink", "avatar-blink") : null}
       {alive ? MOOD_FRAMES.filter((name) => entry.frames.includes(name)).map((name) => face(name, "avatar-over", frame === name)) : null}
     </span>

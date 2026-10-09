@@ -168,6 +168,13 @@ sequence and the WebM, and a small `<clip>.json`: the head's box per frame, for 
 
 1. Dog stills (six frames) and the dog's idle and cheer clips, from the brief above; `animal-art.py`
    and the clip pipeline run on them; a contact sheet and the two clips on a phone. Review.
+   (Done 2026-10-09: the renders came back as briefed; the stills are in, the WebM clips are in,
+   the `.mov` files wait on the Mac step. What the renders taught the pipeline: a mood frame's
+   body is drawn a little bigger or smaller from one render to the next, so a mood frame keeps its
+   own crop and is placed by its lower body (`places` in animalArt.json); a generated idle clip runs
+   long and never quite returns to its first pose, so the pipeline closes the loop where the end
+   best matches the start and blends the seam; a generated cheer is a ten-second performance, so
+   `--take` names the second or two of it that is the move.)
 2. The dog in one scene (Hatch the Egg: the field, with the near layer), alive. Review.
 3. The dog's moves (nine clips). Make a dance and Take me home with them. Review.
 4. The other eleven animals, stills first (one sheet), then clips (one sheet with stills from each

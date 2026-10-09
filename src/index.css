@@ -1069,9 +1069,10 @@ button:focus-visible {
   opacity: 0;
 }
 
-/* The idle life as video (components/AnimalClip.tsx): over the idle still, placed and sized by the
-   clip's own numbers (its idle pose on the still's), seen only once it plays, and not while a mood
-   face is over the still (the mood faces know nothing of it yet). A picture, not a control. */
+/* The animal's life as video (components/AnimalClip.tsx): each clip a video over the stills, placed
+   and sized by the clip's own numbers (its pose on the still's), seen only while it plays
+   (data-clip on the stack names it). The idle loop shows under the idle look; a mood's clip shows
+   under that mood, in place of the mood's still face. Pictures, not controls. */
 .avatar-painted .avatar-clip {
   position: absolute;
   object-fit: contain;
@@ -1081,12 +1082,18 @@ button:focus-visible {
   user-select: none;
 }
 
-.avatar-painted[data-clip="playing"][data-frame="idle"] .avatar-clip {
+.avatar-painted[data-clip="idle"][data-frame="idle"] .avatar-clip[data-clip="idle"],
+.avatar-painted[data-clip="cheer"] .avatar-clip[data-clip="cheer"],
+.avatar-painted[data-clip="think-idle"] .avatar-clip[data-clip="think-idle"],
+.avatar-painted[data-clip="wait-idle"] .avatar-clip[data-clip="wait-idle"] {
   opacity: 1;
 }
 
-/* While the video blinks for it, the CSS blink stays off. */
-.avatar-painted[data-clip="playing"] .avatar-blink {
+/* While the video blinks for it, the CSS blink stays off; while it cheers, the cheer's still stays off. */
+.avatar-painted[data-clip] .avatar-blink,
+.avatar-painted[data-clip="cheer"] .avatar-over[data-face="cheer"],
+.avatar-painted[data-clip="think-idle"] .avatar-over[data-face="think"],
+.avatar-painted[data-clip="wait-idle"] .avatar-over[data-face="wait"] {
   visibility: hidden;
 }
 

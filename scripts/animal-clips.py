@@ -1,7 +1,7 @@
 """
 Make the app's animal clips from the generated videos: public/animals/<id>/clips/.
 
-Usage: python3 scripts/animal-clips.py <folder of source videos> [--keep-frames]
+Usage: python3 scripts/animal-clips.py <folder of source videos> [--keep-frames] [--take=cheer=1.4-3.0,...]
 
 Each source is a video (mp4/mov/webm) of one round-plush animal on a flat, even backdrop, camera
 locked, named `...animal-<id>-<clip>...` (`<id>` from src/data/animals.ts; `<clip>` one of the
@@ -14,10 +14,15 @@ the idle pose. For each one this writes:
   public/animals/<id>/clips/<clip>.json   the clip's length, whether it loops, and the head's box
                                           per frame (fractions of the frame), for the outfit
                                           overlays to follow
-  build/clips/<id>/<clip>/f%04d.png       the keyed frames (with --keep-frames): the HEVC-with-alpha
-                                          file for the iPhone is made from these on a Mac:
-                                            ffmpeg -framerate 24 -i f%04d.png -c:v hevc_videotoolbox
-                                              -alpha_quality 0.75 -tag:v hvc1 -pix_fmt bgra <clip>.mov
+  build/clips/<id>/<clip>.master.webm     the master with alpha (VP9, near lossless, a few MB),
+                                          from which the HEVC-with-alpha file for the iPhone is
+                                          made on a Mac (nothing on Linux writes that one):
+                                            ffmpeg -c:v libvpx-vp9 -i <clip>.master.webm
+                                              -c:v hevc_videotoolbox -alpha_quality 0.75 -tag:v hvc1
+                                              -an public/animals/<id>/clips/<clip>.mov
+                                          (`-c:v libvpx-vp9` before `-i`: ffmpeg's own VP9 decoder
+                                          drops the alpha; libvpx's keeps it.)
+  build/clips/<id>/<clip>/f%04d.png       the keyed frames (with --keep-frames)
 
 and src/data/animalClips.json: which clips each animal has, with each one's length and loop, and
 `still`: where the still's frame sits in the clip frame (x, y, side, as fractions of it).
@@ -51,10 +56,10 @@ ANIMALS = ["cat", "dog", "fox", "bear", "bunny", "owl", "frog", "duck", "pig", "
 # clip: loops (a held pose), and the length the app plays it at (seconds); a source longer or shorter
 # than that is resampled to it, so a move always fits its step.
 CLIPS = {
-    "idle": (True, 8.0),
-    "think-idle": (True, 4.0),
-    "wait-idle": (True, 4.0),
-    "cheer": (False, 1.0),
+    "idle": (True, 12.0),
+    "think-idle": (True, 6.0),
+    "wait-idle": (True, 6.0),
+    "cheer": (False, 1.2),
     "hello": (False, 0.7),
     "walk": (False, 0.7),
     "jump": (False, 0.7),
@@ -65,6 +70,12 @@ CLIPS = {
 FPS = 24
 SIZE = 512
 AIR = 0.05
+# A loop is closed where, in its last third, a frame best matches its first (the generator never quite
+# returns to its first pose); the last few frames then blend into the first, so the seam is not seen.
+LOOP_BLEND = 6
+# A move: the source is usually a longer performance than the move; `--take <clip>=<start>-<end>`
+# names the seconds of it to keep (the window is then fitted to the move's length).
+TAKES: dict[str, tuple[float, float]] = {}
 # How far a pixel is from the backdrop (Lab distance) before it is figure, and the band over which
 # the matte goes from backdrop to figure (a soft edge, two or three pixels of fur).
 KEY_AT = 14.0
@@ -86,17 +97,31 @@ def read_frames(path: Path) -> tuple[list[np.ndarray], float]:
     return frames, fps
 
 
-def resample(frames: list[np.ndarray], fps: float, seconds: float, loops: bool) -> list[np.ndarray]:
-    """The frames the app plays: `seconds` at FPS. A move is fitted to its length (a source a little
-    long or short plays a little quick or slow); a loop keeps its own pace, picked to FPS, and a
-    short loop is played round until the length is reached (it starts and ends on the same pose)."""
-    want = max(2, round(seconds * FPS))
-    if loops:
-        own = max(2, round(len(frames) * FPS / fps))
-        paced = [frames[int(round(p))] for p in np.linspace(0, len(frames) - 1, own)]
-        return [paced[i % len(paced)] for i in range(want)] if len(paced) < want else paced[:want]
-    picks = np.linspace(0, len(frames) - 1, want)
-    return [frames[int(round(p))] for p in picks]
+def resample(frames: list[np.ndarray], fps: float, seconds: float, loops: bool, take: tuple[float, float] | None) -> list[np.ndarray]:
+    """The frames the app plays, at FPS. A move is its window (`take`, else the whole source) fitted to
+    its length (a little quick or slow). A loop keeps its own pace up to `seconds`, closed where a
+    frame in its last third best matches its first, with the last frames blended into the first."""
+    if take:
+        a, b = int(take[0] * fps), int(take[1] * fps)
+        frames = frames[max(0, a) : max(a + 2, min(len(frames), b))]
+    if not loops:
+        want = max(2, round(seconds * FPS))
+        picks = np.linspace(0, len(frames) - 1, want)
+        return [frames[int(round(p))] for p in picks]
+    own = max(2, round(len(frames) * FPS / fps))
+    paced = [frames[int(round(p))] for p in np.linspace(0, len(frames) - 1, own)][: round(seconds * FPS)]
+    small = [cv2.resize(f, (64, 64), interpolation=cv2.INTER_AREA).astype(np.float32) for f in paced]
+    start = int(len(paced) * 0.66)
+    end = start + int(np.argmin([np.abs(small[i] - small[0]).mean() for i in range(start, len(paced))]))
+    closed = paced[: end + 1]
+    n = min(LOOP_BLEND, len(closed) // 4)
+    out = list(closed)
+    for k in range(n):
+        # The last n frames: each a mix of itself and the frame the loop comes back to.
+        t = (k + 1) / (n + 1)
+        i = len(closed) - n + k
+        out[i] = cv2.addWeighted(closed[i], 1 - t, closed[k], t, 0)
+    return out
 
 
 def backdrop_colour(frames: list[np.ndarray]) -> np.ndarray:
@@ -225,6 +250,14 @@ def encode_webm(frames_dir: Path, out: Path) -> None:
     )
 
 
+def encode_master(frames_dir: Path, out: Path) -> None:
+    """The master with alpha, near lossless, for the Mac to make the HEVC file from."""
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", str(frames_dir / "f%04d.png"), "-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "10", "-row-mt", "1", "-an", str(out)],
+        check=True,
+    )
+
+
 def main(folder: Path, keep_frames: bool) -> None:
     sources = sorted(p for p in folder.iterdir() if p.suffix.lower() in (".mp4", ".mov", ".webm", ".m4v"))
     manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
@@ -240,7 +273,7 @@ def main(folder: Path, keep_frames: bool) -> None:
         box_union = None
         for clip, path in clips.items():
             frames, fps = read_frames(path)
-            frames = resample(frames, fps, CLIPS[clip][1], CLIPS[clip][0])
+            frames = resample(frames, fps, CLIPS[clip][1], CLIPS[clip][0], TAKES.get(clip))
             bg = backdrop_colour(frames)
             bg_bgr = cv2.cvtColor(np.array([[bg]], dtype=np.uint8), cv2.COLOR_LAB2BGR)[0, 0].astype(np.float32)
             alphas = [matte(f, bg) for f in frames]
@@ -280,7 +313,10 @@ def main(folder: Path, keep_frames: bool) -> None:
             out_dir = OUT / animal / "clips"
             out_dir.mkdir(parents=True, exist_ok=True)
             encode_webm(frames_dir, out_dir / f"{clip}.webm")
-            loops, seconds = CLIPS[clip]
+            (BUILD / animal).mkdir(parents=True, exist_ok=True)
+            encode_master(frames_dir, BUILD / animal / f"{clip}.master.webm")
+            loops, _ = CLIPS[clip]
+            seconds = round(len(colours) / FPS, 3)
             (out_dir / f"{clip}.json").write_text(json.dumps({"fps": FPS, "frames": len(colours), "seconds": seconds, "loops": loops, "head": heads}) + "\n")
             entry["clips"][clip] = {"seconds": seconds, "loops": loops}
             print(f"  {clip}.webm {(out_dir / f'{clip}.webm').stat().st_size // 1024} KB")
@@ -291,4 +327,10 @@ if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     if not args:
         raise SystemExit(__doc__)
+    for arg in sys.argv[1:]:
+        if arg.startswith("--take="):
+            for part in arg[len("--take=") :].split(","):
+                clip, span = part.split("=")
+                a, b = span.split("-")
+                TAKES[clip] = (float(a), float(b))
     main(Path(args[0]), "--keep-frames" in sys.argv)

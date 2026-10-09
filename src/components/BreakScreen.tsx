@@ -17,7 +17,8 @@ export function BreakScreen({
   return (
     <section className="break-screen" data-screen="break" aria-labelledby="break-title">
       <div className="break-hero" aria-hidden="true">
-        <Hero animal={profile.animal} outfit={profile.outfit} />
+        {/* Sleepy, when the animal has that face (round plush); otherwise its idle face, as before. */}
+        <Hero animal={profile.animal} outfit={profile.outfit} mood="sleepy" />
       </div>
       <h1 id="break-title">Break time</h1>
       <p className="break-note">Everything is saved. Come back whenever you like, {lessonName(profile)}.</p>
