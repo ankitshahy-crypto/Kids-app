@@ -12,6 +12,7 @@ Usage: python3 scripts/lab-polish-variant.py <variant>
   notransition  no eased press (the global button transition)
   nofade        no screen fade
   nofront       no near layer drift (the field's clover stands still)
+  nosurface     no grain and no light: every surface a flat fill again (the shadows stay)
   none          all of the above
 """
 import re
@@ -45,7 +46,9 @@ pieces = {
     "nofade": lambda t: drop_rule(t, ".stage > [data-screen],"),
     "nofront": lambda t: drop_rule(t, '.game-backdrop-front[data-drift="true"] {'),
 }
-wanted = list(pieces) if variant == "none" else [] if variant == "full" else [variant]
+pieces["nosurface"] = lambda t: pieces["nolight"](pieces["nograin"](t))
+singles = [name for name in pieces if name != "nosurface"]
+wanted = singles if variant == "none" else [] if variant == "full" else [variant]
 for name in wanted:
     before = polish
     polish = pieces[name](polish)

@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [full, notransition, none]
+        variant: [full, none, nosurface, noshadow, noblob, nofade]
         turn: [1, 2, 3]
     steps:
       - uses: actions/checkout@v5
