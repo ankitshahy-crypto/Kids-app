@@ -100,8 +100,13 @@ export function AnimalClip({ animal, mood, onPlaying }: { animal: AnimalId; mood
     }
     const oneShot = !entry?.clips[active]?.loops;
     const onPlaying = () => {
-      // The WebM in Safari has no transparency: the still stays.
-      if (/\.webm(\?|$)/.test(element.currentSrc) && webmOpaque()) return;
+      // The WebM in Safari has no transparency: the still stays, and the video is stopped. Left
+      // playing, it decoded on at opacity 0: on an iPhone without the HEVC file the idle loop went
+      // round for nothing, ten seconds at a time, and would for every animal that gets clips.
+      if (/\.webm(\?|$)/.test(element.currentSrc) && webmOpaque()) {
+        element.pause();
+        return;
+      }
       setShowing(active);
       if (oneShot) setHolding(active);
     };

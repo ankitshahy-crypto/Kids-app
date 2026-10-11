@@ -428,3 +428,61 @@ test("every animal has every mood's face (idle, cheer, think, wait, blink, sleep
   );
   for (const [name, size] of Object.entries(sizes)) expect(size, name).toBe(512);
 });
+
+/**
+ * The dog's clips over its stills (src/components/AnimalClip.tsx). Every browser on an iPhone is
+ * WebKit, which plays the HEVC file and would play the WebM too, without its transparency. Chromium
+ * here plays no HEVC, so each of these falls through to the WebM, as an iPhone does when the HEVC
+ * file is missing: with a Safari user agent that is the opaque WebM on WebKit, and it must stop.
+ */
+test.describe("the WebM on WebKit", () => {
+  test.use({ userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1" });
+
+  test("a WebM that WebKit falls through to is paused, never shown, and the still stays", async ({ page }) => {
+    // The playtest of build 6, read from the code: on an iPhone without the HEVC file, the idle
+    // WebM played on at opacity 0, decoding its ten-second loop round and round for nothing.
+    await install(page, profile("dog"));
+    await page.getByRole("button", { name: "Mia" }).click();
+    await page.locator("[data-dock=games]").click();
+    await page.locator("[data-game-tile=hatch]").click();
+    const host = page.locator(".game-frame .game-host .avatar-painted").first();
+    const idle = host.locator("video.avatar-clip[data-clip=idle]");
+    await expect(idle).toHaveCount(1);
+    // The browser took the WebM, and it got as far as playing: then it was stopped.
+    await expect.poll(() => idle.evaluate((video: HTMLVideoElement) => video.currentSrc), { timeout: 15_000 }).toMatch(/\/clips\/idle\.webm$/);
+    await expect.poll(() => idle.evaluate((video: HTMLVideoElement) => video.readyState), { timeout: 15_000 }).toBeGreaterThanOrEqual(2);
+    await expect.poll(() => idle.evaluate((video: HTMLVideoElement) => video.paused), { timeout: 15_000 }).toBe(true);
+    const at = await idle.evaluate((video: HTMLVideoElement) => video.currentTime);
+    await page.waitForTimeout(700);
+    expect(await idle.evaluate((video: HTMLVideoElement) => video.currentTime)).toBe(at);
+    expect(await idle.evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
+    // It was never shown: the stack names no clip, and the still is what is seen.
+    await expect(idle).toHaveAttribute("data-playing", "false");
+    await expect(host).not.toHaveAttribute("data-clip", /./);
+    expect(await idle.evaluate((video) => getComputedStyle(video).opacity)).toBe("0");
+    expect(await host.locator("img.avatar-face").evaluate((img) => getComputedStyle(img).visibility)).toBe("visible");
+    // A right answer: the cheer's WebM is stopped the same way, and the cheering still shows instead.
+    const frame = page.locator(".game-frame").first();
+    await frame.locator('.pick[data-letter][data-needed="true"]').first().click();
+    await expect(host).toHaveAttribute("data-mood", "cheer");
+    const cheer = host.locator("video.avatar-clip[data-clip=cheer]");
+    await expect.poll(() => cheer.evaluate((video: HTMLVideoElement) => video.paused), { timeout: 15_000 }).toBe(true);
+    await expect(cheer).toHaveAttribute("data-playing", "false");
+    await expect(host).not.toHaveAttribute("data-clip", /./);
+  });
+});
+
+test("where the WebM has its transparency (Blink), the dog's idle clip plays and is shown", async ({ page }) => {
+  // The other side of the check above: the same WebM, on a browser that keeps its alpha, is the
+  // animal's life, shown over the still.
+  await install(page, profile("dog"));
+  await page.getByRole("button", { name: "Mia" }).click();
+  await page.locator("[data-dock=games]").click();
+  await page.locator("[data-game-tile=hatch]").click();
+  const host = page.locator(".game-frame .game-host .avatar-painted").first();
+  const idle = host.locator("video.avatar-clip[data-clip=idle]");
+  await expect(idle).toHaveAttribute("data-playing", "true", { timeout: 15_000 });
+  await expect(host).toHaveAttribute("data-clip", "idle");
+  expect(await idle.evaluate((video: HTMLVideoElement) => video.paused)).toBe(false);
+  expect(await idle.evaluate((video) => getComputedStyle(video).opacity)).toBe("1");
+});
