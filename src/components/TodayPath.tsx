@@ -23,14 +23,14 @@ import { EngineerBoard } from "./BuildGames";
 import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
 import { ModuleMark } from "./ModuleMark";
-import { BookMark, Nest, Hills, PaintMark, PencilMark, ToyBox } from "./sceneArt";
+import { BookMark, Nest, PaintMark, PencilMark, ToyBox, WovenNest } from "./sceneArt";
 import { HoldButton } from "./HoldButton";
 
-const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
-  { id: "letter", label: "Letters", left: "50%", top: "18%" },
-  { id: "draw", label: "Draw", left: "76%", top: "40%" },
-  { id: "story", label: "Story", left: "32%", top: "58%" },
-  { id: "moment", label: "Colors", left: "64%", top: "80%" },
+const stops: { id: LessonStep; label: string }[] = [
+  { id: "letter", label: "Letters" },
+  { id: "draw", label: "Draw" },
+  { id: "story", label: "Story" },
+  { id: "moment", label: "Colors" },
 ];
 
 /** The name at the top of each Explore section's page: the same word its tile shows. */
@@ -41,6 +41,17 @@ const SECTION_TITLE: Record<"math" | "colors" | "time" | "build" | "science", st
   build: "Build",
   science: "Science",
 };
+
+/** A finished stop's tick, on its shoulder. */
+function Tick() {
+  return (
+    <span className="trail-done" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="m6.5 12.5 3.5 3.5 7.5-8" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
 
 export function TodayPath({
   profile,
@@ -166,10 +177,15 @@ export function TodayPath({
   // (Each stop says "done" to a screen reader once it is; the strip's own name is what it shows, so
   // that it is never mistaken for a stop: "Draw" is a stop, not the strip.)
   const [pointed, setPointed] = useState(0);
+  // Two names for the pulse, turn about, so a second tap on the strip pulses again.
+  const point = (stop: LessonStep) => (!done[stop] && pointed > 0 ? (pointed % 2 === 1 ? "a" : "b") : undefined);
+  // The child's animal, alive: its idle loop plays in the nest, with what it wears. A long press on
+  // it switches child; on a shared class iPad a tap does, through the grown-up check.
+  const hero = <Hero animal={profile.animal} outfit={profile.outfit} mood="idle" />;
 
   return (
     <div
-      className={`today${shown === "reading" ? "" : " is-section"}`}
+      className={`today${shown === "reading" ? " is-nest" : " is-section"}`}
       data-screen="today"
       data-subject={shown === "math" ? MATH : shown === "colors" ? COLORS : shown === "time" ? TIME : shown === "build" ? BUILD : shown === "science" ? SCIENCE : READING}
       data-review={review ? "true" : "false"}
@@ -184,37 +200,55 @@ export function TodayPath({
             button, in the same corner, as every lesson and game. Before, the only way back to the reading
             path was the small "READING" pill, which nobody on the first phone test read as a way out. */}
         {shown !== "reading" ? (
-          <button type="button" className="back-button" aria-label="Back" data-course="reading" data-section-back onClick={() => onCourse("reading")}>
-            <span className="gear-face">
-              <Chevron direction="left" />
-            </span>
-          </button>
-        ) : switchNeedsGrownup ? (
-          <button type="button" className="today-avatar" aria-label="Switch child" onClick={onLeave}>
-            <Hero animal={profile.animal} outfit={profile.outfit} />
-          </button>
+          <>
+            <button type="button" className="back-button" aria-label="Back" data-course="reading" data-section-back onClick={() => onCourse("reading")}>
+              <span className="gear-face">
+                <Chevron direction="left" />
+              </span>
+            </button>
+            <div className="today-tools">
+              <GoalRing ms={practiceTotal(profile)[todayKey(now)] ?? 0} goalMinutes={goalMinutes} />
+              <p className="star-count" data-stars={profile.stars}>
+                <StarIcon />
+                <span>{profile.stars}</span>
+              </p>
+            </div>
+          </>
         ) : (
-          <HoldButton className="today-avatar" label="Switch child" onHold={onLeave}>
-            <Hero animal={profile.animal} outfit={profile.outfit} />
-          </HoldButton>
+          <>
+            {/* The day's other stops, a short dashed row: the pencil, the book and the paints. Today's
+                letter is the big circle below, beside the nest. */}
+            <div className="trail-stops" role="group" aria-label="Today's path">
+              {stops
+                .filter((stop) => stop.id !== "letter")
+                .map((stop) => {
+                  const finished = done[stop.id];
+                  return (
+                    <button
+                      key={stop.id}
+                      type="button"
+                      className={`trail-stop${stop.id === current.id ? " is-current" : ""}${finished ? " is-done" : ""}`}
+                      data-step={stop.id}
+                      data-current={stop.id === current.id ? "true" : "false"}
+                      data-point={point(stop.id)}
+                      aria-label={finished ? `${stop.label}, done` : stop.label}
+                      onClick={() => onOpen(stop.id)}
+                    >
+                      {finished ? <Tick /> : null}
+                      {stop.id === "draw" ? <PencilMark /> : null}
+                      {stop.id === "story" ? <BookMark /> : null}
+                      {stop.id === "moment" ? <PaintMark /> : null}
+                    </button>
+                  );
+                })}
+            </div>
+            <p className="star-count" data-stars={profile.stars}>
+              <StarIcon />
+              <span>{profile.stars}</span>
+            </p>
+          </>
         )}
-        <div className="today-tools">
-          <GoalRing ms={practiceTotal(profile)[todayKey(now)] ?? 0} goalMinutes={goalMinutes} />
-          <p className="star-count" data-stars={profile.stars}>
-            <StarIcon />
-            <span>{profile.stars}</span>
-          </p>
-        </div>
       </div>
-      {/* The week's letters, in words. The path showed only the first one (a lone M), and "Review" on a
-          Friday said nothing about which letters; the first phone test asked for the two letters to be plain. */}
-      {shown === "reading" && focus ? (
-        <p className="today-review today-focus" data-week-focus>
-          {focus}
-        </p>
-      ) : review && shown === "reading" ? (
-        <p className="today-review">Review</p>
-      ) : null}
 
       <div className="today-body">
         <section className="lesson">
@@ -225,81 +259,66 @@ export function TodayPath({
             <h1 className="section-title" data-section-title={shown}>
               {shown === "reading" ? "Reading" : SECTION_TITLE[shown]}
             </h1>
-            {shown === "reading" && left > 0 ? (
-              <button
-                type="button"
-                className="chunk-strip"
-                data-done={finishedCount}
-                data-left={left}
-                onClick={() => setPointed((count) => count + 1)}
-              >
-                {strip}
-              </button>
-            ) : shown === "reading" ? (
-              <p className="chunk-strip" data-done={finishedCount} data-left={left} aria-live="polite">
-                {strip}
+            {/* The week's letters, in words. The path showed only the first one (a lone M), and "Review" on a
+                Friday said nothing about which letters; the first phone test asked for the two letters to be plain. */}
+            {shown === "reading" && focus ? (
+              <p className="today-review today-focus" data-week-focus>
+                {focus}
               </p>
+            ) : review && shown === "reading" ? (
+              <p className="today-review">Review</p>
             ) : null}
             {shown === "reading" && held ? (
               <button type="button" className="held-note" data-held="true" aria-label="Ask a grown-up" onClick={onHeld}>
                 <LockBadge />
               </button>
             ) : null}
+            {shown === "reading" ? <GoalRing ms={practiceTotal(profile)[todayKey(now)] ?? 0} goalMinutes={goalMinutes} /> : null}
           </div>
 
           {shown === "reading" ? (
             <div className="trail">
-        <Hills />
-        <svg className="trail-dots" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path
-            d="M50 18 C66 26 82 32 76 40 C66 52 40 50 32 58 C24 68 52 72 64 80"
-            fill="none"
-            stroke="#E4C7A4"
-            strokeWidth="2.4"
-            strokeDasharray="1.4 2.2"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-        {stops.map((stop) => {
-          const finished = done[stop.id];
-          const active = stop.id === current.id;
-          return (
-            <button
-              key={stop.id}
-              type="button"
-              className={`trail-stop${active ? " is-current" : ""}${finished ? " is-done" : ""}`}
-              style={{ left: stop.left, top: stop.top }}
-              data-step={stop.id}
-              data-current={active ? "true" : "false"}
-              // Two names for the pulse, turn about, so a second tap on the strip pulses again.
-              data-point={!finished && pointed > 0 ? (pointed % 2 === 1 ? "a" : "b") : undefined}
-              aria-label={finished ? `${stop.label}, done` : stop.label}
-              onClick={() => onOpen(stop.id)}
-            >
-              {finished ? (
-                <span className="trail-done" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" focusable="false">
-                    <path d="m6.5 12.5 3.5 3.5 7.5-8" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              ) : null}
-              {stop.id === "letter" ? (
-                <span className={`trail-letter${letter.length > 1 ? " is-unit" : ""}`}>{letter}</span>
-              ) : null}
-              {stop.id === "draw" ? <PencilMark /> : null}
-              {stop.id === "story" ? <BookMark /> : null}
-              {stop.id === "moment" ? <PaintMark /> : null}
-            </button>
-          );
-        })}
-        <span
-          className={`trail-animal${current.id === "story" ? " is-right" : ""}`}
-          style={{ left: current.left, top: current.top }}
-          aria-hidden="true"
-        >
-          <Hero animal={profile.animal} outfit={profile.outfit} />
-        </span>
+              <div className="nest-seat">
+                <WovenNest>
+                  {switchNeedsGrownup ? (
+                    <button type="button" className="nest-hero" aria-label="Switch child" onClick={onLeave}>
+                      {hero}
+                    </button>
+                  ) : (
+                    <HoldButton className="nest-hero" label="Switch child" onHold={onLeave}>
+                      {hero}
+                    </HoldButton>
+                  )}
+                </WovenNest>
+              </div>
+              <div className="letter-card">
+                <button
+                  type="button"
+                  className={`trail-stop letter-stop${current.id === "letter" ? " is-current" : ""}${done.letter ? " is-done" : ""}`}
+                  data-step="letter"
+                  data-current={current.id === "letter" ? "true" : "false"}
+                  data-point={point("letter")}
+                  aria-label={done.letter ? "Letters, done" : "Letters"}
+                  onClick={() => onOpen("letter")}
+                >
+                  {done.letter ? <Tick /> : null}
+                  <span className={`trail-letter${letter.length > 1 ? " is-unit" : ""}`}>{letter}</span>
+                </button>
+                <p className="nest-caption">Today's letter</p>
+                {/* Start opens the next stop still to do: the letter first, then the pencil, the book, the paints. */}
+                <button type="button" className="start-button nest-start" data-start={current.id} onClick={() => onOpen(current.id)}>
+                  Start
+                </button>
+                {left > 0 ? (
+                  <button type="button" className="chunk-strip" data-done={finishedCount} data-left={left} onClick={() => setPointed((count) => count + 1)}>
+                    {strip}
+                  </button>
+                ) : (
+                  <p className="chunk-strip" data-done={finishedCount} data-left={left} aria-live="polite">
+                    {strip}
+                  </p>
+                )}
+              </div>
             </div>
           ) : null}
 
@@ -452,13 +471,28 @@ export function TodayPath({
 
       {shown === "reading" ? (
       <div className="today-dock">
-        <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>
-          <span className="dock-art dock-dress" aria-hidden="true" />
-          <span>Dress up</span>
+        {/* The mockup's row first: My Nest, Stickers, Games. Dress up and Surprise follow, on the same footing. */}
+        <button type="button" className="dock-button" data-dock="nest" onClick={onNest}>
+          <span className="dock-art dock-nest">
+            <Nest />
+          </span>
+          <span>My Nest</span>
         </button>
         <button type="button" className="dock-button" data-dock="stickers" onClick={onStickers}>
           <span className="dock-art dock-stickers" aria-hidden="true" />
           <span>Stickers</span>
+        </button>
+{showGames ? <button type="button" className="dock-button" data-dock="games" onClick={onGames}>
+          <span className="dock-art dock-games" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <ellipse cx="32" cy="36" rx="16" ry="20" fill="#FFF6E4" stroke="#E4C7A4" strokeWidth="3" />
+            </svg>
+          </span>
+          <span>Games</span>
+        </button> : null}
+        <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>
+          <span className="dock-art dock-dress" aria-hidden="true" />
+          <span>Dress up</span>
         </button>
         {showLibrary ? (
           <button type="button" className="dock-button" data-dock="library" onClick={onLibrary}>
@@ -468,22 +502,6 @@ export function TodayPath({
             <span>Play library</span>
           </button>
         ) : null}
-{showGames ? <button type="button" className="dock-button" data-dock="games" onClick={onGames}>
-          <span className="dock-art dock-games" aria-hidden="true">
-            <svg viewBox="0 0 64 64">
-              <ellipse cx="32" cy="36" rx="16" ry="20" fill="#FFF6E4" stroke="#E4C7A4" strokeWidth="3" />
-            </svg>
-          </span>
-          <span>Games</span>
-        </button> : null}
-        <button type="button" className="dock-button" data-dock="nest" onClick={onNest}>
-          <span className="dock-art dock-nest">
-            <Nest>
-              <Hero animal={profile.animal} outfit={profile.outfit} />
-            </Nest>
-          </span>
-          <span>My Nest</span>
-        </button>
         <button type="button" className="dock-button" data-dock="surprise" onClick={onSurprise}>
           <span className="dock-art dock-surprise" aria-hidden="true">
             <svg viewBox="0 0 64 64">

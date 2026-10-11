@@ -92,6 +92,36 @@ export function Nest({ children }: { children?: ReactNode }) {
   );
 }
 
+/**
+ * The woven nest on the home path, with the child's animal sitting in it. Its back, then whatever
+ * sits in it, then its front, so the animal is in the bowl and not on it. Drawn in the app icon's
+ * nest colours (scripts/build-plush-icon.py): the home and the icon are one nest. The box is taller
+ * than wide, so the animal has room above the rim and nothing pokes out of the row.
+ */
+export function WovenNest({ children }: { children?: ReactNode }) {
+  return (
+    <span className="woven-nest">
+      <svg className="nest-back" viewBox="0 0 200 250" aria-hidden="true" focusable="false">
+        <ellipse cx="100" cy="170" rx="92" ry="28" fill="#8D5A3B" />
+        <path d="M16 164a92 28 0 0 1 168 0" fill="none" stroke="#D7A87A" strokeWidth="2.8" strokeLinecap="round" />
+        <path d="M66 148l-7-10M134 148l7-10M38 156l-9-7M162 156l9-7M100 142v-11" fill="none" stroke="#C48B58" strokeWidth="2.6" strokeLinecap="round" />
+      </svg>
+      {children ? <span className="nest-sitter">{children}</span> : null}
+      <svg className="nest-front" viewBox="0 0 200 250" aria-hidden="true" focusable="false">
+        <path d="M8 170c4 76 180 76 184 0c-32 30-152 30-184 0Z" fill="#A86F45" />
+        <path d="M18 190q82 44 164 0" fill="none" stroke="#7E4E30" strokeWidth="2.8" strokeLinecap="round" strokeDasharray="13 7" />
+        <path d="M26 204q74 42 148 0" fill="none" stroke="#D7A87A" strokeWidth="2.6" strokeLinecap="round" strokeDasharray="9 8" />
+        <path d="M38 218q62 36 124 0" fill="none" stroke="#7E4E30" strokeWidth="2.6" strokeLinecap="round" strokeDasharray="11 6" />
+        <path d="M54 230q46 22 92 0" fill="none" stroke="#D7A87A" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="8 7" />
+        <path d="M56 194l9 16M100 200v18M144 194l-9 16M76 220l5 12M124 220l-5 12" fill="none" stroke="#7E4E30" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M8 170a92 28 0 0 0 184 0" fill="none" stroke="#C48B58" strokeWidth="10" strokeLinecap="round" />
+        <path d="M16 175a92 28 0 0 0 168 0" fill="none" stroke="#D7A87A" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="14 9" />
+        <path d="M10 166l-9-11M12 176l-11-3M190 166l9-11M188 176l11-3" fill="none" stroke="#D7A87A" strokeWidth="2.8" strokeLinecap="round" />
+      </svg>
+    </span>
+  );
+}
+
 export function Hills() {
   return (
     <svg className="hills" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">

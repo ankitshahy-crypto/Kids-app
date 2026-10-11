@@ -2379,32 +2379,31 @@ button:focus-visible {
   font-weight: 700;
 }
 
-.trail {
-  position: relative;
-  flex: 1 1 auto;
-  min-height: 280px;
-}
-
-.hills,
-.trail-dots {
+/* ---------- Today: the nest ----------
+   The day's other stops are a short dashed row at the top (the pencil, the book, the paints). Below,
+   the child's animal sits in a woven nest, alive and wearing what it has, and beside it today's
+   letter in a big circle with Start under it. (The path was a map of four stops on hills, with the
+   animal standing at the current one.) */
+.hills {
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 100%;
+  height: 70%;
+  top: auto;
   pointer-events: none;
 }
 
-.hills {
-  height: 70%;
-  top: auto;
+.trail-stops {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
 }
 
 .trail-stop {
-  position: absolute;
-  z-index: 1;
-  width: 76px;
-  height: 76px;
-  transform: translate(-50%, -50%);
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--paper);
   box-shadow: var(--shadow);
@@ -2413,23 +2412,51 @@ button:focus-visible {
   padding: 0;
 }
 
+/* The dash between two stops of the row. */
+.trail-stops .trail-stop + .trail-stop {
+  margin-left: 22px;
+}
+
+.trail-stops .trail-stop + .trail-stop::before {
+  content: "";
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  width: 22px;
+  border-top: 2px dashed #d9c5aa;
+  pointer-events: none;
+}
+
 .trail-stop .mark {
-  width: 48px;
-  height: 48px;
+  width: 26px;
+  height: 26px;
+}
+
+/* Today's letter: the big circle beside the nest. */
+.letter-stop {
+  width: 128px;
+  height: 128px;
 }
 
 .trail-letter {
-  font-size: 34px;
+  font-size: 76px;
+  line-height: 1;
   font-weight: 700;
   color: var(--sage);
 }
 
 .trail-letter.is-unit {
-  font-size: 22px;
+  font-size: 44px;
   letter-spacing: -0.02em;
 }
 
 .trail-stop.is-current {
+  box-shadow:
+    0 0 0 4px rgba(126, 174, 134, 0.28),
+    0 0 14px rgba(242, 193, 78, 0.7);
+}
+
+.letter-stop.is-current {
   box-shadow:
     0 0 0 8px rgba(126, 174, 134, 0.28),
     0 0 22px rgba(242, 193, 78, 0.85);
@@ -2442,10 +2469,10 @@ button:focus-visible {
 /* A finished stop has a tick on its shoulder, so the one still to do is plain to see. */
 .trail-done {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 28px;
-  height: 28px;
+  top: -3px;
+  right: -3px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -2455,6 +2482,18 @@ button:focus-visible {
 }
 
 .trail-done svg {
+  width: 14px;
+  height: 14px;
+}
+
+.letter-stop .trail-done {
+  top: -2px;
+  right: -2px;
+  width: 30px;
+  height: 30px;
+}
+
+.letter-stop .trail-done svg {
   width: 20px;
   height: 20px;
 }
@@ -2471,20 +2510,20 @@ button:focus-visible {
 @keyframes trail-point-a {
   0%,
   100% {
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.14);
+    transform: scale(1.14);
   }
 }
 
 @keyframes trail-point-b {
   0%,
   100% {
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.14);
+    transform: scale(1.14);
   }
 }
 
@@ -2497,23 +2536,153 @@ button:focus-visible {
   }
 }
 
-.trail-animal {
+/* The nest and the letter, side by side. */
+.trail {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+}
+
+.nest-seat {
+  position: relative;
+}
+
+.woven-nest {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+}
+
+.woven-nest .nest-back,
+.woven-nest .nest-front {
   position: absolute;
-  z-index: 2;
-  width: 72px;
-  height: 72px;
-  transform: translate(-160%, -70%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
-.trail-animal.is-right {
-  transform: translate(50%, -70%);
+/* The animal's picture has air under its paws (about a sixth of its box): it sits a little below the
+   rim's front edge, and the front of the nest covers that air, so it is in the bowl. */
+.woven-nest .nest-sitter {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  width: 76%;
+  transform: translateX(-50%);
+  display: block;
 }
 
-.trail-animal .avatar-art {
-  width: 72px;
-  height: 72px;
+.nest-hero {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border-radius: 40%;
 }
+
+.nest-hero .hero,
+.nest-hero .avatar-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.letter-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* "Today's letter", under the circle. (Not .letter-caption: that is the word under a letter card's picture.) */
+.nest-caption {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-sage);
+  text-align: center;
+}
+
+.today .nest-start.start-button {
+  width: 100%;
+  max-width: 220px;
+  height: 56px;
+  min-height: 56px;
+  font-size: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* The home's name is a small word above the nest, not a page title; the ring is at the row's end. */
+.today.is-nest .section-title {
+  font-size: 20px;
+}
+
+.lesson-head .goal-ring {
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
+}
+
+/* The star count shares the top row with the stops, left of the Grown-ups pill: kept small. */
+.today-top > .star-count {
+  min-height: 44px;
+  min-width: 0;
+  padding: 0 10px;
+  gap: 4px;
+}
+
+.today-top > .star-count svg {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+}
+
+/* The dock's doors are pictures with names, with a line between them, as the mockup has them. */
+.today.is-nest .dock-art {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Explore's name, underlined. */
+.today.is-nest .explore-head h2 {
+  position: relative;
+  padding-bottom: 6px;
+}
+
+.today.is-nest .explore-head h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--butter-edge);
+}
+
+@media (max-width: 767px) {
+  .today.is-nest .today-dock .dock-button {
+    position: relative;
+  }
+
+  .today.is-nest .today-dock .dock-button:not(:nth-child(3n + 1))::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 12%;
+    height: 76%;
+    border-left: 1px solid var(--line);
+  }
+}
+
 
 .today-dock {
   flex: 0 0 auto;
@@ -3473,36 +3642,42 @@ button:focus-visible {
     margin-top: 28px;
   }
 
+  /* A tablet: the stops of the dashed row a little bigger, today's letter much bigger. */
   .trail {
     width: min(100%, 560px);
-    height: min(62dvh, 640px);
-    min-height: 420px;
     flex: 0 0 auto;
     margin-inline: auto;
   }
 
   .trail-stop {
-    width: 96px;
-    height: 96px;
+    width: 56px;
+    height: 56px;
+  }
+
+  .trail-stops .trail-stop + .trail-stop {
+    margin-left: 28px;
+  }
+
+  .trail-stops .trail-stop + .trail-stop::before {
+    width: 28px;
   }
 
   .trail-stop .mark {
-    width: 60px;
-    height: 60px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .letter-stop {
+    width: 160px;
+    height: 160px;
   }
 
   .trail-letter {
-    font-size: 44px;
+    font-size: 96px;
   }
 
   .trail-letter.is-unit {
-    font-size: 28px;
-  }
-
-  .trail-animal,
-  .trail-animal .avatar-art {
-    width: 88px;
-    height: 88px;
+    font-size: 56px;
   }
 
   .today-avatar .avatar-art {
@@ -3740,7 +3915,6 @@ button:focus-visible {
 
   .trail {
     width: min(100%, 620px);
-    height: min(64dvh, 760px);
   }
 }
 
@@ -3777,9 +3951,7 @@ button:focus-visible {
   }
 
   .trail {
-    width: min(100%, 500px);
-    height: min(52dvh, 380px);
-    min-height: 220px;
+    width: 100%;
   }
 
   .today-dock {
@@ -4370,13 +4542,6 @@ button:focus-visible {
   }
 }
 
-@media (max-width: 767px) {
-  /* Keep the four stops apart on a short phone. The body scrolls instead. */
-  .trail {
-    min-height: 240px;
-  }
-}
-
 @media (min-width: 768px) {
   .today-dock {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4399,11 +4564,6 @@ button:focus-visible {
   .dock-art {
     width: 76px;
     height: 76px;
-  }
-
-  .trail {
-    height: min(46dvh, 520px);
-    min-height: 380px;
   }
 
   .closet-grid {
