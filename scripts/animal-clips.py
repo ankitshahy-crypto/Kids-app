@@ -145,12 +145,15 @@ def matte(frame: np.ndarray, bg: np.ndarray) -> np.ndarray:
     bg_chroma = float(np.hypot(bg[1] - 128, bg[2] - 128))
     if bg_chroma > 20:
         # A coloured backdrop (green): a shadow on it is the same hue, darker and greyer. A pixel
-        # whose colour points the backdrop's way, with a good part of its chroma, is backdrop whatever
-        # its lightness; the figure, which is never that colour, keeps its distance.
+        # whose colour points the backdrop's way, with a good part of its chroma, and darker than
+        # the backdrop, is backdrop; the figure keeps its distance. (The lightness check is the
+        # "darker" of the rule: without it the frog, pale green on the green, was taken for a shadow
+        # and keyed away to a sliver. A real shadow is ten or more under the backdrop's lightness;
+        # the frog's underside comes to within a few of it and no closer.)
         ab = lab[..., 1:] - 128
         along = (ab[..., 0] * (bg[1] - 128) + ab[..., 1] * (bg[2] - 128)) / bg_chroma
         across = np.abs(ab[..., 0] * (bg[2] - 128) - ab[..., 1] * (bg[1] - 128)) / bg_chroma
-        shadowed = (along > 0.35 * bg_chroma) & (across < 0.45 * np.maximum(along, 1))
+        shadowed = (along > 0.35 * bg_chroma) & (across < 0.45 * np.maximum(along, 1)) & (lab[..., 0] < bg[0] - 6)
         dist = np.where(shadowed, 0.0, dist)
     alpha = np.clip((dist - KEY_AT) / KEY_BAND, 0, 1)
     # The figure is one solid body: fill holes inside it, and drop specks outside it.
