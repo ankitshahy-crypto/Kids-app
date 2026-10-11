@@ -170,13 +170,15 @@ for (const width of [320, 360]) {
     // Still named for a screen reader, though only its icon shows.
     await expect(pill).toHaveAccessibleName("Grown-ups");
     expect((await pill.boundingBox())!.width).toBeLessThanOrEqual(48);
-    // On Today the star count is beside it, not under it.
-    const apart = async (selector: string) => {
+    // On Today the star count is clear of it: beside it, or wholly below it, never under it.
+    const apart = async (selector: string, belowIsFine = false) => {
       const [a, b] = await Promise.all([page.locator(selector).boundingBox(), pill.boundingBox()]);
       expect(a, selector).toBeTruthy();
-      expect(a!.x + a!.width, `${selector} ends before the pill begins`).toBeLessThanOrEqual(b!.x);
+      const beside = a!.x + a!.width <= b!.x;
+      const below = a!.y >= b!.y + b!.height;
+      expect(beside || (belowIsFine && below), `${selector} is clear of the pill`).toBe(true);
     };
-    await apart("[data-screen=today] .star-count");
+    await apart("[data-screen=today] .star-count", true);
     await page.locator("[data-step=letter]").click();
     await apart("[data-break]");
     await apart("[data-hear-again]");

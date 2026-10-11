@@ -2313,6 +2313,7 @@ button:focus-visible {
 
 .lesson-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
@@ -2513,6 +2514,180 @@ button:focus-visible {
 .trail-animal .avatar-art {
   width: 72px;
   height: 72px;
+}
+
+/*
+ * The home as one next step (the mockup of 2026-10-11): the animal big at the top left, the other
+ * stops a thin dashed row of small circles beside it, and the current stop pulled out as the hero,
+ * a large circle with its label and Start under it. The icons, the blobs and the games are as they
+ * were; this is where things sit.
+ */
+.today-top:has(.trail-row) {
+  align-items: center;
+  gap: 12px;
+}
+
+.today-avatar.is-big {
+  flex: 0 0 116px;
+  width: 116px;
+  height: 116px;
+}
+
+.today-avatar.is-big .avatar-art {
+  width: 104px;
+  height: 104px;
+}
+
+.trail-row {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 360px;
+  /* Low in the top row, under the Grown-ups pill's line, not beside it. */
+  align-self: flex-end;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 2px;
+  padding: 0 4px;
+  list-style: none;
+}
+
+/* The dashed line the small circles sit on, from the animal off to the right. */
+.trail-row::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  right: -140px;
+  top: 50%;
+  border-top: 3px dashed #c8d9cf;
+  pointer-events: none;
+}
+
+.trail-row li {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.trail-stop.is-small {
+  position: static;
+  width: 52px;
+  height: 52px;
+  transform: none;
+}
+
+.trail-stop.is-small .mark {
+  width: 32px;
+  height: 32px;
+}
+
+.trail-stop.is-small .trail-letter {
+  font-size: 24px;
+}
+
+.trail-stop.is-small .trail-letter.is-unit {
+  font-size: 16px;
+}
+
+.trail-stop.is-small .trail-done {
+  top: -5px;
+  right: -5px;
+  width: 22px;
+  height: 22px;
+}
+
+.trail-stop.is-small .trail-done svg {
+  width: 16px;
+  height: 16px;
+}
+
+.trail.is-hero {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 2px;
+}
+
+.trail-stop.trail-hero {
+  position: static;
+  width: 184px;
+  height: 184px;
+  transform: none;
+}
+
+.trail-stop.trail-hero .mark {
+  width: 112px;
+  height: 112px;
+}
+
+.trail-stop.trail-hero .trail-letter {
+  font-size: 96px;
+}
+
+.trail-stop.trail-hero .trail-letter.is-unit {
+  font-size: 56px;
+}
+
+.trail-stop.trail-hero .trail-done {
+  top: 4px;
+  right: 4px;
+  width: 40px;
+  height: 40px;
+}
+
+.trail-stop.trail-hero .trail-done svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* The row's and the hero's pulse (a tap on the strip): a scale alone, since neither is placed by a translate. */
+.trail-stop.is-small[data-point],
+.trail-stop.trail-hero[data-point] {
+  animation-name: trail-point-still;
+}
+
+@keyframes trail-point-still {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.trail-label {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-sage);
+  text-align: center;
+}
+
+.trail-start {
+  width: min(100%, 300px);
+  min-height: 60px;
+  border-radius: 18px;
+  background: var(--sage);
+  color: var(--paper);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow);
+}
+
+.lesson-head .today-tools {
+  margin-left: auto;
+}
+
+.lesson-head .today-tools .goal-ring {
+  width: 36px;
+  height: 36px;
 }
 
 .today-dock {
@@ -3742,6 +3917,10 @@ button:focus-visible {
     width: min(100%, 620px);
     height: min(64dvh, 760px);
   }
+
+  .trail.is-hero {
+    height: auto;
+  }
 }
 
 @media (min-width: 768px) and (orientation: landscape) {
@@ -3780,6 +3959,11 @@ button:focus-visible {
     width: min(100%, 500px);
     height: min(52dvh, 380px);
     min-height: 220px;
+  }
+
+  .trail.is-hero {
+    height: auto;
+    min-height: 0;
   }
 
   .today-dock {
@@ -11763,8 +11947,8 @@ input.is-pressed,
   .today-dock {
     order: 2;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px 8px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px 4px;
     padding-top: 8px;
   }
 
@@ -11775,17 +11959,45 @@ input.is-pressed,
   .today-dock .dock-button {
     width: auto;
     min-width: 0;
-    font-size: 13px;
+    font-size: 12px;
+    gap: 2px;
+    white-space: nowrap;
   }
 
   .today-dock .dock-art {
-    width: 64px;
-    height: 64px;
+    width: 58px;
+    height: 58px;
   }
 
   .today-dock .dock-art .mark {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .trace-practice {
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .trace-practice button {
+    min-height: 52px;
+    min-width: 0;
+    flex: 1 1 140px;
+    font-size: 16px;
+  }
+
+  .trail-stop.trail-hero {
+    width: 168px;
+    height: 168px;
+  }
+
+  .trail-stop.trail-hero .mark {
+    width: 100px;
+    height: 100px;
+  }
+
+  .trail-stop.trail-hero .trail-letter {
+    font-size: 88px;
   }
 }
 

@@ -23,14 +23,14 @@ import { EngineerBoard } from "./BuildGames";
 import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
 import { ModuleMark } from "./ModuleMark";
-import { BookMark, Nest, Hills, PaintMark, PencilMark, ToyBox } from "./sceneArt";
+import { BookMark, Nest, PaintMark, PencilMark, ToyBox } from "./sceneArt";
 import { HoldButton } from "./HoldButton";
 
-const stops: { id: LessonStep; label: string; left: string; top: string }[] = [
-  { id: "letter", label: "Letters", left: "50%", top: "18%" },
-  { id: "draw", label: "Draw", left: "76%", top: "40%" },
-  { id: "story", label: "Story", left: "32%", top: "58%" },
-  { id: "moment", label: "Colors", left: "64%", top: "80%" },
+const stops: { id: LessonStep; label: string }[] = [
+  { id: "letter", label: "Letters" },
+  { id: "draw", label: "Draw" },
+  { id: "story", label: "Story" },
+  { id: "moment", label: "Colors" },
 ];
 
 /** The name at the top of each Explore section's page: the same word its tile shows. */
@@ -166,6 +166,32 @@ export function TodayPath({
   // (Each stop says "done" to a screen reader once it is; the strip's own name is what it shows, so
   // that it is never mistaken for a stop: "Draw" is a stop, not the strip.)
   const [pointed, setPointed] = useState(0);
+  // The home is one next step, not a grid of equals (the mockup of 2026-10-11): the current stop is
+  // the hero, big, with a label and Start under it; the other stops are a thin dashed row of small
+  // circles beside the animal, still tappable, still ticked when done. With the day finished the hero
+  // is the last stop with its tick, "All done today!" under it, and no Start.
+  const finished = left === 0;
+  const heroLabel = finished ? "All done today!" : current.id === "letter" ? "Today's letter" : current.label;
+  const others = stops.filter((stop) => stop.id !== current.id);
+  const mark = (id: LessonStep) =>
+    id === "letter" ? (
+      <span className={`trail-letter${letter.length > 1 ? " is-unit" : ""}`}>{letter}</span>
+    ) : id === "draw" ? (
+      <PencilMark />
+    ) : id === "story" ? (
+      <BookMark />
+    ) : (
+      <PaintMark />
+    );
+  const tick = (
+    <span className="trail-done" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="m6.5 12.5 3.5 3.5 7.5-8" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+  // Two names for the pulse, turn about, so a second tap on the strip pulses again.
+  const point = (id: LessonStep) => (!done[id] && pointed > 0 ? (pointed % 2 === 1 ? "a" : "b") : undefined);
 
   return (
     <div
@@ -190,21 +216,35 @@ export function TodayPath({
             </span>
           </button>
         ) : switchNeedsGrownup ? (
-          <button type="button" className="today-avatar" aria-label="Switch child" onClick={onLeave}>
+          <button type="button" className="today-avatar is-big" aria-label="Switch child" onClick={onLeave}>
             <Hero animal={profile.animal} outfit={profile.outfit} />
           </button>
         ) : (
-          <HoldButton className="today-avatar" label="Switch child" onHold={onLeave}>
+          <HoldButton className="today-avatar is-big" label="Switch child" onHold={onLeave}>
             <Hero animal={profile.animal} outfit={profile.outfit} />
           </HoldButton>
         )}
-        <div className="today-tools">
-          <GoalRing ms={practiceTotal(profile)[todayKey(now)] ?? 0} goalMinutes={goalMinutes} />
-          <p className="star-count" data-stars={profile.stars}>
-            <StarIcon />
-            <span>{profile.stars}</span>
-          </p>
-        </div>
+        {/* The other stops: a thin dashed row of small circles beside the animal. */}
+        {shown === "reading" ? (
+          <ol className="trail-row" aria-label="The other stops today">
+            {others.map((stop) => (
+              <li key={stop.id}>
+                <button
+                  type="button"
+                  className={`trail-stop is-small${done[stop.id] ? " is-done" : ""}`}
+                  data-step={stop.id}
+                  data-current="false"
+                  data-point={point(stop.id)}
+                  aria-label={done[stop.id] ? `${stop.label}, done` : stop.label}
+                  onClick={() => onOpen(stop.id)}
+                >
+                  {done[stop.id] ? tick : null}
+                  {mark(stop.id)}
+                </button>
+              </li>
+            ))}
+          </ol>
+        ) : null}
       </div>
       {/* The week's letters, in words. The path showed only the first one (a lone M), and "Review" on a
           Friday said nothing about which letters; the first phone test asked for the two letters to be plain. */}
@@ -245,63 +285,40 @@ export function TodayPath({
                 <LockBadge />
               </button>
             ) : null}
+            <div className="today-tools">
+              <GoalRing ms={practiceTotal(profile)[todayKey(now)] ?? 0} goalMinutes={goalMinutes} />
+              <p className="star-count" data-stars={profile.stars}>
+                <StarIcon />
+                <span>{profile.stars}</span>
+              </p>
+            </div>
           </div>
 
           {shown === "reading" ? (
-            <div className="trail">
-        <Hills />
-        <svg className="trail-dots" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path
-            d="M50 18 C66 26 82 32 76 40 C66 52 40 50 32 58 C24 68 52 72 64 80"
-            fill="none"
-            stroke="#E4C7A4"
-            strokeWidth="2.4"
-            strokeDasharray="1.4 2.2"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-        {stops.map((stop) => {
-          const finished = done[stop.id];
-          const active = stop.id === current.id;
-          return (
-            <button
-              key={stop.id}
-              type="button"
-              className={`trail-stop${active ? " is-current" : ""}${finished ? " is-done" : ""}`}
-              style={{ left: stop.left, top: stop.top }}
-              data-step={stop.id}
-              data-current={active ? "true" : "false"}
-              // Two names for the pulse, turn about, so a second tap on the strip pulses again.
-              data-point={!finished && pointed > 0 ? (pointed % 2 === 1 ? "a" : "b") : undefined}
-              aria-label={finished ? `${stop.label}, done` : stop.label}
-              onClick={() => onOpen(stop.id)}
-            >
-              {finished ? (
-                <span className="trail-done" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" focusable="false">
-                    <path d="m6.5 12.5 3.5 3.5 7.5-8" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              ) : null}
-              {stop.id === "letter" ? (
-                <span className={`trail-letter${letter.length > 1 ? " is-unit" : ""}`}>{letter}</span>
-              ) : null}
-              {stop.id === "draw" ? <PencilMark /> : null}
-              {stop.id === "story" ? <BookMark /> : null}
-              {stop.id === "moment" ? <PaintMark /> : null}
-            </button>
-          );
-        })}
-        <span
-          className={`trail-animal${current.id === "story" ? " is-right" : ""}`}
-          style={{ left: current.left, top: current.top }}
-          aria-hidden="true"
-        >
-          <Hero animal={profile.animal} outfit={profile.outfit} />
-        </span>
+            <div className="trail is-hero" data-hero={current.id} data-finished={finished ? "true" : "false"}>
+              <button
+                type="button"
+                className={`trail-stop trail-hero is-current${done[current.id] ? " is-done" : ""}`}
+                data-step={current.id}
+                data-current="true"
+                data-point={point(current.id)}
+                aria-label={done[current.id] ? `${current.label}, done` : current.label}
+                onClick={() => onOpen(current.id)}
+              >
+                {done[current.id] ? tick : null}
+                {mark(current.id)}
+              </button>
+              <p className="trail-label" data-hero-label>
+                {heroLabel}
+              </p>
+              {finished ? null : (
+                <button type="button" className="trail-start" data-start={current.id} onClick={() => onOpen(current.id)}>
+                  Start
+                </button>
+              )}
             </div>
           ) : null}
+
 
           {shown === "reading" ? (
             <div className="trace-practice">
@@ -348,7 +365,6 @@ export function TodayPath({
           <section className="explore-area" data-area="explore">
             <div className="explore-head">
               <h2>Explore</h2>
-              <p className="explore-tag">New – try it!</p>
             </div>
             {/* Each tile opens its section's page. (They were toggles that swapped the board above them, with
                 one shown as pressed; a tile is a plain door now.) */}
