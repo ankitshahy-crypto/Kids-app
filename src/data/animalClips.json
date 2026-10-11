@@ -15,5 +15,148 @@
       0.0536,
       0.9011
     ]
+  },
+  "bear": {
+    "clips": {
+      "idle": {
+        "seconds": 5.917,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0443,
+      0.0443,
+      0.9098
+    ]
+  },
+  "bunny": {
+    "clips": {
+      "idle": {
+        "seconds": 5.958,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0434,
+      0.0459,
+      0.9099
+    ]
+  },
+  "cat": {
+    "clips": {
+      "idle": {
+        "seconds": 5.042,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0478,
+      0.0468,
+      0.9087
+    ]
+  },
+  "duck": {
+    "clips": {
+      "idle": {
+        "seconds": 5.75,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0443,
+      0.0451,
+      0.9098
+    ]
+  },
+  "fox": {
+    "clips": {
+      "idle": {
+        "seconds": 5.667,
+        "loops": true
+      }
+    },
+    "still": [
+      0.044,
+      0.044,
+      0.9104
+    ]
+  },
+  "frog": {
+    "clips": {
+      "idle": {
+        "seconds": 4.417,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0437,
+      0.0438,
+      0.9108
+    ]
+  },
+  "koala": {
+    "clips": {
+      "idle": {
+        "seconds": 6.0,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0443,
+      0.045,
+      0.9098
+    ]
+  },
+  "lion": {
+    "clips": {
+      "idle": {
+        "seconds": 6.0,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0431,
+      0.0431,
+      0.9105
+    ]
+  },
+  "owl": {
+    "clips": {
+      "idle": {
+        "seconds": 5.833,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0443,
+      0.0434,
+      0.9098
+    ]
+  },
+  "penguin": {
+    "clips": {
+      "idle": {
+        "seconds": 5.583,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0431,
+      0.0439,
+      0.9105
+    ]
+  },
+  "pig": {
+    "clips": {
+      "idle": {
+        "seconds": 5.917,
+        "loops": true
+      }
+    },
+    "still": [
+      0.0449,
+      0.0449,
+      0.9102
+    ]
   }
 }
