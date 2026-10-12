@@ -654,6 +654,10 @@ button:focus-visible {
   overscroll-behavior: none;
   cursor: grab;
   color: #e4c7a4;
+  /* The page sets --blend-at, where the finger is along the track. The animal's middle goes there,
+     kept whole on the track: never nearer an end than half its own width. */
+  --bunny-half: 36px;
+  --bunny-x: clamp(var(--bunny-half), var(--blend-at, 6%), calc(100% - var(--bunny-half)));
 }
 
 .blend.is-dragging .blend-track {
@@ -732,6 +736,11 @@ button:focus-visible {
   transition: none;
 }
 
+/* Under the finger it goes where the finger is, at once: an eased slide would trail the finger. */
+.blend.is-dragging .blend-bar[data-under="finger"] {
+  transition: none;
+}
+
 .blend-bar[data-said="true"] {
   opacity: 1;
 }
@@ -741,13 +750,15 @@ button:focus-visible {
 }
 
 /*
- * The child's animal waits at the edge of the track until the word is said, then comes in under
- * the word and says it. (It used to be the slider's thumb, dragged under the letters.)
+ * The child's animal is the slider's thumb: it sits where the finger is and goes along the track with
+ * it, with no easing while the finger is down, so it never trails or jumps. A step made without a
+ * finger (a key, VoiceOver) glides it to the next tile. It says the word where the slide ends. (It
+ * used to wait at the edge of the track and come in to the middle at the end, which read as a jump.)
  */
 .blend-animal {
   position: absolute;
   top: 56%;
-  left: 36px;
+  left: var(--bunny-x);
   z-index: 1;
   width: 72px;
   height: 72px;
@@ -770,19 +781,27 @@ button:focus-visible {
   color: #e2a15a;
 }
 
-.blend-animal[data-word-teller="said"] {
-  left: 50%;
+.blend.is-dragging .blend-animal {
+  transition: none;
 }
 
-/* The word, said: a bubble beside the animal once it has come in, in a box of its own (the animal's
+/* The word, said: a bubble beside the animal where the slide ended, in a box of its own (the animal's
    box is the animal alone, so nothing of the bubble goes into where the animal is put). */
 .blend-said {
   position: absolute;
-  left: calc(50% + 36px);
+  left: calc(var(--bunny-x) + var(--bunny-half));
   top: 56%;
   margin-left: 12px;
   transform: translateY(-50%);
   animation: blend-pop 0.7s ease;
+}
+
+/* The slide ended past the middle of the track: the bubble sits on the animal's other side. */
+.blend-said[data-side="left"] {
+  left: auto;
+  right: calc(100% - var(--bunny-x) + var(--bunny-half));
+  margin-left: 0;
+  margin-right: 12px;
 }
 
 .blend-said::after {
@@ -797,6 +816,15 @@ button:focus-visible {
   border-left: 3px solid #f0dcc0;
   border-bottom: 3px solid #f0dcc0;
   transform: rotate(45deg);
+}
+
+.blend-said[data-side="left"]::after {
+  left: auto;
+  right: -9px;
+  border-left: 0;
+  border-bottom: 0;
+  border-right: 3px solid #f0dcc0;
+  border-top: 3px solid #f0dcc0;
 }
 
 .blend.is-celebrating .tile-wrap.is-lit .tile {
@@ -3601,6 +3629,7 @@ button:focus-visible {
 
   .blend-track {
     min-height: 104px;
+    --bunny-half: 44px;
   }
 
   .blend-bar {
@@ -3615,18 +3644,6 @@ button:focus-visible {
   .blend-animal .avatar-art {
     width: 88px;
     height: 88px;
-  }
-
-  .blend-animal {
-    left: 44px;
-  }
-
-  .blend-animal[data-word-teller="said"] {
-    left: 50%;
-  }
-
-  .blend-said {
-    left: calc(50% + 44px);
   }
 
   .placeholder-art {
