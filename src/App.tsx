@@ -438,7 +438,12 @@ export default function App() {
   const reward = (step: LessonStep, learned: StickerInput[] = []) => {
     if (!active) return;
     const result = giveStar(active.id, step, learned);
-    if (!result.awarded) return;
+    // A step done again the same day earns no second star, but it is still a right answer: the chime
+    // says so. (It used to end in silence, which the phone test read as nothing having happened.)
+    if (!result.awarded) {
+      playEffect("chime", settings);
+      return;
+    }
     if (!calm) setFlying(true);
     if (result.milestones.length > 0) {
       setCheer(result.milestones[result.milestones.length - 1] ?? null);
@@ -514,7 +519,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
-    }
+    } else playEffect("chime", settings);
     if (onBreak()) return;
     setScreen("today");
     presentTip(mathTip(step, "end"), "after");
@@ -543,7 +548,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
-    }
+    } else playEffect("chime", settings);
     if (onBreak()) return;
     setScreen("today");
     presentTip(colorTip(step, "end"), "after");
@@ -571,7 +576,7 @@ export default function App() {
         playEffect(calm ? "chime" : "cheer", settings);
       } else if (result.lessonComplete) playEffect(calm ? "chime" : "celebrate", settings);
       else playEffect("chime", settings);
-    }
+    } else playEffect("chime", settings);
     if (onBreak()) return;
     setScreen("today");
     presentTip(timeTip(step, "end"), "after");
@@ -598,7 +603,7 @@ export default function App() {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
-    }
+    } else playEffect("chime", settings);
     if (onBreak()) return;
     setScreen("today");
     presentTip(timeTip(step, "end"), "after");
@@ -624,7 +629,7 @@ export default function App() {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
-    }
+    } else playEffect("chime", settings);
     if (onBreak()) return;
     setScreen("today");
     presentTip(engineerTip(activity, "end"), "after");
@@ -650,7 +655,7 @@ export default function App() {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
-    }
+    } else playEffect("chime", settings);
     if (onBreak()) return;
     setScreen("today");
     presentTip(scienceTip(activity, "end"), "after");
@@ -714,7 +719,7 @@ export default function App() {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
-    }
+    } else playEffect("chime", settings);
     if (onBreak()) return;
     presentTip(gameTip(game, "end"), "after");
   };
@@ -729,7 +734,7 @@ export default function App() {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
-    }
+    } else playEffect("chime", settings);
     setScreen("today");
   };
 
@@ -746,7 +751,7 @@ export default function App() {
         setCheer(result.milestones[result.milestones.length - 1] ?? null);
         playEffect(calm ? "chime" : "cheer", settings);
       } else playEffect("chime", settings);
-    }
+    } else playEffect("chime", settings);
     setScreen("today");
   };
   const pastel = mode === "start" || mode === "kid";
