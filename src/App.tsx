@@ -202,9 +202,17 @@ export default function App() {
     };
     window.addEventListener("touchend", unlock);
     window.addEventListener("click", unlock);
+    // Back from Control Center, a call or another app: the context may have been interrupted, and a
+    // resume is tried as soon as the app is seen again (iOS may allow it once a tap has started the
+    // context before). A tap, if one is still needed, does the rest.
+    const seen = () => {
+      if (document.visibilityState === "visible") unlock();
+    };
+    document.addEventListener("visibilitychange", seen);
     return () => {
       window.removeEventListener("touchend", unlock);
       window.removeEventListener("click", unlock);
+      document.removeEventListener("visibilitychange", seen);
     };
   }, []);
 

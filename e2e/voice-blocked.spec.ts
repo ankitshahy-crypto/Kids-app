@@ -7,11 +7,13 @@ import { game, openGame, openTimeMoney } from "./kit";
  * An iPhone where the audio context is blocked when a round's question is due. On the phone the
  * question starts from the page, not from a tap, so it cannot resume the context itself; the clip
  * used to give up at once and the phone's own voice read the line, and only after the speaker was
- * tapped (a real tap) did the recorded voice come. Now the clip waits for the next tap anywhere,
- * which resumes the context, and plays; the phone's voice is not used while the clip exists.
+ * tapped (a real tap) did the recorded voice come.
  *
- * Blocked, here: the context says "suspended" and refuses to resume, and a media element refuses to
- * play, until a tap lands inside the game. That is what WKWebView does outside a user gesture.
+ * Two shapes of blocked, both as WKWebView has them:
+ *  - "context": the context says "suspended" and refuses to resume, but a media element may play
+ *    (the app's WebView lets media start without a tap). The clip plays at once, through the element.
+ *  - "all": the element refuses too, until a tap lands inside the game. The clip waits, and plays on
+ *    that tap; the phone's voice is not used while the clip exists.
  */
 test.use({ viewport: { width: 390, height: 844 } });
 
@@ -20,8 +22,10 @@ const profile = {
   profiles: [{ id: "mia", name: "Mia", ageRange: "4", animal: "fox", createdAt: createdThisWeek(), stars: 0, days: {} }],
 };
 
-async function blockAudioUntilATapInTheGame(page: Page) {
-  await page.addInitScript(() => {
+type Blocked = "context" | "all";
+
+async function blockAudio(page: Page, blocked: Blocked) {
+  await page.addInitScript((blocked: Blocked) => {
     const target = window as Window & { __audioLocked?: boolean };
     target.__audioLocked = true;
     const proto = (window.BaseAudioContext ?? window.AudioContext).prototype as AudioContext;
@@ -42,11 +46,13 @@ async function blockAudioUntilATapInTheGame(page: Page) {
         this.dispatchEvent(new Event("statechange"));
       });
     };
-    const play = HTMLMediaElement.prototype.play;
-    HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
-      if (target.__audioLocked) return Promise.reject(new DOMException("not allowed", "NotAllowedError"));
-      return play.call(this);
-    };
+    if (blocked === "all") {
+      const play = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
+        if (target.__audioLocked) return Promise.reject(new DOMException("not allowed", "NotAllowedError"));
+        return play.call(this);
+      };
+    }
     // The tap that unblocks: any tap once the game is on the page (the tap that opened it does not count).
     window.addEventListener(
       "click",
@@ -55,12 +61,12 @@ async function blockAudioUntilATapInTheGame(page: Page) {
       },
       true,
     );
-  });
+  }, blocked);
 }
 
-async function openScienceGame(page: Page, id: string) {
+async function openScienceGame(page: Page, id: string, blocked: Blocked) {
   await installAudioSpy(page);
-  await blockAudioUntilATapInTheGame(page);
+  await blockAudio(page, blocked);
   await page.addInitScript((saved) => {
     localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
     localStorage.setItem("littlenest-silent-hint-v1", "1");
@@ -75,9 +81,9 @@ async function openScienceGame(page: Page, id: string) {
   return frame;
 }
 
-async function openCoins(page: Page) {
+async function openCoins(page: Page, blocked: Blocked) {
   await installAudioSpy(page);
-  await blockAudioUntilATapInTheGame(page);
+  await blockAudio(page, blocked);
   await openTimeMoney(page, { tips: false });
   return openGame(page, "coins");
 }
@@ -88,14 +94,27 @@ const QUESTION: Record<string, RegExp> = {
   coins: /^prompts\/coins-find\.mp3$/,
 };
 
+const fallbacksOf = (page: Page) => {
+  const seen: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "warning" && /fell back to the phone's voice/.test(message.text())) seen.push(message.text());
+  });
+  return seen;
+};
+
 for (const id of ["homes", "body", "coins"]) {
-  test(`${id}: the round's question is the recorded clip, played on the next tap when the context was blocked, never the phone's voice`, async ({ page }) => {
-    const fallbacks: string[] = [];
-    page.on("console", (message) => {
-      if (message.type() === "warning" && /littlenest voice/.test(message.text())) fallbacks.push(message.text());
-    });
-    const frame = id === "coins" ? await openCoins(page) : await openScienceGame(page, id);
-    // The question is due, the context is blocked: nothing from the phone's voice, and the clip waits.
+  test(`${id}: with the context blocked, the question's clip plays at once through a media element, not the phone's voice`, async ({ page }) => {
+    const fallbacks = fallbacksOf(page);
+    await (id === "coins" ? openCoins(page, "context") : openScienceGame(page, id, "context"));
+    await expect.poll(() => playedClips(page), { timeout: 4000 }).toEqual(expect.arrayContaining([expect.stringMatching(QUESTION[id])]));
+    expect(await deviceSpeech(page), "the phone's voice was not used").toEqual([]);
+    expect(fallbacks, "no fallback was taken").toEqual([]);
+  });
+
+  test(`${id}: with everything blocked, the clip waits and plays on the next tap, never the phone's voice`, async ({ page }) => {
+    const fallbacks = fallbacksOf(page);
+    const frame = id === "coins" ? await openCoins(page, "all") : await openScienceGame(page, id, "all");
+    // The question is due, everything is blocked: nothing from the phone's voice, and the clip waits.
     await page.waitForTimeout(2500);
     expect(await deviceSpeech(page), "the phone's voice was not used").toEqual([]);
     expect((await playedClips(page)).filter((clip) => QUESTION[id].test(clip)), "the question's clip has not started yet").toEqual([]);

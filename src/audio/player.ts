@@ -26,12 +26,21 @@ let primedAt = 0;
  * for the rest of the session. Pass the first lesson line so that tap is
  * also the sound the child hears.
  */
+/** The silent utterance has been spoken once this session: iOS speech is unlocked from then on. */
+let speechUnlocked = false;
+
 export function primeSpeech(cue?: string): void {
   try {
     unlockAudio();
     const synth = window.speechSynthesis;
     if (!synth) return;
     const spoken = cue?.trim() ?? "";
+    // The silent utterance that unlocks iOS speech is needed once a session. It used to be spoken on
+    // every tap that opened an activity, and on an iPhone each one starts the phone's speech
+    // session, which can interrupt the app's own audio just as the activity's first recorded line
+    // is about to play (TEMPORARY log in unlockAudio shows the context's state around a tap).
+    if (!spoken && speechUnlocked) return;
+    speechUnlocked = true;
     if (spoken) {
       primedText = spoken;
       primedAt = Date.now();
