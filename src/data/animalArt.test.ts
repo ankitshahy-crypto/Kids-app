@@ -17,13 +17,16 @@ describe("the painted animals", () => {
       for (const frame of entry.frames) {
         expect(FRAMES, `${id}'s ${frame} is a frame the app knows`).toContain(frame);
         expect(file(id, `${frame}-face.webp`), `${id}/${frame}-face.webp`).toBe(true);
-        if (entry.body) expect(file(id, `${frame}.webp`), `${id}/${frame}.webp`).toBe(true);
+        // A whole figure is a still of the idle pose (the nest on Today); the moods are faces only.
+        if (entry.body && frame === "idle") expect(file(id, `${frame}.webp`), `${id}/${frame}.webp`).toBe(true);
       }
       // And nothing is in its folder that the list does not know (a frame left behind by an earlier run).
       const onDisk = readdirSync(new URL(`../../public/animals/${id}/`, import.meta.url)).filter((name: string) => name.endsWith("-face.webp"));
       expect(onDisk.sort(), `${id}'s folder`).toEqual(entry.frames.map((frame) => `${frame}-face.webp`).sort());
-      // The head sits at the top of the figure (its square box may poke past a narrow figure's sides).
-      expect(entry.head.y).toBeGreaterThanOrEqual(0);
+      // The head sits at the top of the figure (its square box may poke past a narrow figure's sides, and a
+      // little above the top: the pieces are drawn for a box with the ears in it, and a figure whose ears
+      // hang beside its head gets a box sized from its eyes, which starts over the head).
+      expect(entry.head.y).toBeGreaterThanOrEqual(-0.1);
       expect(entry.head.y).toBeLessThan(0.2);
       expect(entry.head.h).toBeGreaterThan(0.25);
       expect(entry.head.y + entry.head.h).toBeLessThanOrEqual(1);

@@ -344,8 +344,9 @@ export function Avatar({ animal, mood, view = "face" }: { animal: AnimalId; mood
       {face("idle", "avatar-face")}
       {/* Alive, with clips: its idle life as video over the still (components/AnimalClip.tsx). */}
       {alive && shown === "face" ? <AnimalClip animal={animal} mood={look} onPlaying={setClipPlaying} /> : null}
-      {alive && entry.frames.includes("blink") ? face("blink", "avatar-blink") : null}
-      {alive ? MOOD_FRAMES.filter((name) => entry.frames.includes(name)).map((name) => face(name, "avatar-over", frame === name)) : null}
+      {/* The whole figure (the body view) is a still of the idle pose: the blink and the mood faces exist for the face only. */}
+      {alive && shown === "face" && entry.frames.includes("blink") ? face("blink", "avatar-blink") : null}
+      {alive && shown === "face" ? MOOD_FRAMES.filter((name) => entry.frames.includes(name)).map((name) => face(name, "avatar-over", frame === name)) : null}
     </span>
   );
 }

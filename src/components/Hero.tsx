@@ -42,15 +42,15 @@ export function Hero({ animal, outfit, mood, view = "face" }: { animal: AnimalId
       <span className="hero-head" aria-hidden="true" data-pose={pose ? frame : "idle"} style={headStyle}>
         <span className="wear wear-color" />
         {(["scarf", "glasses", "hat"] as const).map((slot) => (
-          <Wear key={slot} slot={slot} id={outfit[slot]} animal={animal} />
+          <Wear key={slot} slot={slot} id={outfit[slot]} animal={animal} view={shown} />
         ))}
       </span>
     </span>
   );
 }
 
-function Wear({ slot, id, animal }: { slot: Exclude<OutfitSlot, "color">; id: Outfit[OutfitSlot]; animal: AnimalId }) {
-  const painted = wearArt(id, animal);
+function Wear({ slot, id, animal, view }: { slot: Exclude<OutfitSlot, "color">; id: Outfit[OutfitSlot]; animal: AnimalId; view: ArtView }) {
+  const painted = wearArt(id, animal, view);
   if (!painted) return <span className={`wear wear-${slot}`} />;
   const { x, y, w, h, rotate } = painted.place;
   return (

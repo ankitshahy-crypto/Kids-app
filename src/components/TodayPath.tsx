@@ -21,7 +21,8 @@ import { Chevron, StarIcon } from "./icons";
 import { EngineerBoard } from "./BuildGames";
 import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
-import { BookMark, PaintMark, PencilMark, WovenNest } from "./sceneArt";
+import { artOf } from "../avatars";
+import { BasketNest, BookMark, PaintMark, PencilMark, WovenNest } from "./sceneArt";
 import { EggMark, ExploreMark, NestMark, PencilLine, SmileLine, StarMark } from "./TodayMarks";
 
 import { HoldButton } from "./HoldButton";
@@ -166,9 +167,14 @@ export function TodayPath({
   // "4 more!" strip under Start is gone, as the mockup has it; a finished stop still has its tick.
   const finishedCount = stops.filter((stop) => done[stop.id]).length;
   const left = stops.length - finishedCount;
-  // The child's animal, alive: its idle loop plays in the nest, with what it wears. A long press on
-  // it switches child; on a shared class iPad a tap does, through the grown-up check.
-  const hero = <Hero animal={profile.animal} outfit={profile.outfit} mood="idle" />;
+  // The child's animal in the nest, with what it wears. An animal with a whole sitting figure
+  // (animalArt.json `body`: the bunny, so far) sits in the mockup's woven basket, rising above its
+  // rim; the figure is a still, so it is not given a mood (the idle loop and the mood faces exist
+  // for the face only). The others keep the drawn nest and their face, alive with its idle loop.
+  // A long press on it switches child; on a shared class iPad a tap does, through the grown-up check.
+  const sits = Boolean(artOf(profile.animal)?.body);
+  const hero = sits ? <Hero animal={profile.animal} outfit={profile.outfit} view="body" /> : <Hero animal={profile.animal} outfit={profile.outfit} mood="idle" />;
+  const NestArt = sits ? BasketNest : WovenNest;
 
   return (
     <div
@@ -265,8 +271,8 @@ export function TodayPath({
 
           {shown === "reading" ? (
             <div className="trail">
-              <div className="nest-seat">
-                <WovenNest>
+              <div className="nest-seat" data-nest={sits ? "basket" : "drawn"}>
+                <NestArt>
                   {switchNeedsGrownup ? (
                     <button type="button" className="nest-hero" aria-label="Switch child" onClick={onLeave}>
                       {hero}
@@ -276,7 +282,7 @@ export function TodayPath({
                       {hero}
                     </HoldButton>
                   )}
-                </WovenNest>
+                </NestArt>
               </div>
               <div className="letter-card">
                 <button

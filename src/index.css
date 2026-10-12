@@ -2620,6 +2620,48 @@ button:focus-visible {
   border-radius: 40%;
 }
 
+/* The woven basket (sceneArt BasketNest): the basket sits at the foot of the seat's box, and the animal's
+   whole figure stands in it, its feet behind the near rim and its head well above the far one, as the
+   mockup has it. The box is as tall as the drawn nest's, so the row keeps its height. */
+.basket-nest {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+}
+
+.basket-nest .basket-back,
+.basket-nest .basket-front {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.basket-nest .basket-sitter {
+  position: absolute;
+  left: 49%;
+  bottom: 4%;
+  width: 120%;
+  transform: translateX(-50%);
+  display: block;
+}
+
+.basket-nest .basket-sitter .hero,
+.basket-nest .basket-sitter .avatar-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The whole figure's picture has air at its sides (the ears); the pieces sit on the head box the art gives. */
+.basket-nest .avatar-painted[data-view="body"] img {
+  object-position: 50% 100%;
+}
+
 .nest-hero .hero,
 .nest-hero .avatar-art {
   display: block;
@@ -2944,6 +2986,16 @@ button:focus-visible {
 
   .today.is-nest .trace-practice {
     margin-top: 12px;
+  }
+
+  /* The basket and its animal sit a little higher than the row, the animal's head up by the top of the
+     letter circle; its ears reach a touch past the screen's edge, which is cut, not scrolled to. */
+  .today.is-nest .nest-seat[data-nest="basket"] {
+    margin-top: -26px;
+  }
+
+  .today.is-nest {
+    overflow-x: hidden;
   }
 }
 
