@@ -1,4 +1,4 @@
-import { artOf, Avatar, viewFor, type ArtView } from "../avatars";
+import { artOf, Avatar, frameFor, viewFor, type ArtView } from "../avatars";
 import type { AnimalId } from "../data/animals";
 import type { Outfit, OutfitSlot } from "../data/wardrobe";
 import type { Mood } from "../game/kit";
@@ -16,6 +16,18 @@ export function Hero({ animal, outfit, mood, view = "face" }: { animal: AnimalId
   const shown = viewFor(animal, view);
   const art = artOf(animal);
   const head = shown === "body" ? art?.head : undefined;
+  // The pieces go with the head. A mood's face has the head somewhere else than the idle face (a
+  // cheer tips it, a think turns it), and the pieces used to stay where the idle eyes were, so the
+  // glasses sat off the eyes while the mood showed. The art says where each frame's head is
+  // (animalArt.json `pose`, from scripts/wardrobe-pose.py); the head layer is moved by that, with
+  // the same easing as the face's fade, and back when the mood is over.
+  const frame = mood !== undefined && shown === "face" ? frameFor(animal, mood) : "idle";
+  const pose = frame === "idle" ? undefined : art?.pose?.[frame];
+  const headStyle: React.CSSProperties | undefined = head
+    ? { left: `${head.x * 100}%`, top: `${head.y * 100}%`, width: `${head.w * 100}%`, height: `${head.h * 100}%` }
+    : pose
+      ? { transform: `translate(${pose.dx * 100}%, ${pose.dy * 100}%) rotate(${pose.rotate}deg) scale(${pose.scale})` }
+      : undefined;
   return (
     <span
       className="hero"
@@ -27,11 +39,7 @@ export function Hero({ animal, outfit, mood, view = "face" }: { animal: AnimalId
       style={outfit.color === "color-sky" && art?.sky ? ({ "--sky": art.sky } as React.CSSProperties) : undefined}
     >
       <Avatar animal={animal} mood={mood} view={shown} />
-      <span
-        className="hero-head"
-        aria-hidden="true"
-        style={head ? { left: `${head.x * 100}%`, top: `${head.y * 100}%`, width: `${head.w * 100}%`, height: `${head.h * 100}%` } : undefined}
-      >
+      <span className="hero-head" aria-hidden="true" data-pose={pose ? frame : "idle"} style={headStyle}>
         <span className="wear wear-color" />
         {(["scarf", "glasses", "hat"] as const).map((slot) => (
           <Wear key={slot} slot={slot} id={outfit[slot]} animal={animal} />

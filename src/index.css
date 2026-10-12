@@ -1234,11 +1234,17 @@ button:focus-visible {
   }
 }
 
-/* The outfit pieces sit on the head: the whole box for a face, the head's part of a whole figure. */
+/* The outfit pieces sit on the head: the whole box for a face, the head's part of a whole figure.
+   When a mood face shows, the page moves the layer to where that face's head is (Hero.tsx), with
+   the same easing as the face's fade, so the glasses stay on the eyes; the turn and the scale are
+   about the box's corner, which is how the pose is measured. Nothing is drawn behind the pieces. */
 .hero-head {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  background: none;
+  transform-origin: 0 0;
+  transition: transform var(--face-fade, 180ms) ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
