@@ -67,5 +67,5 @@ test("Trace my name: Back stops the letters; the end says the name as a word and
   await done.click();
   await expect(page.locator("[data-screen=today]")).toBeVisible();
   await expect(root).toHaveCount(0);
-  await expect(page.locator("[data-screen=today] .star-count").first()).toHaveAttribute("data-stars", "1");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "1");
 });

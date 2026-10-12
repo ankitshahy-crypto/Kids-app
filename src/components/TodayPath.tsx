@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MODULE_BUILD, MODULE_CODE, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
@@ -23,7 +22,19 @@ import { EngineerBoard } from "./BuildGames";
 import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
 import { ModuleMark } from "./ModuleMark";
-import { BookMark, Nest, PaintMark, PencilMark, ToyBox, WovenNest } from "./sceneArt";
+import { BookMark, Nest, PaintMark, PencilMark, WovenNest } from "./sceneArt";
+
+/** A small smiling face, the mark on Trace my name. */
+function FaceMark() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="11.5" cy="13.5" r="1.8" fill="currentColor" />
+      <circle cx="20.5" cy="13.5" r="1.8" fill="currentColor" />
+      <path d="M10.5 19.5c1.5 2.4 3.3 3.5 5.5 3.5s4-1.1 5.5-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
 import { HoldButton } from "./HoldButton";
 
 const stops: { id: LessonStep; label: string }[] = [
@@ -62,16 +73,13 @@ export function TodayPath({
   weekIndex,
   onOpen,
   onLeave,
-  onLibrary,
   onNest,
-  onCloset,
   onStickers,
   onGames,
   onCode,
   dayKey,
   switchNeedsGrownup,
   onSoundGame,
-  onSurprise,
   goalMinutes,
   course,
   onCourse,
@@ -102,9 +110,8 @@ export function TodayPath({
   weekIndex: number;
   onOpen: (step: LessonStep) => void;
   onLeave: () => void;
-  onLibrary: () => void;
+  /** My Nest: the animal's home, where Dress up and the Surprise are too. */
   onNest: () => void;
-  onCloset: () => void;
   onStickers: () => void;
   onGames: () => void;
   /** Opens the coding games. */
@@ -115,7 +122,6 @@ export function TodayPath({
   switchNeedsGrownup?: boolean;
   /** Fridays: the sound game. Absent when there are too few sounds yet. */
   onSoundGame?: () => void;
-  onSurprise: () => void;
   goalMinutes: number;
   course: "reading" | "math" | "colors" | "time" | "build" | "science";
   onCourse: (course: "reading" | "math" | "colors" | "time" | "build" | "science") => void;
@@ -145,8 +151,6 @@ export function TodayPath({
   const showBuild = sectionVisible("build", undefined, showExplore);
   const showScience = sectionVisible("science", undefined, showExplore);
   const showGames = sectionVisible("games", undefined, showExplore);
-  // The play library is not built yet. It stays out of the dock until it is.
-  const showLibrary = false;
   const shown =
     course === "math" && showMath
       ? "math"
@@ -169,16 +173,10 @@ export function TodayPath({
   // The Letters stop shows the week's first letter, or a sound unit as it is written: "sh", "a-e".
   const first = letters[0] ?? "a";
   const letter = isUnit(first) ? unitLabel(first) : first.toUpperCase();
+  // How far the day has got: on the page for the tests and a screen reader, not as a line of text. The
+  // "4 more!" strip under Start is gone, as the mockup has it; a finished stop still has its tick.
   const finishedCount = stops.filter((stop) => done[stop.id]).length;
   const left = stops.length - finishedCount;
-  const strip = left === 0 ? "All done today!" : finishedCount === 0 ? `${left} more!` : `${finishedCount} of ${stops.length} · ${left} more!`;
-  // "3 of 4 · 1 more!" did not say which one was left (playtest of build 3). A finished stop now has
-  // a tick, and a tap on the strip makes the ones still to do pulse on the path (each tap again).
-  // (Each stop says "done" to a screen reader once it is; the strip's own name is what it shows, so
-  // that it is never mistaken for a stop: "Draw" is a stop, not the strip.)
-  const [pointed, setPointed] = useState(0);
-  // Two names for the pulse, turn about, so a second tap on the strip pulses again.
-  const point = (stop: LessonStep) => (!done[stop] && pointed > 0 ? (pointed % 2 === 1 ? "a" : "b") : undefined);
   // The child's animal, alive: its idle loop plays in the nest, with what it wears. A long press on
   // it switches child; on a shared class iPad a tap does, through the grown-up check.
   const hero = <Hero animal={profile.animal} outfit={profile.outfit} mood="idle" />;
@@ -194,6 +192,9 @@ export function TodayPath({
       data-stage={shown === "math" ? mathLesson.stageId : shown === "colors" ? colorLesson.stageId : shown === "time" ? timeLesson.stageId : stageId}
       data-week={weekIndex}
       data-letters={letters.join("")}
+      data-done={finishedCount}
+      data-left={left}
+      data-stars={profile.stars}
     >
       <div className="today-top">
         {/* An Explore section (Numbers, Science and the rest) opens as its own page, so it has the same Back
@@ -230,7 +231,6 @@ export function TodayPath({
                       className={`trail-stop${stop.id === current.id ? " is-current" : ""}${finished ? " is-done" : ""}`}
                       data-step={stop.id}
                       data-current={stop.id === current.id ? "true" : "false"}
-                      data-point={point(stop.id)}
                       aria-label={finished ? `${stop.label}, done` : stop.label}
                       onClick={() => onOpen(stop.id)}
                     >
@@ -242,10 +242,8 @@ export function TodayPath({
                   );
                 })}
             </div>
-            <p className="star-count" data-stars={profile.stars}>
-              <StarIcon />
-              <span>{profile.stars}</span>
-            </p>
+            {/* No star count up here: the mockup's top row is the stops and the Grown-ups pill. The stars
+                are on the page's root for the tests, and in the grown-ups' pages. */}
           </>
         )}
       </div>
@@ -297,7 +295,6 @@ export function TodayPath({
                   className={`trail-stop letter-stop${current.id === "letter" ? " is-current" : ""}${done.letter ? " is-done" : ""}`}
                   data-step="letter"
                   data-current={current.id === "letter" ? "true" : "false"}
-                  data-point={point("letter")}
                   aria-label={done.letter ? "Letters, done" : "Letters"}
                   onClick={() => onOpen("letter")}
                 >
@@ -309,29 +306,27 @@ export function TodayPath({
                 <button type="button" className="start-button nest-start" data-start={current.id} onClick={() => onOpen(current.id)}>
                   Start
                 </button>
-                {left > 0 ? (
-                  <button type="button" className="chunk-strip" data-done={finishedCount} data-left={left} onClick={() => setPointed((count) => count + 1)}>
-                    {strip}
-                  </button>
-                ) : (
-                  <p className="chunk-strip" data-done={finishedCount} data-left={left} aria-live="polite">
-                    {strip}
-                  </p>
-                )}
               </div>
             </div>
           ) : null}
 
           {shown === "reading" ? (
             <div className="trace-practice">
+              {/* Trace a word and Trace my name, side by side under the nest and the letter, each with its mark. */}
               {canTraceWord ? (
                 <button type="button" data-practice="word" onClick={onTraceWord}>
-                  Trace a word
+                  <span className="practice-mark" aria-hidden="true">
+                    <PencilMark />
+                  </span>
+                  <span>Trace a word</span>
                 </button>
               ) : null}
               {canTraceName ? (
                 <button type="button" data-practice="name" onClick={onTraceName}>
-                  Trace my name
+                  <span className="practice-mark" aria-hidden="true">
+                    <FaceMark />
+                  </span>
+                  <span>Trace my name</span>
                 </button>
               ) : null}
               {review && onSoundGame ? (
@@ -367,7 +362,6 @@ export function TodayPath({
           <section className="explore-area" data-area="explore">
             <div className="explore-head">
               <h2>Explore</h2>
-              <p className="explore-tag">New – try it!</p>
             </div>
             {/* Each tile opens its section's page. (They were toggles that swapped the board above them, with
                 one shown as pressed; a tile is a plain door now.) */}
@@ -471,7 +465,8 @@ export function TodayPath({
 
       {shown === "reading" ? (
       <div className="today-dock">
-        {/* The mockup's row first: My Nest, Stickers, Games. Dress up and Surprise follow, on the same footing. */}
+        {/* The mockup's row, and only it: My Nest, Stickers, Games, with a line between. Dress up and the
+            Surprise are in My Nest (NestView), the animal's own place; they were a second row here. */}
         <button type="button" className="dock-button" data-dock="nest" onClick={onNest}>
           <span className="dock-art dock-nest">
             <Nest />
@@ -490,29 +485,6 @@ export function TodayPath({
           </span>
           <span>Games</span>
         </button> : null}
-        <button type="button" className="dock-button" data-dock="closet" onClick={onCloset}>
-          <span className="dock-art dock-dress" aria-hidden="true" />
-          <span>Dress up</span>
-        </button>
-        {showLibrary ? (
-          <button type="button" className="dock-button" data-dock="library" onClick={onLibrary}>
-            <span className="dock-art">
-              <ToyBox />
-            </span>
-            <span>Play library</span>
-          </button>
-        ) : null}
-        <button type="button" className="dock-button" data-dock="surprise" onClick={onSurprise}>
-          <span className="dock-art dock-surprise" aria-hidden="true">
-            <svg viewBox="0 0 64 64">
-              <rect x="12" y="28" width="40" height="26" rx="6" fill="#F6C3CB" />
-              <rect x="8" y="20" width="48" height="12" rx="5" fill="#F4A9B8" />
-              <rect x="29" y="20" width="6" height="34" fill="#FFF6E4" />
-              <path d="M32 20c-6-10-16-8-14-2 2 4 8 4 14 2Zm0 0c6-10 16-8 14-2-2 4-8 4-14 2Z" fill="#E07A8A" />
-            </svg>
-          </span>
-          <span>Surprise</span>
-        </button>
       </div>
       ) : null}
     </div>

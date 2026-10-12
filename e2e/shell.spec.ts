@@ -176,7 +176,7 @@ for (const width of [320, 360]) {
       expect(a, selector).toBeTruthy();
       expect(a!.x + a!.width, `${selector} ends before the pill begins`).toBeLessThanOrEqual(b!.x);
     };
-    await apart("[data-screen=today] .star-count");
+    
     await page.locator("[data-step=letter]").click();
     await apart("[data-break]");
     await apart("[data-hear-again]");

@@ -2702,19 +2702,91 @@ button:focus-visible {
   background: var(--butter-edge);
 }
 
-@media (max-width: 767px) {
-  .today.is-nest .today-dock .dock-button {
-    position: relative;
+/* The dock is the mockup's one row, My Nest, Stickers and Games, three across at every width, with a
+   line between each pair. */
+.today.is-nest .today-dock {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-items: center;
+  gap: 0;
+  width: min(100%, 560px);
+  margin: 0 auto;
+}
+
+.today.is-nest .today-dock .dock-button {
+  position: relative;
+  width: 100%;
+}
+
+.today.is-nest .today-dock .dock-button + .dock-button::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12%;
+  height: 76%;
+  border-left: 1px solid var(--line);
+}
+
+/* Trace a word and Trace my name side by side, each a pill with its mark; a third (the sound game,
+   on a review day) goes under them. */
+.today.is-nest .trace-practice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  width: min(100%, 560px);
+}
+
+.today.is-nest .trace-practice button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 12px;
+}
+
+.practice-mark {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  color: var(--text-warm);
+}
+
+.practice-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Explore's six doors in one row, as the mockup has them; three to a row on a phone (see below), where
+   six would make "Time & Money" too small to read. */
+@media (min-width: 768px) {
+  .today.is-nest .explore-area,
+  .today.is-nest .course-pick {
+    width: min(100%, 920px);
   }
 
-  .today.is-nest .today-dock .dock-button:not(:nth-child(3n + 1))::before {
-    content: "";
-    position: absolute;
-    left: -4px;
-    top: 12%;
-    height: 76%;
-    border-left: 1px solid var(--line);
+  /* Six to a row where there is room for six doors a child can read; on an iPad's narrower column
+     beside the dock, three to a row, as on a phone. */
+  .today.is-nest .course-pick {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
+
+  .today.is-nest .course-button {
+    font-size: 16px;
+  }
+}
+
+/* My Nest's own doors: Dress up and the Surprise, side by side under the nest. */
+.nest-doors {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin: 4px 0;
+}
+
+.nest-doors .dock-art {
+  background: transparent;
+  box-shadow: none;
 }
 
 

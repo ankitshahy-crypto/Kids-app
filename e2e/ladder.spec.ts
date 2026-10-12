@@ -162,7 +162,7 @@ test("a week-one child does not climb the ladder by tracing a word", async ({ pa
   await expect(word).toHaveAttribute("data-word", "am");
   await word.getByRole("button", { name: "Your turn" }).click();
   await finishPathTrace(page, "word");
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "1");
   const ladder = await savedLadder(page);
   expect(ladder.step).toBe(2);
   expect(ladder.successes).toBe(3);

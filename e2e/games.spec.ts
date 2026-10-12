@@ -569,7 +569,8 @@ test("a flick spins the wheel and a bonus can gift a dress-up item", async ({ pa
   await board.locator(".pick[data-keep]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.locator("[data-dock=closet]").click();
+  await page.locator("[data-dock=nest]").click();
+  await page.locator("[data-nest-action=closet]").click();
   await expect(page.locator('[data-item="scarf-stripe"]')).toHaveAttribute("data-unlocked", "true");
 });
 

@@ -35,7 +35,6 @@ test("the reading lesson leads, and Explore sits below it", async ({ page }) => 
   await expect(pilot).toBeVisible();
   await expect(page.locator("[data-step=letter]")).toBeVisible();
   await expect(explore.getByRole("heading", { name: "Explore" })).toBeVisible();
-  await expect(explore).toContainText("New – try it!");
   await expect(explore.locator("[data-course=reading]")).toHaveCount(0);
   for (const name of ["LittleNest Numbers", "LittleNest Colors", "LittleNest Time & Money", "LittleNest Build", "LittleNest Science"]) {
     await expect(explore.getByRole("button", { name })).toBeVisible();
@@ -69,7 +68,7 @@ test("the lesson path and the dock fit an iPad in landscape without scrolling", 
     await page.waitForTimeout(150);
     const viewport = page.viewportSize()!;
     expect(viewport.height).toBe(height);
-    const targets = ["[data-step=letter]", "[data-step=draw]", "[data-step=story]", "[data-step=moment]", "[data-dock=games]", "[data-dock=nest]", "[data-dock=surprise]"];
+    const targets = ["[data-step=letter]", "[data-step=draw]", "[data-step=story]", "[data-step=moment]", "[data-dock=games]", "[data-dock=nest]"];
     for (const selector of targets) {
       const box = await page.locator(selector).boundingBox();
       expect(box, `${selector} at ${width}x${height}`).toBeTruthy();
