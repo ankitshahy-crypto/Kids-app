@@ -26,6 +26,10 @@ import { WritingBox } from "./WritingBox";
 
 type Phase = "demo" | "trace" | "write" | "cheer";
 
+/** The cheer stays at least this long, and at most this long when what it says never ends. */
+const CHEER_MIN_MS = 700;
+const CHEER_MAX_MS = 6000;
+
 function openingPhase(level: ScaffoldLevel): Phase {
   if (level >= 4) return "write";
   if (level === 3) return "trace";
@@ -64,7 +68,8 @@ export function PathTrace({
   memoryLine?: string;
   /** Recorded clips that say the memory prompt, for a screen that must not use the device voice (a name). */
   memoryCues?: Cue[];
-  onSpeak?: () => void;
+  /** What the cheer says. Given back as a promise, the cheer stays until it has been said. */
+  onSpeak?: () => void | Promise<void>;
   onAttempt?: (success: boolean) => WritingOutcome;
   onDone: () => void;
 }) {
@@ -81,6 +86,8 @@ export function PathTrace({
   const finished = useRef(false);
   const reported = useRef(false);
   const left = useRef(false);
+  /** The screen has closed: a cheer whose words end after that goes nowhere. */
+  const gone = useRef(false);
   const glyph = glyphs[glyphIndex] ?? glyphs[0];
   const strokes = glyph?.strokes ?? [];
   const stroke = strokes[strokeIndex] ?? strokes[0];
@@ -98,7 +105,15 @@ export function PathTrace({
     }
   };
 
-  useEffect(() => () => clearTimer(), []);
+  useEffect(() => {
+    // Set on mount as well as cleared on unmount: React's rehearsal in development runs the cleanup
+    // once before the real mount, and a flag left standing would keep the cheer from ever leaving.
+    gone.current = false;
+    return () => {
+      gone.current = true;
+      clearTimer();
+    };
+  }, []);
 
   // The memory prompt from recorded clips, where there are some: the copy box then says nothing itself.
   const memoryKey = memoryCues?.map((cue) => cue.text).join("|");
@@ -146,8 +161,21 @@ export function PathTrace({
     setPhase("cheer");
     setSpoken(title);
     playEffect("cheer", settingsRef.current);
-    onSpeak?.();
-    advanceTimer.current = window.setTimeout(leave, 700);
+    // What the cheer says is heard to its end before the screen leaves: a word in a moment, a name
+    // spelled out and then said in a few seconds. (The screen used to leave after 700 ms whatever
+    // was still being said, and a name's letters went on over Today.) Should the words never end,
+    // the cheer leaves after CHEER_MAX_MS; and once the screen is closed, nothing leaves twice.
+    const said = onSpeak?.();
+    const started = Date.now();
+    const go = () => {
+      if (left.current || gone.current) return;
+      clearTimer();
+      advanceTimer.current = window.setTimeout(leave, Math.max(0, CHEER_MIN_MS - (Date.now() - started)));
+    };
+    if (said && typeof said.then === "function") {
+      void said.then(go, go);
+      advanceTimer.current = window.setTimeout(go, CHEER_MAX_MS);
+    } else go();
   };
 
   const judge = (success: boolean) => {
@@ -418,11 +446,15 @@ export function NameTrace({
       memoryLine={memoryPrompt("name", title)}
       memoryCues={[promptCue("trace-name", "Trace your name."), ...letters]}
       onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
-      onSpeak={() => {
-        // Traced: the name spelled out once more, in the recorded voice.
-        const controller = new AbortController();
-        void playLine(letters, settingsRef.current, controller.signal).catch(() => undefined);
-      }}
+      onSpeak={() =>
+        new Promise<void>((resolve) => {
+          // Traced: the name spelled out once more in the recorded voice, then the name itself. A
+          // name has no clip, so that one word is the device voice's. The cheer waits for the line,
+          // and closing the screen stops it (the speaker lets go with the screen): it used to play on
+          // over Today, on a controller nothing ever aborted.
+          speak.line([...letters, { text: title }], resolve, { remember: false, onStop: resolve });
+        })
+      }
       onDone={onDone}
     />
   );
