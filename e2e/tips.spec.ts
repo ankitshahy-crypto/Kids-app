@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createdThisWeek } from "./clock";
-import { game, onRound } from "./kit";
+import { game, onRound, pressDone } from "./kit";
 import { showWordCard } from "./lesson";
 import { pairOne, traceCurrentStroke } from "./traceFlow";
 
@@ -133,6 +133,7 @@ test("after a game, the section page's tip is a chip clear of the Grown-ups butt
       const target = (await play.getAttribute("data-target")) ?? "";
       await play.locator(`.pick[data-number='${target}']`).click();
     }
+    await pressDone(page);
     await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-subject", "math");
     const tip = page.locator("[data-tip=math-count-end]");
     // Arrived after the child finished: a chip only.

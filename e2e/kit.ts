@@ -131,9 +131,16 @@ export async function noting<T, A = undefined>(target: Locator, look: (element: 
   return () => target.page().evaluate((book) => (window as unknown as Record<string, unknown[]>)[book] ?? [], book) as Promise<T[]>;
 }
 
-/** The game is over and the child is back on the section page with a star. */
+/**
+ * The game is over: it waits with Done (the kit's useFinish), Done is pressed, and the child is back
+ * on the section page with a star.
+ */
 export async function expectStar(page: Page, stars = 1) {
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", String(stars), { timeout: 10_000 });
+  const done = page.locator("[data-game-done=true]");
+  const back = page.locator(`[data-screen=today][data-stars="${stars}"]`);
+  await expect(done.or(back).first()).toBeVisible({ timeout: 10_000 });
+  if (await done.isVisible()) await done.click();
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", String(stars), { timeout: 10_000 });
 }
 
 /** Has this choice wiggled? The wiggle has two names, turn about, so that it can play twice running. */
@@ -181,4 +188,11 @@ export async function matchPairs(root: Locator, cardSelector: string) {
     // The last pair ends the round, and the next round's count starts again.
     if (found < groups.size) await expect(root).toHaveAttribute("data-matched", String(found));
   }
+}
+
+/** The last round done: the game waits for Done (the kit's useFinish), and Done leaves it. */
+export async function pressDone(page: Page): Promise<void> {
+  const done = page.locator("[data-game-done=true]");
+  await expect(done).toBeVisible({ timeout: 10_000 });
+  await done.click();
 }

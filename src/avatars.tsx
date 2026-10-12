@@ -25,7 +25,13 @@ type ArtEntry = {
    * body lies on the idle one's while its ears may rise past the box. A frame not listed is cut to
    * the idle frame already. */
   places?: Partial<Record<ArtFrame, [number, number, number]>>;
+  /** Where a mood frame's head is against the idle one's (scripts/wardrobe-pose.py): the shift (fractions
+   * of the face box), turn (degrees) and scale that take the idle eyes to that frame's. The dress-up
+   * pieces are moved by it while the frame shows, so the glasses stay on the eyes (components/Hero.tsx).
+   * A frame not listed keeps the pieces where the idle face has them. */
+  pose?: Partial<Record<ArtFrame, HeadPose>>;
 };
+export type HeadPose = { dx: number; dy: number; rotate: number; scale: number };
 const ART: Partial<Record<AnimalId, ArtEntry>> = art as Partial<Record<AnimalId, ArtEntry>>;
 
 export function artOf(animal: AnimalId): ArtEntry | null {

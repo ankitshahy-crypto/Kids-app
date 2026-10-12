@@ -110,7 +110,7 @@ function BridgeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const wiggle = useWiggle();
   const later = useLater();
   const coach = useCoach(settingsRef, [say("engineer-bridge")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
 
   const lay = (plank: number) => {
     if (crossed || (tried && tried.fit === "fits")) return;
@@ -132,6 +132,7 @@ function BridgeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const far = BANK + round.gap * SPAN;
   return (
     <GameFrame
+      onDone={finish}
       screen="bridge"
       title="Bridge"
       animal={animal}
@@ -208,7 +209,7 @@ function TowerGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const wiggle = useWiggle();
   const later = useLater();
   const coach = useCoach(settingsRef, [say(asked === 0 ? "engineer-tower" : "engineer-tower-next")], `${rounds.index}-${asked}`);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
   const want = towerNext(round.blocks, stack);
 
   const put = (block: number) => {
@@ -231,6 +232,7 @@ function TowerGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
 
   return (
     <GameFrame
+      onDone={finish}
       screen="tower"
       title="Tower"
       animal={animal}
@@ -302,7 +304,7 @@ function RampGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const wiggle = useWiggle();
   const later = useLater();
   const coach = useCoach(settingsRef, [say("engineer-ramp")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
 
   const send = (height: RampHeight) => {
     if (solved || rolling) return;
@@ -326,6 +328,7 @@ function RampGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
 
   return (
     <GameFrame
+      onDone={finish}
       screen="ramp"
       title="Ramps"
       animal={animal}
@@ -511,7 +514,7 @@ function MachinesGame({ level, animal, outfit, settingsRef, onDone }: PlayProps)
   const [solved, setSolved] = useRoundState(rounds.index, false);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [say(round.ask)], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
 
   const pick = (id: MachineId) => {
     if (solved) return;
@@ -527,6 +530,7 @@ function MachinesGame({ level, animal, outfit, settingsRef, onDone }: PlayProps)
 
   return (
     <GameFrame
+      onDone={finish}
       screen="machines"
       title="Machines"
       animal={animal}
@@ -586,7 +590,7 @@ function BalanceGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) 
   const wiggle = useWiggle();
   const later = useLater();
   const coach = useCoach(settingsRef, [say("engineer-balance")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
   const tilt = balanceTilt(round.left, right);
 
   const put = (count: number) => {
@@ -607,6 +611,7 @@ function BalanceGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) 
 
   return (
     <GameFrame
+      onDone={finish}
       screen="balance"
       title="Balance"
       animal={animal}

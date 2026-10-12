@@ -145,7 +145,7 @@ test("the Friday sound game notes first tries quietly and shows grown-ups what t
   await expect(game).not.toContainText(/wrong|score/i);
   const before = Number(await page.locator(".star-count").first().getAttribute("data-stars"));
   await page.getByRole("button", { name: "Get my star" }).click();
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", String(before + 1));
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", String(before + 1));
 
   await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await page.getByRole("button", { name: "Parent", exact: true }).click();

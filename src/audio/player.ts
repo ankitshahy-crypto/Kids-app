@@ -1,6 +1,6 @@
 import { recordedSrc, spokenLine } from "../data/audioCatalog";
 import type { DeckWord, LetterTile } from "../data/deck";
-import { beginVoice, endVoice, playOnBus, unlockAudio, warmClips } from "./manager";
+import { audioState, beginVoice, endVoice, playOnBus, unlockAudio, warmClips } from "./manager";
 import { deviceSpeechFollowsSlider } from "./platform";
 import { pickVoice } from "./voices";
 import { SPEECH_RATES, type Settings } from "../settings";
@@ -47,16 +47,23 @@ export function primeSpeech(cue?: string): void {
   }
 }
 
+/**
+ * How long a line spoken from the opening tap stands in for its clip. Short: a clip is skipped only
+ * for the line the tap itself just said, not for one that comes a while later. (It was five
+ * seconds, which could have skipped a round's recorded question for a line primed on the way in.)
+ */
+const PRIMED_MS = 1000;
+
 /** True when this exact line was just spoken from a tap. */
 export function consumePrimedSpeech(text: string): boolean {
   const spoken = text.trim();
-  if (!primedText || primedText !== spoken || Date.now() - primedAt > 5000) return false;
+  if (!primedText || primedText !== spoken || Date.now() - primedAt > PRIMED_MS) return false;
   primedText = "";
   return true;
 }
 
 export function hasFreshPrimedSpeech(): boolean {
-  return primedText !== "" && Date.now() - primedAt < 5000;
+  return primedText !== "" && Date.now() - primedAt < PRIMED_MS;
 }
 
 export function resumeSpeech(): void {
@@ -301,6 +308,15 @@ async function playOne(cue: Cue, settings: Settings, signal: AbortSignal, follow
         return;
       } catch (error) {
         if (isAbortError(error) || signal.aborted) throw abortError();
+        // TEMPORARY, for the phone test of build 8: a recorded line is about to be read by the
+        // phone's own voice. Says which screen, which clip, the context's state and what failed, so
+        // the device log shows whether Homes, Coins and Body still get here. Take out once confirmed.
+        console.warn("[littlenest voice] clip fell back to the phone's voice", {
+          screen: document.querySelector("[data-screen]")?.getAttribute("data-screen") ?? "?",
+          clip: cue.src,
+          context: audioState(),
+          reason: error instanceof Error ? error.message : String(error),
+        });
       }
     }
     await speak(cue.text, settings, signal, follow);

@@ -50,7 +50,6 @@ const SOLVED_MAX_MS = 3200;
  */
 const LINE_GUARD_MS = 8000;
 /** How long the ending plays before the star is given. */
-const FINISH_MS = 1700;
 
 /**
  * How the animal looks, so that what happened can be read with the sound off:
@@ -369,31 +368,42 @@ export function useRounds<T>(rounds: T[]) {
  * the star is given as they go, a moment after the game has closed. (The app's own finish then finds
  * where the child has gone, and does not take one who asked for a break back to Today.)
  */
-export function useFinish(finished: boolean, settingsRef: { current: Settings }, coach: Coach, onDone: () => void) {
+/**
+ * The last round is done: the cheer, "You did it!", and then the game waits for Done. The function
+ * returned is Done: it leaves the game (the caller's `onDone`, once). The frame shows the button
+ * (GameFrame's `onDone`), so the child keeps the finished screen, the coins found or the life put
+ * in order, for as long as they like. (The game used to leave by itself a moment after the cheer,
+ * and the child found "All done for now" on Today in place of what they had just finished.)
+ */
+export function useFinish(finished: boolean, settingsRef: { current: Settings }, coach: Coach, onDone: () => void): () => void {
   const done = useRef(onDone);
   done.current = onDone;
-  /** The star being given on the way out, so that an effect run again at once (React's rehearsal, in development) can take it back. */
-  const leaving = useRef<number | null>(null);
+  const given = useRef(false);
+  const over = useRef(false);
   useEffect(() => {
-    if (!finished) return;
-    if (leaving.current !== null) window.clearTimeout(leaving.current);
-    leaving.current = null;
+    over.current = finished;
+    if (!finished) {
+      given.current = false;
+      return;
+    }
     playEffect("celebrate", settingsRef.current);
     coach.speak.line([promptCue("kit-done", "You did it!")]);
-    let given = false;
-    const give = () => {
-      if (given) return;
-      given = true;
-      done.current();
-    };
-    const timer = window.setTimeout(give, quick() ? 200 : reducedMotion() ? 700 : FINISH_MS);
-    return () => {
-      window.clearTimeout(timer);
-      if (!given) leaving.current = window.setTimeout(give, 0);
-    };
     // Runs once, when the last round is done.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
+  const give = useCallback(() => {
+    if (given.current) return;
+    given.current = true;
+    done.current();
+  }, []);
+  // Back during the ending, before Done: the game was still finished, and the star is still given.
+  useEffect(
+    () => () => {
+      if (over.current) give();
+    },
+    [give],
+  );
+  return give;
 }
 
 /** Dots for the rounds: filled when done, ringed for the one being played. */
@@ -720,6 +730,7 @@ export function GameFrame({
   stage,
   hostAt,
   children,
+  onDone,
   attrs,
 }: {
   /** The activity id. Tests and the app find the game by it. */
@@ -741,6 +752,8 @@ export function GameFrame({
   /** The things to tap. */
   children?: ReactNode;
   attrs?: Record<string, string | number | undefined>;
+  /** Done, once the last round is finished (useFinish): the button that leaves the game. */
+  onDone?: () => void;
 }) {
   const mood: Mood = rounds.finished ? "cheer" : lookOf(coach);
   const { painting, shown, settle } = usePainting(scene);
@@ -780,6 +793,13 @@ export function GameFrame({
         {mood === "cheer" ? <Sparkles /> : null}
       </div>
       <div className="game-tray" data-nudge={coach.nudge ? "true" : "false"}>
+        {/* The last round done: Done, first in the tray so it is on a phone's screen, with what was
+            finished still there to look at. The game waits for it; it does not leave on its own. */}
+        {rounds.finished && onDone ? (
+          <button type="button" className="start-button game-done" data-game-done="true" onClick={onDone}>
+            Done
+          </button>
+        ) : null}
         {children}
       </div>
     </div>

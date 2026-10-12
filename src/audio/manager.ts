@@ -109,7 +109,14 @@ let didUnlockGesture = false;
 export function unlockAudio(): void {
   try {
     const ctx = ensure();
-    if (ctx && isBlocked(ctx.state)) void ctx.resume().catch(() => undefined);
+    if (ctx && isBlocked(ctx.state)) {
+      // Both in this same gesture: the resume, and a silent sample started while the gesture is
+      // still the browser's, which is what makes iOS let the context run on afterwards. (The sample
+      // used to be started on the first tap only; a context blocked later, by a call, Siri or the
+      // app going to the background, got the resume alone, and that was not always enough.)
+      void ctx.resume().catch(() => undefined);
+      startSilentBuffer(ctx);
+    }
     if (!didUnlockGesture) {
       didUnlockGesture = true;
       if (ctx) startSilentBuffer(ctx);
@@ -522,6 +529,49 @@ export function warmClips(sources: readonly (string | undefined)[]): void {
   }
 }
 
+/**
+ * How long a clip waits for a blocked context to run again before it gives up on Web Audio. A line
+ * that starts from the page rather than a tap (a round's question) cannot resume the context on
+ * iOS by itself; the next tap anywhere does (unlockAudio runs on every tap), and the clip then plays.
+ */
+const BLOCKED_WAIT_MS = 30000;
+
+/** The context's state, for the voice fallback's log. */
+export function audioState(): string {
+  return context?.state ?? "none";
+}
+
+/**
+ * Resolves once the context is running: at once, or when the next tap resumes it, or never within
+ * `maxMs` (then it rejects, and the clip's other ways are tried). WebKit does not always fire
+ * statechange for a resume, so the state is also looked at now and then.
+ */
+function whenRunning(ctx: AudioContext, signal: AbortSignal, maxMs: number): Promise<void> {
+  if (ctx.state === "running") return Promise.resolve();
+  if (signal.aborted) return Promise.reject(aborted());
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      clearInterval(poll);
+      ctx.removeEventListener("statechange", onState);
+      signal.removeEventListener("abort", onAbort);
+      if (error) reject(error);
+      else resolve();
+    };
+    const onState = () => {
+      if (ctx.state === "running") finish();
+    };
+    const onAbort = () => finish(aborted());
+    const timer = setTimeout(() => finish(new Error(`Audio context stayed ${ctx.state}`)), maxMs);
+    const poll = setInterval(onState, 250);
+    ctx.addEventListener("statechange", onState);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal, onStart?: (durationMs: number) => void): Promise<void> {
   const ctx = ensure();
   if (!ctx) throw new Error("Audio is unavailable");
@@ -529,8 +579,11 @@ async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal, onSta
     try {
       await ctx.resume();
     } catch {
-      throw new Error("Audio context did not resume");
+      // Not inside a tap: the resume is refused. The clip waits for the tap that resumes the context
+      // instead of giving the line to the phone's own voice at once (which is what a child heard on
+      // an iPhone in Homes, Coins and Body: a robotic voice, and only after the speaker was tapped).
     }
+    if (ctx.state !== "running") await whenRunning(ctx, signal, BLOCKED_WAIT_MS);
   }
   if (ctx.state !== "running") throw new Error("Audio context is not running");
   refreshGains();

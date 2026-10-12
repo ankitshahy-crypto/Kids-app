@@ -132,7 +132,7 @@ export function NameActivity({
   const [solved, setSolved] = useRoundState(rounds.index, false);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [promptCue("name", "Tap the color you hear."), colorCue(round.hear)], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(lesson.hear));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(lesson.hear));
 
   const choose = (name: string) => {
     if (solved) return;
@@ -150,6 +150,7 @@ export function NameActivity({
   const filled = rounds.finished ? list.length : rounds.index + (solved ? 1 : 0);
   return (
     <GameFrame
+      onDone={finish}
       screen="name"
       title="Colors"
       animal={animal}
@@ -245,7 +246,7 @@ export function MixActivity({ ageRange, animal, outfit, settingsRef, onDone }: G
   const clear = useRef<number | null>(null);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [say(round.kind === "make" ? wantLineId(round.want) : "color-mix")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(made));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(made));
   useEffect(
     () => () => {
       if (clear.current !== null) window.clearTimeout(clear.current);
@@ -306,6 +307,7 @@ export function MixActivity({ ageRange, animal, outfit, settingsRef, onDone }: G
 
   return (
     <GameFrame
+      onDone={finish}
       screen="mix"
       title="Mix"
       animal={animal}
@@ -379,7 +381,7 @@ export function PaintActivity({
   const name = animalById(animal).name;
   // Before a paint is chosen the voice asks for one; after, it asks for the check.
   const coach = useCoach(settingsRef, [say(picked ? "color-keep" : "color-paint")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(`${picked} ${name.toLowerCase()}`));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(`${picked} ${name.toLowerCase()}`));
 
   const paint = (color: string) => {
     if (kept) return;
@@ -396,6 +398,7 @@ export function PaintActivity({
 
   return (
     <GameFrame
+      onDone={finish}
       screen="paint"
       title="Paint"
       animal={animal}

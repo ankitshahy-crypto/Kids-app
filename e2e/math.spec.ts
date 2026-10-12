@@ -202,7 +202,7 @@ test("number tracing follows the dots in order", async ({ page }, testInfo) => {
     if ((await next.count()) === 0) break;
     await next.click();
   }
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "1");
   // A section's page holds that section only; the dock and the other tiles are on the home screen.
   await page.locator("[data-section-back]").click();
   await page.getByRole("button", { name: "Stickers" }).click();
@@ -248,7 +248,7 @@ test("shapes: the block that fits the hole drops in, three times, and then the w
     await page.screenshot({ path: "test-results/screenshots/shape_trace_board.png" });
   }
   await finishPathTrace(page, "shape");
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "1");
   // A section's page holds that section only; the dock and the other tiles are on the home screen.
   await page.locator("[data-section-back]").click();
   await page.getByRole("button", { name: "Stickers" }).click();
@@ -440,7 +440,8 @@ test("letters and numbers stay large on iPad", async ({ page }) => {
     const numbers = await page.getByRole("button", { name: "LittleNest Numbers" }).boundingBox();
     expect(numbers).toBeTruthy();
     expect(numbers!.height).toBeGreaterThanOrEqual(100);
-    expect(numbers!.width).toBeGreaterThan(140);
+    // Six Explore doors to a row now (the mockup), so a door is a little narrower than when there were three: still wider than a phone's.
+    expect(numbers!.width).toBeGreaterThan(110);
     const trail = await page.locator(".trail").boundingBox();
     expect(trail).toBeTruthy();
     expect(trail!.height).toBeGreaterThanOrEqual(100);

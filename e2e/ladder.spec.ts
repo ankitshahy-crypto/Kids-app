@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { answerGate, openTeacherChild } from "./gate";
 import { createdThisWeek } from "./clock";
-import { game, matchPairs, onRound } from "./kit";
+import { game, matchPairs, onRound, pressDone } from "./kit";
 import { finishPathTrace } from "./traceFlow";
 
 const profile = {
@@ -117,6 +117,7 @@ test("a week-one child does not climb the ladder by playing games", async ({ pag
     await onRound(hatch, round);
     await hatch.locator('.pick[data-letter][data-needed="true"]').click();
   }
+  await pressDone(page);
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   expect((await savedLadder(page)).step).toBe(2);
@@ -130,6 +131,7 @@ test("a week-one child does not climb the ladder by playing games", async ({ pag
     await onRound(rhyme, round);
     await matchPairs(rhyme, ".pick[data-rhyme]");
   }
+  await pressDone(page);
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "2");
   const ladder = await savedLadder(page);
@@ -160,7 +162,7 @@ test("a week-one child does not climb the ladder by tracing a word", async ({ pa
   await expect(word).toHaveAttribute("data-word", "am");
   await word.getByRole("button", { name: "Your turn" }).click();
   await finishPathTrace(page, "word");
-  await expect(page.locator("[data-screen=today] .star-count")).toHaveAttribute("data-stars", "1");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "1");
   const ladder = await savedLadder(page);
   expect(ladder.step).toBe(2);
   expect(ladder.successes).toBe(3);

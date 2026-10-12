@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { playEffect } from "../audio/manager";
+import { playEffect, warmClips } from "../audio/manager";
 import { deckWordCue, letterCue, letterSoundCue, numberCue, promptCue, wordCue, type Cue } from "../audio/player";
 import type { AnimalId } from "../data/animals";
 import type { DeckWord } from "../data/deck";
@@ -144,7 +144,7 @@ export function HatchGame({
   // What to do, then the word sounded out and said whole. The speaker repeats all of it.
   const sounds = round.word.letters.filter((letter) => !letter.silent).map(letterSoundCue);
   const coach = useCoach(settingsRef, [promptCue("game-hatch", "Tap the missing letters."), ...sounds, deckWordCue(round.word)], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () =>
+  const finish = useFinish(rounds.finished, settingsRef, coach, () =>
     onDone([{ kind: "animal", label: baby }, ...list.map((item) => ({ kind: "word" as const, label: item.word.word }))]),
   );
   const charAt = (index: number) => round.word.letters[index].char.toLowerCase();
@@ -199,6 +199,7 @@ export function HatchGame({
   };
   return (
     <GameFrame
+      onDone={finish}
       screen="hatch"
       title="Hatch the Egg"
       animal={animal}
@@ -277,7 +278,7 @@ export function PopGame({ knownLetters, animal, outfit, salt, settingsRef, onDon
   const [popped, setPopped] = useRoundState<string[]>(rounds.index, []);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [promptCue("game-pop", "Pop the balloons with this letter."), letterCue(letterTile(round.target))], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
   const targets = round.balloons.filter((balloon) => balloon.target);
   const solved = targets.every((balloon) => popped.includes(balloon.id));
   // After three misses the hand points at a balloon still to pop.
@@ -300,6 +301,7 @@ export function PopGame({ knownLetters, animal, outfit, salt, settingsRef, onDon
 
   return (
     <GameFrame
+      onDone={finish}
       screen="pop"
       title="Letter Pop"
       animal={animal}
@@ -362,7 +364,13 @@ export function FeedGame({ knownLetters, animal, outfit, salt, settingsRef, onDo
     [promptCue("game-feed", "Feed me the pictures that start with this letter."), letterCue(letterTile(round.target))],
     rounds.index,
   );
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
+  // The round's words are loaded as it opens, so a tapped picture says its name the moment it is
+  // tapped, with the thud and the move to the plate. (Fetched at the tap, on a phone the word came
+  // after the picture had already landed.)
+  useEffect(() => {
+    warmClips(round.items.map((item) => wordCue(item.id, item.label).src));
+  }, [round]);
   const needed = round.items.filter((item) => item.letter === round.target);
   const solved = needed.every((item) => fed.includes(item.id));
   const hint = coach.reveal && !solved ? needed.find((item) => !fed.includes(item.id))?.id : undefined;
@@ -385,6 +393,7 @@ export function FeedGame({ knownLetters, animal, outfit, salt, settingsRef, onDo
 
   return (
     <GameFrame
+      onDone={finish}
       screen="feed"
       title="Feed the Animal"
       animal={animal}
@@ -443,9 +452,13 @@ export function RhymeGame({ animal, outfit, salt, settingsRef, onDone }: Shared 
   const [matched, setMatched] = useRoundState<string[]>(rounds.index, []);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [promptCue("game-rhyme", "Find two pictures that rhyme.")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () =>
+  const finish = useFinish(rounds.finished, settingsRef, coach, () =>
     onDone([...new Set(list.flatMap((board) => board.map((card) => card.word)))].map((label) => ({ kind: "word", label }))),
   );
+  // The round's words and both verdicts are loaded as it opens, so a tap is answered at once (see Feed).
+  useEffect(() => {
+    warmClips([...cards.map((card) => wordCue(card.word, card.word).src), say("play-rhyme-yes").src, say("play-rhyme-no").src]);
+  }, [cards]);
   const pairs = [...new Set(cards.map((card) => card.pair))];
   const solved = pairs.every((pair) => matched.includes(pair));
   // After three misses the hand points at two that rhyme: the one picked and its partner, or a pair still to find.
@@ -468,25 +481,29 @@ export function RhymeGame({ animal, outfit, salt, settingsRef, onDone }: Shared 
     }
     const first = cards.find((item) => item.id === picked);
     setPicked(null);
-    const both = first ? [wordCue(first.word, first.word), name] : [name];
+    // The second picture says its own name, then the verdict. The first picture said its name when it
+    // was picked: said again here, the pair came out as "can, can, van", and the verdict arrived late.
+    // On a match the two pictures go to the found row as the name is said; "They rhyme!" follows it,
+    // once they are there.
     if (first && first.pair === card.pair) {
       const next = [...matched, card.pair];
       setMatched(next);
       wiggle.still();
       if (pairs.every((pair) => next.includes(pair))) {
-        coach.right([...both, say("play-rhyme-yes")], rounds.next, 1200);
+        coach.right([name, say("play-rhyme-yes")], rounds.next, 1200);
       } else {
         playEffect("chime", settingsRef.current);
-        coach.touch([...both, say("play-rhyme-yes")]);
+        coach.touch([name, say("play-rhyme-yes")]);
       }
       return;
     }
     wiggle.shake(card.id);
-    coach.miss([...both, say("play-rhyme-no")]);
+    coach.miss([name, say("play-rhyme-no")]);
   };
 
   return (
     <GameFrame
+      onDone={finish}
       screen="rhyme"
       title="Rhyme Match"
       animal={animal}
@@ -566,7 +583,7 @@ export function MemoryGame({ knownLetters, animal, outfit, salt, settingsRef, on
   const [matched, setMatched] = useRoundState<string[]>(rounds.index, []);
   const turnBack = useRef<number | null>(null);
   const coach = useCoach(settingsRef, [promptCue("game-memory", "Flip two cards. Find a match.")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
   useEffect(
     () => () => {
       if (turnBack.current !== null) window.clearTimeout(turnBack.current);
@@ -607,6 +624,7 @@ export function MemoryGame({ knownLetters, animal, outfit, salt, settingsRef, on
 
   return (
     <GameFrame
+      onDone={finish}
       screen="memory"
       title="Memory Flip"
       animal={animal}

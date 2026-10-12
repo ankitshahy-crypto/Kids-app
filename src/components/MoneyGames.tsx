@@ -106,7 +106,7 @@ export function ShopActivity({ lesson, animal, outfit, settingsRef, onDone }: Ga
           : [sayLine(`shop-paid-${round.paid}`), sayLine("shop-change")];
   const line = [sayWord(round.good), sayLine("shop-costs"), sayCents(round.price), ...ask];
   const coach = useCoach(settingsRef, line, rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(title(round.good)));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(title(round.good)));
 
   const win = (said: Cue[]) => {
     setSolved(true);
@@ -157,6 +157,7 @@ export function ShopActivity({ lesson, animal, outfit, settingsRef, onDone }: Ga
 
   return (
     <GameFrame
+      onDone={finish}
       screen="shop"
       title="Shop"
       animal={animal}
@@ -252,7 +253,7 @@ export function CoinsActivity({ lesson, animal, outfit, settingsRef, onDone }: G
           : [sayLine("coins-less")];
   const coach = useCoach(settingsRef, line, rounds.index);
   const label = round.kind === "name" ? title(round.target) : round.kind === "sort" ? "sorted" : round.kind === "count" ? String(round.total) : round.cheaper;
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(label));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(label));
 
   const answer = round.kind === "name" ? round.target : round.kind === "sort" ? round.coin : round.kind === "count" ? String(round.total) : round.cheaper;
   const tap = (id: string, said: Cue[]) => {
@@ -269,6 +270,7 @@ export function CoinsActivity({ lesson, animal, outfit, settingsRef, onDone }: G
 
   return (
     <GameFrame
+      onDone={finish}
       screen="coins"
       title="Coins"
       animal={animal}
@@ -307,7 +309,10 @@ export function CoinsActivity({ lesson, animal, outfit, settingsRef, onDone }: G
     >
       {round.kind === "name"
         ? round.choices.map((id) => (
-            <CoinPick key={id} id={id} wiggle={wiggle.id === id ? wiggle.count : 0} reveal={coach.reveal && id === answer} onPick={() => tap(id, sayCoinWorth(id))} />
+            // The coin asked for, found: what it is worth. Its name was the question ("Find the dime"),
+            // so it is not said again (the round came out as "Find the dime. Dime. Ten cents."). A
+            // wrong coin is still named, since that is what the miss teaches.
+            <CoinPick key={id} id={id} wiggle={wiggle.id === id ? wiggle.count : 0} reveal={coach.reveal && id === answer} onPick={() => tap(id, id === answer ? [sayCents(COIN_CENTS[id])] : [sayCoin(id)])} />
           ))
         : null}
       {round.kind === "sort"
@@ -403,7 +408,7 @@ export function JarsActivity({
   const line = splitting ? [promptCue("time-jars", "Put each coin in a jar.")] : [sayLine("jars-chore")];
   const coach = useCoach(settingsRef, line, phase);
   const reached = saveGoalMet(jars.save, lesson.saveGoal);
-  useFinish(finished, settingsRef, coach, () => onDone(reached ? lesson.goalName : "jars", reached));
+  const finish = useFinish(finished, settingsRef, coach, () => onDone(reached ? lesson.goalName : "jars", reached));
 
   const doChore = (id: string) => {
     if (splitting || done.includes(id)) return;
@@ -425,6 +430,7 @@ export function JarsActivity({
 
   return (
     <GameFrame
+      onDone={finish}
       screen="jars"
       title="Three jars"
       animal={animal}
@@ -518,7 +524,7 @@ export function LemonadeActivity({ animal, outfit, settingsRef, onDone }: Omit<G
   const [earned, setEarned] = useState(0);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [sayLine(`lemon-${round.cups}`)], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone("lemonade"));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone("lemonade"));
 
   const serve = (count: number) => {
     if (solved) return;
@@ -535,6 +541,7 @@ export function LemonadeActivity({ animal, outfit, settingsRef, onDone }: Omit<G
 
   return (
     <GameFrame
+      onDone={finish}
       screen="lemonade"
       title="Lemonade stand"
       animal={animal}
@@ -589,7 +596,7 @@ export function ChooseActivity({ animal, outfit, settingsRef, onDone }: Omit<Gam
   const wiggle = useWiggle();
   const have = COIN_CENTS[round.wallet];
   const coach = useCoach(settingsRef, [sayLine("choose-have"), sayCents(have), sayLine("choose-what")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(title(bought || round.goods[0].good)));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(title(bought || round.goods[0].good)));
 
   const buy = (good: GoodId, price: number) => {
     if (solved) return;
@@ -607,6 +614,7 @@ export function ChooseActivity({ animal, outfit, settingsRef, onDone }: Omit<Gam
   const cheapest = [...round.goods].sort((a, b) => a.price - b.price)[0];
   return (
     <GameFrame
+      onDone={finish}
       screen="choose"
       title="What can I buy?"
       animal={animal}
@@ -670,7 +678,7 @@ export function NeedsActivity({ animal, outfit, settingsRef, onDone }: Omit<Game
   const [solved, setSolved] = useRoundState(rounds.index, false);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [sayWord(item.id), promptCue("time-needs", "Is it a need or a want?")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone("needs"));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone("needs"));
 
   const drop = (kind: "need" | "want") => {
     if (solved) return;
@@ -686,6 +694,7 @@ export function NeedsActivity({ animal, outfit, settingsRef, onDone }: Omit<Game
 
   return (
     <GameFrame
+      onDone={finish}
       screen="needs"
       title="Need or want"
       animal={animal}
@@ -754,7 +763,7 @@ export function CardsActivity({ lesson, animal, outfit, settingsRef, onDone }: G
         ? [promptCue("time-payback", "Pay the borrowed coin back.")]
         : [promptCue(kind === "debit" ? "time-debit" : "time-credit", ""), sayLine("cards-tap")];
   const coach = useCoach(settingsRef, line, `${rounds.index}-${owing ? "owing" : "pay"}`);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(lesson.cardsOpen ? "credit" : "coin"));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(lesson.cardsOpen ? "credit" : "coin"));
 
   const payFromJar = () => {
     setSave((current) => Math.max(0, current - lesson.cardPrice));
@@ -775,6 +784,7 @@ export function CardsActivity({ lesson, animal, outfit, settingsRef, onDone }: G
 
   return (
     <GameFrame
+      onDone={finish}
       screen="cards"
       title="Pretend cards"
       animal={animal}

@@ -76,7 +76,7 @@ test("tracing the letter path completes and a far stroke does not", async ({ pag
   // twelve strokes took this test most of the way to the 30 s it gets in CI.
   await finishLetterTracing(page);
   await expect(page.locator("[data-screen=today]")).toBeVisible();
-  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "1");
 });
 
 test("upper and lower letters can be matched by tap or drag", async ({ page }, testInfo) => {

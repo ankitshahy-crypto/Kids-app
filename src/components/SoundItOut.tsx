@@ -221,19 +221,20 @@ export function SoundItOut({
     if (!quiet) fresh.forEach((item) => soundLetter(item));
   };
 
-  const tilesCrossed = (fromX: number, toX: number) => {
-    const left = Math.min(fromX, toX);
-    const right = Math.max(fromX, toX);
+  /**
+   * The tiles the slider has reached: those whose middle is at or behind the finger, in reading order.
+   * A tile lights when the animal under the finger gets to it, not before. (A tile used to light as soon
+   * as the finger was anywhere over it, so a touch at the start could light a letter the slide had
+   * not reached, out of step with where the animal was.)
+   */
+  const tilesReached = (toX: number) => {
     const hits: number[] = [];
     tileRefs.current.forEach((element, tileIndex) => {
       if (!element) return;
       const rect = element.getBoundingClientRect();
-      const center = rect.left + rect.width / 2;
-      const inside = toX >= rect.left && toX <= rect.right;
-      if ((center >= left && center <= right) || inside) hits.push(tileIndex);
+      if (rect.width > 0 && toX >= rect.left + rect.width / 2) hits.push(tileIndex);
     });
-    const movingRight = toX >= fromX;
-    return hits.sort((a, b) => (movingRight ? a - b : b - a));
+    return hits;
   };
 
   /** How far along the track the finger is, from 0 at its left end to 1 at its right. */
@@ -255,7 +256,8 @@ export function SoundItOut({
     setBar({ left: Math.min(highest, Math.max(lowest, centre - width / 2)), width, under: "finger" });
   };
 
-  const moveToken = (clientX: number, fromX: number) => {
+  /** The finger is here: the animal comes with it, and any tile it has got to lights. */
+  const moveToken = (clientX: number) => {
     const track = trackRef.current;
     if (!track) return;
     const rect = track.getBoundingClientRect();
@@ -263,7 +265,7 @@ export function SoundItOut({
     setProgress(along(clientX, rect));
     // Between sounds the bar rides under the finger.
     if (active === null && !blendedPass.current) barUnderFinger(clientX, rect);
-    light(tilesCrossed(fromX, clientX));
+    light(tilesReached(clientX));
     // The end of the line: the arrow's tip, at the track's right edge.
     if (clientX >= rect.right - 12) finishWord();
   };
@@ -416,15 +418,13 @@ export function SoundItOut({
     startPass();
     unlockAudio();
     resumeSpeech();
-    moveToken(event.clientX, event.clientX);
+    moveToken(event.clientX);
   };
 
   const onTrackMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!draggingRef.current) return;
     event.preventDefault();
-    const previous = Number(trackRef.current?.dataset.lastX ?? event.clientX);
-    if (trackRef.current) trackRef.current.dataset.lastX = String(event.clientX);
-    moveToken(event.clientX, previous);
+    moveToken(event.clientX);
   };
 
   const onTrackUp = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -584,7 +584,8 @@ export function SoundItOut({
           }
           aria-orientation="horizontal"
           tabIndex={0}
-          style={{ touchAction: "none" }}
+          // Where the finger is along the track, for the animal (the slider's thumb) to sit under it.
+          style={{ touchAction: "none", "--blend-at": `${progress * 100}%` } as CSSProperties}
           onKeyDown={(event) => {
             if (event.key === "ArrowRight" || event.key === "ArrowUp" || event.key === "PageUp") {
               event.preventDefault();
@@ -600,10 +601,7 @@ export function SoundItOut({
               startOver();
             }
           }}
-          onPointerDown={(event) => {
-            if (trackRef.current) trackRef.current.dataset.lastX = String(event.clientX);
-            onTrackDown(event);
-          }}
+          onPointerDown={onTrackDown}
           onPointerMove={onTrackMove}
           onPointerUp={onTrackUp}
           onPointerCancel={onTrackUp}
@@ -617,7 +615,7 @@ export function SoundItOut({
           <div
             className="blend-bar"
             ref={tokenRef}
-            style={{ "--bar-left": `${bar.left}%`, "--bar-width": `${bar.width}%`, "--blend-at": `${progress * 100}%` } as CSSProperties}
+            style={{ "--bar-left": `${bar.left}%`, "--bar-width": `${bar.width}%` } as CSSProperties}
             data-blend-token
             data-under={bar.under}
             data-said={active !== null ? "true" : "false"}
@@ -628,13 +626,15 @@ export function SoundItOut({
               <Hand />
             </span>
           ) : null}
-          {/* The child's animal waits at the edge of the track until the word is said, then comes in and says
-              it. The animal's box is the animal alone; its bubble sits beside it, in a box of its own. */}
+          {/* The child's animal is the slider's thumb: it sits under the finger and goes along the track with
+              it, the letters lighting as it gets to them, and says the word where the slide ends. (It used
+              to wait at the edge of the track and come in at the end, which read as a jump, not a slide.)
+              The animal's box is the animal alone; its bubble sits beside it, in a box of its own. */}
           <div className="blend-animal" data-word-teller={blended ? "said" : "waiting"} aria-hidden="true">
             {animal ? <Hero animal={animal} outfit={outfit} /> : <StarIcon />}
           </div>
           {blended && !word.sentenceId ? (
-            <span className="blend-said word-bubble" aria-hidden="true">
+            <span className="blend-said word-bubble" data-side={progress > 0.5 ? "left" : "right"} aria-hidden="true">
               {word.word}
             </span>
           ) : null}

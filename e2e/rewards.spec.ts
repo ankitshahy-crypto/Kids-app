@@ -79,12 +79,14 @@ async function passGate(page: Page) {
 
 test("finishing a step earns a star and unlocks a closet item", async ({ page }, testInfo) => {
   await openApp(page, { ...mia, stars: 0 });
-  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "0");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "0");
   await page.getByRole("button", { name: "Draw" }).click();
   await finishLetterTracing(page);
   await expect(page.locator(".star-flight")).toBeVisible();
-  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "1");
 
+  // Dress up is in My Nest now.
+  await page.locator("[data-dock=nest]").click();
   await page.getByRole("button", { name: "Dress up" }).click();
   await expect(page.locator("[data-screen=closet]")).toBeVisible();
   const hat = page.locator("[data-item=hat-leaf]");
@@ -174,7 +176,7 @@ test("every 10 stars shows a cheer", async ({ page }) => {
   await expect(cheer).toContainText("for trying");
   await page.getByRole("button", { name: "Yay" }).click();
   await expect(cheer).toBeHidden();
-  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "10");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "10");
 });
 
 test("parent and teacher views list stars, stickers, and milestones", async ({ page }) => {

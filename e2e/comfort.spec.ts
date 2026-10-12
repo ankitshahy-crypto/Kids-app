@@ -94,7 +94,7 @@ test("calm mode and a theme change the lesson, and one lesson still plays throug
   await page.getByRole("button", { name: "Mia" }).click();
   const app = page.locator(".app");
   await expect(app).toHaveAttribute("data-calm", "true");
-  await expect(page.locator(".chunk-strip")).toHaveText("4 more!");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-left", "4");
 
   await page.getByRole("button", { name: "Letters" }).click();
   const hint = page.getByRole("status").getByRole("button", { name: "OK" });
@@ -129,7 +129,7 @@ test("calm mode and a theme change the lesson, and one lesson still plays throug
   // Calm mode: no star burst.
   await expect(page.locator(".star-flight")).toHaveCount(0);
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await expect(page.locator(".chunk-strip")).toHaveText("1 of 4 · 3 more!");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-done", "1");
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-profiles-v1") ?? "{}"));
   expect(saved.profiles[0].stickers.some((sticker: { label: string }) => sticker.label === first)).toBe(true);
 });
@@ -201,9 +201,9 @@ test("the comfort settings save on this device and show on the child's screen", 
   await expect(app).toHaveAttribute("data-font", "readable");
   await expect(app).toHaveAttribute("data-spacing", "wide");
   await expect(app).toHaveAttribute("data-contrast", "high");
-  const family = await page.locator(".chunk-strip").evaluate((element) => getComputedStyle(element).fontFamily);
+  const family = await page.locator(".nest-caption").evaluate((element) => getComputedStyle(element).fontFamily);
   expect(family).toContain("Atkinson Hyperlegible");
-  const spacing = await page.locator(".chunk-strip").evaluate((element) => getComputedStyle(element).letterSpacing);
+  const spacing = await page.locator(".nest-caption").evaluate((element) => getComputedStyle(element).letterSpacing);
   expect(parseFloat(spacing)).toBeGreaterThan(0);
   const fontRule = await page.evaluate(() => document.getElementById("readable-font")?.textContent ?? "");
   expect(fontRule).toContain("fonts/AtkinsonHyperlegible-Regular.woff2");
@@ -224,7 +224,8 @@ test("Hear it again repeats the last line as often as a child likes", async ({ p
   });
   await install(page, child({ themes: ["dinosaurs"] }));
   await page.getByRole("button", { name: "Mia" }).click();
-  await page.locator("[data-dock=surprise]").click();
+  await page.locator("[data-dock=nest]").click();
+  await page.locator("[data-nest-action=surprise]").click();
   await expect(page.locator("[data-screen=surprise]")).toBeVisible();
   // The line is said in two recorded parts: who came, then what they brought.
   const line = (await page.locator(".surprise-line").innerText()).toLowerCase();
@@ -251,14 +252,14 @@ test("Hear it again repeats the last line as often as a child likes", async ({ p
 test("a break keeps everything and comes back to Today", async ({ page }) => {
   await install(page, child({ days: { [today]: { reading: { letter: true, draw: false, story: false, moment: false } } } }));
   await page.getByRole("button", { name: "Mia" }).click();
-  await expect(page.locator(".chunk-strip")).toHaveText("1 of 4 · 3 more!");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-done", "1");
   await page.getByRole("button", { name: "Draw" }).click();
   await page.locator("[data-break]").click();
   await expect(page.locator("[data-screen=break]")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Break time" })).toBeVisible();
   await page.getByRole("button", { name: "I'm ready" }).click();
   await expect(page.locator("[data-screen=today]")).toBeVisible();
-  await expect(page.locator(".chunk-strip")).toHaveText("1 of 4 · 3 more!");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-done", "1");
   await page.getByRole("button", { name: "Story" }).click();
   await page.locator("[data-break]").click();
   await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
@@ -272,14 +273,14 @@ test("finishing the lesson offers One more? up to the parent's limit, then All d
     { extraChunks: 1 },
   );
   await page.getByRole("button", { name: "Mia" }).click();
-  await expect(page.locator(".chunk-strip")).toHaveText("3 of 4 · 1 more!");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-done", "3");
   await page.getByRole("button", { name: "Story" }).click();
   await finishStory(page);
   const sheet = page.locator("[data-wrap-up]");
   await expect(sheet).toHaveAttribute("data-wrap-up", "lesson");
   await expect(sheet).toContainText("That's today's lesson, Mia!");
   await expect(sheet).toContainText("One more?");
-  await expect(page.locator(".chunk-strip")).toHaveText("All done today!");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-left", "0");
   await page.getByRole("button", { name: "One more" }).click();
   await expect(sheet).toHaveCount(0);
   const extras = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-extras-v1") ?? "{}"));
@@ -320,22 +321,20 @@ test("the lesson length ends with a friendly wrap-up and no clock", async ({ pag
   await expect(page.locator("[data-section-title=reading]")).toBeVisible();
 });
 
-test("3 of 4 says which one is left: finished stops have a tick, and a tap on the strip makes the one left pulse", async ({ page }) => {
-  // The playtest of build 3: "3 of 4 · 1 more!" gave no way to find the fourth.
+test("3 of 4: finished stops have a tick, and the one left is the one without", async ({ page }) => {
+  // The playtest of build 3: "3 of 4 · 1 more!" gave no way to find the fourth. The strip itself is
+  // gone (the mockup has nothing under Start); the ticks say which stops are done.
   await install(page, child({ days: { [today]: { reading: { letter: true, draw: true, story: false, moment: true } } } }));
   await page.getByRole("button", { name: "Mia" }).click();
-  const strip = page.locator(".chunk-strip");
-  await expect(strip).toHaveText("3 of 4 · 1 more!");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-done", "3");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-left", "1");
+  await expect(page.locator(".chunk-strip")).toHaveCount(0);
   for (const step of ["letter", "draw", "moment"]) await expect(page.locator(`[data-step=${step}] .trail-done`)).toBeVisible();
   await expect(page.locator("[data-step=story] .trail-done")).toHaveCount(0);
   await expect(page.locator("[data-step=draw]")).toHaveAttribute("aria-label", "Draw, done");
   await expect(page.locator("[data-step=story]")).toHaveAttribute("aria-label", "Story");
-  await strip.click();
-  await expect(page.locator("[data-step=story]")).toHaveAttribute("data-point", "a");
-  for (const step of ["letter", "draw", "moment"]) await expect(page.locator(`[data-step=${step}]`)).not.toHaveAttribute("data-point", /./);
-  // Again, and it pulses again.
-  await strip.click();
-  await expect(page.locator("[data-step=story]")).toHaveAttribute("data-point", "b");
+  // Start opens the one left.
+  await expect(page.locator(".nest-start")).toHaveAttribute("data-start", "story");
 });
 
 test("All done on a section's page goes home to the reading path, not to the start screen and back", async ({ page }) => {
@@ -366,7 +365,8 @@ test("All done on a section's page goes home to the reading path, not to the sta
 test("the daily surprise is the same visitor all day and brings the theme object", async ({ page }) => {
   await install(page, child({ themes: ["space"] }));
   await page.getByRole("button", { name: "Mia" }).click();
-  await page.locator("[data-dock=surprise]").click();
+  await page.locator("[data-dock=nest]").click();
+  await page.locator("[data-nest-action=surprise]").click();
   const view = page.locator("[data-screen=surprise]");
   await expect(view).toBeVisible();
   const visitor = await view.getAttribute("data-visitor");
@@ -374,7 +374,8 @@ test("the daily surprise is the same visitor all day and brings the theme object
   await expect(view).toHaveAttribute("data-gift", "rocket");
   await expect(page.locator(".surprise-line")).toContainText("brought a rocket");
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.locator("[data-dock=surprise]").click();
+  await page.locator("[data-dock=nest]").click();
+  await page.locator("[data-nest-action=surprise]").click();
   await expect(view).toHaveAttribute("data-visitor", visitor!);
 });
 

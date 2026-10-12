@@ -214,7 +214,7 @@ export function DayActivity({ lesson, animal, outfit, settingsRef, onDone }: Gam
       : [sayLine("day-from"), time(round.from), sayLine("day-until"), time(round.to), sayLine("day-hours")];
   const coach = useCoach(settingsRef, line, rounds.index);
   const answer = round.kind === "part" ? round.scene.part : String(round.hours);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(answer));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(answer));
 
   const tap = (id: string, said: Cue[]) => {
     if (solved) return;
@@ -230,6 +230,7 @@ export function DayActivity({ lesson, animal, outfit, settingsRef, onDone }: Gam
 
   return (
     <GameFrame
+      onDone={finish}
       screen="day"
       title="Day and night"
       animal={animal}
@@ -298,7 +299,7 @@ export function RoutineActivity({ animal, outfit, settingsRef, onDone }: Omit<Ga
   const wiggle = useWiggle();
   const line = asked === 0 ? [sayLine("routine-first")] : [promptCue("time-routine", "What comes next?")];
   const coach = useCoach(settingsRef, line, `${rounds.index}-${asked}`);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone("routine"));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone("routine"));
   const next = round.order[placed] as RoutineId | undefined;
 
   const tap = (id: RoutineId) => {
@@ -317,6 +318,7 @@ export function RoutineActivity({ animal, outfit, settingsRef, onDone }: Omit<Ga
 
   return (
     <GameFrame
+      onDone={finish}
       screen="routine"
       title="My day"
       animal={animal}
@@ -389,7 +391,7 @@ export function ClockActivity({ lesson, animal, outfit, settingsRef, onDone }: G
           ? [sayLine("clock-long"), said]
           : [sayLine("clock-make"), said];
   const coach = useCoach(settingsRef, line, `${rounds.index}-${hand}`);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(target.say));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(target.say));
 
   // The number the long hand points at for these minutes: 12 on the hour, 6 at half past.
   const minuteNumber = round.kind === "set" ? (round.minute === 0 ? 12 : round.minute / 5) : 12;
@@ -455,6 +457,7 @@ export function ClockActivity({ lesson, animal, outfit, settingsRef, onDone }: G
   const hint = round.kind === "set" && coach.reveal ? wanted : 0;
   return (
     <GameFrame
+      onDone={finish}
       screen="clock"
       title="Clock"
       animal={animal}

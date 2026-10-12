@@ -53,6 +53,7 @@ export function PathTrace({
   memoryLine,
   memoryCues,
   onSpeak,
+  stay = false,
   onAttempt,
   onDone,
 }: {
@@ -70,6 +71,8 @@ export function PathTrace({
   memoryCues?: Cue[];
   /** What the cheer says. Given back as a promise, the cheer stays until it has been said. */
   onSpeak?: () => void | Promise<void>;
+  /** The cheer stays until Done is pressed, instead of leaving by itself once what it says is said. */
+  stay?: boolean;
   onAttempt?: (success: boolean) => WritingOutcome;
   onDone: () => void;
 }) {
@@ -161,11 +164,14 @@ export function PathTrace({
     setPhase("cheer");
     setSpoken(title);
     playEffect("cheer", settingsRef.current);
-    // What the cheer says is heard to its end before the screen leaves: a word in a moment, a name
-    // spelled out and then said in a few seconds. (The screen used to leave after 700 ms whatever
-    // was still being said, and a name's letters went on over Today.) Should the words never end,
-    // the cheer leaves after CHEER_MAX_MS; and once the screen is closed, nothing leaves twice.
     const said = onSpeak?.();
+    // A screen that stays (the name) waits for Done: the child keeps the finished name as long as they
+    // like. (It used to leave by itself once the name was said, and the child found Today's "All done"
+    // in place of the name they had just traced, with no Done to press.)
+    if (stay) return;
+    // What the cheer says is heard to its end before the screen leaves: a word in a moment. (The
+    // screen used to leave after 700 ms whatever was still being said.) Should the words never end,
+    // the cheer leaves after CHEER_MAX_MS; and once the screen is closed, nothing leaves twice.
     const started = Date.now();
     const go = () => {
       if (left.current || gone.current) return;
@@ -425,8 +431,11 @@ export function NameTrace({
   onAttempt?: (id: string, success: boolean) => WritingOutcome;
   onDone: () => void;
 }) {
-  const title = nameToTrace(name) ?? name;
-  const id = nameItemId(title);
+  // The name is shown and said as the grown-up typed it ("Aleena", "mia"). Its letters are traced as a
+  // name is written, a capital then small letters, and that spelling names the writing record.
+  const spelled = nameToTrace(name) ?? name;
+  const title = name.trim() || spelled;
+  const id = nameItemId(spelled);
   const speak = useSpeaker(settingsRef);
   // The name is spelled out, a recorded clip a letter ("em", "eye", "ay"), in the same voice as the
   // rest of the app. A name has no clip of its own and is never sent anywhere, and the device voice
@@ -448,13 +457,14 @@ export function NameTrace({
       onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
       onSpeak={() =>
         new Promise<void>((resolve) => {
-          // Traced: the name spelled out once more in the recorded voice, then the name itself. A
-          // name has no clip, so that one word is the device voice's. The cheer waits for the line,
-          // and closing the screen stops it (the speaker lets go with the screen): it used to play on
-          // over Today, on a controller nothing ever aborted.
-          speak.line([...letters, { text: title }], resolve, { remember: false, onStop: resolve });
+          // Traced: the name, said as one word, the way a word card says its word. A name has no
+          // clip of its own, so the device voice says it: the recorded voice can only spell it, and
+          // spelled out at the end ("A, L, E, E, N, A") it was heard as the app not knowing the
+          // name. Closing the screen stops it (the speaker lets go with the screen).
+          speak.line([{ text: title }], resolve, { remember: false, onStop: resolve });
         })
       }
+      stay
       onDone={onDone}
     />
   );

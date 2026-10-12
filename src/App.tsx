@@ -878,14 +878,7 @@ export default function App() {
                   }}
                   switchNeedsGrownup={settings.sharedDevice}
                   onOpen={openStep}
-                  onLibrary={() => setScreen("library")}
                   onNest={() => setScreen("nest")}
-                  onSurprise={() => {
-                    primeSpeech();
-                    setTip(null);
-                    setScreen("surprise");
-                  }}
-                  onCloset={() => setScreen("closet")}
                   onStickers={() => setScreen("stickers")}
                   goalMinutes={settings.readingGoal}
                   course={course}
@@ -1015,7 +1008,18 @@ export default function App() {
                 />
               ) : null}
               {screen === "library" ? <KidCorner kind="library" onBack={() => setScreen("today")} /> : null}
-              {screen === "nest" ? <NestView profile={active} onBack={() => setScreen("today")} /> : null}
+              {screen === "nest" ? (
+                <NestView
+                  profile={active}
+                  onBack={() => setScreen("today")}
+                  onCloset={() => setScreen("closet")}
+                  onSurprise={() => {
+                    primeSpeech();
+                    setTip(null);
+                    setScreen("surprise");
+                  }}
+                />
+              ) : null}
               {screen === "surprise" ? <SurpriseView profile={active} settingsRef={settingsRef} onBack={() => setScreen("today")} /> : null}
               {screen === "closet" ? (
                 <Closet profile={active} onWear={(itemId) => wear(active.id, itemId)} onBack={() => setScreen("today")} />

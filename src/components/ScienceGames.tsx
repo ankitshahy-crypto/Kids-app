@@ -174,7 +174,7 @@ function LifeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const wiggle = useWiggle();
   const line: Cue[] = round.kind === "grow" ? [say(GROW_STEPS[Math.min(asked, GROW_STEPS.length - 1)].line)] : [say(asked === 0 ? "science-first" : "science-next")];
   const coach = useCoach(settingsRef, line, `${rounds.index}-${asked}`);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
 
   const give = (need: GrowNeed) => {
     if (round.kind !== "grow" || done >= GROW_STEPS.length || done !== asked) return;
@@ -209,6 +209,7 @@ function LifeGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const need = round.kind === "grow" ? GROW_STEPS[done]?.need : undefined;
   return (
     <GameFrame
+      onDone={finish}
       screen="life"
       title="Grow"
       animal={animal}
@@ -310,7 +311,7 @@ function AskGame<Round extends { id: string; choices: SciencePicture[] }>({
   const [solved, setSolved] = useRoundState(rounds.index, false);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, line(round), rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
   const right = answer(round);
 
   const tap = (picture: SciencePicture) => {
@@ -327,6 +328,7 @@ function AskGame<Round extends { id: string; choices: SciencePicture[] }>({
 
   return (
     <GameFrame
+      onDone={finish}
       screen={id}
       title={name}
       animal={animal}
@@ -518,7 +520,7 @@ function BodyGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const [solved, setSolved] = useRoundState(rounds.index, false);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [say(`science-find-${want}`)], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
 
   const tap = (part: BodyPart) => {
     if (solved) return;
@@ -535,6 +537,7 @@ function BodyGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   const spot = PART_SPOT[want];
   return (
     <GameFrame
+      onDone={finish}
       screen="body"
       title="Body"
       animal={animal}
@@ -591,7 +594,7 @@ function FloatGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
   // The guess made (float or sink), or in a pair the art of the thing tapped.
   const [guess, setGuess] = useRoundState<string>(rounds.index, "");
   const coach = useCoach(settingsRef, floatLine(round), rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
   const result = floatResult(round);
   const dropped = guess !== "";
 
@@ -618,6 +621,7 @@ function FloatGame({ level, animal, outfit, settingsRef, onDone }: PlayProps) {
 
   return (
     <GameFrame
+      onDone={finish}
       screen="float"
       title="Sink or float"
       animal={animal}

@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { answerGate, openTeacherChild } from "./gate";
 import { installAudioSpy, playedClips, playedEffects, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
-import { expectWiggle, game, matchPairs, noting, onRound } from "./kit";
+import { expectWiggle, game, matchPairs, noting, onRound, pressDone } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -130,6 +130,7 @@ test("hatch the egg wiggles a miss, glows the right letter, and hatches a baby a
   }
   // No word twice.
   expect(new Set(words).size).toBe(words.length);
+  await pressDone(page);
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   await expect(page.locator("[data-tip=game-hatch-end]")).toBeVisible();
@@ -218,6 +219,7 @@ test("the egg hatches at the end, and the baby is seen before the star", async (
   if (testInfo.project.name === "chromium") {
     await board.screenshot({ path: "test-results/screenshots/games_hatch_baby.png" });
   }
+  await pressDone(page);
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.locator("[data-dock=stickers]").click();
@@ -254,6 +256,7 @@ test("letter pop only pops balloons with the target letter, round after round", 
     }
   }
   expect(new Set(targets).size).toBe(targets.length);
+  await pressDone(page);
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
@@ -290,6 +293,7 @@ test("feed the animal: the pictures that start with the letter go on its plate",
       }
     }
   }
+  await pressDone(page);
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
@@ -318,6 +322,7 @@ test("rhyme match pairs picture words, and a pair that does not rhyme ends nothi
     }
     await matchPairs(board, ".pick[data-rhyme]");
   }
+  await pressDone(page);
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
@@ -371,6 +376,7 @@ test("memory flip matches big and little letters, then numbers and their dots", 
   await expect(board).toHaveAttribute("data-mode", "numbers");
   await expect(board.locator('.pick[data-card][data-face="dots"]')).toHaveCount(3);
   await matchPairs(board, ".pick[data-card]");
+  await pressDone(page);
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
 });
@@ -563,7 +569,8 @@ test("a flick spins the wheel and a bonus can gift a dress-up item", async ({ pa
   await board.locator(".pick[data-keep]").click();
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.locator("[data-dock=closet]").click();
+  await page.locator("[data-dock=nest]").click();
+  await page.locator("[data-nest-action=closet]").click();
   await expect(page.locator('[data-item="scarf-stripe"]')).toHaveAttribute("data-unlocked", "true");
 });
 

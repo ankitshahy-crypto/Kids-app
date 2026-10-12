@@ -51,7 +51,7 @@ test("a first run adds a child and starts their day", async ({ page }) => {
   await page.goto("./");
   await expect(page.locator("[data-first-run=true]")).toContainText("Add your child to begin");
   await addSam(page);
-  await expect(page.locator(".chunk-strip")).toHaveText("4 more!");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-left", "4");
   await page.getByRole("button", { name: "Switch child" }).click({ delay: 2000 });
   await expect(page.locator("[data-screen=start]")).toBeVisible();
   await expect(page.getByRole("button", { name: "Sam", exact: true })).toBeVisible();
