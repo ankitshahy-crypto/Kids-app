@@ -272,12 +272,12 @@
       "blink",
       "sleepy"
     ],
-    "body": false,
+    "body": true,
     "head": {
-      "x": 0.0279,
-      "y": 0.0281,
-      "w": 0.9441,
-      "h": 0.9438
+      "x": 0.1462,
+      "y": -0.0542,
+      "w": 0.6981,
+      "h": 0.7728
     },
     "sky": "sepia(0.55) hue-rotate(167deg) saturate(0.9) contrast(0.85) brightness(1.12)",
     "places": {

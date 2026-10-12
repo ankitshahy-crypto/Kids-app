@@ -6,7 +6,8 @@ import { wardrobe } from "./data/wardrobe";
 import { wearArt } from "./wardrobeArt";
 
 type Place = { x: number; y: number; w: number; h: number; rotate?: number };
-const { fits, ...pieces } = art as unknown as Record<string, Place> & { fits: Record<string, Record<string, { dx?: number; dy?: number; rotate?: number }>> };
+type Fit = { dx?: number; dy?: number; rotate?: number };
+const { fits, bodyFits = {}, ...pieces } = art as unknown as Record<string, Place> & { fits: Record<string, Record<string, Fit>>; bodyFits?: Record<string, Record<string, Fit>> };
 
 describe("the painted dress-up pieces", () => {
   it("each is a real piece of the closet, with its picture, placed on the face", () => {
@@ -51,5 +52,24 @@ describe("the painted dress-up pieces", () => {
     const fox = wearArt("glasses-round", "fox")!.place;
     expect(bunny.y).toBeGreaterThan(fox.y);
     expect(wearArt("hat-crown", "bunny")!.place.y).toBeGreaterThan(wearArt("hat-crown", "fox")!.place.y);
+  });
+
+  it("a fit for an animal's whole sitting figure moves a piece a little too, and may lift a hat onto the top of the head", () => {
+    for (const [animal, byPiece] of Object.entries(bodyFits)) {
+      expect(animals.some((entry) => entry.id === animal), animal).toBe(true);
+      for (const [id, fit] of Object.entries(byPiece)) {
+        expect(pieces, `${id} is a painted piece`).toHaveProperty(id);
+        expect(Math.abs(fit.dx ?? 0)).toBeLessThanOrEqual(0.15);
+        expect(Math.abs(fit.dy ?? 0)).toBeLessThanOrEqual(0.2);
+        expect(Math.abs(fit.rotate ?? 0)).toBeLessThanOrEqual(10);
+        // The figure's head box is the head alone, so a hat may sit on its top edge, a little above the box.
+        const placed = wearArt(id as never, animal as never, "body")?.place;
+        expect(placed).toBeDefined();
+        expect(placed!.x).toBeGreaterThanOrEqual(0);
+        expect(placed!.x + placed!.w).toBeLessThanOrEqual(1);
+        expect(placed!.y).toBeGreaterThanOrEqual(-0.15);
+        expect(placed!.y + placed!.h).toBeLessThanOrEqual(1.3);
+      }
+    }
   });
 });

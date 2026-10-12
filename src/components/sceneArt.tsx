@@ -98,6 +98,23 @@ export function Nest({ children }: { children?: ReactNode }) {
  * nest colours (scripts/build-plush-icon.py): the home and the icon are one nest. The box is taller
  * than wide, so the animal has room above the rim and nothing pokes out of the row.
  */
+/**
+ * The woven basket of the Today mockup, as a picture in two layers (public/nest, cut from the supplied
+ * render): the far rim and the inside behind whatever sits in it, the near rim and bowl in front.
+ * Shown for an animal that has a whole sitting figure (animalArt.json `body`); the others keep the
+ * drawn nest and their face.
+ */
+export function BasketNest({ children }: { children?: ReactNode }) {
+  const base = import.meta.env.BASE_URL;
+  return (
+    <span className="basket-nest">
+      <img className="basket-back" src={`${base}nest/basket-back.webp`} alt="" draggable={false} decoding="async" />
+      {children ? <span className="basket-sitter">{children}</span> : null}
+      <img className="basket-front" src={`${base}nest/basket-front.webp`} alt="" draggable={false} decoding="async" aria-hidden="true" />
+    </span>
+  );
+}
+
 export function WovenNest({ children }: { children?: ReactNode }) {
   return (
     <span className="woven-nest">

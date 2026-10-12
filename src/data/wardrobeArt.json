@@ -43,5 +43,19 @@
         "rotate": 0
       }
     }
+  },
+  "bodyFits": {
+    "bunny": {
+      "hat-crown": {
+        "dx": -0.02,
+        "dy": -0.017,
+        "rotate": 0
+      },
+      "glasses-round": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "rotate": 0
+      }
+    }
   }
 }

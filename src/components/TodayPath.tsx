@@ -21,20 +21,10 @@ import { Chevron, StarIcon } from "./icons";
 import { EngineerBoard } from "./BuildGames";
 import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
-import { ModuleMark } from "./ModuleMark";
-import { BookMark, Nest, PaintMark, PencilMark, WovenNest } from "./sceneArt";
+import { artOf } from "../avatars";
+import { BasketNest, BookMark, PaintMark, PencilMark, WovenNest } from "./sceneArt";
+import { EggMark, ExploreMark, NestMark, PencilLine, SmileLine, StarMark } from "./TodayMarks";
 
-/** A small smiling face, the mark on Trace my name. */
-function FaceMark() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="2.5" />
-      <circle cx="11.5" cy="13.5" r="1.8" fill="currentColor" />
-      <circle cx="20.5" cy="13.5" r="1.8" fill="currentColor" />
-      <path d="M10.5 19.5c1.5 2.4 3.3 3.5 5.5 3.5s4-1.1 5.5-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 import { HoldButton } from "./HoldButton";
 
 const stops: { id: LessonStep; label: string }[] = [
@@ -177,9 +167,14 @@ export function TodayPath({
   // "4 more!" strip under Start is gone, as the mockup has it; a finished stop still has its tick.
   const finishedCount = stops.filter((stop) => done[stop.id]).length;
   const left = stops.length - finishedCount;
-  // The child's animal, alive: its idle loop plays in the nest, with what it wears. A long press on
-  // it switches child; on a shared class iPad a tap does, through the grown-up check.
-  const hero = <Hero animal={profile.animal} outfit={profile.outfit} mood="idle" />;
+  // The child's animal in the nest, with what it wears. An animal with a whole sitting figure
+  // (animalArt.json `body`: the bunny, so far) sits in the mockup's woven basket, rising above its
+  // rim; the figure is a still, so it is not given a mood (the idle loop and the mood faces exist
+  // for the face only). The others keep the drawn nest and their face, alive with its idle loop.
+  // A long press on it switches child; on a shared class iPad a tap does, through the grown-up check.
+  const sits = Boolean(artOf(profile.animal)?.body);
+  const hero = sits ? <Hero animal={profile.animal} outfit={profile.outfit} view="body" /> : <Hero animal={profile.animal} outfit={profile.outfit} mood="idle" />;
+  const NestArt = sits ? BasketNest : WovenNest;
 
   return (
     <div
@@ -276,8 +271,8 @@ export function TodayPath({
 
           {shown === "reading" ? (
             <div className="trail">
-              <div className="nest-seat">
-                <WovenNest>
+              <div className="nest-seat" data-nest={sits ? "basket" : "drawn"}>
+                <NestArt>
                   {switchNeedsGrownup ? (
                     <button type="button" className="nest-hero" aria-label="Switch child" onClick={onLeave}>
                       {hero}
@@ -287,7 +282,7 @@ export function TodayPath({
                       {hero}
                     </HoldButton>
                   )}
-                </WovenNest>
+                </NestArt>
               </div>
               <div className="letter-card">
                 <button
@@ -316,7 +311,7 @@ export function TodayPath({
               {canTraceWord ? (
                 <button type="button" data-practice="word" onClick={onTraceWord}>
                   <span className="practice-mark" aria-hidden="true">
-                    <PencilMark />
+                    <PencilLine />
                   </span>
                   <span>Trace a word</span>
                 </button>
@@ -324,7 +319,7 @@ export function TodayPath({
               {canTraceName ? (
                 <button type="button" data-practice="name" onClick={onTraceName}>
                   <span className="practice-mark" aria-hidden="true">
-                    <FaceMark />
+                    <SmileLine />
                   </span>
                   <span>Trace my name</span>
                 </button>
@@ -375,7 +370,7 @@ export function TodayPath({
                   onClick={() => onCourse("math")}
                 >
                   <span className="course-art" aria-hidden="true">
-                    <ModuleMark name="numbers" />
+                    <ExploreMark name="numbers" />
                   </span>
                   <span className="course-name">
                     <span>Numbers</span>
@@ -391,7 +386,7 @@ export function TodayPath({
                   onClick={() => onCourse("colors")}
                 >
                   <span className="course-art" aria-hidden="true">
-                    <ModuleMark name="colors" />
+                    <ExploreMark name="colors" />
                   </span>
                   <span className="course-name">
                     <span>Colors</span>
@@ -407,7 +402,7 @@ export function TodayPath({
                   onClick={() => onCourse("time")}
                 >
                   <span className="course-art" aria-hidden="true">
-                    <ModuleMark name="time" />
+                    <ExploreMark name="time" />
                   </span>
                   <span className="course-name">
                     <span>Time & Money</span>
@@ -423,7 +418,7 @@ export function TodayPath({
                   onClick={() => onCourse("build")}
                 >
                   <span className="course-art" aria-hidden="true">
-                    <ModuleMark name="build" />
+                    <ExploreMark name="build" />
                   </span>
                   <span className="course-name">
                     <span>Build</span>
@@ -439,7 +434,7 @@ export function TodayPath({
                   onClick={() => onCourse("science")}
                 >
                   <span className="course-art" aria-hidden="true">
-                    <ModuleMark name="science" />
+                    <ExploreMark name="science" />
                   </span>
                   <span className="course-name">
                     <span>Science</span>
@@ -451,7 +446,7 @@ export function TodayPath({
               {showGames ? (
                 <button type="button" className="course-button" data-course="code" aria-label={MODULE_CODE} onClick={onCode}>
                   <span className="course-art" aria-hidden="true">
-                    <ModuleMark name="code" />
+                    <ExploreMark name="code" />
                   </span>
                   <span className="course-name">
                     <span>Coding</span>
@@ -468,20 +463,20 @@ export function TodayPath({
         {/* The mockup's row, and only it: My Nest, Stickers, Games, with a line between. Dress up and the
             Surprise are in My Nest (NestView), the animal's own place; they were a second row here. */}
         <button type="button" className="dock-button" data-dock="nest" onClick={onNest}>
-          <span className="dock-art dock-nest">
-            <Nest />
+          <span className="dock-art dock-nest" aria-hidden="true">
+            <NestMark />
           </span>
           <span>My Nest</span>
         </button>
         <button type="button" className="dock-button" data-dock="stickers" onClick={onStickers}>
-          <span className="dock-art dock-stickers" aria-hidden="true" />
+          <span className="dock-art dock-stickers" aria-hidden="true">
+            <StarMark />
+          </span>
           <span>Stickers</span>
         </button>
 {showGames ? <button type="button" className="dock-button" data-dock="games" onClick={onGames}>
           <span className="dock-art dock-games" aria-hidden="true">
-            <svg viewBox="0 0 64 64">
-              <ellipse cx="32" cy="36" rx="16" ry="20" fill="#FFF6E4" stroke="#E4C7A4" strokeWidth="3" />
-            </svg>
+            <EggMark />
           </span>
           <span>Games</span>
         </button> : null}

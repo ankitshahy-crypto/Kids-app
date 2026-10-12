@@ -2620,6 +2620,48 @@ button:focus-visible {
   border-radius: 40%;
 }
 
+/* The woven basket (sceneArt BasketNest): the basket sits at the foot of the seat's box, and the animal's
+   whole figure stands in it, its feet behind the near rim and its head well above the far one, as the
+   mockup has it. The box is as tall as the drawn nest's, so the row keeps its height. */
+.basket-nest {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+}
+
+.basket-nest .basket-back,
+.basket-nest .basket-front {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.basket-nest .basket-sitter {
+  position: absolute;
+  left: 49%;
+  bottom: 4%;
+  width: 120%;
+  transform: translateX(-50%);
+  display: block;
+}
+
+.basket-nest .basket-sitter .hero,
+.basket-nest .basket-sitter .avatar-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The whole figure's picture has air at its sides (the ears); the pieces sit on the head box the art gives. */
+.basket-nest .avatar-painted[data-view="body"] img {
+  object-position: 50% 100%;
+}
+
 .nest-hero .hero,
 .nest-hero .avatar-art {
   display: block;
@@ -2787,6 +2829,174 @@ button:focus-visible {
 .nest-doors .dock-art {
   background: transparent;
   box-shadow: none;
+}
+
+/* ---- Today's marks and pills, as the mockup draws them (components/TodayMarks.tsx) ----
+   Cream on cream with a thin sand edge, taupe lines, labels in a soft olive: no coloured squares,
+   no bold ink. The marks are drawn in the page; the module marks stay for the other screens. */
+.today.is-nest .course-button {
+  gap: 4px;
+  padding: 8px 4px 6px;
+  border: 2px solid #e9ddc8;
+  border-radius: 18px;
+  background: #fdf9f1;
+  box-shadow: 0 2px 6px rgba(120, 100, 70, 0.08);
+  color: #676556;
+  font-weight: 600;
+}
+
+.today.is-nest .course-art {
+  width: 44px;
+  height: 44px;
+}
+
+.today.is-nest .course-name span:last-child {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #676556;
+}
+
+.today-mark {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.today.is-nest .today-dock .dock-button {
+  gap: 2px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #5f634f;
+}
+
+.today.is-nest .today-dock .dock-art {
+  width: 56px;
+  height: 56px;
+  padding: 2px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.today.is-nest .today-dock .dock-stickers::before,
+.today.is-nest .today-dock .dock-dress::before {
+  content: none;
+}
+
+.today.is-nest .trace-practice button {
+  min-height: 62px;
+  padding: 0 10px;
+  gap: 7px;
+  border: 2px solid #e9dcc6;
+  border-radius: 999px;
+  background: #faf3e6;
+  box-shadow: 0 2px 6px rgba(120, 100, 70, 0.08);
+  color: #6f6c5a;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.today.is-nest .practice-mark {
+  width: 24px;
+  height: 24px;
+  color: #8a8065;
+}
+
+.today.is-nest .explore-head h2 {
+  color: #6a6956;
+  font-weight: 600;
+}
+
+.today.is-nest .explore-head h2::after {
+  background: #e9ddc8;
+}
+
+@media (max-width: 767px) {
+  .today.is-nest .course-button {
+    min-height: 92px;
+    height: auto;
+  }
+
+  .today.is-nest .course-art,
+  .today.is-nest .course-art .today-mark {
+    width: 46px;
+    height: 46px;
+  }
+
+  .today.is-nest .trace-practice {
+    gap: 8px;
+  }
+
+  /* A phone's doors and dock: the mockup's smaller labels. */
+  .today.is-nest .course-name span:last-child {
+    font-size: 13px;
+  }
+
+  .today.is-nest .today-dock .dock-button {
+    font-size: 15px;
+  }
+
+  /* The nest and the letter at the mockup's scale on a phone: the animal big in a taller nest, rising
+     above its rim, and the letter circle the largest thing on the page, with air around it and Start.
+     (They were a 128px circle beside a 126px animal, with the screen's spare room left empty above
+     the dock.) */
+  .today.is-nest .trail {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    column-gap: 10px;
+    margin-top: 4px;
+  }
+
+  .today.is-nest .woven-nest {
+    aspect-ratio: 4 / 5.3;
+  }
+
+  .today.is-nest .woven-nest .nest-sitter {
+    width: 108%;
+    bottom: 18%;
+  }
+
+  .today.is-nest .letter-card {
+    gap: 12px;
+    padding-top: 6px;
+  }
+
+  .today.is-nest .letter-stop {
+    width: 152px;
+    height: 152px;
+  }
+
+  .today.is-nest .trail-letter {
+    font-size: 90px;
+  }
+
+  .today.is-nest .trail-letter.is-unit {
+    font-size: 52px;
+  }
+
+  .today.is-nest .nest-caption {
+    font-size: 17px;
+  }
+
+  .today.is-nest .nest-start.start-button {
+    height: 58px;
+    min-height: 58px;
+  }
+
+  .today.is-nest .trace-practice {
+    margin-top: 12px;
+  }
+
+  /* The basket and its animal sit a little higher than the row, the animal's head up by the top of the
+     letter circle; its ears reach a touch past the screen's edge, which is cut, not scrolled to. */
+  .today.is-nest .nest-seat[data-nest="basket"] {
+    margin-top: -26px;
+  }
+
+  .today.is-nest {
+    overflow-x: hidden;
+  }
 }
 
 
