@@ -271,7 +271,7 @@ function BirdGame({
   const fillAt = round.mode === "bug" ? (target !== null && plan[target] === null ? target : plan.indexOf(null)) : -1;
   const line = lineFor(round, plan, queue);
   const coach = useCoach(settingsRef, line, rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, onDone);
+  const finish = useFinish(rounds.finished, settingsRef, coach, onDone);
   const [pos, setPos] = useRoundState<Cell>(rounds.index, round.start);
   const [home, setHome] = useRoundState(rounds.index, false);
   /** Where the last run went wrong: the arrow's place and why, until the plan is changed. */
@@ -682,6 +682,7 @@ function BirdGame({
 
   return (
     <GameFrame
+      onDone={finish}
       screen="bird"
       title="Take me home"
       animal={animal}

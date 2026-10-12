@@ -7109,6 +7109,18 @@ input.is-pressed,
 }
 
 /* A choice: a picture big enough for a small hand. */
+/* Done, once the last round is finished: the one green thing in the tray, on its own row above what
+   was finished, so it is on a phone's screen without a scroll. */
+.game-done {
+  flex: 0 0 100%;
+  width: min(100%, 220px);
+  min-height: 56px;
+  margin: 0 auto 4px;
+  font-size: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .pick {
   position: relative;
   width: 110px;

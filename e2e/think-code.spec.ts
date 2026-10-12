@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { askedLines, installAudioSpy, requestedCues, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 import { DEVICES, openOn, roomUnder } from "./devices";
-import { noting, paintingIn } from "./kit";
+import { noting, paintingIn, pressDone } from "./kit";
 
 const profile = {
   activeId: "mia",
@@ -303,6 +303,7 @@ test("arrows take the animal home, then a plan is laid out and walked step by st
   await expect(board.locator(`.code-chip[data-queued="${wrongAt}"]`)).toHaveAttribute("data-wrong", "true");
   await solvePredict(board);
   // The last round done, the kit's ending plays and the star is given.
+  await pressDone(page);
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
   await expect(page.locator("[data-game=home]")).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -790,6 +791,7 @@ test("ages 5 to 7 plan longer paths, keep a routine and use it, repeat a move, a
   await mendPlan(board);
   await expect(board).toHaveAttribute("data-again", "false");
   await board.locator("[data-go=run]").click();
+  await pressDone(page);
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
 });
 
@@ -988,6 +990,7 @@ test("fix it: one arrow too many comes off when tapped", async ({ page }) => {
   await board.locator("[data-hear=true]").click();
   await expect.poll(() => spokenLines(page)).toContain("now press go.");
   await board.locator("[data-go=run]").click();
+  await pressDone(page);
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
 });
 
@@ -1042,6 +1045,7 @@ test("fix it: a missing arrow has an empty place, which Go points at and an arro
   await board.locator("[data-arrow=up]").click();
   await expect(board).toHaveAttribute("data-fixed", "true");
   await board.locator("[data-go=run]").click();
+  await pressDone(page);
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
 });
 
@@ -1094,6 +1098,7 @@ test("fix it: a wrong arrow is tapped off, leaving its place for the right one",
   await expect(gap).toHaveCount(0);
   await expect(board).toHaveAttribute("data-fixed", "true");
   await board.locator("[data-go=run]").click();
+  await pressDone(page);
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
 });
 
@@ -1207,6 +1212,7 @@ test("home is a cheer on the face, a bigger one for a mended plan and the last r
     }).observe(frame, { attributes: true, subtree: true });
   });
   await board.locator("[data-go=run]").click();
+  await pressDone(page);
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1", { timeout: 10_000 });
   // (The game has closed by now: the note is read from the window, not the board.)
   expect(await page.evaluate(() => (window as Window & { __cheer?: string[] }).__cheer ?? [])).toContain("cheer");

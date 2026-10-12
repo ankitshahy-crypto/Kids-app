@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { answerGate } from "./gate";
 import { clipShipped, installAudioSpy, playedClips, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
-import { noting } from "./kit";
+import { noting, pressDone } from "./kit";
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -99,7 +99,7 @@ test("week one's reader stars the child's animal, blends the words it can, and e
   await page.getByRole("button", { name: "All done" }).click();
 
   await expect(page.locator("[data-screen=today]")).toBeVisible();
-  await expect(page.locator(".star-count").first()).toHaveAttribute("data-stars", "1");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "1");
   await expect(page.locator(".chunk-strip")).toHaveText("1 of 4 · 3 more!");
   // The story's closing question arrives as a chip, since the child has just finished; a grown-up opens it.
   await page.getByRole("button", { name: "For grown-ups: show tip" }).click();
@@ -180,8 +180,9 @@ test("the Colors stop is a short color moment that earns the reading star", asyn
   await expect(play).toHaveAttribute("data-round", "1");
   await expect(play).toHaveAttribute("data-solved", "false");
   await play.locator(`.pick[data-color='${await play.getAttribute("data-hear")}']`).click();
+  await pressDone(page);
   await expect(page.locator("[data-screen=today]")).toBeVisible();
-  await expect(page.locator(".star-count").first()).toHaveAttribute("data-stars", "1");
+  await expect(page.locator("[data-screen=today]")).toHaveAttribute("data-stars", "1");
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littlenest-profiles-v1") ?? "{}"));
   expect(saved.profiles[0].days[today].reading.moment).toBe(true);
   expect(saved.profiles[0].stickers.some((sticker: { kind: string; label: string }) => sticker.kind === "color" && sticker.label === hear)).toBe(true);

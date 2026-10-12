@@ -267,7 +267,7 @@ export function CountActivity({ lesson, ageRange, animal, outfit, settingsRef, o
   const all = counted.length >= round.count;
   // Once every one is counted, what is left to do is tap the number, so that is what waiting repeats.
   const coach = useCoach(settingsRef, [say(all ? "num-count-pick" : "num-count")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(String(lesson.count)));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(String(lesson.count)));
   // The first group is made of the day's theme object when a theme is picked.
   const themed = rounds.index === 0 ? themeThing(theme) : null;
 
@@ -294,6 +294,7 @@ export function CountActivity({ lesson, ageRange, animal, outfit, settingsRef, o
   const shown = countedOut(counted, round.count, coach.reveal || solved);
   return (
     <GameFrame
+      onDone={finish}
       screen="count"
       title="Count"
       animal={animal}
@@ -365,7 +366,7 @@ export function KnowActivity({ lesson, ageRange, animal, outfit, settingsRef, on
   const [solved, setSolved] = useRoundState(rounds.index, false);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [promptCue("know", "Tap the number you hear."), numberCue(round.hear)], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(String(lesson.hear)));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(String(lesson.hear)));
 
   const choose = (value: number) => {
     if (solved) return;
@@ -381,6 +382,7 @@ export function KnowActivity({ lesson, ageRange, animal, outfit, settingsRef, on
 
   return (
     <GameFrame
+      onDone={finish}
       screen="know"
       title="Numbers"
       animal={animal}
@@ -633,7 +635,7 @@ export function MoreActivity({ lesson, ageRange, animal, outfit, settingsRef, on
   const [solved, setSolved] = useRoundState(rounds.index, false);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [round.ask === "more" ? promptCue("more", "Which has more?") : say("num-fewer")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(String(Math.max(lesson.moreLeft, lesson.moreRight))));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(String(Math.max(lesson.moreLeft, lesson.moreRight))));
   const answer = moreAnswer(round);
   const answerCount = answer === "left" ? round.left : round.right;
 
@@ -652,6 +654,7 @@ export function MoreActivity({ lesson, ageRange, animal, outfit, settingsRef, on
 
   return (
     <GameFrame
+      onDone={finish}
       screen="more"
       title={round.ask === "more" ? "More" : "Fewer"}
       animal={animal}
@@ -704,7 +707,7 @@ export function AddActivity({ lesson, ageRange, animal, outfit, settingsRef, onD
   const [solved, setSolved] = useRoundState(rounds.index, false);
   const wiggle = useWiggle();
   const coach = useCoach(settingsRef, [promptCue("add", "How many altogether?")], rounds.index);
-  useFinish(rounds.finished, settingsRef, coach, () => onDone(String(lesson.addLeft + lesson.addRight)));
+  const finish = useFinish(rounds.finished, settingsRef, coach, () => onDone(String(lesson.addLeft + lesson.addRight)));
 
   const countOne = (index: number) => {
     if (solved || counted.includes(index)) return;
@@ -731,6 +734,7 @@ export function AddActivity({ lesson, ageRange, animal, outfit, settingsRef, onD
   const art = <Thing thing={round.thing} />;
   return (
     <GameFrame
+      onDone={finish}
       screen="add"
       title="Add"
       animal={animal}
