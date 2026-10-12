@@ -2895,6 +2895,56 @@ button:focus-visible {
   .today.is-nest .today-dock .dock-button {
     font-size: 15px;
   }
+
+  /* The nest and the letter at the mockup's scale on a phone: the animal big in a taller nest, rising
+     above its rim, and the letter circle the largest thing on the page, with air around it and Start.
+     (They were a 128px circle beside a 126px animal, with the screen's spare room left empty above
+     the dock.) */
+  .today.is-nest .trail {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    column-gap: 10px;
+    margin-top: 4px;
+  }
+
+  .today.is-nest .woven-nest {
+    aspect-ratio: 4 / 5.3;
+  }
+
+  .today.is-nest .woven-nest .nest-sitter {
+    width: 108%;
+    bottom: 18%;
+  }
+
+  .today.is-nest .letter-card {
+    gap: 12px;
+    padding-top: 6px;
+  }
+
+  .today.is-nest .letter-stop {
+    width: 152px;
+    height: 152px;
+  }
+
+  .today.is-nest .trail-letter {
+    font-size: 90px;
+  }
+
+  .today.is-nest .trail-letter.is-unit {
+    font-size: 52px;
+  }
+
+  .today.is-nest .nest-caption {
+    font-size: 17px;
+  }
+
+  .today.is-nest .nest-start.start-button {
+    height: 58px;
+    min-height: 58px;
+  }
+
+  .today.is-nest .trace-practice {
+    margin-top: 12px;
+  }
 }
 
 
