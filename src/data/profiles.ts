@@ -346,7 +346,6 @@ function withRewards(profile: ChildProfile): ChildProfile {
     outfit: {
       hat: itemForSlot(raw.outfit?.hat ?? null, "hat"),
       scarf: itemForSlot(raw.outfit?.scarf ?? null, "scarf"),
-      glasses: itemForSlot(raw.outfit?.glasses ?? null, "glasses"),
       color: itemForSlot(raw.outfit?.color ?? null, "color"),
     },
     stickers: Array.isArray(profile.stickers) ? profile.stickers.filter(isSticker).map(withStickerSubject) : [],

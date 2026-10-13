@@ -18,7 +18,7 @@ export function Hero({ animal, outfit, mood, view = "face" }: { animal: AnimalId
   const head = shown === "body" ? art?.head : undefined;
   // The pieces go with the head. A mood's face has the head somewhere else than the idle face (a
   // cheer tips it, a think turns it), and the pieces used to stay where the idle eyes were, so the
-  // glasses sat off the eyes while the mood showed. The art says where each frame's head is
+  // pieces sat off the face while the mood showed. The art says where each frame's head is
   // (animalArt.json `pose`, from scripts/wardrobe-pose.py); the head layer is moved by that, with
   // the same easing as the face's fade, and back when the mood is over.
   const frame = mood !== undefined && shown === "face" ? frameFor(animal, mood) : "idle";
@@ -34,14 +34,13 @@ export function Hero({ animal, outfit, mood, view = "face" }: { animal: AnimalId
       data-view={shown}
       data-hat={outfit.hat ?? ""}
       data-scarf={outfit.scarf ?? ""}
-      data-glasses={outfit.glasses ?? ""}
       data-color={outfit.color ?? ""}
       style={outfit.color === "color-sky" && art?.sky ? ({ "--sky": art.sky } as React.CSSProperties) : undefined}
     >
       <Avatar animal={animal} mood={mood} view={shown} />
       <span className="hero-head" aria-hidden="true" data-pose={pose ? frame : "idle"} style={headStyle}>
         <span className="wear wear-color" />
-        {(["scarf", "glasses", "hat"] as const).map((slot) => (
+        {(["scarf", "hat"] as const).map((slot) => (
           <Wear key={slot} slot={slot} id={outfit[slot]} animal={animal} view={shown} />
         ))}
       </span>

@@ -2643,9 +2643,9 @@ button:focus-visible {
 
 .basket-nest .basket-sitter {
   position: absolute;
-  left: 49%;
-  bottom: 4%;
-  width: 120%;
+  left: 50%;
+  bottom: 5%;
+  width: 100%;
   transform: translateX(-50%);
   display: block;
 }
@@ -2991,7 +2991,7 @@ button:focus-visible {
   /* The basket and its animal sit a little higher than the row, the animal's head up by the top of the
      letter circle; its ears reach a touch past the screen's edge, which is cut, not scrolled to. */
   .today.is-nest .nest-seat[data-nest="basket"] {
-    margin-top: -26px;
+    margin-top: -34px;
   }
 
   .today.is-nest {

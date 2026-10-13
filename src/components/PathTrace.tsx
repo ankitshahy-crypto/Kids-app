@@ -54,6 +54,7 @@ export function PathTrace({
   memoryCues,
   onSpeak,
   stay = false,
+  onGlyph,
   onAttempt,
   onDone,
 }: {
@@ -73,6 +74,8 @@ export function PathTrace({
   onSpeak?: () => void | Promise<void>;
   /** The cheer stays until Done is pressed, instead of leaving by itself once what it says is said. */
   stay?: boolean;
+  /** A new letter is up (its place among the glyphs): the screen can say it. */
+  onGlyph?: (index: number) => void;
   onAttempt?: (success: boolean) => WritingOutcome;
   onDone: () => void;
 }) {
@@ -128,6 +131,14 @@ export function PathTrace({
     // The cues are rebuilt each render; their words decide when to say them again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, level, memoryKey, attempt, settingsRef]);
+
+  // Each letter says its name as it comes up (a name's letters: "A", then "L"): the opening line used
+  // to spell the whole name at once, and nothing was said at the letters themselves.
+  const onGlyphRef = useRef(onGlyph);
+  onGlyphRef.current = onGlyph;
+  useEffect(() => {
+    onGlyphRef.current?.(glyphIndex);
+  }, [glyphIndex]);
 
   useEffect(() => {
     if (phase !== "demo") return undefined;
@@ -441,7 +452,13 @@ export function NameTrace({
   // rest of the app. A name has no clip of its own and is never sent anywhere, and the device voice
   // is not used for it: on the phone it was a different voice from the lesson's, and a robotic one.
   const letters = nameLetters(title).map(spellCue);
-  useOpeningLine(speak, [promptCue("trace-name", "Trace your name."), ...letters]);
+  // The opening says the prompt and the first letter as one line; the letters after come up one by
+  // one (onGlyph). Said apart, the first letter was cut off by the prompt: one voice at a time.
+  useOpeningLine(speak, [promptCue("trace-name", "Trace your name."), ...letters.slice(0, 1)]);
+  // A name keeps its guide: the full letter, then one that fades a little with each success, and no
+  // further. The levels past that (the start dot alone, then writing from memory) are for the short
+  // words; at four, with a six-letter name, a bare start dot was read as the letter having gone missing.
+  const level = Math.min(2, writingLevel(writing, id)) as ScaffoldLevel;
   return (
     <PathTrace
       screen="my-name"
@@ -449,10 +466,14 @@ export function NameTrace({
       glyphs={nameGlyphs(name)}
       settingsRef={settingsRef}
       marker={{ name: title }}
-      level={writingLevel(writing, id)}
+      level={level}
       writing={writing}
       itemId={id}
       memoryLine={memoryPrompt("name", title)}
+      onGlyph={(index) => {
+        const letter = letters[index];
+        if (index > 0 && letter) speak.line([letter], undefined, { remember: false });
+      }}
       memoryCues={[promptCue("trace-name", "Trace your name."), ...letters]}
       onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
       onSpeak={() =>

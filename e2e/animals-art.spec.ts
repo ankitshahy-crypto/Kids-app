@@ -33,7 +33,7 @@ function watchArt(page: Page): string[] {
 
 test("the child's animal is the painted face: on the home screen, dressed up, and in a story", async ({ page }) => {
   const missing = watchArt(page);
-  await install(page, profile("fox", { hat: "hat-leaf", glasses: "glasses-round", scarf: "scarf-stripe" }));
+  await install(page, profile("fox", { hat: "hat-leaf", scarf: "scarf-stripe" }));
   await page.getByRole("button", { name: "Mia" }).click();
   const hero = page.locator("[data-screen=today] .hero").first();
   const face = hero.locator(".avatar-art.avatar-painted");
@@ -41,18 +41,16 @@ test("the child's animal is the painted face: on the home screen, dressed up, an
   await expect(face.locator("img").first()).toHaveAttribute("src", /\/animals\/fox\/idle-face\.webp$/);
   // The picture is there (not a broken image): it has a size once loaded.
   await expect.poll(() => face.locator("img").first().evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(512);
-  // The outfit pieces sit on the head: the hat over the top of the face, the glasses across its middle.
+  // The outfit pieces sit on the head: the hat over the top of the face, the scarf below its middle.
   const box = (await face.boundingBox())!;
   const hat = (await hero.locator(".wear-hat").boundingBox())!;
-  const glasses = (await hero.locator(".wear-glasses").boundingBox())!;
+  const scarf = (await hero.locator(".wear-scarf").boundingBox())!;
   expect(hat.y).toBeLessThan(box.y + box.height * 0.3);
-  expect(glasses.y).toBeGreaterThan(box.y + box.height * 0.3);
-  expect(glasses.y + glasses.height).toBeLessThan(box.y + box.height * 0.7);
+  expect(scarf.y).toBeGreaterThan(box.y + box.height * 0.5);
   // The pieces are painted pictures too, placed on the face.
   await expect(hero.locator(".wear-hat")).toHaveAttribute("src", /\/wardrobe\/hat-leaf\.webp$/);
-  await expect(hero.locator(".wear-glasses")).toHaveAttribute("src", /\/wardrobe\/glasses-round\.webp$/);
   await expect(hero.locator(".wear-scarf")).toHaveAttribute("src", /\/wardrobe\/scarf-stripe\.webp$/);
-  for (const piece of [".wear-hat", ".wear-glasses", ".wear-scarf"]) {
+  for (const piece of [".wear-hat", ".wear-scarf"]) {
     await expect.poll(() => hero.locator(piece).evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(100);
   }
   await page.getByRole("button", { name: "Story" }).click();
