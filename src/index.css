@@ -13686,3 +13686,178 @@ button,
 .closet-item {
   width: 100%;
 }
+
+/* ---- Today, laid out as the approved mockup (today-mockup) ----
+   The mockup's order and proportions with the app's own tokens, bunny and shared buttons: the stops
+   row led by a dash, the nest and the letter, the two trace pills, the dock row, then Explore. The
+   home's "Reading" name stays for a screen reader and the tests; the mockup does not print it. */
+.today.is-nest .section-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.today.is-nest .trail-stops {
+  padding-left: 26px;
+}
+
+.today.is-nest .trail-stops .trail-stop:first-child::before {
+  content: "";
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  width: 22px;
+  border-top: 2px dashed #d9c5aa;
+  pointer-events: none;
+}
+
+.today.is-nest .trail-stops .trail-stop .mark {
+  width: 28px;
+  height: 28px;
+}
+
+.today.is-nest .trail-stops .trail-stop {
+  border: 2px solid #e9ddc8;
+}
+
+/* The mockup's Explore underline is a short rule under the word, not the heading's full width. */
+.today.is-nest .explore-head h2::after {
+  width: calc(100% + 8px);
+}
+
+@media (max-width: 767px) {
+  /* Pills, dock and Explore close up under the nest as in the mockup (there was a wide empty band). */
+  .today.is-nest .trace-practice {
+    margin-top: 8px;
+  }
+
+  .today.is-nest .today-dock {
+    padding-top: 2px;
+  }
+}
+
+/* iPad upright: the mockup's column, centred and in its order (dock row above Explore), with the nest
+   and the letter at the phone's proportions scaled up, and the six doors in one row. */
+@media (min-width: 768px) and (orientation: portrait) {
+  .today.is-nest {
+    width: min(100%, 680px);
+    margin: 0 auto;
+    gap: 20px;
+  }
+
+  .today.is-nest .today-body {
+    display: contents;
+  }
+
+  .today.is-nest .today-top {
+    order: 0;
+  }
+
+  .today.is-nest .lesson {
+    order: 1;
+    flex: 0 0 auto;
+    gap: 20px;
+  }
+
+  .today.is-nest .today-dock {
+    order: 2;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .today.is-nest .explore-area {
+    order: 3;
+    width: 100%;
+  }
+
+  .today.is-nest .trail {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    width: 100%;
+    column-gap: 24px;
+  }
+
+  .today.is-nest .letter-card {
+    gap: 16px;
+  }
+
+  .today.is-nest .letter-stop {
+    width: 236px;
+    height: 236px;
+  }
+
+  .today.is-nest .trail-letter {
+    font-size: 140px;
+  }
+
+  .today.is-nest .trail-letter.is-unit {
+    font-size: 80px;
+  }
+
+  .today.is-nest .nest-caption {
+    font-size: 22px;
+  }
+
+  .today.is-nest .nest-start.start-button {
+    max-width: 260px;
+    height: 68px;
+    min-height: 68px;
+    font-size: 24px;
+  }
+
+  .today.is-nest .trace-practice {
+    width: 100%;
+    gap: 20px;
+  }
+
+  .today.is-nest .trace-practice button {
+    min-height: 72px;
+    font-size: 20px;
+  }
+
+  .today.is-nest .today-dock .dock-button {
+    font-size: 18px;
+  }
+
+  .today.is-nest .today-dock .dock-art {
+    width: 72px;
+    height: 72px;
+  }
+
+  .today.is-nest .course-pick {
+    width: 100%;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .today.is-nest .course-button {
+    min-height: 120px;
+  }
+
+  .today.is-nest .course-name span:last-child {
+    font-size: 16px;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@media (max-width: 767px) {
+  .today.is-nest .lesson {
+    flex: 0 0 auto;
+  }
+}
+
+@media (min-width: 768px) and (orientation: portrait) {
+  .today.is-nest .course-art,
+  .today.is-nest .course-art .today-mark {
+    width: 56px;
+    height: 56px;
+  }
+
+  .today.is-nest .practice-mark {
+    width: 30px;
+    height: 30px;
+  }
+}

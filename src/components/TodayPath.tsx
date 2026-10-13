@@ -22,8 +22,8 @@ import { EngineerBoard } from "./BuildGames";
 import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
 import { artOf } from "../avatars";
-import { BasketNest, BookMark, PaintMark, PencilMark, WovenNest } from "./sceneArt";
-import { EggMark, ExploreMark, NestMark, PencilLine, SmileLine, StarMark } from "./TodayMarks";
+import { BasketNest, WovenNest } from "./sceneArt";
+import { BookLine, DropsLine, EggMark, ExploreMark, NestMark, PencilLine, SmileLine, StarMark } from "./TodayMarks";
 
 import { HoldButton } from "./HoldButton";
 
@@ -230,9 +230,9 @@ export function TodayPath({
                       onClick={() => onOpen(stop.id)}
                     >
                       {finished ? <Tick /> : null}
-                      {stop.id === "draw" ? <PencilMark /> : null}
-                      {stop.id === "story" ? <BookMark /> : null}
-                      {stop.id === "moment" ? <PaintMark /> : null}
+                      <span className="mark" aria-hidden="true">
+                        {stop.id === "draw" ? <PencilLine /> : stop.id === "story" ? <BookLine /> : <DropsLine />}
+                      </span>
                     </button>
                   );
                 })}
