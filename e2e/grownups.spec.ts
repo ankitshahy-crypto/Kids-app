@@ -99,7 +99,8 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
   await expect(page.locator("#volume-effects")).toBeVisible();
   await expect(page.locator("#volume-music")).toBeVisible();
   await expect(page.getByText("Tap sounds & buzz")).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Speaking voice" })).toBeVisible();
+  // One recorded voice for every line: no device-voice picker.
+  await expect(page.getByRole("combobox", { name: "Speaking voice" })).toHaveCount(0);
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("[data-page='menu']")).toBeVisible();
 

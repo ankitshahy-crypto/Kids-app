@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
-import { clearLastCue, primeSpeech, replayLastCue, resumeSpeech } from "./audio/player";
+import { clearLastCue, primeSpeech, replayLastCue } from "./audio/player";
 import { deviceStorage } from "./deviceStorage";
 import { BreakScreen } from "./components/BreakScreen";
 import { HearAgainButton, BreakButton } from "./components/ComfortButtons";
@@ -31,6 +31,7 @@ import { SoundCheckIn, checkInRounds } from "./components/SoundCheckIn";
 import { checkInSounds } from "./data/progress";
 import { StoryReader } from "./components/StoryReader";
 import { SoundItOut } from "./components/SoundItOut";
+import { AudioCaption } from "./components/AudioCaption";
 import { SilentHint } from "./components/SilentHint";
 import { StarFlight } from "./components/StarFlight";
 import { StartScreen } from "./components/StartScreen";
@@ -182,20 +183,12 @@ export default function App() {
   const calm = settings.calm || reducedMotion();
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      if (window.speechSynthesis?.paused) window.speechSynthesis.resume();
-    }, 4000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  useEffect(() => {
     // Bubble phase, after the control's own click handler. Capture-phase
     // playback was swallowing the click in WebKit. touchend and click are the
     // gestures iOS accepts for resume().
     const unlock = () => {
       try {
         unlockAudio();
-        resumeSpeech();
       } catch {
         // A locked audio device must not block the tap.
       }
@@ -811,6 +804,7 @@ export default function App() {
     >
       {pastel ? <Background /> : null}
       <SilentHint />
+      <AudioCaption />
       <main className="stage">
         {mode === "start" || mode === "kid" ? <GrownupsButton onOpen={() => openGrownups()} /> : null}
         {mode === "start" ? (

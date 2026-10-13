@@ -1,90 +1,34 @@
 import { recordedSrc, spokenLine } from "../data/audioCatalog";
 import type { DeckWord, LetterTile } from "../data/deck";
-import { audioState, beginVoice, endVoice, playOnBus, unlockAudio, warmClips } from "./manager";
-import { deviceSpeechFollowsSlider } from "./platform";
-import { pickVoice } from "./voices";
-import { SPEECH_RATES, type Settings } from "../settings";
-
-/** 1.0 keeps the device voice at a natural pitch. */
-const NATURAL_PITCH = 1;
-
-export const PREVIEW_PHRASE = "Hi. Let's read together.";
+import { beginVoice, endVoice, playChime, playOnBus, showCaption, unlockAudio, warmClips } from "./manager";
+import type { Settings } from "../settings";
 
 const SILENT_BEAT_MS = 720;
 const SILENT_LETTER_MS = 320;
 
 /**
- * iOS only allows speech after a user gesture. Call this synchronously inside
- * the tap handler that starts the app. A single space is effectively silent
- * and unlocks later playback for the rest of the WebView session.
+ * Every line the app says is a recorded clip in the one app voice (voice.config.json). The phone's
+ * own voice (speechSynthesis) is never used: it was Apple's Samantha on an iPhone and a Google
+ * network voice in Chrome, so a child heard two or three voices in one lesson, and in Chrome the
+ * line's words left the device.
+ *
+ * Call this synchronously inside the tap that opens an activity. It unlocks iOS audio with a silent
+ * buffer (unlockAudio) and says nothing; the activity's first line then plays from its clip. (It used
+ * to speak that first line in the phone's voice and skip the clip.) The argument is ignored and kept
+ * only so the call sites read the same.
  */
-let primedText = "";
-let primedAt = 0;
-
-/**
- * Call synchronously inside a tap. A non-empty utterance unlocks iOS speech
- * for the rest of the session. Pass the first lesson line so that tap is
- * also the sound the child hears.
- */
-/** The silent utterance has been spoken once this session: iOS speech is unlocked from then on. */
-let speechUnlocked = false;
-
-export function primeSpeech(cue?: string): void {
-  try {
-    unlockAudio();
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-    const spoken = cue?.trim() ?? "";
-    // The silent utterance that unlocks iOS speech is needed once a session. It used to be spoken on
-    // every tap that opened an activity, and on an iPhone each one starts the phone's speech
-    // session, which can interrupt the app's own audio just as the activity's first recorded line
-    // is about to play (TEMPORARY log in unlockAudio shows the context's state around a tap).
-    if (!spoken && speechUnlocked) return;
-    speechUnlocked = true;
-    if (spoken) {
-      primedText = spoken;
-      primedAt = Date.now();
-    }
-    synth.resume();
-    const utterance = new SpeechSynthesisUtterance(spoken || "\u00a0");
-    utterance.volume = 1;
-    utterance.rate = 1;
-    utterance.lang = "en-US";
-    synth.speak(utterance);
-  } catch {
-    // A browser can throw if speech is unavailable. The activity still starts.
-  }
+export function primeSpeech(_cue?: string): void {
+  unlockAudio();
 }
 
-/**
- * How long a line spoken from the opening tap stands in for its clip. Short: a clip is skipped only
- * for the line the tap itself just said, not for one that comes a while later. (It was five
- * seconds, which could have skipped a round's recorded question for a line primed on the way in.)
- */
-const PRIMED_MS = 1000;
-
-/** True when this exact line was just spoken from a tap. */
-export function consumePrimedSpeech(text: string): boolean {
-  const spoken = text.trim();
-  if (!primedText || primedText !== spoken || Date.now() - primedAt > PRIMED_MS) return false;
-  primedText = "";
-  return true;
-}
-
-export function hasFreshPrimedSpeech(): boolean {
-  return primedText !== "" && Date.now() - primedAt < PRIMED_MS;
-}
-
+/** Kept for its call sites; there is no device speech to resume. Unlocks audio on the tap. */
 export function resumeSpeech(): void {
-  window.speechSynthesis?.resume();
+  unlockAudio();
 }
 
-let speechGeneration = 0;
-
+/** Kept for its call sites; clips stop through their own signals. */
 export function cancelSpeech(): void {
-  speechGeneration += 1;
-  primedText = "";
-  window.speechSynthesis?.cancel();
+  // Nothing to cancel: there is no device speech.
 }
 
 export function isAbortError(error: unknown): boolean {
@@ -113,139 +57,18 @@ export function sleep(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-function speechVolume(settings: Settings): number {
-  if (!deviceSpeechFollowsSlider()) return 1;
-  const level = settings.voiceVolume;
-  if (!Number.isFinite(level)) return 1;
-  return Math.min(1, Math.max(0, level));
+function playFile(src: string, signal: AbortSignal, follow?: ReadAlong, fresh = false): Promise<void> {
+  return playOnBus(src, "voice", signal, follow ? (durationMs) => tell(follow, { kind: "clip", durationMs }) : undefined, fresh);
 }
 
-function speak(text: string, settings: Settings, signal: AbortSignal, follow?: ReadAlong): Promise<void> {
-  const synth = window.speechSynthesis;
-  if (!synth || !text.trim()) return sleep(SILENT_BEAT_MS, signal);
-  if (signal.aborted) return Promise.reject(abortError());
-
-  // Speak in this turn, before any await. iOS drops speech that starts from
-  // a timer unless an earlier tap already unlocked the synthesizer.
-  const generation = ++speechGeneration;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = SPEECH_RATES[settings.speed];
-  utterance.pitch = NATURAL_PITCH;
-  utterance.volume = speechVolume(settings);
-  utterance.lang = "en-US";
-  try {
-    const voice = pickVoice(synth.getVoices(), settings.voiceURI);
-    if (voice) utterance.voice = voice;
-  } catch {
-    // A voice list entry the engine rejects should not stop the lesson.
-  }
-  try {
-    synth.resume();
-    synth.speak(utterance);
-  } catch {
-    return sleep(SILENT_BEAT_MS, signal);
-  }
-
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    let timer = 0;
-
-    const finish = (error?: unknown) => {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timer);
-      signal.removeEventListener("abort", onAbort);
-      if (signal.aborted || isAbortError(error)) {
-        reject(abortError());
-        return;
-      }
-      resolve();
-    };
-
-    utterance.onend = () => finish();
-    utterance.onerror = () => finish();
-    if (follow) {
-      utterance.onstart = () => tell(follow, { kind: "speech", rate: utterance.rate });
-      utterance.onboundary = (event) => {
-        if (event.name === "word" || event.name === undefined) tell(follow, { kind: "word", charIndex: event.charIndex });
-      };
-    }
-
-    const onAbort = () => {
-      if (generation === speechGeneration) synth.cancel();
-      finish(abortError());
-    };
-    signal.addEventListener("abort", onAbort);
-
-    const backupMs = Math.min(9000, (800 + text.length * 420) / utterance.rate);
-    timer = window.setTimeout(() => {
-      // Only cancel this utterance. A newer speak() has its own generation.
-      if (generation === speechGeneration) synth.cancel();
-      finish();
-    }, backupMs);
-  });
-}
-
-let previewGeneration = 0;
-let previewDucked = false;
-
-function releasePreviewDuck(generation: number): void {
-  if (generation !== previewGeneration || !previewDucked) return;
-  previewDucked = false;
-  endVoice();
-}
-
-/** Hear the chosen device voice. Works even when lesson voice is off. */
-export function previewVoice(settings: Settings): void {
-  const synth = window.speechSynthesis;
-  if (!synth) return;
-  unlockAudio();
-  const generation = ++previewGeneration;
-  if (previewDucked) {
-    previewDucked = false;
-    endVoice();
-  }
-  synth.cancel();
-  const utterance = new SpeechSynthesisUtterance(PREVIEW_PHRASE);
-  utterance.rate = SPEECH_RATES[settings.speed];
-  utterance.pitch = NATURAL_PITCH;
-  utterance.volume = speechVolume(settings);
-  utterance.lang = "en-US";
-  try {
-    const voice = pickVoice(synth.getVoices(), settings.voiceURI);
-    if (voice) utterance.voice = voice;
-  } catch {
-    // Preview still speaks with the engine default if the chosen voice is rejected.
-  }
-  const close = () => releasePreviewDuck(generation);
-  utterance.onend = close;
-  utterance.onerror = close;
-  previewDucked = true;
-  beginVoice();
-  try {
-    synth.resume();
-    synth.speak(utterance);
-  } catch {
-    close();
-  }
-}
-
-function playFile(src: string, signal: AbortSignal, follow?: ReadAlong): Promise<void> {
-  return playOnBus(src, "voice", signal, follow ? (durationMs) => tell(follow, { kind: "clip", durationMs }) : undefined);
-}
-
-/** One thing to say: a recorded clip when the device has it, else the line for the device voice. */
+/** One thing to say: its recorded clip, and its words (shown on screen if the clip cannot play). */
 export type Cue = { src?: string; text: string };
 
 /**
- * What a read-along needs to follow a line: a clip started (and how long it
- * is), the device voice started (and how fast it reads), or the device voice
- * reached a word (its first letter's place in the line).
+ * What a read-along needs to follow a line: its clip started, and how long it is. Word times come
+ * from src/data/storyTimings.json. `missing` means the clip could not play and the words are shown.
  */
-export type ReadAlongEvent =
-  | { kind: "clip"; durationMs: number }
-  | { kind: "speech"; rate: number }
-  | { kind: "word"; charIndex: number };
+export type ReadAlongEvent = { kind: "clip"; durationMs: number } | { kind: "missing" };
 export type ReadAlong = (event: ReadAlongEvent) => void;
 
 function tell(follow: ReadAlong | undefined, event: ReadAlongEvent): void {
@@ -295,8 +118,23 @@ export function replayLastCue(settings: Settings): Promise<void> {
 }
 
 /**
- * Prefer a recorded file when one is passed. Otherwise use device speech.
- * A parent recording, stored only on the device, uses the same `src` path.
+ * A line could not be said from its clip. In the unit tests that is a failure (every line the code
+ * uses must have a clip); in the app a soft chime plays, the words are shown, and the e2e tests
+ * listen for the event.
+ */
+function clipMissing(cue: Cue, why: string): void {
+  if (import.meta.env.MODE === "test") throw new Error(`No playable clip for "${cue.text}" (${why})`);
+  try {
+    window.dispatchEvent(new CustomEvent("littlenest:missing-clip", { detail: { text: cue.text, src: cue.src ?? null, why } }));
+  } catch {
+    // No window: nothing to tell.
+  }
+}
+
+/**
+ * Play the line's clip. A clip that fails to load or play is tried once more; if it fails again,
+ * or the line has no clip at all, a soft chime plays and the words are shown on screen. The phone's
+ * own voice is never used.
  */
 async function playOne(cue: Cue, settings: Settings, signal: AbortSignal, follow?: ReadAlong): Promise<void> {
   if (signal.aborted) throw abortError();
@@ -304,34 +142,35 @@ async function playOne(cue: Cue, settings: Settings, signal: AbortSignal, follow
     await sleep(SILENT_BEAT_MS, signal);
     return;
   }
+  if (!cue.src) {
+    clipMissing(cue, "no clip");
+    tell(follow, { kind: "missing" });
+    await chimeAndShow(cue.text, signal);
+    return;
+  }
   beginVoice();
   try {
-    if (consumePrimedSpeech(cue.text)) {
-      // The tap that opened the lesson already spoke this line.
-      await sleep(1200, signal);
-      return;
-    }
-    if (cue.src) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        await playFile(cue.src, signal, follow);
+        await playFile(cue.src, signal, follow, attempt > 0);
         return;
       } catch (error) {
         if (isAbortError(error) || signal.aborted) throw abortError();
-        // TEMPORARY, for the phone test of build 8: a recorded line is about to be read by the
-        // phone's own voice. Says which screen, which clip, the context's state and what failed, so
-        // the device log shows whether Homes, Coins and Body still get here. Take out once confirmed.
-        console.warn("[littlenest voice] clip fell back to the phone's voice", {
-          screen: document.querySelector("[data-screen]")?.getAttribute("data-screen") ?? "?",
-          clip: cue.src,
-          context: audioState(),
-          reason: error instanceof Error ? error.message : String(error),
-        });
       }
     }
-    await speak(cue.text, settings, signal, follow);
   } finally {
     endVoice();
   }
+  clipMissing(cue, "clip failed twice");
+  tell(follow, { kind: "missing" });
+  await chimeAndShow(cue.text, signal);
+}
+
+/** A soft chime, and the line's words on screen for a moment: what a child gets instead of a robot voice. */
+async function chimeAndShow(text: string, signal: AbortSignal): Promise<void> {
+  playChime();
+  showCaption(text);
+  await sleep(Math.min(4000, 900 + text.length * 45), signal);
 }
 
 /**
@@ -434,25 +273,19 @@ export function letterSoundCue(letter: LetterTile): Cue {
 }
 
 /**
- * A letter's name on its own ("em"), for spelling a child's name out in the recorded voice. With no
- * name clip on the device yet, the letter's phrase clip ("m, as in moon") stands in: still the
- * recorded voice, never the device's.
+ * A letter's name on its own ("em"), for spelling a child's name out in the recorded voice. The
+ * child's name itself is never spoken by any voice, on or off the device: it is spelled with these.
+ * There is no stand-in: the letter's phrase clip ("n, as in nest") is not its name (#201). A missing
+ * spell clip fails the unit tests (clipMissing) and chimes in the app.
  */
 export function spellCue(letter: string): Cue {
   const id = letter.trim().toLowerCase();
-  const src = recordedSrc("spell", id);
-  if (src) return { src, text: spokenLine("spell", id, id.toUpperCase()) };
-  return { src: recordedSrc("letters", id), text: spokenLine("letters", id, id.toUpperCase()) };
+  return { src: recordedSrc("spell", id), text: spokenLine("spell", id, id.toUpperCase()) };
 }
 
 /** A whole word from the deck. */
 export function deckWordCue(word: DeckWord): Cue {
   return { src: word.audioSrc ?? recordedSrc("words", word.id), text: spokenLine("words", word.id, word.word) };
-}
-
-/** A line for the device voice only, such as the child's own name. Nothing is fetched. */
-export function deviceCue(text: string): Cue {
-  return { text };
 }
 
 export function playLetter(
@@ -467,8 +300,7 @@ export function playLetter(
 
 /**
  * The letter's sound on its own ("mmm"), for sounding out a word. Without a
- * sound clip on the device it says the example phrase instead, since a device
- * voice cannot say a bare sound.
+ * sound clip it says the letter's recorded phrase ("m, as in moon") instead.
  */
 export function playLetterSound(letter: LetterTile, settings: Settings, signal: AbortSignal): Promise<void> {
   if (letter.silent) return sleep(SILENT_LETTER_MS, signal);
@@ -520,16 +352,6 @@ export function playWhole(card: DeckWord, settings: Settings, signal: AbortSigna
   return playWord(card, settings, signal);
 }
 
-/** Speak with the device voice only. Nothing is fetched and nothing leaves the device. */
-export function playOnDevice(text: string, settings: Settings, signal: AbortSignal): Promise<void> {
-  if (signal.aborted) return Promise.reject(abortError());
-  if (text.trim()) remember([{ text }]);
-  if (!settings.voice || !text.trim()) return sleep(SILENT_BEAT_MS, signal);
-  const voice = takeVoice(signal);
-  beginVoice();
-  return speak(text, settings, voice).finally(() => endVoice());
-}
-
 export function playWord(word: DeckWord, settings: Settings, signal: AbortSignal): Promise<void> {
   return playCue(
     {
@@ -558,7 +380,7 @@ export function playPrompt(id: string, settings: Settings, signal: AbortSignal, 
   return playCue(promptCue(id, fallback), settings, signal);
 }
 
-/** A story page, read by the bundled narrator when the line is recorded, else the device voice. */
+/** A story page, read by the recorded narrator; the read-along follows storyTimings.json. */
 export function playStoryLine(id: string, text: string, settings: Settings, signal: AbortSignal, follow?: ReadAlong): Promise<void> {
   return playCue(
     {

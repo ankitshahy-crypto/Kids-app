@@ -1,9 +1,6 @@
-import { useEffect, useState } from "react";
-import { previewVoice } from "../audio/player";
-import { deviceSpeechFollowsSlider } from "../audio/platform";
-import { subscribeVoices, type VoiceOption } from "../audio/voices";
+import { useState } from "react";
 import { savePin } from "../data/grownupPin";
-import { EXTRA_CHUNKS, LESSON_MINUTES, type Settings, type SpeechSpeed } from "../settings";
+import { EXTRA_CHUNKS, LESSON_MINUTES, type Settings } from "../settings";
 
 export function SettingsFields({
   settings,
@@ -20,13 +17,7 @@ export function SettingsFields({
         volume={settings.voiceVolume}
         onToggle={(voice) => onChange({ voice })}
         onVolume={(voiceVolume) => onChange({ voiceVolume })}
-        note={
-          deviceSpeechFollowsSlider()
-            ? undefined
-            : "Recorded clips follow this slider. The phone's own voice uses the volume buttons."
-        }
       />
-      <VoiceField settings={settings} onChange={onChange} />
       <MixRow
         label="Effects"
         on={settings.effects}
@@ -191,10 +182,6 @@ export function SettingsFields({
         </div>
         <p className="adult-copy">After the lesson or the time is done, how many extra short chunks a day your child may say yes to.</p>
       </fieldset>
-      <fieldset className="setting-group">
-        <legend>Speech speed</legend>
-        <SpeedButtons speed={settings.speed} onChange={(speed) => onChange({ speed })} />
-      </fieldset>
       <OnOff
         id="calm"
         legend="Calm mode"
@@ -341,61 +328,3 @@ function MixRow({
   );
 }
 
-function VoiceField({
-  settings,
-  onChange,
-}: {
-  settings: Settings;
-  onChange: (patch: Partial<Settings>) => void;
-}) {
-  const [options, setOptions] = useState<VoiceOption[]>([]);
-  useEffect(() => subscribeVoices(setOptions), []);
-  return (
-    <fieldset className="setting-group" data-mix="speaking-voice">
-      <legend>Speaking voice</legend>
-      <div className="voice-row">
-        <select
-          id="speaking-voice"
-          className="voice-select"
-          aria-label="Speaking voice"
-          value={settings.voiceURI ?? ""}
-          onChange={(event) => onChange({ voiceURI: event.target.value || null })}
-        >
-          <option value="">Best available</option>
-          {options.map((option) => (
-            <option key={option.voiceURI} value={option.voiceURI}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <button type="button" className="voice-preview" onClick={() => previewVoice(settings)}>
-          Preview
-        </button>
-      </div>
-      <p className="adult-copy">Preview uses this phone's voice. Lessons play a recording when one is saved.</p>
-    </fieldset>
-  );
-}
-
-function SpeedButtons({ speed, onChange }: { speed: SpeechSpeed; onChange: (speed: SpeechSpeed) => void }) {
-  return (
-    <div className="segment">
-      <button
-        type="button"
-        className={speed === "slow" ? "is-selected" : ""}
-        aria-pressed={speed === "slow"}
-        onClick={() => onChange("slow")}
-      >
-        Slow
-      </button>
-      <button
-        type="button"
-        className={speed === "slower" ? "is-selected" : ""}
-        aria-pressed={speed === "slower"}
-        onClick={() => onChange("slower")}
-      >
-        Slower
-      </button>
-    </div>
-  );
-}

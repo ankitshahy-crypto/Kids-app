@@ -15,11 +15,3 @@ export function isNativeApp(): boolean {
   if (typeof window === "undefined") return false;
   return Boolean((window as CapacitorWindow).Capacitor?.isNativePlatform?.());
 }
-
-/**
- * iOS ignores SpeechSynthesisUtterance.volume. Other browsers apply it.
- * Recorded clips do not use this; they follow the voice GainNode.
- */
-export function deviceSpeechFollowsSlider(): boolean {
-  return !isIos();
-}

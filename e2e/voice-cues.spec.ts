@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { deviceSpeech, installAudioSpy, playedClips, requestedCues, spokenLines } from "./audioSpy";
+import { deviceSpeech, installAudioSpy, missingClips, playedClips, requestedCues, spokenLines } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 import { sentAddresses } from "./requests";
 
@@ -234,4 +234,49 @@ test("each game says what to do as it opens, and Again says it back", async ({ p
     // The game's own speaker, in its scene, is a picture and not a word.
     if (game.id !== "spin") await expect(page.locator(`[data-game=${game.id}] .game-scene > .game-hear svg`)).toBeVisible();
   }
+});
+
+test("one voice: the letter card and Trace my name never use the phone's voice, and every line has its clip", async ({ page }) => {
+  // The phone's own voice used to read the first line of every activity (to unlock iOS audio) and
+  // any line whose clip failed. Now every line is a recorded clip, and there is no device speech.
+  await install(page, { ladder: { step: 1, successes: 0 }, stickers: [] });
+  await page.getByRole("button", { name: "Letters" }).click();
+  await expect.poll(async () => (await playedClips(page)).length, { timeout: LINE_WITHIN_MS }).toBeGreaterThan(0);
+  await page.locator("[data-hear-again]").click();
+  await page.waitForTimeout(1500);
+  expect(await deviceSpeech(page)).toEqual([]);
+  expect(await missingClips(page)).toEqual([]);
+});
+
+test.describe("a failing clip", () => {
+  // page.route cannot see a request the app's service worker answers from its cache.
+  test.use({ serviceWorkers: "block" });
+test("a clip that cannot load is tried once more, then chimes and shows its words, never the phone's voice", async ({ page }) => {
+  const asked = new Map<string, number>();
+  // Every recorded line fails to load, as on a captive-portal Wi-Fi.
+  await page.route(/\/audio\/(letters|prompts|words)\/.*\.mp3$/, (route) => {
+    const path = new URL(route.request().url()).pathname;
+    asked.set(path, (asked.get(path) ?? 0) + 1);
+    return route.fulfill({ status: 503, body: "" });
+  });
+  await page.addInitScript(() => {
+    const target = window as Window & { __captions?: string[] };
+    target.__captions = [];
+    new MutationObserver(() => {
+      const text = document.querySelector(".audio-caption")?.textContent;
+      if (text && target.__captions?.at(-1) !== text) target.__captions?.push(text);
+    }).observe(document, { childList: true, subtree: true, characterData: true });
+  });
+  await install(page, { ladder: { step: 1, successes: 0 }, stickers: [] });
+  await page.getByRole("button", { name: "Letters" }).click();
+  // The words show for a few seconds while the chime plays (noted as they appear: a busy test machine
+  // can take longer than the caption stays).
+  await expect.poll(() => page.evaluate(() => (window as Window & { __captions?: string[] }).__captions ?? []), { timeout: LINE_WITHIN_MS }).toEqual(
+    expect.arrayContaining([expect.stringMatching(/as in/)]),
+  );
+  expect(await missingClips(page)).not.toEqual([]);
+  // Tried twice: the first play and one retry (a media element may ask once more on each).
+  expect(Math.max(...asked.values())).toBeGreaterThanOrEqual(2);
+  expect(await deviceSpeech(page)).toEqual([]);
+});
 });

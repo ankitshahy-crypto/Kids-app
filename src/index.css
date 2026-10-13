@@ -2101,6 +2101,30 @@ button:focus-visible {
   font-weight: 700;
 }
 
+/* The words of a line whose clip could not play: big and calm, never in the way of a tap. */
+.audio-caption {
+  position: fixed;
+  left: 50%;
+  top: calc(16px + env(safe-area-inset-top));
+  z-index: 8;
+  pointer-events: none;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 32px));
+  padding: 14px 20px;
+  border-radius: 20px;
+  background: #fffaf4;
+  color: var(--text-adult);
+  box-shadow: 0 12px 28px rgba(80, 60, 40, 0.16);
+  text-align: center;
+}
+
+.audio-caption p {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
 .parent-view,
 .teacher-view,
 .grownups-view {

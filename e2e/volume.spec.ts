@@ -116,15 +116,8 @@ test("sliders drive the channel gains, and speech volume follows the browser", a
     expect(settled?.music).toBeLessThan(0.05);
   }
 
-  await page.getByRole("button", { name: "Preview" }).click();
-  const spoken = await page.evaluate(() => (window as Window & { __speech?: { text: string; volume: number }[] }).__speech ?? []);
-  const preview = spoken.find((item) => item.text.includes("read together"));
-  if (preview) {
-    if (ios) expect(preview.volume).toBe(1);
-    else expect(preview.volume).toBeCloseTo(0.25, 1);
-  }
-
-  await page.evaluate(() => window.speechSynthesis?.cancel());
+  // There is no device-voice preview any more: every line is a recorded clip in the one app voice.
+  await expect(page.getByRole("button", { name: "Preview" })).toHaveCount(0);
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "Mia" }).click();
