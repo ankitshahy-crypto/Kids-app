@@ -161,7 +161,9 @@ export function StoryReader({
       }
     };
     signal.addEventListener("abort", stop, { once: true });
-    void playStoryLine(id, text, settingsRef.current, signal, onEvent)
+    // Wait for the times (one small load, then cached) so the first page follows the recording too.
+    void loadStoryTimes()
+      .then(() => (signal.aborted ? undefined : playStoryLine(id, text, settingsRef.current, signal, onEvent)))
       .catch(() => undefined)
       .finally(() => {
         if (signal.aborted) return;

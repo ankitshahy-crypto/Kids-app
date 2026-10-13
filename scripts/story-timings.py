@@ -190,13 +190,33 @@ def option(name: str, fallback: str = "") -> str:
     return sys.argv[at + 1] if at + 1 < len(sys.argv) else fallback
 
 
+MIN_WORD_MS = 60
+
+
+def spread(times: list[int]) -> list[int]:
+    """Give every word some time on screen: a word the recognizer squeezed to nothing borrows
+    from its neighbours, so no word is skipped by the highlight."""
+    out = list(times)
+    words = len(out) - 1
+    if words <= 0 or out[-1] < MIN_WORD_MS * words:
+        return out
+    for index in range(1, words + 1):
+        out[index] = max(out[index], out[index - 1] + MIN_WORD_MS)
+    over = out[-1] - times[-1]
+    if over > 0:  # pushed past the end: pull back from the end, keeping the gap
+        out[-1] = times[-1]
+        for index in range(words - 1, 0, -1):
+            out[index] = min(out[index], out[index + 1] - MIN_WORD_MS)
+    return out
+
+
 def merge(paths: list[str]) -> int:
     """Join parts made with --shard into the timings file, keeping clips still in the manifest."""
     stories = json.loads(MANIFEST.read_text()).get("stories", {})
     lines: dict[str, list[int]] = json.loads(OUT.read_text()).get("lines", {}) if OUT.exists() else {}
     for path in paths:
         lines.update(json.loads(Path(path).read_text()).get("lines", {}))
-    lines = {key: value for key, value in sorted(lines.items()) if key in stories}
+    lines = {key: spread(value) for key, value in sorted(lines.items()) if key in stories}
     OUT.write_text(json.dumps({"version": 1, "lines": lines}, separators=(",", ":")) + "\n")
     pages = sum(1 for key in stories if PAGE_ID.search(key))
     print(f"Joined {len(paths)} parts: {len(lines)} of {pages} story pages timed.")
@@ -219,7 +239,7 @@ def main() -> int:
     manifest = json.loads(MANIFEST.read_text())
     stories = manifest.get("stories", {})
     existing = json.loads(out.read_text()).get("lines", {}) if out == OUT and out.exists() else {}
-    model = WhisperModel(MODEL, device="cpu", compute_type="int8", cpu_threads=2)
+    model = WhisperModel(MODEL, device="cpu", compute_type="float32", cpu_threads=2)  # int8 gave garbled words on some CPUs
 
     lines: dict[str, list[int]] = dict(existing)
     weak: list[tuple[str, float]] = []
@@ -231,21 +251,31 @@ def main() -> int:
         if not path.exists():
             continue
         expected = words_of(cue["say"])
-        segments, _ = model.transcribe(
-            samples_of(path),
-            language="en",
-            word_timestamps=True,
-            # One beam: the page's text is already known, the recognizer only has to place it.
-            beam_size=1,
-            vad_filter=False,
-            condition_on_previous_text=False,
-            # The page's own words make the recognizer hear them as written.
-            initial_prompt=cue["say"],
-        )
-        heard = [(word.word.strip(), word.start, word.end) for segment in segments for word in (segment.words or [])]
+        samples = samples_of(path)
+
+        def hear(prompt: str | None):
+            segments, _ = model.transcribe(
+                samples,
+                language="en",
+                word_timestamps=True,
+                # One beam: the page's text is already known, the recognizer only has to place it.
+                beam_size=1,
+                vad_filter=False,
+                condition_on_previous_text=False,
+                # The page's own words make the recognizer hear them as written.
+                initial_prompt=prompt,
+            )
+            heard = [(word.word.strip(), word.start, word.end) for segment in segments for word in (segment.words or [])]
+            blocks = SequenceMatcher(a=[plain(w) for w in expected], b=[plain(w) for w, _, _ in heard], autojunk=False).get_matching_blocks()
+            return heard, sum(block.size for block in blocks) / max(1, len(expected))
+
+        heard, rate = hear(cue["say"])
+        if rate < 0.75:
+            # Now and then the prompt itself throws the recognizer off; try once without it.
+            again, again_rate = hear(None)
+            if again_rate > rate:
+                heard, rate = again, again_rate
         lines[clip_id] = align(expected, heard, duration_of(path))
-        matched = sum(1 for block in SequenceMatcher(a=[plain(w) for w in expected], b=[plain(w) for w, _, _ in heard], autojunk=False).get_matching_blocks() for _ in range(block.size))
-        rate = matched / max(1, len(expected))
         if rate < 0.75:
             weak.append((clip_id, rate))
         done += 1
