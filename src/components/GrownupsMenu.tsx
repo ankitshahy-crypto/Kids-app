@@ -352,8 +352,8 @@ export function GrownupsMenu({
           </p>
           <h3>If an iPhone is quiet</h3>
           <p className="adult-copy">
-            The switch on the side of the phone can mute sound. Recorded clips follow the Voice slider in Settings. The
-            phone's own voice follows the volume buttons.
+            The switch on the side of the phone can mute sound. Every line is a recorded clip, and the Voice slider in
+            Settings is its volume. If a line cannot play, its words show on the screen for a moment, with a soft chime.
           </p>
           <h3>Questions</h3>
           <dl className="faq">

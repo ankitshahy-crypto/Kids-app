@@ -83,12 +83,9 @@ test("sliders drive the channel gains, and speech volume follows the browser", a
   if (await hint.count()) await hint.click();
   await page.getByRole("button", { name: "Settings" }).click();
 
-  // An iPhone or iPad, as the app itself tells one (its user agent, or a Mac that takes touches), not
-  // by this project's name: on an iPad-shaped WebKit project the note showed and the test said no.
-  const ios = await page.evaluate(() => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
-  const note = page.getByText("volume buttons");
-  if (ios) await expect(note).toBeVisible();
-  else await expect(note).toHaveCount(0);
+  // No note about the phone's own voice and its volume buttons, on an iPhone or anywhere: there is
+  // no such voice any more. Every line is a recorded clip, and the slider is its volume.
+  await expect(page.getByText("volume buttons")).toHaveCount(0);
 
   await setRange(page, "#volume-voice", "25");
   await setRange(page, "#volume-effects", "70");
