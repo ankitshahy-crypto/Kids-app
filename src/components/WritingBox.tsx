@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { playLine, playOnDevice, type Cue } from "../audio/player";
+import { playLine, type Cue } from "../audio/player";
 import { strokePath, type TracePoint } from "../data/handwriting";
 import { recognizeWriting } from "../data/recognize";
 import type { Settings } from "../settings";
@@ -48,10 +48,9 @@ export function WritingBox({
   useEffect(() => {
     if (!speak) return undefined;
     const controller = new AbortController();
-    // The recorded voice where the screen gives the prompt as clips (the phone pass of build 10 heard
-    // the phone's own voice here, a different one from the lesson's); the phone's voice only otherwise.
+    // The prompt in the recorded voice, from its clips. Without clips it is shown, not spoken: the
+    // phone's own voice is never used (the phone pass of build 10 heard a second voice here).
     if (cues && cues.length > 0) void playLine(cues, settingsRef.current, controller.signal).catch(() => undefined);
-    else void playOnDevice(prompt, settingsRef.current, controller.signal).catch(() => undefined);
     return () => controller.abort();
     // The cues are rebuilt each render; their words decide when to say them again.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -51,11 +51,11 @@ test("Trace my name: Back stops the letters; the end says the name as a word and
   }
   await expect(root).toHaveAttribute("data-phase", "cheer");
   const clipsAtCheer = (await playedClips(page)).length;
-  // The line keeps the name as it was typed, and the name is said as one word (the device voice: a
-  // name has no clip of its own), not spelled out letter by letter.
+  // The screen shows the name as it was typed; the recorded voice says "You traced your name!". The
+  // name is never given to a synthesized voice (no device speech at all), and not spelled again.
   await expect(root.locator(".letter-prompt")).toHaveText("You traced Aleena.");
-  await expect.poll(() => deviceSpeech(page), { timeout: 10000 }).toEqual(expect.arrayContaining([expect.stringMatching(/^aleena$/i)]));
-  expect((await deviceSpeech(page)).filter((said) => /^aleena$/i.test(said))).toHaveLength(1);
+  await expect.poll(async () => playedClips(page), { timeout: 10000 }).toContain("prompts/traced-name.mp3");
+  expect(await deviceSpeech(page)).toEqual([]);
   expect((await playedClips(page)).slice(clipsAtCheer).filter((clip) => /^spell\//.test(clip))).toEqual([]);
   // The screen stays with the finished name, Done on it, for as long as the child likes.
   await page.waitForTimeout(4000);

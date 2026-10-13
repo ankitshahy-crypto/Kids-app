@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
 import { cancelSpeech, isAbortError, playLetterSound, playStoryLine, playWordId, sleep, type ReadAlong } from "../audio/player";
 import type { AnimalId } from "../data/animals";
-import { estimateTimes, fitsLine, lineWords, speechMs, wordAtChar, wordAtTime, wordOffsets, type LineTimes } from "../data/readAlong";
+import { fitsLine, lineWords, wordAtTime, type LineTimes } from "../data/readAlong";
 import { soundOut, storyLineId, storyText, storyTitleId, storyTokens, type Story, type StoryHero, type StoryToken } from "../data/stories";
 import type { SoundPiece } from "../data/units";
 import type { Outfit } from "../data/wardrobe";
@@ -48,7 +48,7 @@ function loadStoryTimes(): Promise<void> {
       storyTimes = (module.default as { lines?: Record<string, number[]> }).lines ?? {};
     })
     .catch(() => {
-      // Without the times the reader estimates them from each clip's length.
+      // Without the times the page reads with no highlight.
     })
     .finally(() => {
       loadingTimes = null;
@@ -125,11 +125,9 @@ export function StoryReader({
     const text = storyText(line.text, hero);
     const id = storyLineId(story, index - 1, animal);
     const words = lineWords(text);
-    const offsets = wordOffsets(text);
     let times: LineTimes | null = null;
     let startedAt = 0;
     let frame = 0;
-    let voiceWords = false;
     const stop = () => {
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
@@ -138,7 +136,7 @@ export function StoryReader({
       frame = 0;
       if (signal.aborted || !times) return;
       const at = wordAtTime(times, performance.now() - startedAt);
-      if (!voiceWords) setReading(at);
+      setReading(at);
       if (at !== null) frame = requestAnimationFrame(tick);
     };
     const follow = (next: LineTimes) => {
@@ -149,15 +147,14 @@ export function StoryReader({
     };
     const onEvent: ReadAlong = (event) => {
       if (signal.aborted) return;
+      // The words light up only from the clip's own times (storyTimings.json, measured from the
+      // recording). A page without them reads with no highlight rather than a guessed one that drifts.
       if (event.kind === "clip") {
         const timed = storyTimes?.[id];
-        follow(fitsLine(timed, words.length) ? timed : estimateTimes(words, event.durationMs || speechMs(text, 1)));
-      } else if (event.kind === "speech") {
-        follow(estimateTimes(words, speechMs(text, event.rate)));
+        if (fitsLine(timed, words.length)) follow(timed);
       } else {
-        // The device voice says where it is; that beats any estimate.
-        voiceWords = true;
-        setReading(wordAtChar(offsets, event.charIndex));
+        stop();
+        setReading(null);
       }
     };
     signal.addEventListener("abort", stop, { once: true });

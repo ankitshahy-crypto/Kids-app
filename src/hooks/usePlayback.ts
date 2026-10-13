@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { cancelSpeech, hasFreshPrimedSpeech, isAbortError, playCardLine, playTile, playWhole, sleep, warmCard } from "../audio/player";
+import { cancelSpeech, isAbortError, playCardLine, playTile, playWhole, sleep, warmCard } from "../audio/player";
 import type { DeckWord } from "../data/deck";
 import type { Settings } from "../settings";
 
@@ -69,7 +69,7 @@ export function usePlayback(
         setActive(null);
       }
       try {
-        await sleep(hasFreshPrimedSpeech() ? 280 : (options.beatMs ?? PICTURE_BEAT_MS), signal);
+        await sleep(options.beatMs ?? PICTURE_BEAT_MS, signal);
         if (current.letterCard) {
           // A letter card has one line, "m, as in moon", said while its tile is lit. It used to be followed
           // by the word again ("m, as in moon. moon"); the word on its own is what the end of the slide says.

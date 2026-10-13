@@ -38,6 +38,11 @@ export async function installAudioSpy(page: Page): Promise<void> {
       const src = String((event as CustomEvent<string>).detail ?? "");
       target.__audioAttempts?.push({ kind: "clip", detail: new URL(src, location.href).href, at: performance.now() });
     });
+    // A line whose clip could not play (it chimes and shows its words instead).
+    window.addEventListener("littlenest:missing-clip", (event) => {
+      const detail = (event as CustomEvent<{ text: string; src: string | null }>).detail;
+      target.__audioAttempts?.push({ kind: "missing", detail: `${detail?.text ?? ""} ${detail?.src ?? ""}`, at: performance.now() });
+    });
     // An effect played (a tap, a pop, a chime): the app announces each one.
     window.addEventListener("littlenest:effect", (event) => {
       target.__audioAttempts?.push({ kind: "effect", detail: String((event as CustomEvent<string>).detail ?? ""), at: performance.now() });
@@ -149,4 +154,12 @@ export async function playedEffects(page: Page): Promise<string[]> {
     () => (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [],
   );
   return attempts.filter((item) => item.kind === "effect").map((item) => item.detail);
+}
+
+/** Lines whose clip could not play, with the clip asked for: always empty in a healthy build. */
+export async function missingClips(page: Page): Promise<string[]> {
+  const attempts = await page.evaluate(
+    () => (window as Window & { __audioAttempts?: { kind: string; detail: string }[] }).__audioAttempts ?? [],
+  );
+  return attempts.filter((item) => item.kind === "missing").map((item) => item.detail);
 }

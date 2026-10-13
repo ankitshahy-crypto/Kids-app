@@ -479,11 +479,12 @@ export function NameTrace({
       onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
       onSpeak={() =>
         new Promise<void>((resolve) => {
-          // Traced: the name, said as one word, the way a word card says its word. A name has no
-          // clip of its own, so the device voice says it: the recorded voice can only spell it, and
-          // spelled out at the end ("A, L, E, E, N, A") it was heard as the app not knowing the
-          // name. Closing the screen stops it (the speaker lets go with the screen).
-          speak.line([{ text: title }], resolve, { remember: false, onStop: resolve });
+          // Traced: "You traced your name!" in the recorded voice. The name itself is on the screen
+          // and is never spoken by a synthesized voice: it used to be said by the phone's own voice,
+          // a second voice (and in Chrome a Google network voice, which sent the child's name off
+          // the device). Spelled out again at the end ("A, L, E, E, N, A") it was heard as the app
+          // not knowing the name, so it is not spelled here either. Closing the screen stops it.
+          speak.line([promptCue("traced-name", "You traced your name!")], resolve, { remember: false, onStop: resolve });
         })
       }
       stay
