@@ -27,7 +27,7 @@ const CHEER_MAX_MS = 4000;
  * up on it with a soft pop; focus goes to it then, so a keyboard or a switch finds it as well. Left
  * alone for eight seconds, it pulses once and the pop comes once more.
  *
- * With the tick, and again with the pulse, Jessa says "Tap Done." (the "kit-tap-done" clip) after
+ * With the tick, and again with the pulse, Jessa says "All done? Tap Done!" (the "kit-tap-done" clip) after
  * the pop. A tap, or leaving the screen, stops it.
  */
 export function DoneButton({
@@ -61,7 +61,7 @@ export function DoneButton({
     const current = () => settings.current?.current ?? DEFAULT_SETTINGS;
     const voice = new AbortController();
     const sayTapDone = () => {
-      void playLine([promptCue("kit-tap-done", "Tap Done.")], current(), voice.signal).catch((error) => {
+      void playLine([promptCue("kit-tap-done", "All done? Tap Done!")], current(), voice.signal).catch((error) => {
         if (!isAbortError(error)) throw error;
       });
     };
