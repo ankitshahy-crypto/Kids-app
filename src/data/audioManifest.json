@@ -1153,6 +1153,7 @@
     "surprise-gift-ocean": { "file": "prompts/surprise-gift-ocean.mp3", "say": "And brought a fish!", "source": "neural" },
     "surprise-gift-castles": { "file": "prompts/surprise-gift-castles.mp3", "say": "And brought a crown!", "source": "neural" },
     "kit-done": { "file": "prompts/kit-done.mp3", "say": "You did it!", "source": "neural" },
+    "kit-tap-done": { "file": "prompts/kit-tap-done.mp3", "say": "Tap Done.", "source": "neural" },
     "shop-costs": { "file": "prompts/shop-costs.mp3", "say": "It costs", "source": "neural" },
     "shop-pennies": { "file": "prompts/shop-pennies.mp3", "say": "Tap a penny for each place.", "source": "neural" },
     "shop-which": { "file": "prompts/shop-which.mp3", "say": "Which coin pays for it?", "source": "neural" },

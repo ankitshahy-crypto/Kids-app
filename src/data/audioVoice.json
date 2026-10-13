@@ -239,6 +239,7 @@
  "prompts/heart.mp3": "elevenlabs:yj30vwTGJxSHezdAGsv9:eleven_multilingual_v2:{\"stability\":0.6,\"similarity_boost\":0.75,\"style\":0.1,\"use_speaker_boost\":true,\"speed\":0.8}:break0.35",
  "prompts/jars-chore.mp3": "elevenlabs:yj30vwTGJxSHezdAGsv9:eleven_multilingual_v2:{\"stability\":0.6,\"similarity_boost\":0.75,\"style\":0.1,\"use_speaker_boost\":true,\"speed\":0.8}:break0.35",
  "prompts/kit-done.mp3": "elevenlabs:yj30vwTGJxSHezdAGsv9:eleven_multilingual_v2:{\"stability\":0.6,\"similarity_boost\":0.75,\"style\":0.1,\"use_speaker_boost\":true,\"speed\":0.8}:break0.35",
+ "prompts/kit-tap-done.mp3": "elevenlabs:yj30vwTGJxSHezdAGsv9:eleven_multilingual_v2:{\"stability\":0.6,\"similarity_boost\":0.75,\"style\":0.1,\"use_speaker_boost\":true,\"speed\":0.8}:break0.35",
  "prompts/know.mp3": "elevenlabs:yj30vwTGJxSHezdAGsv9:eleven_multilingual_v2:{\"stability\":0.6,\"similarity_boost\":0.75,\"style\":0.1,\"use_speaker_boost\":true,\"speed\":0.8}:break0.35",
  "prompts/lemon-1.mp3": "elevenlabs:yj30vwTGJxSHezdAGsv9:eleven_multilingual_v2:{\"stability\":0.6,\"similarity_boost\":0.75,\"style\":0.1,\"use_speaker_boost\":true,\"speed\":0.8}:break0.35",
  "prompts/lemon-2.mp3": "elevenlabs:yj30vwTGJxSHezdAGsv9:eleven_multilingual_v2:{\"stability\":0.6,\"similarity_boost\":0.75,\"style\":0.1,\"use_speaker_boost\":true,\"speed\":0.8}:break0.35",
