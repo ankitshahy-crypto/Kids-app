@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { playEffect } from "../audio/manager";
-import { playPrompt } from "../audio/player";
+import { playPrompt, spellCue } from "../audio/player";
 import { letterForm, type LetterCase, type TracePoint } from "../data/handwriting";
 import { pairLine, pairPromptId } from "../data/letterPairs";
 import {
@@ -390,6 +390,7 @@ export function LetterTrace({
           partner={partnerStrokes}
           prompt={level === 5 ? memoryPrompt("letter", letter, casing) : `Copy ${caseLabel}.`}
           speak={level === 5}
+          cues={[spellCue(letter)]}
           showModel={level === 4}
           hint={hint}
           settingsRef={settingsRef}
