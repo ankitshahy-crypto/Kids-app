@@ -13743,7 +13743,7 @@ button,
    and the letter at the phone's proportions scaled up, and the six doors in one row. */
 @media (min-width: 768px) and (orientation: portrait) {
   .today.is-nest {
-    width: min(100%, 680px);
+    width: min(100%, 860px);
     margin: 0 auto;
     gap: 20px;
   }
