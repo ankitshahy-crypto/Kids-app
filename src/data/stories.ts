@@ -551,7 +551,7 @@ export const STORIES: Story[] = [
     pages: [
       { text: "{hero} is in a van. Yes, a big van!", setting: "road", props: ["van"], parent: "Sound out 'van': v, a, n. Feel your lip buzz on v." },
       { text: "The van went past a yak. Yak, yak, yak!", setting: "road", props: ["van", "yak"] },
-      { text: "A vet is in the van. Yum, the vet has a plum.", setting: "road", props: ["van", "plum"], parent: "A vet is an animal doctor. Ask: what does a vet do?" },
+      { text: "A man is in the van. Yum, the man has a plum.", setting: "road", props: ["van", "plum"], parent: "Ask: who is in the van? Where is the van going?" },
       { text: "The van hit a bump. Yikes! The plum is up!", setting: "road", props: ["van", "plum"] },
       { text: "{hero} got the plum. Yes! Yum, yum, yum.", setting: "road", props: ["plum"] },
     ],
@@ -568,7 +568,7 @@ export const STORIES: Story[] = [
       { text: "{hero} has a big yam.", setting: "farm", props: ["yam"], parent: "Sound out 'yam': y, a, m. A yam is like a sweet potato." },
       { text: "Val yells, yum! Can I get a bit?", setting: "farm", props: ["yam", "hen"] },
       { text: "Yes, Val. A bit for you.", setting: "farm", props: ["hen"] },
-      { text: "The vet and the yak get a bit too.", setting: "farm", props: ["yak"], parent: "Ask: how much yam is left now? Will there be any for {hero}?" },
+      { text: "A man and the yak get a bit too.", setting: "farm", props: ["yak"], parent: "Ask: how much yam is left now? Will there be any for {hero}?" },
       { text: "The yam is not big now. A bit is left for {hero}. Yum!", setting: "farm", props: ["yam", "smile"] },
     ],
     before: "Ask: what do you like to share? What is hard to share?",

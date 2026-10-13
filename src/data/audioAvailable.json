@@ -3555,7 +3555,6 @@
     "words/van.mp3",
     "words/velvet.mp3",
     "words/vest.mp3",
-    "words/vet.mp3",
     "words/vic.mp3",
     "words/volcano.mp3",
     "words/wag.mp3",
@@ -3627,7 +3626,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 18069884,
+    "shared": 18085776,
     "byAnimal": {
       "bear": 5033036,
       "bunny": 5094668,
