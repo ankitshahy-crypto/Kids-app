@@ -537,6 +537,7 @@
     "prompts/trace-name.mp3",
     "prompts/trace-word.mp3",
     "prompts/trace.mp3",
+    "prompts/traced-name.mp3",
     "prompts/triangle.mp3",
     "sentences/a-cat.mp3",
     "sentences/find-the-picture.mp3",
@@ -3625,20 +3626,20 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 17255575,
+    "shared": 17725926,
     "byAnimal": {
-      "bear": 4881909,
-      "bunny": 4843699,
-      "cat": 4747893,
-      "dog": 4817972,
-      "duck": 4731573,
-      "fox": 4820661,
-      "frog": 4880757,
-      "koala": 5086965,
-      "lion": 5039925,
-      "owl": 4880181,
-      "penguin": 4827957,
-      "pig": 4703925
+      "bear": 5033612,
+      "bunny": 5094668,
+      "cat": 4954508,
+      "dog": 5032844,
+      "duck": 5051084,
+      "fox": 5027468,
+      "frog": 5052428,
+      "koala": 5321996,
+      "lion": 5170508,
+      "owl": 5112716,
+      "penguin": 5300492,
+      "pig": 4980044
     }
   }
 }
