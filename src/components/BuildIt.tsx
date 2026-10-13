@@ -1,3 +1,4 @@
+import { DoneButton } from "./DoneButton";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
 import { playLine, playPrompt, playWordId, promptCue, wordCue } from "../audio/player";
@@ -496,20 +497,18 @@ function Builder({
       {goal ? null : "Play"}
     </button>
   );
-  const finishButton = (
-    <button
-      type="button"
-      className="start-button"
-      data-finish={code ? "code" : activity}
-      data-next={more ? (code ? "code" : activity) : undefined}
-      onClick={() => {
-        if (finished.current) return;
-        finished.current = true;
-        onDone();
-      }}
-    >
-      {more ? "Next" : "Done"}
+  const finish = () => {
+    if (finished.current) return;
+    finished.current = true;
+    onDone();
+  };
+  // Next goes on to the next goal; the last one ends with the one big Done and its tick, as every game does.
+  const finishButton = more ? (
+    <button type="button" className="start-button" data-finish={code ? "code" : activity} data-next={code ? "code" : activity} onClick={finish}>
+      Next
     </button>
+  ) : (
+    <DoneButton finish={code ? "code" : activity} settingsRef={settingsRef} onDone={finish} />
   );
 
   return (
