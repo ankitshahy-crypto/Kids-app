@@ -816,7 +816,7 @@ const STORY_READ = new Set(
  */
 const SAID_WHOLE = new Set([
   ...[...STORY_READ].filter((word) => word !== "look" && word !== "good"),
-  ...`a i ahh hmm shh zzz zzzip ball small calm buy hello hero gold kind tiny cozy eight water wash wasp wants harmed whistle bear lion koala penguin`.split(" "),
+  ...`a i ahh hmm shh zzz zzzip ball small calm buy hello hero gold kind tiny cozy eight water wash wasp wants harmed whistle whee bear lion koala penguin`.split(" "),
 ]);
 
 /**
