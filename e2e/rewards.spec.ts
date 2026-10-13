@@ -101,6 +101,9 @@ test("finishing a step earns a star and unlocks a closet item", async ({ page },
     await page.screenshot({ path: "test-results/screenshots/closet-iphone.png" });
   }
 
+  // Back from Dress up is My Nest, where it was opened; Back again is Today.
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.locator("[data-screen=nest]")).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "Story" }).click();
   await expect(page.locator(".story-scene .hero").first()).toHaveAttribute("data-hat", "hat-leaf");
