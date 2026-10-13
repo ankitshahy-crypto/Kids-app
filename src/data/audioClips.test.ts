@@ -27,14 +27,14 @@ describe("recorded clips", () => {
     const missing = everyCue()
       .filter(({ cue }) => !onDisk.has(cue.file))
       .map(({ kind, id }) => `${kind}/${id}`);
-    expect(missing, `No clip yet for ${missing.length} lines. Run the "Voice clips (Google)" workflow on this branch.`).toEqual([]);
+    expect(missing, `No clip yet for ${missing.length} lines. Run "node scripts/generate-audio.mjs --provider elevenlabs --verify" (voice.config.json).`).toEqual([]);
   });
 
   it("has no clip recorded from words that have since changed", () => {
     const stale = everyCue()
       .filter(({ cue }) => onDisk.has(cue.file) && recordedFrom[cue.file] !== undefined && recordedFrom[cue.file] !== cue.say)
       .map(({ kind, id, cue }) => `${kind}/${id}: recorded "${recordedFrom[cue.file]}", now "${cue.say}"`);
-    expect(stale, `These clips say old words. Run the "Voice clips (Google)" workflow on this branch.`).toEqual([]);
+    expect(stale, `These clips say old words. Run "node scripts/generate-audio.mjs --provider elevenlabs --verify" (voice.config.json).`).toEqual([]);
   });
 
   it("knows what every clip on disk was recorded from", () => {

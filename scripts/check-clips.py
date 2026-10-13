@@ -131,6 +131,11 @@ class Listener:
         options = ort.SessionOptions()
         options.intra_op_num_threads = int(os.environ.get("CLIP_CHECK_THREADS", "2"))
         options.inter_op_num_threads = 1
+        # Each clip is a different length. With the memory pattern on, onnxruntime reuses buffers
+        # planned for an earlier shape, and in --serve mode a clip's answer depended on the clip
+        # before it (a clean "Tap the card to pay." was heard as "benefit" after another clip).
+        options.enable_mem_pattern = False
+        options.enable_mem_reuse = False
         name = MODEL_NAME
         # The 8-bit model is a third of the size and hears the same things; the full one is used if it is all there is.
         def model(part: str) -> str:

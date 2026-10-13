@@ -1,0 +1,29 @@
+{
+  "provider": "elevenlabs",
+  "voice_name": "Jessa - Easygoing and Effortless",
+  "voice_id": "yj30vwTGJxSHezdAGsv9",
+  "model": "eleven_multilingual_v2",
+  "voice_settings": {
+    "stability": 0.6,
+    "similarity_boost": 0.75,
+    "style": 0.1,
+    "use_speaker_boost": true,
+    "speed": 0.8
+  },
+  "seed": 4220,
+  "request_format": "pcm_24000",
+  "output": {
+    "codec": "mp3",
+    "sample_rate": 24000,
+    "channels": 1,
+    "bitrate": "64k"
+  },
+  "keep_kinds": [
+    "letters",
+    "sounds",
+    "spell"
+  ],
+  "keep_match": "^prompts/pair-",
+  "keep_reason": "Bare letter sounds and letter names stay on the existing clips until a human voice actor records them (TTS cannot say a pure /m/ /t/ /n/ cleanly).",
+  "sentence_break_seconds": 0.35
+}

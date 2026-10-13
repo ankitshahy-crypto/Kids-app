@@ -27,6 +27,17 @@
  *   node scripts/generate-audio.mjs --sample chirp3:Aoede,gemini-2.5-pro-tts:Kore --sample-dir samples
  *                                                       # a short comparison clip per voice, nothing in public/audio
  *   node scripts/generate-audio.mjs --voice Achernar --try tries.txt --sample-dir samples
+ *
+ * ElevenLabs (the app's voice since Oct 2026; see voice.config.json):
+ *   ELEVENLABS_API_KEY=... node scripts/generate-audio.mjs --provider elevenlabs --verify --concurrency 4
+ *   With --provider elevenlabs (or "provider": "elevenlabs" in voice.config.json and no Google key),
+ *   every clip is made with the one voice, model and settings in voice.config.json. A clip is remade
+ *   when its words change *or* when it was made by another voice (src/data/audioVoice.json records
+ *   which voice made each clip), so a run that stops part way picks up where it left off, and a run
+ *   with nothing to do makes nothing. Kinds in "keep_kinds" (bare letter sounds and names) and
+ *   clips matching "keep_match" keep their current recording: those wait for a person's voice.
+ *   Every request and its character count is logged to scripts/.voice-usage.jsonl. A 429 or 5xx is
+ *   retried with backoff. --limit N stops after N new clips (to stay inside a credit budget).
  *                                                       # experiments: each line "label=text or <speak>ssml</speak>"
  *
  * Voices (env or flags):
@@ -60,6 +71,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const manifestPath = join(root, "src/data/audioManifest.json");
 const indexPath = join(root, "src/data/audioAvailable.json");
 const recordedPath = join(root, "src/data/audioRecorded.json");
+const voiceRecordPath = join(root, "src/data/audioVoice.json");
+const voiceConfigPath = join(root, "voice.config.json");
+const voiceConfig = existsSync(voiceConfigPath) ? JSON.parse(readFileSync(voiceConfigPath, "utf8")) : null;
 const audioRoot = resolve(root, "public/audio");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const argv = process.argv.slice(2);
@@ -370,6 +384,18 @@ function planFor(kind, id, say, main, letters, style, attempt = 0) {
   let text = say.trim();
   if (kind === "words" && text === "I") text = "I.";
   else if (text && !/[.!?]$/.test(text)) text = `${text}.`;
+  if (main.provider === "elevenlabs") {
+    // ElevenLabs is given the lead-in as context (previous_text), which it does not speak or
+    // bill, so a one-word line is read as the end of a sentence and is not cut short.
+    if (isShortLine(text)) {
+      const line = `${text[0].toUpperCase()}${text.slice(1)}`;
+      return { say: [{ text: line, voice: main, previous: LEAD_INS[attempt % LEAD_INS.length] }] };
+    }
+    // A short beat between sentences: the voice runs them together at a pace too quick for a
+    // three-year-old, and its speed setting bottoms out. Read-along times come from the clip.
+    const paced = main.sentenceBreak ? text.replace(/([.!?])\s+(?=["'A-Z])/g, `$1 <break time="${main.sentenceBreak}s" /> `) : text;
+    return { say: [{ text: paced, voice: main }] };
+  }
   if (isShortLine(text) && hasFfmpeg) {
     const lead = LEAD_INS[attempt % LEAD_INS.length];
     // A capital starts the word's own sentence, so it is said as one: "Say it with me. Up."
@@ -390,11 +416,30 @@ function describe(plan) {
     .join(" + ");
 }
 
-const modelName = option("--model", process.env.GOOGLE_TTS_MODEL || "chirp3");
+const provider = option("--provider", process.env.GOOGLE_TTS_API_KEY || process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_TTS_FAKE_DIR ? "google" : voiceConfig?.provider ?? "google");
+const eleven = provider === "elevenlabs";
+const elevenVoice = eleven
+  ? {
+      provider: "elevenlabs",
+      name: option("--voice", voiceConfig.voice_id),
+      model: option("--model", voiceConfig.model),
+      settings: voiceConfig.voice_settings,
+      seed: voiceConfig.seed,
+      sentenceBreak: voiceConfig.sentence_break_seconds,
+      label: `elevenlabs:${option("--voice", voiceConfig.voice_id)}:${option("--model", voiceConfig.model)}`,
+    }
+  : null;
+/** The voice a clip was made by, as recorded in audioVoice.json: same voice, model and settings. */
+const voiceKey = eleven ? `${elevenVoice.label}:${JSON.stringify(elevenVoice.settings)}:break${elevenVoice.sentenceBreak ?? 0}` : null;
+const keepKinds = new Set(eleven ? voiceConfig.keep_kinds ?? [] : []);
+const keepMatch = eleven && voiceConfig.keep_match ? new RegExp(voiceConfig.keep_match) : null;
+const concurrency = Math.max(1, Number(option("--concurrency", "1")) || 1);
+const limit = Number(option("--limit", "0")) || 0;
+const modelName = eleven ? "chirp3" : option("--model", process.env.GOOGLE_TTS_MODEL || "chirp3");
 const prompt = option("--prompt", process.env.GOOGLE_TTS_PROMPT || DEFAULT_PROMPT);
-const mainVoice = resolveVoice(option("--voice", process.env.GOOGLE_TTS_VOICE || "Aoede"), modelName, prompt);
+const mainVoice = eleven ? elevenVoice : resolveVoice(option("--voice", process.env.GOOGLE_TTS_VOICE || "Aoede"), modelName, prompt);
 const letterSpec = option("--letter-voice", process.env.GOOGLE_TTS_LETTER_VOICE || "");
-const letterVoice = letterSpec ? resolveVoice(letterSpec, "chirp3") : mainVoice.modelName ? resolveVoice(mainVoice.name, "chirp3") : mainVoice;
+const letterVoice = eleven ? elevenVoice : letterSpec ? resolveVoice(letterSpec, "chirp3") : mainVoice.modelName ? resolveVoice(mainVoice.name, "chirp3") : mainVoice;
 const letterStyle = option("--letter-style", "sound");
 const speed = Number(option("--speed", "0.95")) || 0.95;
 const only = option("--only", "")
@@ -657,8 +702,55 @@ function silenceWav(seconds) {
   return ffmpeg(["-f", "lavfi", "-i", `anullsrc=r=24000:cl=mono`, "-t", String(seconds), "-f", "wav", "pipe:1"]);
 }
 
+const usageLog = join(root, "scripts/.voice-usage.jsonl");
+const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+
+/** One request to ElevenLabs: 24 kHz 16-bit PCM, wrapped as a WAV so trimming and levelling work as before. */
+async function requestEleven({ text, voice, previous, next }) {
+  const key = process.env.ELEVENLABS_API_KEY?.trim();
+  if (!key) {
+    console.error("Set ELEVENLABS_API_KEY. The app itself never calls ElevenLabs.");
+    process.exit(1);
+  }
+  const body = { text, model_id: voice.model, voice_settings: voice.settings, ...(voice.seed !== undefined ? { seed: voice.seed } : {}) };
+  if (previous) body.previous_text = previous;
+  if (next) body.next_text = next;
+  const url = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice.name)}?output_format=pcm_24000`;
+  for (let attempt = 0; ; attempt += 1) {
+    let response;
+    try {
+      response = await fetch(url, { method: "POST", headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/pcm" }, body: JSON.stringify(body), signal: AbortSignal.timeout(90000) });
+    } catch (error) {
+      if (attempt >= 5) throw error;
+      await sleep(2000 * 2 ** attempt);
+      continue;
+    }
+    if (response.status === 429 || response.status >= 500) {
+      const detail = await response.text().catch(() => "");
+      // Out of credits is not a rate limit: stop at once rather than retry.
+      if (/quota_exceeded|insufficient/i.test(detail)) throw new Error(`ElevenLabs: out of credits (${detail.slice(0, 200)})`);
+      if (attempt >= 6) throw new Error(`ElevenLabs returned ${response.status} after ${attempt + 1} tries: ${detail.slice(0, 200)}`);
+      await sleep(Number(response.headers.get("retry-after")) * 1000 || 1500 * 2 ** attempt);
+      continue;
+    }
+    if (!response.ok) throw new Error(`ElevenLabs returned ${response.status}: ${(await response.text().catch(() => "")).slice(0, 300)}`);
+    const pcm = Buffer.from(await response.arrayBuffer());
+    try {
+      const line = JSON.stringify({ at: new Date().toISOString(), chars: text.length, cost: response.headers.get("character-cost"), model: voice.model, text: text.slice(0, 60) });
+      writeFileSync(usageLog, `${line}\n`, { flag: "a" });
+    } catch {
+      // The log is a convenience.
+    }
+    if (pcm.length < 2000) throw new Error(`ElevenLabs returned empty audio for ${JSON.stringify(text)}`);
+    const even = pcm.subarray(0, pcm.length - (pcm.length % 2));
+    return wavFrom(new Int16Array(even.buffer.slice(even.byteOffset, even.byteOffset + even.length)), 24000);
+  }
+}
+
 /** One request to Google. Returns WAV (LINEAR16, 24 kHz) when ffmpeg is here, else MP3. */
-async function request({ text, ssml, voice, pron, encoding }) {
+async function request(step) {
+  if (step.voice?.provider === "elevenlabs") return requestEleven(step);
+  const { text, ssml, voice, pron, encoding } = step;
   await connect();
   const input = ssml ? { ssml } : voice.modelName ? { prompt: voice.prompt, text } : { text };
   // Custom pronunciations: { phrase: ipa } pairs applied to the text (Chirp 3 HD, en-US).
@@ -741,7 +833,7 @@ async function makeClip(plan, label, strict = true) {
 function finishWav(wav, plan) {
   let out = wav;
   if (plan.cap) out = capWav(out, plan.cap);
-  if (plan.level) out = levelWav(out);
+  if (plan.level || eleven) out = levelWav(out);
   return out;
 }
 
@@ -887,19 +979,36 @@ function writeRecorded(recorded, files) {
  * few seconds.
  */
 let listener = null;
+/** Several listeners side by side (--listeners N): checking a long story page takes seconds, and one listener held up four voices. */
 async function startListener() {
+  const count = Math.max(1, Number(option("--listeners", "1")) || 1);
+  const pool = [];
+  for (let index = 0; index < count; index += 1) pool.push(await startOneListener());
+  let turn = 0;
+  listener = {
+    ask: (file, text) => pool[turn++ % pool.length].ask(file, text),
+    stop: () => pool.forEach((one) => one.stop()),
+  };
+}
+async function startOneListener() {
   const child = spawn("python3", [join(root, "scripts/check-clips.py"), "--serve"], { stdio: ["pipe", "pipe", "inherit"] });
   const lines = createInterface({ input: child.stdout });
   const waiting = [];
   let failed = null;
+  // Answers are matched to questions by file, not by order: with --concurrency several clips are
+  // asked about at once, and an answer given to the wrong clip made good clips "fail" (and be made
+  // again) and let bad ones through.
   lines.on("line", (line) => {
-    const next = waiting.shift();
-    if (!next) return;
+    let answer;
     try {
-      next.resolve(JSON.parse(line));
+      answer = JSON.parse(line);
     } catch {
-      next.resolve({ ok: false, why: `could not read the listener's answer: ${line.slice(0, 120)}`, heard: "" });
+      answer = null;
     }
+    const at = answer && answer.file !== undefined ? waiting.findIndex((item) => item.file === answer.file) : 0;
+    const [next] = waiting.splice(at === -1 ? 0 : at, 1);
+    if (!next) return;
+    next.resolve(answer ?? { ok: false, why: `could not read the listener's answer: ${line.slice(0, 120)}`, heard: "" });
   });
   child.on("exit", (code) => {
     failed = new Error(`The clip listener stopped (exit ${code}). Run "python3 scripts/check-clips.py --fetch" and check that numpy and onnxruntime are installed.`);
@@ -908,12 +1017,12 @@ async function startListener() {
   const ask = (message) =>
     new Promise((resolve, reject) => {
       if (failed) return reject(failed);
-      waiting.push({ resolve, reject });
+      waiting.push({ resolve, reject, file: message?.file });
       if (message) child.stdin.write(`${JSON.stringify(message)}\n`);
     });
   // Its first line says it is ready.
   await ask(null);
-  listener = { ask: (file, text) => ask({ file, text }), stop: () => child.stdin.end() };
+  return { ask: (file, text) => ask({ file, text }), stop: () => child.stdin.end() };
 }
 
 /** Letter phrases, bare sounds and letter names are not words a recognizer knows; scripts/hear-clips.py reports on those. */
@@ -930,6 +1039,8 @@ for (const [kind, entries] of Object.entries(manifest)) {
   for (const [id, entry] of Object.entries(entries)) {
     if (entry.source !== "neural") continue;
     if (match && !match.test(`${kind}/${id}`)) continue;
+    // Bare sounds and letter names wait for a person's recording; the ElevenLabs run leaves them be.
+    if (keepKinds.has(kind) || keepMatch?.test(`${kind}/${id}`)) continue;
     if (typeof entry.file !== "string" || entry.file.includes("..") || entry.file.startsWith("/") || !entry.file.endsWith(".mp3")) {
       throw new Error(`Refusing unsafe audio path "${entry.file}"`);
     }
@@ -939,6 +1050,19 @@ for (const [kind, entries] of Object.entries(manifest)) {
 }
 
 const recorded = readRecorded();
+/** Which voice made each clip (ElevenLabs runs only): a clip by any other voice is made again. */
+const voiceRecord = (() => {
+  try {
+    return JSON.parse(readFileSync(voiceRecordPath, "utf8"));
+  } catch {
+    return {};
+  }
+})();
+function writeVoiceRecord() {
+  if (!eleven || dryRun) return;
+  const sorted = Object.fromEntries(Object.entries(voiceRecord).sort(([a], [b]) => (a < b ? -1 : 1)));
+  writeFileSync(voiceRecordPath, `${JSON.stringify(sorted, null, 1)}\n`);
+}
 if (verify && !dryRun) await startListener();
 
 /** Why each clip is being made: missing, forced, its words changed, or it failed the listen. */
@@ -948,6 +1072,8 @@ for (const [file, job] of jobs) {
   const dest = resolve(audioRoot, file);
   if (!existsSync(dest)) {
     todo.push([file, job, "missing"]);
+  } else if (eleven && voiceRecord[file] !== voiceKey) {
+    todo.push([file, job, voiceRecord[file] ? "made by an older voice setting" : "made by another voice"]);
   } else if (shouldForce(job.kind)) {
     todo.push([file, job, "forced"]);
   } else if (recorded[file] !== undefined && recorded[file] !== job.say) {
@@ -995,12 +1121,13 @@ if (todo.length === 0) {
 const closer = (a, b) => (a.verdict.score ?? a.verdict.share ?? -99) > (b.verdict.score ?? b.verdict.share ?? -99);
 
 let made = 0;
-for (const [file, job, why] of todo) {
+const queue = limit > 0 && !dryRun ? todo.slice(0, limit) : todo;
+async function makeOne([file, job, why]) {
   const dest = resolve(audioRoot, file);
   if (!dest.startsWith(`${audioRoot}${sep}`)) throw new Error(`Refusing unsafe audio path "${file}"`);
   if (dryRun) {
     console.log(`${file}  (${why})  ${describe(planFor(job.kind, job.id, job.say, mainVoice, letterVoice, letterStyle))}`);
-    continue;
+    return;
   }
   const label = `${job.kind} ${job.id}`;
   let best = null;
@@ -1014,7 +1141,7 @@ for (const [file, job, why] of todo) {
       if (!audio || audio.length === 0) throw new Error(`Google returned empty audio for ${label}`);
       let verdict = { ok: true, heard: "", why: "" };
       if (listener && canHear(job.kind)) {
-        const probe = join(workDir, "probe.mp3");
+        const probe = join(workDir, `probe-${file.replace(/[^A-Za-z0-9]+/g, "-")}.mp3`);
         writeFileSync(probe, audio);
         verdict = await hear(probe, job);
       }
@@ -1036,6 +1163,7 @@ for (const [file, job, why] of todo) {
   }
   writeClip(dest, best.audio, label);
   recorded[file] = job.say;
+  if (eleven) voiceRecord[file] = voiceKey;
   report.made.push({ file, why });
   if (tries > 1 && best.verdict.ok) report.retried.push({ file, tries });
   if (!best.verdict.ok) {
@@ -1044,8 +1172,34 @@ for (const [file, job, why] of todo) {
     console.log(process.env.GITHUB_ACTIONS && report.unsure.length <= 40 ? `::warning::${note}` : note);
   }
   made += 1;
-  if (made % 50 === 0 || made === todo.length) console.log(`${made}/${todo.length}  public/audio/${file}`);
+  if (made % 50 === 0 || made === queue.length) console.log(`${made}/${queue.length}  public/audio/${file}`);
+  // Saved as it goes, so a run that is stopped (or runs out of credit) resumes where it was.
+  if (made % 25 === 0) {
+    writeRecorded(recorded, scan());
+    writeVoiceRecord();
+  }
 }
+let next = 0;
+let fatal = null;
+await Promise.all(
+  Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    while (next < queue.length && !fatal) {
+      const item = queue[next++];
+      try {
+        await makeOne(item);
+      } catch (error) {
+        fatal = error;
+      }
+    }
+  }),
+);
+if (fatal) {
+  writeRecorded(recorded, scan());
+  writeVoiceRecord();
+  listener?.stop();
+  throw fatal;
+}
+
 
 listener?.stop();
 if (dryRun) {
@@ -1055,5 +1209,6 @@ if (dryRun) {
 const files = scan();
 writeIndex(files);
 writeRecorded(recorded, files);
+writeVoiceRecord();
 writeReport();
 console.log(`Made ${made} clips (${report.retried.length} took more than one try, ${report.unsure.length} to listen to). Indexed ${files.length} audio files.`);
