@@ -4,6 +4,7 @@ Everything visual or audible in LittleNest Learning is listed here. There are no
 
 | Asset | Path | Source | License |
 | --- | --- | --- | --- |
+| Bunny (cream): face stills, mood faces, blink, idle loop | `public/animals/bunny/*.webp`, `public/animals/bunny/clips/idle.webm`, `idle.json`; sources in `art-src/bunny/` | AI-generated (Muse) supplied by the owner (the bare bunny, 1600x1600 webp, Oct 13 2026), background removed on the box. The mood faces, blink and idle loop were made from that one still with code (`art-src/bunny/animate.py`, `moods.py`), not a video or image model. The iPhone `idle.mov` is not made yet (it needs a Mac). | **To confirm:** the Muse terms for commercial use before release. |
 | Fredoka Regular (latin, weight 400) | `src/assets/fonts/fredoka-latin-400-normal.woff2` | [Fredoka](https://github.com/hafontia/Fredoka-One), latin subset WOFF2 as published by [@fontsource/fredoka 5.2.8](https://github.com/fontsource/font-files) | SIL Open Font License 1.1 |
 | Fredoka SemiBold (latin, weight 600) | `src/assets/fonts/fredoka-latin-600-normal.woff2` | Same as above | SIL Open Font License 1.1 |
 | Fredoka Bold (latin, weight 700) | `src/assets/fonts/fredoka-latin-700-normal.woff2` | Same as above | SIL Open Font License 1.1 |

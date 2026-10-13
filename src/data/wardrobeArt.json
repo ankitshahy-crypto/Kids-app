@@ -27,8 +27,23 @@
   "fits": {
     "bunny": {
       "hat-crown": {
-        "dx": -0.03,
-        "dy": 0.12,
+        "dx": -0.04,
+        "dy": -0.03,
+        "rotate": -5
+      },
+      "hat-leaf": {
+        "dx": 0.04,
+        "dy": -0.02,
+        "rotate": 0
+      },
+      "scarf-dots": {
+        "dx": 0.01,
+        "dy": -0.2,
+        "rotate": 0
+      },
+      "scarf-stripe": {
+        "dx": 0.01,
+        "dy": -0.18,
         "rotate": 0
       }
     }

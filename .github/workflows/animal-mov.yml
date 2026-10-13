@@ -1,0 +1,44 @@
+# The iPhone's copy of an animal clip: HEVC with alpha (.mov), which only Apple's VideoToolbox encoder
+# makes. Run by hand on a macOS runner from the clip's near-lossless master (art-src/<animal>/), and
+# download the result from the run's artifacts; nothing is committed by this workflow. Until a .mov is
+# in public/animals/<animal>/clips/, Safari and the app show that animal's stills and CSS blink.
+name: Animal clip for iPhone (.mov)
+
+on:
+  workflow_dispatch:
+    inputs:
+      animal:
+        description: "Animal id (art-src/<animal>/<clip>.master.webm)"
+        required: true
+        default: bunny
+      clip:
+        description: "Clip name"
+        required: true
+        default: idle
+
+permissions:
+  contents: read
+
+jobs:
+  mov:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ffmpeg with VideoToolbox
+        run: brew install ffmpeg
+      - name: Encode HEVC with alpha
+        env:
+          ANIMAL: ${{ inputs.animal }}
+          CLIP: ${{ inputs.clip }}
+        run: |
+          set -euo pipefail
+          src="art-src/${ANIMAL}/${CLIP}.master.webm"
+          test -f "$src"
+          mkdir -p out
+          # libvpx-vp9 before -i: ffmpeg's own VP9 decoder drops the alpha (scripts/animal-clips.py).
+          ffmpeg -v error -y -c:v libvpx-vp9 -i "$src" -c:v hevc_videotoolbox -alpha_quality 0.75 -tag:v hvc1 -an "out/${CLIP}.mov"
+          ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate -of compact "out/${CLIP}.mov"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.animal }}-${{ inputs.clip }}-mov
+          path: out/*.mov

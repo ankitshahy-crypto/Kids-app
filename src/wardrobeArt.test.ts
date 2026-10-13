@@ -47,8 +47,10 @@ describe("the painted dress-up pieces", () => {
         expect(placed!.y + placed!.h).toBeLessThanOrEqual(1.3);
       }
     }
-    // The bunny's crown sits on its head, between the ears, lower than the fox's.
-    expect(wearArt("hat-crown", "bunny")!.place.y).toBeGreaterThan(wearArt("hat-crown", "fox")!.place.y);
+    // The cream bunny's head is round and tall, its ears falling at its sides, so its crown sits on the
+    // very top of the head, no lower than the fox's, and a little left of the fox's (its head is centred).
+    expect(wearArt("hat-crown", "bunny")!.place.y).toBeLessThanOrEqual(wearArt("hat-crown", "fox")!.place.y);
+    expect(wearArt("hat-crown", "bunny")!.place.x).toBeLessThan(wearArt("hat-crown", "fox")!.place.x);
   });
 
   it("a fit for an animal's whole sitting figure moves a piece a little too, and may lift a hat onto the top of the head", () => {
