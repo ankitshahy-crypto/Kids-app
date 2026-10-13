@@ -106,6 +106,15 @@ function startSilentElement(): void {
  */
 let didUnlockGesture = false;
 
+/** TEMPORARY, for the phone test of build 8: one line per step of the voice path, filterable by its prefix. */
+export function voiceLog(step: string, detail: Record<string, unknown> = {}): void {
+  try {
+    console.warn(`[littlenest voice] ${step}`, { context: context?.state ?? "none", screen: document.querySelector("[data-screen]")?.getAttribute("data-screen") ?? "?", ...detail });
+  } catch {
+    // Logging must never stop a sound.
+  }
+}
+
 export function unlockAudio(): void {
   try {
     const ctx = ensure();
@@ -114,7 +123,11 @@ export function unlockAudio(): void {
       // still the browser's, which is what makes iOS let the context run on afterwards. (The sample
       // used to be started on the first tap only; a context blocked later, by a call, Siri or the
       // app going to the background, got the resume alone, and that was not always enough.)
-      void ctx.resume().catch(() => undefined);
+      const was = ctx.state;
+      void ctx
+        .resume()
+        .then(() => voiceLog("tap resumed the context", { was }))
+        .catch((error: unknown) => voiceLog("tap could not resume the context", { was, reason: String(error) }));
       startSilentBuffer(ctx);
     }
     if (!didUnlockGesture) {
@@ -444,10 +457,27 @@ function busLevel(bus: AudioBus): number {
 export async function playOnBus(src: string, bus: AudioBus, signal: AbortSignal, onStart?: (durationMs: number) => void): Promise<void> {
   if (signal.aborted) throw aborted();
   unlockAudio();
+  const ctx = ensure();
+  voiceLog("clip asked for", { clip: src });
+  if (ctx && isBlocked(ctx.state)) {
+    // The context is blocked and this is not a tap (a round's question starts from the page). A
+    // media element is not held by the context's state, and the app's WebView lets media start
+    // without a tap, so the clip is tried that way first, at once; only if that is refused too does
+    // it wait for the next tap to resume the context (playBuffer).
+    try {
+      await playElement(src, bus, signal, onStart);
+      voiceLog("clip played through a media element while the context was blocked", { clip: src });
+      return;
+    } catch (error) {
+      if (signal.aborted || isAbort(error)) throw aborted();
+      voiceLog("media element refused while the context was blocked; waiting for a tap", { clip: src, reason: String(error) });
+    }
+  }
   try {
     await playBuffer(src, bus, signal, onStart);
   } catch (error) {
     if (signal.aborted || isAbort(error)) throw aborted();
+    voiceLog("web audio failed; trying a media element", { clip: src, reason: String(error) });
     await playElement(src, bus, signal, onStart);
   }
 }
@@ -561,12 +591,25 @@ function whenRunning(ctx: AudioContext, signal: AbortSignal, maxMs: number): Pro
       if (error) reject(error);
       else resolve();
     };
+    const started = Date.now();
     const onState = () => {
-      if (ctx.state === "running") finish();
+      if (ctx.state === "running") {
+        voiceLog("context running again; the clip plays", { waitedMs: Date.now() - started });
+        finish();
+      }
     };
     const onAbort = () => finish(aborted());
-    const timer = setTimeout(() => finish(new Error(`Audio context stayed ${ctx.state}`)), maxMs);
-    const poll = setInterval(onState, 250);
+    const timer = setTimeout(() => {
+      voiceLog("context stayed blocked; giving up on web audio", { waitedMs: maxMs, state: ctx.state });
+      finish(new Error(`Audio context stayed ${ctx.state}`));
+    }, maxMs);
+    // Looked at now and then, and asked to resume each time: once a context has been started by a
+    // tap, iOS may let a later resume through from the page, and after an interruption (a call,
+    // Siri, Control Center) the context does not come back on its own.
+    const poll = setInterval(() => {
+      if (ctx.state !== "running") void ctx.resume().catch(() => undefined);
+      onState();
+    }, 250);
     ctx.addEventListener("statechange", onState);
     signal.addEventListener("abort", onAbort, { once: true });
   });
@@ -576,6 +619,7 @@ async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal, onSta
   const ctx = ensure();
   if (!ctx) throw new Error("Audio is unavailable");
   if (isBlocked(ctx.state)) {
+    const was = ctx.state;
     try {
       await ctx.resume();
     } catch {
@@ -583,6 +627,7 @@ async function playBuffer(src: string, bus: AudioBus, signal: AbortSignal, onSta
       // instead of giving the line to the phone's own voice at once (which is what a child heard on
       // an iPhone in Homes, Coins and Body: a robotic voice, and only after the speaker was tapped).
     }
+    voiceLog("web audio found the context blocked", { was, now: ctx.state, clip: src });
     if (ctx.state !== "running") await whenRunning(ctx, signal, BLOCKED_WAIT_MS);
   }
   if (ctx.state !== "running") throw new Error("Audio context is not running");
