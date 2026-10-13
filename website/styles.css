@@ -356,7 +356,24 @@ p {
   border-radius: 28px;
 }
 
+/* The LittleNest mascot sits in front of the phone, whole: crown to nest, never clipped. */
+.hero-mascot {
+  position: absolute;
+  z-index: 2;
+  /* Beside the phone, overlapping only its frame, so the screen's own picture stays clear. */
+  left: max(-80px, calc(50% - 140px - 190px));
+  bottom: 0;
+  width: 210px;
+  height: auto;
+  filter: drop-shadow(0 14px 18px rgba(90, 70, 50, 0.18));
+}
+
 @media (max-width: 860px) {
+  .hero-mascot {
+    width: 140px;
+    left: max(0px, calc(50% - 140px - 130px));
+  }
+
   .hero .wrap {
     grid-template-columns: 1fr;
   }
