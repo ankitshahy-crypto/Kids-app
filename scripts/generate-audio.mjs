@@ -35,7 +35,8 @@
  *   when its words change *or* when it was made by another voice (src/data/audioVoice.json records
  *   which voice made each clip), so a run that stops part way picks up where it left off, and a run
  *   with nothing to do makes nothing. Kinds in "keep_kinds" (bare letter sounds and names) and
- *   clips matching "keep_match" keep their current recording: those wait for a person's voice.
+ *   clips matching "keep_match" are left alone here: they are put together from Jessa's chosen
+ *   phoneme takes by scripts/letter-sounds/build.py (see scripts/letter-sounds/CHOICES.md).
  *   Every request and its character count is logged to scripts/.voice-usage.jsonl. A 429 or 5xx is
  *   retried with backoff. --limit N stops after N new clips (to stay inside a credit budget).
  *                                                       # experiments: each line "label=text or <speak>ssml</speak>"
