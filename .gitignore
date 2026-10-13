@@ -22,3 +22,4 @@ ios/capacitor-cordova-ios-plugins
 scripts/.whisper/
 __pycache__/
 scripts/.voice-usage.jsonl
+gen.log
