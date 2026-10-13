@@ -228,5 +228,6 @@ The animals change, and the icon, the nest and the module tiles change with them
   drawing in the nest until its stills are in; a missing mood is idle.
 - Words, Numbers and Colors stop using the chick tiles: they are SVG marks in the style of the other
   module marks (a book and letter blocks; 1 2 3 blocks and counting dots; a palette and a brush).
-- The live site keeps its screenshots and copy until there are phone captures of the plush animal;
-  only its icon file changed.
+- The live site's screenshots are phone captures of the plush animal (2026-10-13: Today, Sound it
+  out, tracing, a story page and Letter Pop, with the twelve idle faces as a strip); its module tiles
+  are the Today marks.
