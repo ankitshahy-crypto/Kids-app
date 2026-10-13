@@ -47,10 +47,7 @@ describe("the painted dress-up pieces", () => {
         expect(placed!.y + placed!.h).toBeLessThanOrEqual(1.3);
       }
     }
-    // The bunny's glasses sit lower than the fox's, level on its nose; its crown sits on its head, between the ears.
-    const bunny = wearArt("glasses-round", "bunny")!.place;
-    const fox = wearArt("glasses-round", "fox")!.place;
-    expect(bunny.y).toBeGreaterThan(fox.y);
+    // The bunny's crown sits on its head, between the ears, lower than the fox's.
     expect(wearArt("hat-crown", "bunny")!.place.y).toBeGreaterThan(wearArt("hat-crown", "fox")!.place.y);
   });
 

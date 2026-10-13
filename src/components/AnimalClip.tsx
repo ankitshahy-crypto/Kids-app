@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AnimalId } from "../data/animals";
 import clips from "../data/animalClips.json";
 import type { Mood } from "../game/kit";
+import { isNativeApp } from "../audio/platform";
 
 /**
  * The animals' clips (public/animals/<id>/clips/, made by scripts/animal-clips.py): which each has,
@@ -67,7 +68,11 @@ export function AnimalClip({ animal, mood, onPlaying }: { animal: AnimalId; mood
   const [holding, setHolding] = useState<ClipName | null>(null);
   const reduced = useReducedMotion();
   const wanted = MOOD_CLIP[mood];
-  const have = entry && !reduced ? (Object.keys(entry.clips) as ClipName[]) : [];
+  // In the installed app the clips are off for now: on the phone test of builds 7 to 9 the idle
+  // loop drew its frame as a white box round the animal (the HEVC file's transparency not honoured
+  // by that WebView), in Letter Pop, Colors and the other games. The stills and the CSS blink are
+  // what is seen there, as before build 7. Take this out once the clips are seen to play clear.
+  const have = entry && !reduced && !isNativeApp() ? (Object.keys(entry.clips) as ClipName[]) : [];
   // The clip for this mood, when the animal has it and it has not just played out; else the idle loop.
   const asked: ClipName | null = wanted && have.includes(wanted) && overDone !== wanted ? wanted : have.includes("idle") ? "idle" : null;
   // (With no clips to play, reduced motion among the reasons, nothing is held either.)

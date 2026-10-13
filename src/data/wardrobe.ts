@@ -2,7 +2,6 @@
 export const wardrobe = [
   { id: "hat-leaf", slot: "hat", name: "Leaf hat", stars: 1 },
   { id: "scarf-stripe", slot: "scarf", name: "Stripe scarf", stars: 3 },
-  { id: "glasses-round", slot: "glasses", name: "Round glasses", stars: 5 },
   { id: "color-sky", slot: "color", name: "Sky color", stars: 8 },
   { id: "hat-crown", slot: "hat", name: "Paper crown", stars: 10 },
   { id: "scarf-dots", slot: "scarf", name: "Dot scarf", stars: 15 },
@@ -17,7 +16,6 @@ export type Outfit = Record<OutfitSlot, WardrobeId | null>;
 export const emptyOutfit = (): Outfit => ({
   hat: null,
   scarf: null,
-  glasses: null,
   color: null,
 });
 
