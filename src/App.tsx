@@ -1022,9 +1022,10 @@ export default function App() {
                   }}
                 />
               ) : null}
-              {screen === "surprise" ? <SurpriseView profile={active} settingsRef={settingsRef} onBack={() => setScreen("today")} /> : null}
+              {/* Dress up and the Surprise open from My Nest, so Back takes the child back there, not to Today. */}
+              {screen === "surprise" ? <SurpriseView profile={active} settingsRef={settingsRef} onBack={() => setScreen("nest")} /> : null}
               {screen === "closet" ? (
-                <Closet profile={active} onWear={(itemId) => wear(active.id, itemId)} onBack={() => setScreen("today")} />
+                <Closet profile={active} onWear={(itemId) => wear(active.id, itemId)} onBack={() => setScreen("nest")} />
               ) : null}
               {screen === "stickers" ? <StickerBook profile={active} settingsRef={settingsRef} onBack={() => setScreen("today")} /> : null}
               {screen === "letter" ? (

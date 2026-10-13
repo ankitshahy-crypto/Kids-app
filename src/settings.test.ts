@@ -49,7 +49,8 @@ describe("comfort settings", () => {
       readingGoal: 2,
       extraChunks: 3,
       music: false,
-      speed: "slower",
+      // From a save made when the phone's own voice had a speed: read past now.
+      ...({ speed: "slower" } as Record<string, unknown>),
     });
     expect(Object.keys(store.dump())).toContain(SETTINGS_KEY);
     const loaded = loadSettings();
@@ -61,7 +62,8 @@ describe("comfort settings", () => {
     expect(loaded.readingGoal).toBe(2);
     expect(loaded.extraChunks).toBe(3);
     expect(loaded.music).toBe(false);
-    expect(loaded.speed).toBe("slower");
+    // `speed` in the save is from the phone's voice, which is gone: it is read past, not kept.
+    expect("speed" in loaded).toBe(false);
   });
 
   it("keeps an older save readable and moves a 15-minute goal to 10", () => {

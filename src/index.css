@@ -2850,9 +2850,34 @@ button:focus-visible {
   margin: 4px 0;
 }
 
+.nest-doors .dock-button {
+  font-size: 16px;
+}
+
 .nest-doors .dock-art {
+  padding: 6px;
   background: transparent;
   box-shadow: none;
+}
+
+/* On an iPad the doors are as big as Today's, their labels no smaller than sixteen pixels. */
+@media (min-width: 768px) {
+  .nest-doors {
+    gap: 40px;
+  }
+
+  .nest-doors .dock-button {
+    width: 148px;
+    min-height: 132px;
+    gap: 8px;
+    font-size: 18px;
+  }
+
+  .nest-doors .dock-art {
+    width: 116px;
+    height: 116px;
+    padding: 14px;
+  }
 }
 
 /* ---- Today's marks and pills, as the mockup draws them (components/TodayMarks.tsx) ----
@@ -4431,22 +4456,8 @@ button:focus-visible {
   height: 42px;
 }
 
-.dock-dress,
 .dock-stickers {
   position: relative;
-}
-
-.dock-dress {
-  background: #e7f6ee;
-}
-
-.dock-dress::before {
-  content: "";
-  width: 34px;
-  height: 18px;
-  border-radius: 46% 46% 30% 30%;
-  background: #6eae78;
-  box-shadow: 0 -8px 0 -2px #8bc48f;
 }
 
 .dock-stickers {
@@ -7417,14 +7428,73 @@ input.is-pressed,
 /* A choice: a picture big enough for a small hand. */
 /* Done, once the last round is finished: the one green thing in the tray, on its own row above what
    was finished, so it is on a phone's screen without a scroll. */
-.game-done {
+/* Done (components/DoneButton.tsx): one button on every finished screen, on a row of its own in
+   the tray, big enough for a small hand: 260 by 72 on a phone, 300 by 80 on an iPad. The tick
+   comes up a moment after the cheer; left alone, the button pulses once. */
+.game-done-row {
   flex: 0 0 100%;
-  width: min(100%, 220px);
-  min-height: 56px;
+  display: flex;
+  justify-content: center;
+}
+
+.game-done {
+  flex: 0 0 auto;
+  width: min(100%, 260px);
+  height: 72px;
+  min-height: 72px;
   margin: 0 auto 4px;
-  font-size: 20px;
+  gap: 10px;
+  font-size: 22px;
   letter-spacing: 0;
   text-transform: none;
+}
+
+.game-done .done-tick {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.3s ease-out,
+    transform 0.3s ease-out;
+}
+
+.game-done[data-cue="shown"] .done-tick,
+.game-done[data-cue="pulse"] .done-tick {
+  opacity: 1;
+  transform: none;
+}
+
+.game-done[data-cue="pulse"] {
+  animation: done-pulse 0.9s ease-in-out 2;
+}
+
+@keyframes done-pulse {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+/* On an iPad: 300 by 80 in the frame's own pixels (a game's frame is drawn larger as one piece,
+   zoom 1.45 upright or 1.2 on its side, so there the button is drawn larger with the rest). */
+@media (min-width: 768px) {
+  .game-done {
+    width: min(100%, 300px);
+    height: 80px;
+    min-height: 80px;
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-done[data-cue="pulse"] {
+    animation: none;
+  }
+
+  .game-done .done-tick {
+    transition: none;
+  }
 }
 
 .pick {

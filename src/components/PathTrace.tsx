@@ -21,6 +21,7 @@ import { nameLetters } from "../data/spell";
 import { nameGlyphs, nameToTrace, wordGlyphs, type TraceGlyph } from "../data/tracePractice";
 import { followStroke, stationsAttribute, strokeComplete, traceTolerance } from "../data/trace";
 import type { Settings } from "../settings";
+import { DoneButton } from "./DoneButton";
 import { StrokeFigure } from "./StrokeFigure";
 import { WritingBox } from "./WritingBox";
 
@@ -90,6 +91,8 @@ export function PathTrace({
   const tracing = useRef(false);
   const advanceTimer = useRef<number | null>(null);
   const finished = useRef(false);
+  /** The cheer's line, for the Done button: its tick waits until the line has been said. */
+  const cheerSaid = useRef<Promise<void> | undefined>(undefined);
   const reported = useRef(false);
   const left = useRef(false);
   /** The screen has closed: a cheer whose words end after that goes nowhere. */
@@ -176,6 +179,7 @@ export function PathTrace({
     setSpoken(title);
     playEffect("cheer", settingsRef.current);
     const said = onSpeak?.();
+    cheerSaid.current = said && typeof said.then === "function" ? said.then(() => undefined, () => undefined) : undefined;
     // A screen that stays (the name) waits for Done: the child keeps the finished name as long as they
     // like. (It used to leave by itself once the name was said, and the child found Today's "All done"
     // in place of the name they had just traced, with no Done to press.)
@@ -320,9 +324,7 @@ export function PathTrace({
           <p className="letter-star" aria-hidden="true">
             ★
           </p>
-          <button type="button" className="letter-next" onClick={leave}>
-            Done
-          </button>
+          <DoneButton onDone={leave} said={cheerSaid.current} settingsRef={settingsRef} />
         </div>
       ) : null}
       {phase === "write" ? (
@@ -443,7 +445,7 @@ export function NameTrace({
   onAttempt?: (id: string, success: boolean) => WritingOutcome;
   onDone: () => void;
 }) {
-  // The name is shown and said as the grown-up typed it ("Aleena", "mia"). Its letters are traced as a
+  // The name is shown and said as the grown-up typed it ("Marisa", "mia"). Its letters are traced as a
   // name is written, a capital then small letters, and that spelling names the writing record.
   const spelled = nameToTrace(name) ?? name;
   const title = name.trim() || spelled;

@@ -233,6 +233,9 @@ test("Hear it again repeats the last line as often as a child likes", async ({ p
   const visitor = line.split(" came ")[0];
   await expect.poll(() => spokenLines(page)).toContain(`${visitor} came to say hi!`);
   await expect.poll(() => spokenLines(page)).toContain("and brought a dinosaur!");
+  // Back from the Surprise is My Nest, where it was opened; Back again is Today.
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator("[data-screen=nest]")).toBeVisible();
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await page.getByRole("button", { name: "Story" }).click();
   // The cover reads the title. Hear it again says that title, not the surprise line.
@@ -373,8 +376,9 @@ test("the daily surprise is the same visitor all day and brings the theme object
   expect(visitor).not.toBe("fox");
   await expect(view).toHaveAttribute("data-gift", "rocket");
   await expect(page.locator(".surprise-line")).toContainText("brought a rocket");
+  // Back goes to My Nest, where the Surprise was opened, not to Today.
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.locator("[data-dock=nest]").click();
+  await expect(page.locator("[data-screen=nest]")).toBeVisible();
   await page.locator("[data-nest-action=surprise]").click();
   await expect(view).toHaveAttribute("data-visitor", visitor!);
 });

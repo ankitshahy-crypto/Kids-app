@@ -1,0 +1,71 @@
+import { expect, test, type Page } from "@playwright/test";
+import { createdThisWeek } from "./clock";
+import { game, onRound } from "./kit";
+
+const profile = {
+  activeId: "mia",
+  profiles: [{ id: "mia", name: "Mia", ageRange: "4", animal: "fox", createdAt: createdThisWeek(), stars: 0, days: {} }],
+};
+
+async function install(page: Page) {
+  await page.addInitScript((saved) => {
+    if (sessionStorage.getItem("done-seeded")) return;
+    sessionStorage.setItem("done-seeded", "1");
+    localStorage.setItem("kids-app-profiles-v1", JSON.stringify(saved));
+    localStorage.removeItem("kids-app-silent-hint-v1");
+    localStorage.setItem("littlenest-quick-rounds", "1");
+  }, profile);
+  await page.goto("./");
+  const hint = page.getByRole("status").getByRole("button", { name: "OK" });
+  if (await hint.count()) await hint.click();
+  await page.getByRole("button", { name: "Mia" }).click();
+}
+
+/** The last round of Hatch the egg, played through: the Done button is then on the screen. */
+async function finishHatch(page: Page) {
+  await page.locator("[data-dock=games]").click();
+  await page.locator("[data-game-tile=hatch]").click();
+  const board = game(page, "hatch");
+  const rounds = Number(await board.getAttribute("data-rounds"));
+  for (let round = 0; round < rounds; round += 1) {
+    await onRound(board, round);
+    await board.locator('.pick[data-letter][data-needed="true"]').click();
+  }
+  const done = page.locator("[data-game-done=true]");
+  await expect(done).toBeVisible({ timeout: 10_000 });
+  return done;
+}
+
+test("Done is one big button: 260 by 72 on a phone, 300 by 80 on an iPad", async ({ page }) => {
+  await install(page);
+  const done = await finishHatch(page);
+  const ipad = (page.viewportSize()?.width ?? 0) >= 768;
+  // A game's frame is drawn larger as one piece on an iPad (zoom 1.45 upright, 1.2 on its side), so
+  // the button is measured in the frame's own pixels: what the layout gives it, before that zoom.
+  const zoom = Number((await page.locator(".game-frame").evaluate((frame) => getComputedStyle(frame).getPropertyValue("--frame-zoom"))).trim() || "1");
+  const box = (await done.boundingBox())!;
+  expect(Math.round(box.width / zoom)).toBe(ipad ? 300 : 260);
+  expect(Math.round(box.height / zoom)).toBe(ipad ? 80 : 72);
+  // On a row of its own: nothing else in the tray sits beside it.
+  const row = page.locator(".game-done-row");
+  expect(Math.round((await row.boundingBox())!.width)).toBeGreaterThanOrEqual(Math.round(box.width));
+});
+
+test("a pre-reader is shown Done: the tick comes after the cheer, with focus, and the button pulses once if left alone", async ({ page }) => {
+  test.slow();
+  await install(page);
+  const done = await finishHatch(page);
+  // The cheer is being said: no tick yet.
+  await expect(done).toHaveAttribute("data-cue", "soon");
+  await expect(done.locator(".done-tick")).toHaveCSS("opacity", "0");
+  // A moment after the cheer: the tick, and focus on the button for a keyboard or a switch.
+  await expect(done).toHaveAttribute("data-cue", "shown", { timeout: 10_000 });
+  await expect(done.locator(".done-tick")).toHaveCSS("opacity", "1");
+  await expect(done).toBeFocused();
+  // Left alone for eight seconds: the pulse, once.
+  await expect(done).toHaveAttribute("data-cue", "pulse", { timeout: 12_000 });
+  // Tapped: the game leaves, with the star.
+  await done.click();
+  await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+});

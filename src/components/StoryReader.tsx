@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
 import { cancelSpeech, isAbortError, playLetterSound, playStoryLine, playWordId, sleep, type ReadAlong } from "../audio/player";
 import type { AnimalId } from "../data/animals";
-import { fitsLine, lineWords, wordAtTime, type LineTimes } from "../data/readAlong";
+import { flushSync } from "react-dom";
+import { fitsLine, lineWords, type LineTimes } from "../data/readAlong";
 import { soundOut, storyLineId, storyText, storyTitleId, storyTokens, type Story, type StoryHero, type StoryToken } from "../data/stories";
 import type { SoundPiece } from "../data/units";
 import type { Outfit } from "../data/wardrobe";
@@ -125,25 +126,27 @@ export function StoryReader({
     const text = storyText(line.text, hero);
     const id = storyLineId(story, index - 1, animal);
     const words = lineWords(text);
-    let times: LineTimes | null = null;
-    let startedAt = 0;
-    let frame = 0;
+    let timers: number[] = [];
     const stop = () => {
-      if (frame) cancelAnimationFrame(frame);
-      frame = 0;
+      for (const timer of timers) window.clearTimeout(timer);
+      timers = [];
     };
-    const tick = () => {
-      frame = 0;
-      if (signal.aborted || !times) return;
-      const at = wordAtTime(times, performance.now() - startedAt);
-      setReading(at);
-      if (at !== null) frame = requestAnimationFrame(tick);
-    };
+    // Each word is lit by a timer of its own, at the time the recording reaches it, and shown at
+    // once (flushSync): every word gets its turn, in order, however late the timers run. (The
+    // highlight used to be moved by an animation frame that looked up the word for the time; on a
+    // slow or busy device the frames came too far apart and a short word, "a", was never lit.)
     const follow = (next: LineTimes) => {
-      times = next;
-      startedAt = performance.now();
       stop();
-      tick();
+      const count = next.length - 1;
+      const light = (word: number | null, atMs: number) => {
+        timers.push(
+          window.setTimeout(() => {
+            if (!signal.aborted) flushSync(() => setReading(word));
+          }, Math.max(0, atMs)),
+        );
+      };
+      for (let index = 0; index < count; index += 1) light(index, index === 0 ? 0 : next[index]);
+      light(null, next[count]);
     };
     const onEvent: ReadAlong = (event) => {
       if (signal.aborted) return;

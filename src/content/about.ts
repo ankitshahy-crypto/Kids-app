@@ -165,7 +165,7 @@ const FEATURES = [
   {
     id: "voice",
     title: "A warm voice, on the device",
-    body: "One natural narrator reads every letter, word, and story. Nothing is fetched while your child plays.",
+    body: "One natural narrator reads every letter, word, and story. Nothing is fetched while your child plays. If a line cannot play, its words show on the screen for a moment, with a soft chime.",
   },
   {
     id: "calm",

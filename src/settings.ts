@@ -1,8 +1,6 @@
 import { deviceStorage } from "./deviceStorage";
 import { SETTINGS_KEY, readStored, writeStored } from "./storage";
 
-export type SpeechSpeed = "slow" | "slower";
-
 export type Settings = {
   /** Voice on or off. Kept in step with `sound` so older saves still apply. */
   sound: boolean;
@@ -15,9 +13,6 @@ export type Settings = {
   musicVolume: number;
   /** Soft tap sound and a short buzz. Dragging a word does not use this. */
   tapFeedback: boolean;
-  speed: SpeechSpeed;
-  /** Device voice chosen in Settings. Null uses the best installed en-US voice. */
-  voiceURI: string | null;
   /**
    * Lesson length in minutes of active play. One bonus star when it is reached,
    * then a gentle wrap-up. The child never sees a clock.
@@ -54,15 +49,6 @@ export const LESSON_MINUTES: readonly LessonMinutes[] = [2, 5, 10];
 export type ExtraChunks = 0 | 1 | 2 | 3;
 export const EXTRA_CHUNKS: readonly ExtraChunks[] = [0, 1, 2, 3];
 
-/**
- * speechSynthesis rate. 1 is a typical speaking pace.
- * Both steps stay near that pace so the voice does not sound dragged out.
- */
-export const SPEECH_RATES: Record<SpeechSpeed, number> = {
-  slow: 0.9,
-  slower: 0.85,
-};
-
 export const DEFAULT_SETTINGS: Settings = {
   sound: true,
   voice: true,
@@ -72,8 +58,6 @@ export const DEFAULT_SETTINGS: Settings = {
   music: true,
   musicVolume: 0.35,
   tapFeedback: true,
-  speed: "slow",
-  voiceURI: null,
   readingGoal: 5,
   showTips: true,
   showExplore: true,
@@ -123,8 +107,8 @@ export function loadSettings(): Settings {
       music: record.music !== false,
       musicVolume: clampVolume(record.musicVolume, DEFAULT_SETTINGS.musicVolume),
       tapFeedback: record.tapFeedback !== false,
-      speed: record.speed === "slower" ? "slower" : "slow",
-      voiceURI: typeof record.voiceURI === "string" && record.voiceURI ? record.voiceURI : null,
+      // An older save may still carry `speed` and `voiceURI`, from the phone's own voice: there is
+      // no such voice any more (every line is a recorded clip), so they are read past.
       readingGoal: lessonMinutes(record.readingGoal),
       showTips: record.showTips !== false,
       showExplore: record.showExplore !== false,
