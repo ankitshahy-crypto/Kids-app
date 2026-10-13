@@ -3,6 +3,7 @@ import { playEffect } from "../audio/manager";
 import { promptCue, type Cue } from "../audio/player";
 import { Avatar } from "../avatars";
 import { Hero } from "../components/Hero";
+import { DoneButton, noteCheer } from "../components/DoneButton";
 import { SpeakerIcon } from "../components/icons";
 import type { AnimalId } from "../data/animals";
 import backdropArt from "../data/backdropArt.json";
@@ -224,6 +225,7 @@ export function useCoach(settingsRef: { current: Settings }, line: Cue[], round:
 
   return {
     speak,
+    settingsRef,
     mood,
     misses,
     /** The part of the round's line being said, by its place in the line; null when none is. */
@@ -387,7 +389,8 @@ export function useFinish(finished: boolean, settingsRef: { current: Settings },
       return;
     }
     playEffect("celebrate", settingsRef.current);
-    coach.speak.line([promptCue("kit-done", "You did it!")]);
+    // The Done button waits for this line before its tick and its cue (DoneButton).
+    noteCheer(new Promise<void>((resolve) => coach.speak.line([promptCue("kit-done", "You did it!")], resolve, { onStop: resolve })));
     // Runs once, when the last round is done.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
@@ -795,11 +798,7 @@ export function GameFrame({
       <div className="game-tray" data-nudge={coach.nudge ? "true" : "false"}>
         {/* The last round done: Done, first in the tray so it is on a phone's screen, with what was
             finished still there to look at. The game waits for it; it does not leave on its own. */}
-        {rounds.finished && onDone ? (
-          <button type="button" className="start-button game-done" data-game-done="true" onClick={onDone}>
-            Done
-          </button>
-        ) : null}
+        {rounds.finished && onDone ? <DoneButton onDone={onDone} settingsRef={coach.settingsRef} /> : null}
         {children}
       </div>
     </div>

@@ -272,7 +272,7 @@
       "blink",
       "sleepy"
     ],
-    "body": true,
+    "body": false,
     "head": {
       "x": 0.1462,
       "y": -0.0542,

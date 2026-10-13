@@ -5,8 +5,8 @@ import { traceCurrentStroke } from "./traceFlow";
 
 // A name of six letters, as a grown-up typed it: the screen keeps that spelling.
 const profile = {
-  activeId: "aleena",
-  profiles: [{ id: "aleena", name: "Aleena", ageRange: "4", animal: "fox", createdAt: createdThisWeek(), stars: 0, days: {} }],
+  activeId: "marisa",
+  profiles: [{ id: "marisa", name: "Marisa", ageRange: "4", animal: "fox", createdAt: createdThisWeek(), stars: 0, days: {} }],
 };
 
 test.use({ viewport: { width: 390, height: 844 } });
@@ -19,13 +19,13 @@ test("Trace my name: Back stops the letters; the end says the name as a word and
     localStorage.setItem("littlenest-silent-hint-v1", "1");
   }, profile);
   await page.goto("./");
-  await page.getByRole("button", { name: "Aleena" }).click();
+  await page.getByRole("button", { name: "Marisa" }).click();
 
   // 1. Back while the opening line is spelling the name: no letter starts after the screen is gone.
   await page.getByRole("button", { name: "Trace my name" }).click();
   const root = page.locator("[data-screen=my-name]");
   await expect(root).toBeVisible();
-  await expect.poll(() => playedClips(page), { timeout: 15000 }).toEqual(expect.arrayContaining(["spell/a.mp3"]));
+  await expect.poll(() => playedClips(page), { timeout: 15000 }).toEqual(expect.arrayContaining(["spell/m.mp3"]));
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(root).toHaveCount(0);
   const clipsAtBack = (await playedClips(page)).length;
@@ -53,7 +53,7 @@ test("Trace my name: Back stops the letters; the end says the name as a word and
   const clipsAtCheer = (await playedClips(page)).length;
   // The screen shows the name as it was typed; the recorded voice says "You traced your name!". The
   // name is never given to a synthesized voice (no device speech at all), and not spelled again.
-  await expect(root.locator(".letter-prompt")).toHaveText("You traced Aleena.");
+  await expect(root.locator(".letter-prompt")).toHaveText("You traced Marisa.");
   await expect.poll(async () => playedClips(page), { timeout: 10000 }).toContain("prompts/traced-name.mp3");
   expect(await deviceSpeech(page)).toEqual([]);
   expect((await playedClips(page)).slice(clipsAtCheer).filter((clip) => /^spell\//.test(clip))).toEqual([]);
@@ -63,6 +63,9 @@ test("Trace my name: Back stops the letters; the end says the name as a word and
   await expect(page.locator("[data-screen=today]")).toHaveCount(0);
   const done = root.getByRole("button", { name: "Done" });
   await expect(done).toBeVisible();
+  // The same Done as the games have (DoneButton): big, with its tick once the cheer has been said.
+  await expect(done).toHaveAttribute("data-game-done", "true");
+  await expect(done).toHaveAttribute("data-cue", "shown", { timeout: 10_000 });
   // Done goes back to Today, with the star.
   await done.click();
   await expect(page.locator("[data-screen=today]")).toBeVisible();

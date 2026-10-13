@@ -1,5 +1,6 @@
 import type { ChildProfile } from "../data/profiles";
 import { Chevron } from "./icons";
+import { DressMark, GiftMark } from "./TodayMarks";
 import { Nest } from "./sceneArt";
 import { Hero } from "./Hero";
 
@@ -24,17 +25,14 @@ export function NestView({ profile, onBack, onCloset, onSurprise }: { profile: C
       </div>
       <div className="nest-doors">
         <button type="button" className="dock-button" data-nest-action="closet" onClick={onCloset}>
-          <span className="dock-art dock-dress" aria-hidden="true" />
+          <span className="dock-art" aria-hidden="true">
+            <DressMark />
+          </span>
           <span>Dress up</span>
         </button>
         <button type="button" className="dock-button" data-nest-action="surprise" onClick={onSurprise}>
-          <span className="dock-art dock-surprise" aria-hidden="true">
-            <svg viewBox="0 0 64 64">
-              <rect x="12" y="28" width="40" height="26" rx="6" fill="#F6C3CB" />
-              <rect x="8" y="20" width="48" height="12" rx="5" fill="#F4A9B8" />
-              <rect x="29" y="20" width="6" height="34" fill="#FFF6E4" />
-              <path d="M32 20c-6-10-16-8-14-2 2 4 8 4 14 2Zm0 0c6-10 16-8 14-2-2 4-8 4-14 2Z" fill="#E07A8A" />
-            </svg>
+          <span className="dock-art" aria-hidden="true">
+            <GiftMark />
           </span>
           <span>Surprise</span>
         </button>

@@ -446,8 +446,11 @@ test.describe("the WebM on WebKit", () => {
     const host = page.locator(".game-frame .game-host .avatar-painted").first();
     const idle = host.locator("video.avatar-clip[data-clip=idle]");
     await expect(idle).toHaveCount(1);
-    // The browser took the WebM, and it got as far as playing: then it was stopped.
-    await expect.poll(() => idle.evaluate((video: HTMLVideoElement) => video.currentSrc), { timeout: 15_000 }).toMatch(/\/clips\/idle\.webm$/);
+    // The browser took the WebM, and it got as far as playing: then it was stopped. (A WebKit that
+    // takes the HEVC .mov instead, as the dog has had one since #207, is not in this story: the
+    // clip then plays with its transparency, and the test has nothing to stop.)
+    await expect.poll(() => idle.evaluate((video: HTMLVideoElement) => video.currentSrc), { timeout: 15_000 }).toMatch(/\/clips\/idle\.(webm|mov)$/);
+    if (/\.mov$/.test(await idle.evaluate((video: HTMLVideoElement) => video.currentSrc))) return;
     await expect.poll(() => idle.evaluate((video: HTMLVideoElement) => video.readyState), { timeout: 15_000 }).toBeGreaterThanOrEqual(2);
     await expect.poll(() => idle.evaluate((video: HTMLVideoElement) => video.paused), { timeout: 15_000 }).toBe(true);
     const at = await idle.evaluate((video: HTMLVideoElement) => video.currentTime);

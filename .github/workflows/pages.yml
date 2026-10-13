@@ -1,9 +1,12 @@
 name: Deploy GitHub Pages
 
+# The site is built from main only after CI has passed on that commit: a red push to main does not
+# deploy. (It used to deploy on every push, so a commit that broke a test could still go live.)
+# The workflow can also be run by hand from the Actions tab, for the commit the branch is at.
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -19,10 +22,19 @@ concurrency:
 
 jobs:
   build:
+    # A CI run of a push to main, and a green one. (CI also runs on pull requests; those never deploy.)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # The commit CI passed on, not whatever main has moved to since.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4

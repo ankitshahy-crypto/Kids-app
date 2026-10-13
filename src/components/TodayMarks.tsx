@@ -87,6 +87,34 @@ export function NestMark() {
   );
 }
 
+/** A hat with a bow, for the Dress up door on My Nest: the closet's things, drawn like the other marks. */
+export function DressMark() {
+  return (
+    <svg {...svgProps} className="today-mark">
+      <ellipse cx="24" cy="33" rx="19" ry="6" fill={SAND} stroke={LINE} strokeWidth="1.8" />
+      <path d="M13 32c0-9 3-18 11-18s11 9 11 18" fill="#f6ecd9" stroke={LINE} strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M13.5 29c4 2.2 17 2.2 21 0" fill="none" stroke={SAGE} strokeWidth="3.2" strokeLinecap="round" />
+      <ellipse cx="29.5" cy="26.5" rx="3.4" ry="2.1" transform="rotate(-28 29.5 26.5)" fill={BLUSH} stroke={LINE} strokeWidth="1.3" />
+      <ellipse cx="35.5" cy="26.5" rx="3.4" ry="2.1" transform="rotate(28 35.5 26.5)" fill={BLUSH} stroke={LINE} strokeWidth="1.3" />
+      <circle cx="32.5" cy="27" r="1.7" fill={LINE} />
+    </svg>
+  );
+}
+
+/** A wrapped present with a bow, for the Surprise door on My Nest, drawn like the hat beside it. */
+export function GiftMark() {
+  return (
+    <svg {...svgProps} className="today-mark">
+      <rect x="9" y="20" width="30" height="20" rx="4" fill={BLUSH} stroke={LINE} strokeWidth="1.8" />
+      <rect x="6" y="14" width="36" height="9" rx="3.5" fill="#f6ecd9" stroke={LINE} strokeWidth="1.8" />
+      <path d="M24 14v26" fill="none" stroke={SAGE} strokeWidth="3.2" strokeLinecap="round" />
+      <ellipse cx="19" cy="10.5" rx="3.6" ry="2.3" transform="rotate(-30 19 10.5)" fill={SAND} stroke={LINE} strokeWidth="1.3" />
+      <ellipse cx="29" cy="10.5" rx="3.6" ry="2.3" transform="rotate(30 29 10.5)" fill={SAND} stroke={LINE} strokeWidth="1.3" />
+      <circle cx="24" cy="12" r="1.8" fill={LINE} />
+    </svg>
+  );
+}
+
 /** A solid star, sand with a soft edge. */
 export function StarMark() {
   return (

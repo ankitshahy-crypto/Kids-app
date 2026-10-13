@@ -7,7 +7,7 @@ still frames to short video clips. The games, their layouts and the calm palette
 This is the working spec. It starts with one animal, the dog, and nothing is batched until the dog
 is approved on a phone.
 
-Settled with Ankit (2026-10-09): no sad animal, ever (a wrong answer gets puzzled); sleepy is added,
+Settled with the owner (2026-10-09): no sad animal, ever (a wrong answer gets puzzled); sleepy is added,
 for Break time; the mood language is the one drawn below; the dog starts with two clips, idle and
 cheer, and the other eight come once those have been seen moving on a phone; the HEVC files are
 encoded on his Mac from the frames the pipeline writes.
