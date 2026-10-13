@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { playOnDevice } from "../audio/player";
+import { playLine, playOnDevice, type Cue } from "../audio/player";
 import { strokePath, type TracePoint } from "../data/handwriting";
 import { recognizeWriting } from "../data/recognize";
 import type { Settings } from "../settings";
@@ -13,6 +13,7 @@ export function WritingBox({
   partner,
   prompt,
   speak,
+  cues,
   showModel,
   model,
   ruled = true,
@@ -24,6 +25,8 @@ export function WritingBox({
   partner?: TracePoint[][];
   prompt: string;
   speak: boolean;
+  /** The prompt as recorded clips, said instead of the phone's own voice reading `prompt`. */
+  cues?: Cue[];
   showModel: boolean;
   model?: ReactNode;
   ruled?: boolean;
@@ -41,12 +44,18 @@ export function WritingBox({
     .map((point) => `${point.x},${point.y}`)
     .join(" ");
 
+  const cueKey = cues?.map((cue) => cue.text).join("|");
   useEffect(() => {
     if (!speak) return undefined;
     const controller = new AbortController();
-    void playOnDevice(prompt, settingsRef.current, controller.signal).catch(() => undefined);
+    // The recorded voice where the screen gives the prompt as clips (the phone pass of build 10 heard
+    // the phone's own voice here, a different one from the lesson's); the phone's voice only otherwise.
+    if (cues && cues.length > 0) void playLine(cues, settingsRef.current, controller.signal).catch(() => undefined);
+    else void playOnDevice(prompt, settingsRef.current, controller.signal).catch(() => undefined);
     return () => controller.abort();
-  }, [prompt, settingsRef, speak]);
+    // The cues are rebuilt each render; their words decide when to say them again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prompt, settingsRef, speak, cueKey]);
 
   const pointFrom = (event: ReactPointerEvent<HTMLDivElement>): TracePoint | null => {
     const svg = event.currentTarget.querySelector("svg");

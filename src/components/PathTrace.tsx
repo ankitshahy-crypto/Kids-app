@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { playEffect } from "../audio/manager";
-import { playLine, playWord, promptCue, spellCue, wordCue, type Cue } from "../audio/player";
+import { deckWordCue, playLine, playWord, promptCue, spellCue, wordCue, type Cue } from "../audio/player";
 import { useOpeningLine, useSpeaker } from "../hooks/useSpeaker";
 import type { DeckWord } from "../data/deck";
 import type { TracePoint } from "../data/handwriting";
@@ -419,6 +419,7 @@ export function WordTrace({
       writing={writing}
       itemId={id}
       memoryLine={memoryPrompt("word", picked.word)}
+      memoryCues={[promptCue("trace-word", "Trace the word."), deckWordCue(picked)]}
       onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
       onSpeak={() => {
         const controller = new AbortController();
