@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = "http://127.0.0.1:5173/Kids-app/";
+// E2E_PORT lets two checkouts run their tests side by side on one machine.
+const port = process.env.E2E_PORT ?? "5173";
+const baseURL = `http://127.0.0.1:${port}/Kids-app/`;
 
 export default defineConfig({
   testDir: "e2e",
@@ -19,7 +21,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "npm run dev -- --host 127.0.0.1 --port 5173",
+    command: `npm run dev -- --host 127.0.0.1 --port ${port} --strictPort`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

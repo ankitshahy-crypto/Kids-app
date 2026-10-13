@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { createdThisWeek } from "./clock";
+import { createdThisWeek, midweek } from "./clock";
 import { noting } from "./kit";
 
 /**
@@ -38,6 +38,9 @@ async function install(page: Page, ageRange = "4", calm = false) {
     },
     { saved: child(ageRange), placed: placement, calm },
   );
+  // Pinned to midweek: which cards a lesson shows depends on the weekday (the run of Oct 12, a
+  // Monday evening, had no "cat" card), and a test must not depend on the day it runs.
+  await page.clock.setFixedTime(midweek());
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).click();
   await page.getByRole("button", { name: "Letters" }).click();
@@ -59,7 +62,7 @@ async function showWord(page: Page, id: string): Promise<Locator> {
 
 /**
  * A child's slide along the track, slow enough for each sound to be heard as the finger passes its
- * letter. `partWay` is run with the finger still down at four fifths of the track.
+ * letter. `partWay` is run with the finger still down at 37/40 of the track (past the last letter on a phone-width track too, where the track runs on beyond the word).
  */
 async function slide(page: Page, track: Locator, partWay?: () => Promise<void>) {
   const box = await track.boundingBox();
@@ -70,7 +73,7 @@ async function slide(page: Page, track: Locator, partWay?: () => Promise<void>) 
   for (let step = 1; step <= 40; step += 1) {
     await page.mouse.move(box.x + 8 + ((box.width - 12) * step) / 40, y);
     await page.waitForTimeout(45);
-    if (step === 32) await partWay?.();
+    if (step === 37) await partWay?.();
   }
   await page.mouse.up();
 }
@@ -144,7 +147,11 @@ for (const [age, calm] of [
     await expect(animal.locator(".word-bubble")).toHaveCount(0);
     await expect.poll(async () => (await animal.boundingBox())!.x).toBeGreaterThan(waiting!.x + 40);
     const said = await animal.boundingBox();
-    expect((await bubble.boundingBox())!.x).toBeGreaterThan(said!.x + said!.width / 2);
+    // Beside it, on whichever side has room: since the animal became the slider it rests at the end
+    // of the track, and on a narrow track the bubble sits on its left. Either way, not over its face.
+    const box = (await bubble.boundingBox())!;
+    const middle = said!.x + said!.width / 2;
+    expect(box.x > middle || box.x + box.width < middle).toBe(true);
     if (testInfo.project.name === "chromium" && age === "4") await page.screenshot({ path: "test-results/screenshots/word_page_cat_said.png" });
     // The bar stayed visible throughout, and in calm mode it did not flash.
     await expect(bar).toBeVisible();
