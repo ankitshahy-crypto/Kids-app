@@ -62,7 +62,7 @@ async function showWord(page: Page, id: string): Promise<Locator> {
 
 /**
  * A child's slide along the track, slow enough for each sound to be heard as the finger passes its
- * letter. `partWay` is run with the finger still down at four fifths of the track.
+ * letter. `partWay` is run with the finger still down at 37/40 of the track (past the last letter on a phone-width track too, where the track runs on beyond the word).
  */
 async function slide(page: Page, track: Locator, partWay?: () => Promise<void>) {
   const box = await track.boundingBox();
@@ -73,7 +73,7 @@ async function slide(page: Page, track: Locator, partWay?: () => Promise<void>) 
   for (let step = 1; step <= 40; step += 1) {
     await page.mouse.move(box.x + 8 + ((box.width - 12) * step) / 40, y);
     await page.waitForTimeout(45);
-    if (step === 32) await partWay?.();
+    if (step === 37) await partWay?.();
   }
   await page.mouse.up();
 }
