@@ -7467,7 +7467,7 @@ input.is-pressed,
 }
 
 .game-done[data-cue="pulse"] {
-  animation: done-pulse 0.9s ease-in-out 2;
+  animation: done-pulse 0.9s ease-in-out 1;
 }
 
 @keyframes done-pulse {

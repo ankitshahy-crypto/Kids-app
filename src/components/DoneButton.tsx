@@ -40,8 +40,15 @@ export function DoneButton({ onDone, said, settingsRef }: { onDone: () => void; 
     let show: number | undefined;
     let pulse: number | undefined;
     const current = () => settings.current?.current ?? DEFAULT_SETTINGS;
-    const waited = said ?? cheer;
-    const settled = Promise.race([waited.then(() => undefined, () => undefined), new Promise<void>((resolve) => window.setTimeout(resolve, CHEER_MAX_MS))]);
+    // The cheer is read a microtask later, not now: this effect runs before the game's own
+    // (useFinish's), since a child's effects run first, so `cheer` here would still be the last
+    // game's, long settled, and the tick would come over "You did it!". (Dev's StrictMode remount
+    // hid it; a release build mounts once.)
+    const settled = (async () => {
+      await Promise.resolve();
+      const waited = said ?? cheer;
+      await Promise.race([waited.then(() => undefined, () => undefined), new Promise<void>((resolve) => window.setTimeout(resolve, CHEER_MAX_MS))]);
+    })();
     void settled.then(() => {
       if (over) return;
       show = window.setTimeout(() => {
