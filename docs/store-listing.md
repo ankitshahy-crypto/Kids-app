@@ -102,11 +102,11 @@ LittleNest Science:
 
 ## Safe and private by design
 
-No ads, no tracking, and one honest unlock: pay once, no subscription. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.
+No ads, no tracking, and one honest unlock. Pay once. No subscription required. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.
 
 ## Affordable for every family
 
-Learning to read shouldn't be expensive. The first two weeks of reading and the first activity of each Explore area are free for good. One payment opens everything, for every child in the family, with no subscription and no add-ons.
+Learning to read shouldn't be expensive. Weeks 1–2 of reading and samples from each Explore area are free for good. One payment opens everything, for every child in the family. Pay once. No subscription required.
 
 No price is shown in the app.
 
