@@ -55,6 +55,7 @@ export function PathTrace({
   memoryCues,
   onSpeak,
   onTitle,
+  titleSparkle = 0,
   stay = false,
   onGlyph,
   onAttempt,
@@ -76,6 +77,8 @@ export function PathTrace({
   onSpeak?: () => void | Promise<void>;
   /** Tapping the title: Trace your name says "That's your name!" (the name itself is never spoken). */
   onTitle?: () => void;
+  /** Counts up to sparkle the title from outside (the end of Trace your name). */
+  titleSparkle?: number;
   /** The cheer stays until Done is pressed, instead of leaving by itself once what it says is said. */
   stay?: boolean;
   /** A new letter is up (its place among the glyphs): the screen can say it. */
@@ -309,14 +312,14 @@ export function PathTrace({
           <button
             type="button"
             className="title-say"
-            data-said={titleTaps === 0 ? "false" : titleTaps % 2 === 1 ? "a" : "b"}
+            data-said={titleTaps + titleSparkle === 0 ? "false" : (titleTaps + titleSparkle) % 2 === 1 ? "a" : "b"}
             onClick={() => {
               onTitle();
               setTitleTaps((count) => count + 1);
             }}
           >
             {title}
-            {titleTaps > 0 ? <span key={titleTaps} className="name-sparkle" aria-hidden="true" /> : null}
+            {titleTaps + titleSparkle > 0 ? <span key={titleTaps + titleSparkle * 1000} className="name-sparkle" aria-hidden="true" /> : null}
           </button>
         </h1>
       ) : (
@@ -476,6 +479,7 @@ export function NameTrace({
   // rest of the app. A name has no clip of its own and is never sent anywhere, and the device voice
   // is not used for it: on the phone it was a different voice from the lesson's, and a robotic one.
   const letters = nameLetters(title).map(spellCue);
+  const [endSparkle, setEndSparkle] = useState(0);
   // The opening says the prompt and the first letter as one line; the letters after come up one by
   // one (onGlyph). Said apart, the first letter was cut off by the prompt: one voice at a time.
   useOpeningLine(speak, [promptCue("trace-name", "Trace your name."), ...letters.slice(0, 1)]);
@@ -499,6 +503,7 @@ export function NameTrace({
         if (index > 0 && letter) speak.line([letter], undefined, { remember: false });
       }}
       memoryCues={[promptCue("trace-name", "Trace your name."), ...letters]}
+      titleSparkle={endSparkle}
       onTitle={() => speak.line([promptCue("your-name", "That's your name!")], undefined, { remember: false })}
       onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
       onSpeak={() =>
@@ -508,7 +513,14 @@ export function NameTrace({
           // a second voice (and in Chrome a Google network voice, which sent the child's name off
           // the device). Spelled out again at the end ("A, L, E, E, N, A") it was heard as the app
           // not knowing the name, so it is not spelled here either. Closing the screen stops it.
-          speak.line([promptCue("traced-name", "You traced your name!")], resolve, { remember: false, onStop: resolve });
+          // Then "That's your name!", with the sparkle as it starts: one line, so the two never overlap.
+          speak.line([promptCue("traced-name", "You traced your name!"), promptCue("your-name", "That's your name!")], resolve, {
+            remember: false,
+            onStop: resolve,
+            onCue: (index) => {
+              if (index === 1) setEndSparkle((count) => count + 1);
+            },
+          });
         })
       }
       stay
