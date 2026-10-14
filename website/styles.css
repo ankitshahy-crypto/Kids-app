@@ -1047,3 +1047,18 @@ h3 {
   font-weight: 600;
   font-size: 0.85em;
 }
+
+/* Phones: the setup page's code table fits the screen instead of pushing the page sideways. */
+@media (max-width: 720px) {
+  .doc table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  .doc th,
+  .doc td {
+    overflow-wrap: anywhere;
+    font-size: 15px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
