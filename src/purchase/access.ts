@@ -1,5 +1,8 @@
 import { colorSteps } from "../data/colors";
+import type { DeckWord } from "../data/deck";
 import { buildActivities } from "../data/engineer";
+import { decodable } from "../data/ladder";
+import { lettersIntroduced } from "../data/schedule";
 import { mathSteps } from "../data/math";
 import { scienceActivities } from "../data/science";
 import { moneyGames, timeSteps } from "../data/timeMoney";
@@ -36,6 +39,18 @@ export function weekOpen(weekIndex: number, unlocked: boolean): boolean {
 /** The week a child without the unlock plays: their own, up to the last free week. */
 export function playableWeek(weekIndex: number, unlocked: boolean): number {
   return weekOpen(weekIndex, unlocked) ? weekIndex : FREE_WEEKS - 1;
+}
+
+/**
+ * The blended words a child without the unlock may trace: those made of the free weeks' letters.
+ * A word sticker earned beyond them (in the pilot, or before a refund took the unlock away) stays in
+ * the sticker book, but Trace a word offers it again only with the unlock, as the lesson itself
+ * waits at the last free week.
+ */
+export function tracedWordsOpen(words: DeckWord[], unlocked: boolean): DeckWord[] {
+  if (unlocked) return words;
+  const free = new Set(lettersIntroduced(FREE_WEEKS - 1).map((letter) => letter.toLowerCase()));
+  return words.filter((word) => decodable(word, free));
 }
 
 /** Is this Explore activity open? */

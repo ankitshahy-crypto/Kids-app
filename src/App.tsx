@@ -76,7 +76,7 @@ import { SCIENCE, type ScienceActivity as ScienceId } from "./data/science";
 import { lessonName, todayKey, type ChildInput, type LessonStep, type StickerInput } from "./data/profiles";
 import { practiceTotal, type ReadingCredit } from "./data/reading";
 import { atReadingWeek, resolvePlacement } from "./data/placement";
-import { activityOpen, playableWeek, type ExploreArea } from "./purchase/access";
+import { activityOpen, playableWeek, tracedWordsOpen, type ExploreArea } from "./purchase/access";
 import { useUnlock } from "./purchase/useUnlock";
 import { LockSheet } from "./components/LockSheet";
 import { ParentGate } from "./components/ParentGate";
@@ -372,7 +372,8 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lessonLetters, lessonPlace, dayKey],
   );
-  const blendedWords = useMemo(() => wordsToTrace(active?.stickers ?? [], ladderStep), [active, ladderStep]);
+  // Without the unlock, only the words the free weeks' letters can spell (purchase/access.ts).
+  const blendedWords = useMemo(() => tracedWordsOpen(wordsToTrace(active?.stickers ?? [], ladderStep), unlocked), [active, ladderStep, unlocked]);
   const phonicsReady = phonicsOpen(introducedLetters.length);
   const traceName = nameToTrace(active?.name ?? "");
 

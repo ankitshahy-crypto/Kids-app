@@ -6097,6 +6097,14 @@ input.is-pressed,
   -webkit-user-select: none;
 }
 
+/* Trace a word's picker: a finger may scroll it. The trace screen turns touch scrolling off so a
+   stroke never drags the page, and the picker, drawn by the same screen, took that with it: on a
+   phone a child who had blended more words than fit saw the list cut off at the bottom, with no
+   way to reach the rest (a mouse wheel scrolled it; a finger did not). The list is only tapped. */
+.letter-trace[data-phase="pick"] {
+  touch-action: pan-y;
+}
+
 .letter-trace h1,
 .letter-prompt {
   margin: 0;
