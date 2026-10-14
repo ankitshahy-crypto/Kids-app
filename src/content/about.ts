@@ -283,9 +283,9 @@ export function aboutFor(hidden: Hidden = heldBack) {
     teaches: [`${PRODUCT_NAME} has ${sectionCount(hidden)}.`, ...kept(TEACHES, hidden)].join(" "),
     safetyHeading: "Safe and private by design",
     safety:
-      "No ads, no tracking, and one honest unlock: pay once, no subscription. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.",
+      "No ads, no tracking, and one honest unlock. Pay once. No subscription required. First name or initial only. Progress stays on your device. No health or personal data collected. Built with children's privacy laws (COPPA) in mind.",
     affordableHeading: "Affordable for every family",
-    affordable: `Learning to read shouldn't be expensive. The first two weeks of reading and the first activity of each Explore area are free for good. One payment opens everything, for every child in the family, with no subscription and no add-ons.`,
+    affordable: `Learning to read shouldn't be expensive. Weeks 1–2 of reading and samples from each Explore area are free for good. One payment opens everything, for every child in the family. Pay once. No subscription required.`,
     disclaimer: `${PRODUCT_NAME} is ${series(kept(PRACTICE, hidden))} practice for young children. It is play and practice, not a medical product.`,
     maker: TAGLINE,
     /** Matches package.json. The About screen shows this number. */

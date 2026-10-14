@@ -131,7 +131,7 @@ export function UnlockPanel({ profiles = [] }: { profiles?: ChildProfile[] }) {
             <li>Every story, game, and Explore activity</li>
             <li>Every child on this device, and your family's other devices with Family Sharing</li>
           </ul>
-          <p className="adult-copy">Pay once. No subscription, no account, no ads.</p>
+          <p className="adult-copy">Pay once. No subscription required. No account, no ads.</p>
           {unlock.web ? (
             <>
               <p className="adult-copy" data-web-demo>
