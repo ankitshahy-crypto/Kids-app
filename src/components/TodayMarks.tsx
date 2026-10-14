@@ -74,6 +74,19 @@ export function ExploreMark({ name }: { name: ExploreMarkName }) {
   );
 }
 
+/** An open book with a few lines and "Aa": LittleNest Words, drawn like the Explore doors' marks. */
+export function ReadingMark() {
+  return (
+    <svg {...svgProps} className="today-mark">
+      <path d="M8 13.5c5-1.6 10.3-1.1 16 1.8 5.7-2.9 11-3.4 16-1.8v23.2c-5-1.6-10.3-1.1-16 1.8-5.7-2.9-11-3.4-16-1.8Z" fill="#f6ecd9" stroke={LINE} strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M24 15.3v23.2" fill="none" stroke={LINE} strokeWidth="1.5" />
+      <path d="M12.5 21c2.8-.7 5.6-.5 8 .6M12.5 26c2.8-.7 5.6-.5 8 .6M12.5 31c2.8-.7 5.6-.5 8 .6" fill="none" stroke={SAGE} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M29.5 31.5l3.2-9.5 3.2 9.5M30.6 28.3h4.2" fill="none" stroke={LINE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M39.6 29.4a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2Zm2.1-4.9v5.4" fill="none" stroke={BLUSH} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** A woven nest, seen from a little above: the rim's weave, and the hollow. */
 export function NestMark() {
   return (
