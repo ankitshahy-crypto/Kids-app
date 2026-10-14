@@ -166,3 +166,26 @@ export function SmileLine() {
     </svg>
   );
 }
+
+/** An open book, outlined: the Story stop in Today's top row. */
+export function BookLine() {
+  return (
+    <svg {...svgProps} className="today-mark">
+      <path d="M24 14c-4-3-10-3.6-15-2.6v23c5-1 11-.4 15 2.6 4-3 10-3.6 15-2.6v-23c-5-1-11-.4-15 2.6Z" fill="none" stroke={LINE} strokeWidth="2.4" strokeLinejoin="round" />
+      <path d="M24 14v23M13 18c2.6-.4 5.4 0 7.4.9M13 23.5c2.6-.4 5.4 0 7.4.9M35 18c-2.6-.4-5.4 0-7.4.9M35 23.5c-2.6-.4-5.4 0-7.4.9" fill="none" stroke={LINE} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Three drops, outlined and faintly filled: the Colors stop in Today's top row. */
+export function DropsLine() {
+  const drop = (x: number, y: number, s: number) =>
+    `M${x} ${y - 7 * s}c${2.6 * s} ${3.6 * s} ${4.6 * s} ${6 * s} ${4.6 * s} ${8.4 * s}a${4.6 * s} ${4.6 * s} 0 0 1-${9.2 * s} 0c0-${2.4 * s} ${2 * s}-${4.8 * s} ${4.6 * s}-${8.4 * s}Z`;
+  return (
+    <svg {...svgProps} className="today-mark">
+      <path d={drop(24, 17, 1)} fill={SAND} fillOpacity="0.5" stroke={LINE} strokeWidth="2" strokeLinejoin="round" />
+      <path d={drop(16, 32, 0.95)} fill={SAND} fillOpacity="0.5" stroke={LINE} strokeWidth="2" strokeLinejoin="round" />
+      <path d={drop(32, 32, 0.95)} fill={SAND} fillOpacity="0.5" stroke={LINE} strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
