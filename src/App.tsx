@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useScrollTop } from "./hooks/useScrollTop";
 import { applyAudioSettings, playEffect, setMusicArea, unlockAudio } from "./audio/manager";
 import { clearLastCue, primeSpeech, replayLastCue } from "./audio/player";
 import { deviceStorage } from "./deviceStorage";
@@ -152,6 +153,9 @@ export default function App() {
   const { placement, setClassPlace, setChildPlace } = usePlacement();
   const [mode, setMode] = useState<Mode>("start");
   const [screen, setScreen] = useState<Screen>("today");
+  // The child's screens share one scroll box: each new screen starts at its top (useScrollTop).
+  const kidBody = useRef<HTMLDivElement>(null);
+  useScrollTop(kidBody, screen);
   /**
    * The screen as it is now, for a game's finish that arrives after the child has left it: a game
    * finished and then left during its ending (Back, Break) still gives its star (the kit's
@@ -854,7 +858,7 @@ export default function App() {
                 </div>
               </div>
             ) : null}
-            <div className={`screen-body${screen === "today" ? " is-fit" : ""}`}>
+            <div ref={kidBody} className={`screen-body${screen === "today" ? " is-fit" : ""}`}>
               {tip ? (
                 <GrownupTip
                   tip={tip}

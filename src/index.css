@@ -5143,6 +5143,24 @@ button:focus-visible {
   object-fit: cover;
 }
 
+/* The section marks drawn like Today's doors (components/ModuleMark.tsx): the mark on a cream
+   tile with a sand edge, at whatever size the row or heading gives the tile. */
+.module-mark.is-drawn,
+.about-module-mark.is-drawn {
+  display: grid;
+  place-items: center;
+  background: #fdf9f1;
+  border: 2px solid #e9ddc8;
+}
+
+/* The drawing sits inside the tile with a little room round it. (Not padding: a percentage
+   padding is a share of the heading's width, and it blew the tile up and squeezed the drawing out.) */
+.module-mark.is-drawn .today-mark,
+.about-module-mark.is-drawn .today-mark {
+  width: 74%;
+  height: 74%;
+}
+
 .about-modules {
   display: flex;
   flex-wrap: wrap;
