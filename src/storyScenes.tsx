@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
  * Pictures for things the stories name that had no drawing.
  *
  * Why this file exists: a story page showed a different thing from the one
- * its words name. "The vet has a plum" showed grapes, "Vic is a yak" showed a
+ * its words name. "The man has a plum" showed grapes, "Vic is a yak" showed a
  * group of farm animals, "three sheep" showed a hen, "a pink mask" showed a
  * box, the bee's tree was a leaf, and the owl on the roof was a night sky. A
  * child matching the word to the picture learns the wrong word. These are the

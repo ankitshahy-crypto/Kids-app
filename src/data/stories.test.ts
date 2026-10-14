@@ -58,7 +58,7 @@ describe("decodable readers", () => {
   });
 
   it("shows a picture of the thing a page names, when the app has a drawing of it", () => {
-    // "The vet has a plum" showed grapes and "three sheep" a hen. A page that names one of these
+    // "The man has a plum" showed grapes and "three sheep" a hen. A page that names one of these
     // things shows that thing.
     const named = ["map", "pot", "bun", "rug", "mask", "plum", "yak", "tree", "sheep", "owl", "yam", "flag"];
     for (const story of STORIES) {

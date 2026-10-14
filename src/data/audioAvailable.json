@@ -240,6 +240,7 @@
     "prompts/heart.mp3",
     "prompts/jars-chore.mp3",
     "prompts/kit-done.mp3",
+    "prompts/kit-tap-done.mp3",
     "prompts/know.mp3",
     "prompts/lemon-1.mp3",
     "prompts/lemon-2.mp3",
@@ -3554,7 +3555,6 @@
     "words/van.mp3",
     "words/velvet.mp3",
     "words/vest.mp3",
-    "words/vet.mp3",
     "words/vic.mp3",
     "words/volcano.mp3",
     "words/wag.mp3",
@@ -3626,7 +3626,7 @@
     "words/zzzip.mp3"
   ],
   "bytes": {
-    "shared": 17726502,
+    "shared": 18082320,
     "byAnimal": {
       "bear": 5033036,
       "bunny": 5094668,

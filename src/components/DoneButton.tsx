@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
+import { isAbortError, playLine, promptCue } from "../audio/player";
 import { DEFAULT_SETTINGS, type Settings } from "../settings";
 
 /**
@@ -26,9 +27,8 @@ const CHEER_MAX_MS = 4000;
  * up on it with a soft pop; focus goes to it then, so a keyboard or a switch finds it as well. Left
  * alone for eight seconds, it pulses once and the pop comes once more.
  *
- * A recorded "Tap Done." belongs with the tick, and again with the pulse. That line is not among the
- * clips yet (every line is a clip, never the phone's voice): once "kit-tap-done" is recorded, it is
- * played here where the pop is.
+ * With the tick, and again with the pulse, Jessa says "All done? Tap Done!" (the "kit-tap-done" clip) after
+ * the pop. A tap, or leaving the screen, stops it.
  */
 export function DoneButton({
   onDone,
@@ -59,6 +59,12 @@ export function DoneButton({
     let show: number | undefined;
     let pulse: number | undefined;
     const current = () => settings.current?.current ?? DEFAULT_SETTINGS;
+    const voice = new AbortController();
+    const sayTapDone = () => {
+      void playLine([promptCue("kit-tap-done", "All done? Tap Done!")], current(), voice.signal).catch((error) => {
+        if (!isAbortError(error)) throw error;
+      });
+    };
     // The cheer is read a microtask later, not now: this effect runs before the game's own
     // (useFinish's), since a child's effects run first, so `cheer` here would still be the last
     // game's, long settled, and the tick would come over "You did it!". (Dev's StrictMode remount
@@ -73,15 +79,18 @@ export function DoneButton({
       show = window.setTimeout(() => {
         setCue("shown");
         playEffect("pop", current());
+        sayTapDone();
         button.current?.focus({ preventScroll: true });
         pulse = window.setTimeout(() => {
           setCue("pulse");
           playEffect("pop", current());
+          sayTapDone();
         }, DONE_PULSE_MS - DONE_CUE_MS);
       }, DONE_CUE_MS);
     });
     return () => {
       over = true;
+      voice.abort();
       window.clearTimeout(show);
       window.clearTimeout(pulse);
     };
