@@ -80,7 +80,7 @@ describe("About with a section held back", () => {
     expect(text).not.toMatch(/clock|coin|money|lemonade|bridge|tower|\bramps?\b|simple machines|seed|sink or float|weather|five senses/i);
     expect(about.teaches.startsWith(`${PRODUCT_NAME} has four sections. `)).toBe(true);
     expect(about.description).toContain("first steps into letters, numbers, colors, and games and coding, one small step");
-    expect(about.description).toContain("and harder coding work for ages 5 to 7");
+    expect(about.description).toContain("and harder coding work, wait for children who are ready");
     expect(about.disclaimer).toContain("is reading, math, colors, and games and coding practice");
     expect(about.features.find((feature) => feature.id === "rewards")?.body).toContain("a sticker book of letters, numbers, colors, and baby animals, and a growing nest");
     expect(about.features.map((feature) => feature.id)).toEqual(["hero", "voice", "calm", "themes", "blend", "lesson", "stars", "rewards", "math", "colors", "games", "classroom", "grownups"]);
@@ -96,7 +96,7 @@ describe("About with a section held back", () => {
     expect(text).toContain(MODULE_WORDS);
     expect(about.teaches.startsWith(`${PRODUCT_NAME} has one section. `)).toBe(true);
     expect(about.description).toContain("first steps into letters, one small step");
-    expect(about.description).toContain("a gentle start for ages 3 to 5 and longer words and sentences for ages 5 to 7.");
+    expect(about.description).toContain("Made for ages 3 to 5, with room to grow: longer words and sentences wait for children who are ready.");
     expect(about.disclaimer).toContain("is reading practice for young children.");
     expect(dailyLessonHelp(() => true)).not.toContain("Explore adds");
     expect(aboutSubjects(() => true)).toEqual([]);

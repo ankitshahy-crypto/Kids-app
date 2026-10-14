@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { clipSeconds, clipStarts, installAudioSpy } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 import { game, onRound } from "./kit";
 
@@ -68,4 +69,25 @@ test("a pre-reader is shown Done: the tick comes after the cheer, with focus, an
   await done.click();
   await expect(page.locator("[data-game=home]")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".star-count")).toHaveAttribute("data-stars", "1");
+});
+
+test("the cue waits for a replay the child asked for, instead of cutting it off", async ({ page }) => {
+  test.slow();
+  await installAudioSpy(page);
+  await install(page);
+  const done = await finishHatch(page);
+  // Straight after the last round: the child asks to hear the line again. The replay is several
+  // clips (the question, the sounds, the word); the cue must not take the voice from any of them.
+  const before = (await clipStarts(page)).length;
+  await page.locator("[data-hear=true]").click();
+  await expect(done).toHaveAttribute("data-cue", "shown", { timeout: 15_000 });
+  await expect.poll(async () => (await clipStarts(page)).some((clip) => clip.file === "prompts/kit-tap-done.mp3"), { timeout: 15_000 }).toBe(true);
+  const starts = (await clipStarts(page)).slice(before);
+  const cue = starts.find((clip) => clip.file === "prompts/kit-tap-done.mp3")!;
+  const replay = starts.filter((clip) => clip.at < cue.at && clip.file !== "prompts/kit-tap-done.mp3" && clip.file !== "prompts/kit-done.mp3");
+  expect(replay.length).toBeGreaterThanOrEqual(2);
+  // The cue began only after the last clip of the replay had played to its end.
+  let replayEnd = 0;
+  for (const clip of replay) replayEnd = Math.max(replayEnd, clip.at + (await clipSeconds(page, clip.file)) * 1000);
+  expect(cue.at).toBeGreaterThanOrEqual(replayEnd - 150);
 });

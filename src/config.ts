@@ -36,7 +36,7 @@ export const termsOfUseUrl = "https://www.apple.com/legal/internet-services/itun
  */
 export const OFFER_CODES_ENABLED: boolean = false;
 
-export const shareMessage = `${PRODUCT_NAME} is reading, math, colors, games and coding, time and money, building, and science for ages 3–7. Five happy minutes a day.`;
+export const shareMessage = `${PRODUCT_NAME} is reading, math, colors, games and coding, time and money, building, and science for ages 3 to 5, with room to grow. Five happy minutes a day.`;
 
 /**
  * The App Store listing, once it exists. The web demo's unlock page points

@@ -179,6 +179,8 @@ async function chimeAndShow(text: string, signal: AbortSignal): Promise<void> {
  * each other. The caller's own signal still stops its line as before.
  */
 let lineController: AbortController | null = null;
+/** The line being said now, settled when it ends or is stopped; null between lines. */
+let lineNow: Promise<void> | null = null;
 
 function takeVoice(signal: AbortSignal): AbortSignal {
   lineController?.abort();
@@ -187,6 +189,17 @@ function takeVoice(signal: AbortSignal): AbortSignal {
   if (signal.aborted) controller.abort();
   else signal.addEventListener("abort", () => controller.abort(), { once: true });
   return controller.signal;
+}
+
+/**
+ * Settles once no line is being said, so that something said on a timer (the Done button's cue)
+ * can wait its turn instead of taking the voice from a line a child asked for. A line that starts
+ * while this waits is waited for too.
+ */
+export function voiceIdle(): Promise<void> {
+  const now = lineNow;
+  if (!now) return Promise.resolve();
+  return now.then(voiceIdle, voiceIdle);
 }
 
 /**
@@ -218,12 +231,20 @@ async function playCues(
   announceLine(cues);
   if (options.remember !== false) remember(cues);
   const voice = takeVoice(signal);
-  for (let index = 0; index < cues.length; index += 1) {
-    if (index > 0) await sleep(BETWEEN_CUES_MS, voice);
-    if (voice.aborted) throw abortError();
-    options.onCue?.(index);
-    await playOne(cues[index], settings, voice, options.follow);
-  }
+  const line = (async () => {
+    for (let index = 0; index < cues.length; index += 1) {
+      if (index > 0) await sleep(BETWEEN_CUES_MS, voice);
+      if (voice.aborted) throw abortError();
+      options.onCue?.(index);
+      await playOne(cues[index], settings, voice, options.follow);
+    }
+  })();
+  const settled = line.then(() => undefined, () => undefined);
+  lineNow = settled;
+  void settled.then(() => {
+    if (lineNow === settled) lineNow = null;
+  });
+  return line;
 }
 
 function playCue(cue: Cue, settings: Settings, signal: AbortSignal, options: { remember?: boolean; follow?: ReadAlong } = {}): Promise<void> {
