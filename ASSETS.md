@@ -4,6 +4,7 @@ Everything visual or audible in LittleNest Learning is listed here. There are no
 
 | Asset | Path | Source | License |
 | --- | --- | --- | --- |
+| LittleNest mascot: the cream bunny, crowned, in round glasses and an orange knit scarf, in a woven nest (still) | App icon (`ios/App/App/Assets.xcassets/AppIcon.appiconset/*.png`), web icons (`public/icons/icon-*.png`, `apple-touch-icon.png`), favicons (`public/favicon.svg`, `website/favicon.svg`), `website/assets/app-icon.png`, `website/assets/mascot-bunny-nest.webp` | AI-generated (Muse) supplied by the owner (1600x1600 webp, Oct 13 2026). Background removed on the box with rembg ISNet and pymatting foreground estimation. The icon is the crown, head and scarf on cream (#FAF4E8), with the nest running off the bottom edge. It is made from the 1600 master with no upscaling. | **To confirm:** the Muse terms for commercial use (app store, website, printed books) before release. |
 | Fredoka Regular (latin, weight 400) | `src/assets/fonts/fredoka-latin-400-normal.woff2` | [Fredoka](https://github.com/hafontia/Fredoka-One), latin subset WOFF2 as published by [@fontsource/fredoka 5.2.8](https://github.com/fontsource/font-files) | SIL Open Font License 1.1 |
 | Fredoka SemiBold (latin, weight 600) | `src/assets/fonts/fredoka-latin-600-normal.woff2` | Same as above | SIL Open Font License 1.1 |
 | Fredoka Bold (latin, weight 700) | `src/assets/fonts/fredoka-latin-700-normal.woff2` | Same as above | SIL Open Font License 1.1 |

@@ -209,8 +209,12 @@ test("the where-to-start check places a reader further along, and a grown-up acc
 
   // Each sound round plays the bare sound from the sound clips, never the letter phrase that names it.
   const firstAnswer = (await check.getAttribute("data-answer")) ?? "";
-  if (clipShipped(`sounds/${firstAnswer}.mp3`)) {
-    await expect.poll(() => playedClips(page), { timeout: 8000 }).toContain(`sounds/${firstAnswer}.mp3`);
+  // A letter that shares its sound with another plays that sound's clip: c is /k/, so it plays sounds/k.mp3
+  // (the check asks for the sound, StartCheck.tsx, through PHONEME).
+  const sameSound: Record<string, string> = { c: "k" };
+  const soundFile = `sounds/${sameSound[firstAnswer] ?? firstAnswer}.mp3`;
+  if (clipShipped(soundFile)) {
+    await expect.poll(() => playedClips(page), { timeout: 8000 }).toContain(soundFile);
     expect(await playedClips(page)).not.toContain(`letters/${firstAnswer}.mp3`);
   }
   await expect.poll(() => spokenLines(page)).toContain("tap the letter that makes this sound.");
