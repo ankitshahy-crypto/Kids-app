@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useScrollTop } from "../hooks/useScrollTop";
 import { Avatar } from "../avatars";
 import { RemoveChildSheet } from "./RemoveChildSheet";
 import { lessonName, type ChildInput, type ChildProfile } from "../data/profiles";
@@ -79,6 +80,8 @@ export function ParentView({
   onClose: () => void;
 }) {
   const [page, setPage] = useState<ParentPage>(profiles.length === 0 ? "children" : "home");
+  const root = useRef<HTMLDivElement>(null);
+  useScrollTop(root, page);
   const [adding, setAdding] = useState(profiles.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = profiles.find((profile) => profile.id === editingId) ?? null;
@@ -105,7 +108,7 @@ export function ParentView({
   };
 
   return (
-    <div className="parent-view" data-screen="parent" data-page={page}>
+    <div ref={root} className="parent-view" data-screen="parent" data-page={page}>
       {/* The same Back button as the Grown-ups pages: a white pill with an arrow that stays at the top while
           the page scrolls. It was a line of small grey text here, easy to miss on a phone. */}
       <div className="grownups-bar">

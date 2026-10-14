@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useScrollTop } from "../hooks/useScrollTop";
 import { FamilyProgress } from "./ProgressViews";
 import type { LadderStep } from "../data/ladder";
 import type { TeacherLink } from "../data/profileExtras";
@@ -148,6 +149,8 @@ export function GrownupsMenu({
   initialPage?: GrownupsPage;
 }) {
   const [page, setPage] = useState<GrownupsPage>(initialPage);
+  const root = useRef<HTMLDivElement>(null);
+  useScrollTop(root, page);
   const [shareStatus, setShareStatus] = useState<ShareResult | "idle">("idle");
   const [adding, setAdding] = useState(profiles.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -178,7 +181,7 @@ export function GrownupsMenu({
   };
 
   return (
-    <div className="grownups-view" data-screen="grownups" data-page={page}>
+    <div ref={root} className="grownups-view" data-screen="grownups" data-page={page}>
       <div className="grownups-bar">
         <button type="button" className="grownups-back" onClick={back}>
           <Chevron direction="left" />
