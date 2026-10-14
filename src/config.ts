@@ -22,6 +22,20 @@ export const shareUrl = "https://littlenestlearning.app/";
  */
 export const privacyUrl = `${shareUrl}privacy.html`;
 
+/** The privacy policy as linked under the buy button (the website's clean address). */
+export const paywallPrivacyUrl = "https://littlenestlearning.app/privacy";
+
+/** Terms of Use: Apple's standard licensed application end user license agreement. */
+export const termsOfUseUrl = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+
+/**
+ * Offer codes ("Have a code?", Apple's redeem sheet). Off for the 1.0 launch: no codes are set up
+ * in App Store Connect yet, and the sheet needs iOS 16.3 or later, so App Review must never meet an
+ * error there. The code path (redeemSchoolCode, StorePlugin.redeemCode) stays; turn this on to
+ * bring the button back once codes exist.
+ */
+export const OFFER_CODES_ENABLED: boolean = false;
+
 export const shareMessage = `${PRODUCT_NAME} is reading, math, colors, games and coding, time and money, building, and science for ages 3–7. Five happy minutes a day.`;
 
 /**
