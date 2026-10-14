@@ -3,6 +3,7 @@ import { playLine, type Cue } from "../audio/player";
 import { strokePath, type TracePoint } from "../data/handwriting";
 import { recognizeWriting } from "../data/recognize";
 import type { Settings } from "../settings";
+import { DoneButton } from "./DoneButton";
 
 /**
  * An empty page for copy and memory writing.
@@ -139,9 +140,7 @@ export function WritingBox({
             )}
           </svg>
         </div>
-        <button type="button" className="letter-next" onClick={done}>
-          Done
-        </button>
+        <DoneButton quiet onDone={done} />
       </div>
     </div>
   );

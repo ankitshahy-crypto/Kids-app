@@ -1,3 +1,4 @@
+import { DoneButton } from "./DoneButton";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
 import { playPrompt, playWordId, promptCue, type Cue } from "../audio/player";
@@ -101,18 +102,14 @@ function Picture({ art }: { art: IllustrationName }) {
 function FinishButton({ id, onDone }: { id: string; onDone: () => void }) {
   const finished = useRef(false);
   return (
-    <button
-      type="button"
-      className="start-button"
-      data-finish={id}
-      onClick={() => {
+    <DoneButton
+      finish={id}
+      onDone={() => {
         if (finished.current) return;
         finished.current = true;
         onDone();
       }}
-    >
-      Done
-    </button>
+    />
   );
 }
 

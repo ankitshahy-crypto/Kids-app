@@ -30,12 +30,31 @@ const CHEER_MAX_MS = 4000;
  * clips yet (every line is a clip, never the phone's voice): once "kit-tap-done" is recorded, it is
  * played here where the pop is.
  */
-export function DoneButton({ onDone, said, settingsRef }: { onDone: () => void; said?: Promise<void>; settingsRef?: { current: Settings } }) {
-  const [cue, setCue] = useState<"soon" | "shown" | "pulse">("soon");
+export function DoneButton({
+  onDone,
+  said,
+  settingsRef,
+  finish,
+  next,
+  quiet = false,
+}: {
+  onDone: () => void;
+  said?: Promise<void>;
+  settingsRef?: { current: Settings };
+  /** The screen's own name for its finish, as data-finish (Build It, Think & Code). */
+  finish?: string;
+  next?: string;
+  /** A Done that checks the child's work (the writing box) rather than leaving a finished screen: the
+   * same big button, the tick drawn from the start, with no pop, no pulse and no focus taken while the
+   * child is still writing. */
+  quiet?: boolean;
+}) {
+  const [cue, setCue] = useState<"soon" | "shown" | "pulse">(quiet ? "shown" : "soon");
   const button = useRef<HTMLButtonElement>(null);
   const settings = useRef(settingsRef);
   settings.current = settingsRef;
   useEffect(() => {
+    if (quiet) return;
     let over = false;
     let show: number | undefined;
     let pulse: number | undefined;
@@ -71,7 +90,7 @@ export function DoneButton({ onDone, said, settingsRef }: { onDone: () => void; 
   }, []);
   return (
     <div className="game-done-row">
-      <button ref={button} type="button" className="start-button game-done" data-game-done="true" data-cue={cue} onClick={onDone}>
+      <button ref={button} type="button" className="start-button game-done" data-game-done="true" data-cue={cue} data-finish={finish} data-next={next} onClick={onDone}>
         <svg className="done-tick" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
           <circle cx="16" cy="16" r="14" fill="currentColor" opacity="0.18" />
           <path d="M9 16.5l5 5 9.5-10" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
