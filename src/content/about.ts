@@ -65,7 +65,7 @@ const TOPICS: readonly Piece[] = [
   { of: "science", text: "science" },
 ];
 
-/** What ages 5 to 7 get more of, beyond reading. */
+/** What a child who is ready gets more of, beyond reading. */
 const HARDER: readonly Piece[] = [
   { of: "time", text: "clock" },
   { of: "time", text: "money" },
@@ -112,23 +112,23 @@ const LEADS: readonly Piece[] = [
 /** How each section goes from first step to last, for "How LittleNest teaches". */
 const TEACHES: readonly Piece[] = [
   {
-    text: `${MODULE_WORDS} starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Phonics for ages 5 to 7 follows: two letters that make one sound, like sh and ee, the magic e in cake, and longer words and short sentences.`,
+    text: `${MODULE_WORDS} starts with letter sounds, then blending, then short words, then tiny stories. A word ladder sets the length, and a teacher can place the step. Phonics follows for children who are ready: two letters that make one sound, like sh and ee, the magic e in cake, and longer words and short sentences.`,
   },
   { of: "math", text: `${MODULE_NUMBERS} starts with counting, then numerals, then shapes, then adding small groups.` },
   { of: "colors", text: `${MODULE_COLORS} starts with color names, then mixing paints.` },
   { of: "games", text: "Games start with hatching, popping, feeding, rhymes, memory, and a spin." },
   {
     of: "games",
-    text: `${MODULE_CODE} starts with hello world, then a path home, a picture pattern, pictures in order, and an if-then rule, then picture blocks that play, then a short program to read and build. Ages 5 to 7 add longer paths, a routine kept as one chip and used again, a repeat, and a bug fix.`,
+    text: `${MODULE_CODE} starts with hello world, then a path home, a picture pattern, pictures in order, and an if-then rule, then picture blocks that play, then a short program to read and build. Children who are ready add longer paths, a routine kept as one chip and used again, a repeat, and a bug fix.`,
   },
   {
     of: "time",
-    text: `${MODULE_TIME} starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for ages 5 to 7.`,
+    text: `${MODULE_TIME} starts with parts of the day, a routine, o'clock, and naming coins, then half hours, minutes, coin values, and making change. Pretend jars, a lemonade stand, and needs and wants come next. Cards wait for children who are ready.`,
   },
-  { of: "build", text: `${MODULE_BUILD} starts with a bridge, a tower, a ramp, and simple machines. Ages 5 to 7 play more rounds and balance a beam.` },
+  { of: "build", text: `${MODULE_BUILD} starts with a bridge, a tower, a ramp, and simple machines. Children who are ready play more rounds and balance a beam.` },
   {
     of: "science",
-    text: `${MODULE_SCIENCE} starts with growing a plant, then animal homes, the parts of a bird, weather, the five senses, and sink or float. Ages 5 to 7 play more rounds of each.`,
+    text: `${MODULE_SCIENCE} starts with growing a plant, then animal homes, the parts of a bird, weather, the five senses, and sink or float. Children who are ready play more rounds of each.`,
   },
 ];
 
@@ -151,7 +151,7 @@ const HELP_LINES: readonly Piece[] = [
     of: "time",
     text: `${MODULE_TIME} has the parts of the day, a routine, a clock, coins, a pretend shop, save jars, and a lemonade stand. Cards stay pretend.`,
   },
-  { of: "build", text: `${MODULE_BUILD} is bridges, towers, ramps, and simple machines. Ages 5 to 7 also balance a beam.` },
+  { of: "build", text: `${MODULE_BUILD} is bridges, towers, ramps, and simple machines. Children who are ready also balance a beam.` },
   { of: "science", text: `${MODULE_SCIENCE} is growing a plant, life cycles, animal homes, the parts of a bird, weather, the senses, and sink or float.` },
   { of: "games", text: `${MODULE_CODE} is hello world, a path home, picture patterns, pictures in order, an if-then rule, and picture blocks that play.` },
 ];
@@ -211,17 +211,17 @@ const FEATURES = [
   {
     id: "games",
     title: "Games to play",
-    body: "Fill in the missing letters of three words to hatch an egg, pop the balloons with the letter they hear, feed their animal the pictures that start with a letter, find the pictures that rhyme, flip memory cards, and spin a wheel of six small challenges. Each game plays a few rounds in a scene with their animal. Coding starts with hello world: one block, and their animal says hello. Thinking games guide their animal home, continue a picture pattern, put pictures in order, and try an if-then rule. Building stacks picture blocks that play as a dance or a song, with the program shown in words. Reading the code turns it round: a short program is read aloud, and they build it. Ages 5 to 7 use longer arrow paths, a repeat, a bug fix, a pond splash, and can save a program on this device. A grown-up can turn on a Python view of that same program. A miss just means try again.",
+    body: "Fill in the missing letters of three words to hatch an egg, pop the balloons with the letter they hear, feed their animal the pictures that start with a letter, find the pictures that rhyme, flip memory cards, and spin a wheel of six small challenges. Each game plays a few rounds in a scene with their animal. Coding starts with hello world: one block, and their animal says hello. Thinking games guide their animal home, continue a picture pattern, put pictures in order, and try an if-then rule. Building stacks picture blocks that play as a dance or a song, with the program shown in words. Reading the code turns it round: a short program is read aloud, and they build it. Children who are ready use longer arrow paths, a repeat, a bug fix, a pond splash, and can save a program on this device. A grown-up can turn on a Python view of that same program. A miss just means try again.",
   },
   {
     id: "time",
     title: MODULE_TIME,
-    body: "Morning, afternoon, and night, then the daily routine and o'clock. Ages 5 to 7 set half hours, quarter hours, and five-minute steps, match a digital time, and ask how long until. Name a penny, nickel, dime, quarter, and one- and five-dollar bills drawn for this app, sort coins, and buy things at a shop that says out loud what each one costs and asks for the money. Later they count mixed coins, pay dollars and cents, make change, and compare prices. Pretend chores fill Save, Spend, and Share jars, a lemonade stand earns coins, and a shop says let's save for it when the price is too big. Needs and wants are sorted. Pretend debit and credit cards come later, with no interest and no real payments.",
+    body: "Morning, afternoon, and night, then the daily routine and o'clock. Children who are ready set half hours, quarter hours, and five-minute steps, match a digital time, and ask how long until. Name a penny, nickel, dime, quarter, and one- and five-dollar bills drawn for this app, sort coins, and buy things at a shop that says out loud what each one costs and asks for the money. Later they count mixed coins, pay dollars and cents, make change, and compare prices. Pretend chores fill Save, Spend, and Share jars, a lemonade stand earns coins, and a shop says let's save for it when the price is too big. Needs and wants are sorted. Pretend debit and credit cards come later, with no interest and no real payments.",
   },
   {
     id: "build",
     title: MODULE_BUILD,
-    body: "Pick the plank that fits the river and their animal walks across. Stack a tower with the widest block at the bottom, find the ramp that rolls a ball to the flag, and choose a lever, a pulley, or wheels to move something heavy. Each try is shown: a short plank falls in, a low ramp stops short. Ages 5 to 7 also balance a beam.",
+    body: "Pick the plank that fits the river and their animal walks across. Stack a tower with the widest block at the bottom, find the ramp that rolls a ball to the flag, and choose a lever, a pulley, or wheels to move something heavy. Each try is shown: a short plank falls in, a low ramp stops short. Children who are ready also balance a beam.",
   },
   {
     id: "science",
@@ -268,8 +268,8 @@ export function aboutFor(hidden: Hidden = heldBack) {
       `${PRODUCT_NAME} helps young children take their first steps into ${series(kept(TOPICS, hidden))}, one small step at a time.`,
       // "harder … work" needs something to be harder. With none of those sections, the reading stays.
       harder.length > 0
-        ? `Made for ages 3 to 7, with a gentle start for ages 3 to 5 and harder ${series(harder)} work for ages 5 to 7 (longer words and sentences for ages 5 to 7).`
-        : "Made for ages 3 to 7, with a gentle start for ages 3 to 5 and longer words and sentences for ages 5 to 7.",
+        ? `Made for ages 3 to 5, with room to grow: longer words and sentences, and harder ${series(harder)} work, wait for children who are ready.`
+        : "Made for ages 3 to 5, with room to grow: longer words and sentences wait for children who are ready.",
       "Your child picks an animal friend who becomes the hero of every story.",
       "Each day brings a short, gentle lesson of 2, 5, or 10 minutes, whichever you choose.",
       ...kept(LEADS, hidden),

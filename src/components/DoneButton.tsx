@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { playEffect } from "../audio/manager";
-import { isAbortError, playLine, promptCue } from "../audio/player";
+import { isAbortError, playLine, promptCue, voiceIdle } from "../audio/player";
 import { DEFAULT_SETTINGS, type Settings } from "../settings";
 
 /**
@@ -19,6 +19,8 @@ export const DONE_CUE_MS = 1500;
 export const DONE_PULSE_MS = 8000;
 /** Should a cheer never settle (a clip that will not end), the tick comes anyway after this long. */
 const CHEER_MAX_MS = 4000;
+/** The cue waits this long at most for a line being said to end before it speaks anyway. */
+const VOICE_WAIT_MS = 6000;
 
 /**
  * Done: the one button that leaves a finished screen, the same on each of them (a game's last round,
@@ -27,8 +29,10 @@ const CHEER_MAX_MS = 4000;
  * up on it with a soft pop; focus goes to it then, so a keyboard or a switch finds it as well. Left
  * alone for eight seconds, it pulses once and the pop comes once more.
  *
- * With the tick, and again with the pulse, Jessa says "All done? Tap Done!" (the "kit-tap-done" clip) after
- * the pop. A tap, or leaving the screen, stops it.
+ * With the tick, and again with the pulse, the narrator says "All done? Tap Done!" (the "kit-tap-done"
+ * clip), starting as the pop sounds. The cue never takes the voice from a line being said (a replay
+ * the child asked for, a screen's own finish line): it waits until the voice is free, for up to a
+ * few seconds, and then speaks. A tap, or leaving the screen, stops it.
  */
 export function DoneButton({
   onDone,
@@ -61,9 +65,15 @@ export function DoneButton({
     const current = () => settings.current?.current ?? DEFAULT_SETTINGS;
     const voice = new AbortController();
     const sayTapDone = () => {
-      void playLine([promptCue("kit-tap-done", "All done? Tap Done!")], current(), voice.signal).catch((error) => {
-        if (!isAbortError(error)) throw error;
-      });
+      // Said once the voice is free: a line being said (a replay, a finish line) ends first.
+      void Promise.race([voiceIdle(), new Promise<void>((resolve) => window.setTimeout(resolve, VOICE_WAIT_MS))])
+        .then(() => {
+          if (over) return;
+          return playLine([promptCue("kit-tap-done", "All done? Tap Done!")], current(), voice.signal);
+        })
+        .catch((error) => {
+          if (!isAbortError(error)) throw error;
+        });
     };
     // The cheer is read a microtask later, not now: this effect runs before the game's own
     // (useFinish's), since a child's effects run first, so `cheer` here would still be the last
@@ -73,6 +83,9 @@ export function DoneButton({
       await Promise.resolve();
       const waited = said ?? cheer;
       await Promise.race([waited.then(() => undefined, () => undefined), new Promise<void>((resolve) => window.setTimeout(resolve, CHEER_MAX_MS))]);
+      // A screen that did not hand its cheer over (Build It, Think & Code) may still be saying its
+      // finish line: the tick waits for the voice to be free as well.
+      await Promise.race([voiceIdle(), new Promise<void>((resolve) => window.setTimeout(resolve, VOICE_WAIT_MS))]);
     })();
     void settled.then(() => {
       if (over) return;

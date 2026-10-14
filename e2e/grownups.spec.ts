@@ -156,7 +156,7 @@ test("the check opens the Grown-ups menu and each section has a Back button", as
   // Opened from the foot of a scrolled menu, the page still starts at its top.
   await expect.poll(() => page.locator(".screen-body").evaluate((body) => body.scrollTop)).toBe(0);
   await expect(about.getByText("LittleNest: Early Learning")).toBeVisible();
-  await expect(about.getByText("Read, math, science & coding")).toBeVisible();
+  await expect(about.getByText("Phonics, Reading & Math 3-5")).toBeVisible();
   await expect(about.getByRole("heading", { name: "Your child is the hero" })).toBeVisible();
   await expect(about.getByRole("heading", { name: "Drag to blend" })).toBeVisible();
   await expect(about.getByText("by TriageDesk")).toBeVisible();
