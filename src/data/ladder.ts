@@ -262,7 +262,6 @@ const step3: DeckWord[] = [
   made("win", "win"),
   // v y
   made("van", "van", "van"),
-  made("vet", "vet"),
   made("yam", "yam"),
   made("yak", "yak"),
   made("yes", "yes"),
