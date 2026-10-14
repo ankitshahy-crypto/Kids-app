@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { colorCue, letterCue, numberCue, wordCue, type Cue } from "../audio/player";
+import { colorCue, letterCue, numberCue, promptCue, wordCue, type Cue } from "../audio/player";
 import type { PhonemeId } from "../data/phonemes";
 import type { ChildProfile, Sticker } from "../data/profiles";
+import { nameToTrace } from "../data/tracePractice";
 import { isUnit, unitLabel } from "../data/units";
 import { letterTile } from "../data/wordBuild";
 import { useSpeaker } from "../hooks/useSpeaker";
@@ -15,7 +16,19 @@ const PAGE = 4;
  * colour its name, anything else its word. A sticker is what the child earned, and saying it is the
  * payoff (in the playtest of build 3 a tapped sticker did nothing).
  */
-function stickerCue(sticker: Sticker): Cue {
+/**
+ * The sticker Trace your name leaves is the child's own name. A name has no clip and is never sent to a
+ * voice service, and the device voice is gone, so it said nothing at all. It says "That's your name!"
+ * in the app's voice instead, and sparkles.
+ */
+export function isNameSticker(sticker: Sticker, childName: string): boolean {
+  if (sticker.kind !== "word") return false;
+  const traced = nameToTrace(childName);
+  return Boolean(traced) && sticker.label.toLowerCase() === traced!.toLowerCase();
+}
+
+export function stickerCue(sticker: Sticker, childName = ""): Cue {
+  if (isNameSticker(sticker, childName)) return promptCue("your-name", "That's your name!");
   const label = sticker.label.toLowerCase();
   if (sticker.kind === "letter") return letterCue(isUnit(label) ? { char: unitLabel(label), phoneme: label as PhonemeId } : letterTile(label));
   if (sticker.kind === "number" && /^\d+$/.test(label)) return numberCue(Number(label));
@@ -61,19 +74,21 @@ export function StickerBook({ profile, settingsRef, onBack }: { profile: ChildPr
             {slice.map((sticker) => {
               const key = `${sticker.subject}:${sticker.kind}:${sticker.label}`;
               const shown = sticker.kind === "letter" ? (isUnit(sticker.label) ? unitLabel(sticker.label) : sticker.label.toUpperCase()) : sticker.label;
+              const mine = isNameSticker(sticker, profile.name);
               return (
-                <li key={key} data-sticker={sticker.label} data-kind={sticker.kind} data-subject={sticker.subject}>
+                <li key={key} data-name-sticker={mine ? "true" : undefined} data-sticker={sticker.label} data-kind={sticker.kind} data-subject={sticker.subject}>
                   <button
                     type="button"
                     className="sticker-say"
                     aria-label={shown}
                     data-said={said.key === key ? (said.count % 2 === 1 ? "a" : "b") : "false"}
                     onClick={() => {
-                      speak.line([stickerCue(sticker)], undefined, { remember: false });
+                      speak.line([stickerCue(sticker, profile.name)], undefined, { remember: false });
                       setSaid((current) => ({ key, count: current.count + 1 }));
                     }}
                   >
                     {shown}
+                    {mine && said.key === key ? <span key={said.count} className="name-sparkle" aria-hidden="true" /> : null}
                   </button>
                 </li>
               );

@@ -54,6 +54,8 @@ export function PathTrace({
   memoryLine,
   memoryCues,
   onSpeak,
+  onTitle,
+  titleSparkle = 0,
   stay = false,
   onGlyph,
   onAttempt,
@@ -73,6 +75,10 @@ export function PathTrace({
   memoryCues?: Cue[];
   /** What the cheer says. Given back as a promise, the cheer stays until it has been said. */
   onSpeak?: () => void | Promise<void>;
+  /** Tapping the title: Trace your name says "That's your name!" (the name itself is never spoken). */
+  onTitle?: () => void;
+  /** Counts up to sparkle the title from outside (the end of Trace your name). */
+  titleSparkle?: number;
   /** The cheer stays until Done is pressed, instead of leaving by itself once what it says is said. */
   stay?: boolean;
   /** A new letter is up (its place among the glyphs): the screen can say it. */
@@ -83,6 +89,7 @@ export function PathTrace({
   const [glyphIndex, setGlyphIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>(() => openingPhase(level));
   const [hint, setHint] = useState("");
+  const [titleTaps, setTitleTaps] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [strokeIndex, setStrokeIndex] = useState(0);
   const [covered, setCovered] = useState(0);
@@ -300,7 +307,24 @@ export function PathTrace({
       data-fade={level === 2 ? String(fadeOpacity(writingState(writing, itemId ?? "").successes)) : undefined}
       {...markerProps}
     >
-      <h1>{title}</h1>
+      {onTitle ? (
+        <h1>
+          <button
+            type="button"
+            className="title-say"
+            data-said={titleTaps + titleSparkle === 0 ? "false" : (titleTaps + titleSparkle) % 2 === 1 ? "a" : "b"}
+            onClick={() => {
+              onTitle();
+              setTitleTaps((count) => count + 1);
+            }}
+          >
+            {title}
+            {titleTaps + titleSparkle > 0 ? <span key={titleTaps + titleSparkle * 1000} className="name-sparkle" aria-hidden="true" /> : null}
+          </button>
+        </h1>
+      ) : (
+        <h1>{title}</h1>
+      )}
       {glyphs.length > 1 ? (
         <p className="glyph-row" aria-label={title}>
           {glyphs.map((item, index) => (
@@ -455,6 +479,7 @@ export function NameTrace({
   // rest of the app. A name has no clip of its own and is never sent anywhere, and the device voice
   // is not used for it: on the phone it was a different voice from the lesson's, and a robotic one.
   const letters = nameLetters(title).map(spellCue);
+  const [endSparkle, setEndSparkle] = useState(0);
   // The opening says the prompt and the first letter as one line; the letters after come up one by
   // one (onGlyph). Said apart, the first letter was cut off by the prompt: one voice at a time.
   useOpeningLine(speak, [promptCue("trace-name", "Trace your name."), ...letters.slice(0, 1)]);
@@ -478,6 +503,8 @@ export function NameTrace({
         if (index > 0 && letter) speak.line([letter], undefined, { remember: false });
       }}
       memoryCues={[promptCue("trace-name", "Trace your name."), ...letters]}
+      titleSparkle={endSparkle}
+      onTitle={() => speak.line([promptCue("your-name", "That's your name!")], undefined, { remember: false })}
       onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
       onSpeak={() =>
         new Promise<void>((resolve) => {
@@ -486,7 +513,14 @@ export function NameTrace({
           // a second voice (and in Chrome a Google network voice, which sent the child's name off
           // the device). Spelled out again at the end ("A, L, E, E, N, A") it was heard as the app
           // not knowing the name, so it is not spelled here either. Closing the screen stops it.
-          speak.line([promptCue("traced-name", "You traced your name!")], resolve, { remember: false, onStop: resolve });
+          // Then "That's your name!", with the sparkle as it starts: one line, so the two never overlap.
+          speak.line([promptCue("traced-name", "You traced your name!"), promptCue("your-name", "That's your name!")], resolve, {
+            remember: false,
+            onStop: resolve,
+            onCue: (index) => {
+              if (index === 1) setEndSparkle((count) => count + 1);
+            },
+          });
         })
       }
       stay

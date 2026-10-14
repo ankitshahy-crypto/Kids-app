@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { answerGate, openTeacherChild } from "./gate";
 import { finishLetterTracing } from "./traceFlow";
-import { clipShipped, installAudioSpy, playedClips } from "./audioSpy";
+import { clipShipped, deviceSpeech, installAudioSpy, missingClips, playedClips, requestedCues } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 
 const WORDS: Record<string, number> = {
@@ -168,6 +168,37 @@ test("a sticker says what it is when tapped: a letter, a word, a number, a colou
     await expect(sticker).toHaveAttribute("data-said", /^(a|b)$/);
     if (clipShipped(clip)) await expect.poll(async () => (await playedClips(page)).slice(before), { timeout: 10_000 }).toContain(clip);
   }
+});
+
+test("the child's own name sticker says \"That's your name!\" and sparkles, never the name", async ({ page }) => {
+  // Build 13 playtest: the name sticker from Trace your name said nothing. A name has no clip and is
+  // never sent to a voice service, so it says a recorded "That's your name!" instead.
+  await installAudioSpy(page);
+  await page.addInitScript((created) => {
+    const stickers = [
+      { subject: "reading", kind: "word", label: "Mia" },
+      { subject: "reading", kind: "word", label: "mat" },
+    ];
+    localStorage.setItem("littlenest-profiles-v1", JSON.stringify({ activeId: "mia", profiles: [{ id: "mia", name: "Mia", ageRange: "4", animal: "fox", createdAt: created, stars: 4, days: {}, stickers }] }));
+    localStorage.setItem("littlenest-silent-hint-v1", "1");
+  }, createdThisWeek());
+  await page.goto("./");
+  await page.getByRole("button", { name: "Mia" }).click();
+  await page.locator("[data-dock=stickers]").click();
+  const name = page.locator('[data-sticker="Mia"]');
+  await expect(name).toHaveAttribute("data-name-sticker", "true");
+  await expect(page.locator('[data-sticker="mat"]')).not.toHaveAttribute("data-name-sticker", "true");
+  const before = (await playedClips(page)).length;
+  await name.locator("button").click();
+  await expect(name.locator(".name-sparkle")).toBeAttached();
+  await expect(name.locator("button")).toHaveAttribute("data-said", /^(a|b)$/);
+  if (clipShipped("prompts/your-name.mp3")) await expect.poll(async () => (await playedClips(page)).slice(before), { timeout: 10_000 }).toContain("prompts/your-name.mp3");
+  expect(await missingClips(page)).toEqual([]);
+  expect(await deviceSpeech(page)).toEqual([]);
+  expect((await requestedCues(page)).some((cue) => /mia/i.test(cue))).toBe(false);
+  // A second tap sparkles again.
+  await name.locator("button").click();
+  await expect(name.locator(".name-sparkle")).toBeAttached();
 });
 
 test("every 10 stars shows a cheer", async ({ page }) => {

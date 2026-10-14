@@ -144,6 +144,24 @@ state: ${JSON.stringify(state)}`);
   expect(heard.slice(before)).toEqual(expect.arrayContaining(again));
 });
 
+test("tapping the name on Trace my name says \"That's your name!\" and sparkles, never the name", async ({ page }) => {
+  // The name was shown big and said nothing when tapped. A name has no clip and is never sent to a
+  // voice, so it says a recorded "That's your name!".
+  const requested: string[] = [];
+  page.on("request", (request) => requested.push(request.url()));
+  await install(page);
+  await page.getByRole("button", { name: "Trace my name" }).click();
+  const title = page.locator("[data-screen=my-name] .title-say");
+  await expect(title).toHaveText("Mia");
+  const before = (await playedClips(page)).length;
+  await title.click();
+  await expect(title.locator(".name-sparkle")).toBeAttached();
+  await expect.poll(async () => (await playedClips(page)).slice(before), { timeout: LINE_WITHIN_MS }).toContain("prompts/your-name.mp3");
+  expect(await missingClips(page)).toEqual([]);
+  expect(await deviceSpeech(page)).toEqual([]);
+  expect(sentAddresses(requested)).not.toMatch(/mia/i);
+});
+
 test("Trace my name says what to do and the first letter in the recorded voice, and Again repeats both", async ({ page }) => {
   // The phone pass of build 4: the name came from the phone's own voice, a different one from the
   // lesson's. The letters are recorded clips (M, I, A): the first with the opening line, the others

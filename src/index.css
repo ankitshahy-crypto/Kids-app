@@ -13861,3 +13861,74 @@ button,
     height: 30px;
   }
 }
+
+/* The child's own name sticker says "That's your name!" and sparkles: a ring of little stars
+   that pops out from the sticker and fades. */
+.sticker-say {
+  position: relative;
+}
+
+.name-sparkle {
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, #f5c451 0 3px, transparent 4px) 8% 12% / 14px 14px no-repeat,
+    radial-gradient(circle, #f5c451 0 3px, transparent 4px) 92% 10% / 14px 14px no-repeat,
+    radial-gradient(circle, #e8a0b4 0 2.5px, transparent 3.5px) 50% 0% / 12px 12px no-repeat,
+    radial-gradient(circle, #9cc5a1 0 2.5px, transparent 3.5px) 4% 88% / 12px 12px no-repeat,
+    radial-gradient(circle, #f5c451 0 3px, transparent 4px) 96% 90% / 14px 14px no-repeat,
+    radial-gradient(circle, #e8a0b4 0 2.5px, transparent 3.5px) 50% 100% / 12px 12px no-repeat;
+  box-shadow: 0 0 0 3px rgba(245, 196, 81, 0.55);
+  animation: name-sparkle 0.9s ease-out forwards;
+}
+
+@keyframes name-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .name-sparkle {
+    animation: name-sparkle-calm 0.9s ease-out forwards;
+  }
+  @keyframes name-sparkle-calm {
+    0%,
+    60% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+/* Trace your name: the name at the top is a button too, and says "That's your name!". */
+.title-say {
+  position: relative;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 2px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.title-say[data-said="a"] {
+  animation: sticker-said-a 0.45s ease;
+}
+
+.title-say[data-said="b"] {
+  animation: sticker-said-b 0.45s ease;
+}

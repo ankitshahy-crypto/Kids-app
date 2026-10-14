@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { deviceSpeech, installAudioSpy, playedClips } from "./audioSpy";
+import { deviceSpeech, installAudioSpy, missingClips, playedClips } from "./audioSpy";
 import { createdThisWeek } from "./clock";
 import { traceCurrentStroke } from "./traceFlow";
 
@@ -55,8 +55,19 @@ test("Trace my name: Back stops the letters; the end says the name as a word and
   // name is never given to a synthesized voice (no device speech at all), and not spelled again.
   await expect(root.locator(".letter-prompt")).toHaveText("You traced Marisa.");
   await expect.poll(async () => playedClips(page), { timeout: 10000 }).toContain("prompts/traced-name.mp3");
+  // Then "That's your name!", after the first line, with a sparkle: never the name itself, never overlapping.
+  await expect.poll(async () => playedClips(page), { timeout: 15000 }).toContain("prompts/your-name.mp3");
+  const all = await playedClips(page);
+  const cheer = all.slice(clipsAtCheer);
+  const tracedAt = all.lastIndexOf("prompts/traced-name.mp3");
+  const yoursAt = all.indexOf("prompts/your-name.mp3");
+  expect(tracedAt).toBeGreaterThanOrEqual(0);
+  expect(yoursAt).toBeGreaterThan(tracedAt);
+  await expect(root.locator("h1 .name-sparkle")).toBeAttached();
   expect(await deviceSpeech(page)).toEqual([]);
-  expect((await playedClips(page)).slice(clipsAtCheer).filter((clip) => /^spell\//.test(clip))).toEqual([]);
+  expect(await missingClips(page)).toEqual([]);
+  expect(cheer.filter((clip) => /^spell\//.test(clip))).toEqual([]);
+  expect(cheer.filter((clip) => clip === "prompts/your-name.mp3")).toHaveLength(1);
   // The screen stays with the finished name, Done on it, for as long as the child likes.
   await page.waitForTimeout(4000);
   await expect(root).toHaveAttribute("data-phase", "cheer");
