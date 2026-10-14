@@ -901,3 +901,151 @@ p {
     margin-top: 0;
   }
 }
+
+/* Carried over from the live site: the price line never breaks mid-phrase, and on phones the note drops below. */
+.plan .price small {
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .plan .price small {
+    display: block;
+    margin-top: 6px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   App mockup style (the redesign): paper grain on cream, sage accents, Fredoka,
+   layered soft shadows with a light top edge, and pill buttons. Same tokens as
+   src/index.css (--edge, --shadow-rest, --shadow-raised, --shadow-float).
+   --------------------------------------------------------------------------- */
+:root {
+  --edge: inset 0 0 0 1px rgba(120, 90, 60, 0.07), inset 0 1.5px 0 rgba(255, 255, 255, 0.9);
+  --shadow-rest: var(--edge), 0 1px 2px rgba(120, 90, 60, 0.1), 0 6px 14px rgba(120, 90, 60, 0.07);
+  --shadow-raised: var(--edge), 0 2px 4px rgba(120, 90, 60, 0.07), 0 14px 30px rgba(120, 90, 60, 0.1);
+  --shadow-float: var(--edge), 0 6px 14px rgba(80, 60, 40, 0.08), 0 24px 52px rgba(80, 60, 40, 0.16);
+  --shadow: var(--shadow-raised);
+  --light: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0) 58%);
+  --pill: 999px;
+}
+
+body {
+  background: radial-gradient(1200px 600px at 85% -10%, var(--mint-wash), transparent 60%), var(--cream);
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.button {
+  border-radius: var(--pill);
+  box-shadow: var(--shadow-rest);
+  font-weight: 600;
+}
+
+.button-primary {
+  background: var(--light), var(--action);
+  color: var(--on-action);
+  box-shadow: var(--shadow-raised);
+}
+
+.button-quiet {
+  background: var(--light), var(--paper);
+  color: var(--sage-deep);
+}
+
+.card,
+.plan,
+.module,
+.faq details,
+.callout {
+  background: var(--light), var(--paper);
+  border-color: transparent;
+  box-shadow: var(--shadow-rest);
+  border-radius: var(--radius);
+}
+
+.plan-full {
+  background: var(--light), var(--mint-wash);
+  box-shadow: var(--shadow-raised);
+}
+
+.section-alt {
+  background: rgba(231, 242, 234, 0.55);
+}
+
+.trust li,
+.eyebrow,
+.step {
+  border-radius: var(--pill);
+}
+
+.eyebrow {
+  background: var(--mint-wash);
+  color: var(--text-sage);
+  padding: 4px 14px;
+}
+
+.site-head {
+  background: rgba(251, 246, 238, 0.92);
+  box-shadow: 0 1px 0 rgba(120, 90, 60, 0.08);
+}
+
+.phone {
+  box-shadow: var(--shadow-float);
+}
+
+.hero-mascot {
+  filter: drop-shadow(0 14px 24px rgba(80, 60, 40, 0.16));
+}
+
+/* Book 1 page */
+.book-hero {
+  display: grid;
+  gap: 32px;
+  align-items: center;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 860px) {
+  .book-hero {
+    grid-template-columns: 1.3fr 1fr;
+  }
+}
+.book-hero img {
+  max-width: 320px;
+  margin: 0 auto;
+}
+.story-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.story-list li {
+  background: var(--light), var(--paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-rest);
+  padding: 18px 20px;
+}
+.story-list strong {
+  display: block;
+}
+.story-list span {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+.pill-tag {
+  display: inline-block;
+  justify-self: start;
+  width: fit-content;
+  border-radius: var(--pill);
+  background: var(--butter);
+  color: var(--text-warm);
+  padding: 4px 14px;
+  font-weight: 600;
+  font-size: 0.85em;
+}
