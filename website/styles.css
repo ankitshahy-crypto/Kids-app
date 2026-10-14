@@ -1062,3 +1062,26 @@ h3 {
     padding-right: 6px;
   }
 }
+
+/* Book 1 callout on the home page: the crowned bunny beside the text. */
+.book-callout img {
+  width: 120px;
+  height: auto;
+  flex: none;
+}
+@media (max-width: 720px) {
+  .book-callout img {
+    width: 96px;
+  }
+}
+.book-callout {
+  grid-template-columns: auto 1fr auto;
+}
+@media (max-width: 720px) {
+  .book-callout {
+    grid-template-columns: 1fr;
+  }
+}
+.book-callout p + p {
+  margin-top: 10px;
+}
