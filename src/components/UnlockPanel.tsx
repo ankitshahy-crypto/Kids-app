@@ -1,5 +1,5 @@
 import { PRODUCT_SHORT } from "../brand";
-import { appStoreUrl, googlePlayUrl } from "../config";
+import { appStoreUrl, googlePlayUrl, OFFER_CODES_ENABLED, paywallPrivacyUrl, termsOfUseUrl } from "../config";
 import { lessonName, type ChildProfile } from "../data/profiles";
 import { soFarLine } from "../data/progress";
 import { FREE_WEEKS } from "../purchase/access";
@@ -66,6 +66,25 @@ function StoreLink() {
   );
 }
 
+/**
+ * Privacy Policy and Terms of Use, small, under the buy button. No extra grown-up check here:
+ * this panel only opens from the Grown-ups menu or a child's LockSheet, and both are behind
+ * ParentGate already, so these links out are too.
+ */
+function LegalLinks() {
+  return (
+    <p className="adult-note unlock-legal" data-section="legal">
+      <a className="text-button" data-link="privacy" href={paywallPrivacyUrl} target="_blank" rel="noopener noreferrer">
+        Privacy Policy
+      </a>
+      {" · "}
+      <a className="text-button" data-link="terms" href={termsOfUseUrl} target="_blank" rel="noopener noreferrer">
+        Terms of Use
+      </a>
+    </p>
+  );
+}
+
 /** The grown-up page for the one-time unlock: what it opens, the price, a code, and Restore. */
 export function UnlockPanel({ profiles = [] }: { profiles?: ChildProfile[] }) {
   const unlock = useUnlock();
@@ -105,8 +124,13 @@ export function UnlockPanel({ profiles = [] }: { profiles?: ChildProfile[] }) {
         </p>
         <p className="adult-copy">
           Thank you for trying {PRODUCT_SHORT} early. When it launches, install it from the App Store. The first{" "}
-          {FREE_WEEKS} weeks of reading stay free, and one payment opens the rest. If a school or partner gave you a
-          code, enter it there under Have a code?.
+          {FREE_WEEKS} weeks of reading stay free, and one payment opens the rest.
+          {OFFER_CODES_ENABLED ? (
+            <>
+              {" "}
+              If a school or partner gave you a code, enter it there under Have a code?.
+            </>
+          ) : null}
         </p>
       </section>
     );
@@ -140,9 +164,12 @@ export function UnlockPanel({ profiles = [] }: { profiles?: ChildProfile[] }) {
               <StoreLink />
             </>
           ) : (
-            <button type="button" className="done-button unlock-buy" data-action="buy" disabled={busy} onClick={() => void buyUnlock()}>
-              {unlock.price ? `Unlock everything · ${unlock.price}` : "Unlock everything"}
-            </button>
+            <>
+              <button type="button" className="done-button unlock-buy" data-action="buy" disabled={busy} onClick={() => void buyUnlock()}>
+                {unlock.price ? `Unlock everything · ${unlock.price}` : "Unlock everything"}
+              </button>
+              <LegalLinks />
+            </>
           )}
         </>
       )}
@@ -153,7 +180,7 @@ export function UnlockPanel({ profiles = [] }: { profiles?: ChildProfile[] }) {
       ) : null}
       {unlock.web ? null : (
         <div className="unlock-more">
-          {!unlock.unlocked && !unlock.preview ? (
+          {OFFER_CODES_ENABLED && !unlock.unlocked && !unlock.preview ? (
             <button type="button" className="text-button" data-action="code" disabled={busy} onClick={() => void redeemSchoolCode()}>
               Have a code?
             </button>
