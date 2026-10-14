@@ -54,6 +54,7 @@ export function PathTrace({
   memoryLine,
   memoryCues,
   onSpeak,
+  onTitle,
   stay = false,
   onGlyph,
   onAttempt,
@@ -73,6 +74,8 @@ export function PathTrace({
   memoryCues?: Cue[];
   /** What the cheer says. Given back as a promise, the cheer stays until it has been said. */
   onSpeak?: () => void | Promise<void>;
+  /** Tapping the title: Trace your name says "That's your name!" (the name itself is never spoken). */
+  onTitle?: () => void;
   /** The cheer stays until Done is pressed, instead of leaving by itself once what it says is said. */
   stay?: boolean;
   /** A new letter is up (its place among the glyphs): the screen can say it. */
@@ -83,6 +86,7 @@ export function PathTrace({
   const [glyphIndex, setGlyphIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>(() => openingPhase(level));
   const [hint, setHint] = useState("");
+  const [titleTaps, setTitleTaps] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [strokeIndex, setStrokeIndex] = useState(0);
   const [covered, setCovered] = useState(0);
@@ -300,7 +304,24 @@ export function PathTrace({
       data-fade={level === 2 ? String(fadeOpacity(writingState(writing, itemId ?? "").successes)) : undefined}
       {...markerProps}
     >
-      <h1>{title}</h1>
+      {onTitle ? (
+        <h1>
+          <button
+            type="button"
+            className="title-say"
+            data-said={titleTaps === 0 ? "false" : titleTaps % 2 === 1 ? "a" : "b"}
+            onClick={() => {
+              onTitle();
+              setTitleTaps((count) => count + 1);
+            }}
+          >
+            {title}
+            {titleTaps > 0 ? <span key={titleTaps} className="name-sparkle" aria-hidden="true" /> : null}
+          </button>
+        </h1>
+      ) : (
+        <h1>{title}</h1>
+      )}
       {glyphs.length > 1 ? (
         <p className="glyph-row" aria-label={title}>
           {glyphs.map((item, index) => (
@@ -478,6 +499,7 @@ export function NameTrace({
         if (index > 0 && letter) speak.line([letter], undefined, { remember: false });
       }}
       memoryCues={[promptCue("trace-name", "Trace your name."), ...letters]}
+      onTitle={() => speak.line([promptCue("your-name", "That's your name!")], undefined, { remember: false })}
       onAttempt={onAttempt ? (success) => onAttempt(id, success) : undefined}
       onSpeak={() =>
         new Promise<void>((resolve) => {

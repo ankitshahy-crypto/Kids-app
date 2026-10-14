@@ -925,6 +925,7 @@
     "time-pay": { "file": "prompts/time-pay.mp3", "say": "Tap each piece you need.", "source": "neural" },
     "trace-name": { "file": "prompts/trace-name.mp3", "say": "Trace your name.", "source": "neural" },
     "traced-name": { "file": "prompts/traced-name.mp3", "say": "You traced your name!", "source": "neural" },
+    "your-name": { "file": "prompts/your-name.mp3", "say": "That's your name!", "source": "neural" },
     "trace-word": { "file": "prompts/trace-word.mp3", "say": "Trace the word.", "source": "neural" },
     "sound-which": { "file": "prompts/sound-which.mp3", "say": "Which one says this sound?", "source": "neural" },
     "sound-done": { "file": "prompts/sound-done.mp3", "say": "You played the sound game!", "source": "neural" },
