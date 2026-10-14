@@ -5,21 +5,21 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("assets/fonts/fredoka-latin-400-normal.woff2") format("woff2");
+  src: url("assets/fonts/fredoka-latin-400-normal.woff2?v=5") format("woff2");
 }
 @font-face {
   font-family: "Fredoka";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("assets/fonts/fredoka-latin-600-normal.woff2") format("woff2");
+  src: url("assets/fonts/fredoka-latin-600-normal.woff2?v=5") format("woff2");
 }
 @font-face {
   font-family: "Fredoka";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("assets/fonts/fredoka-latin-700-normal.woff2") format("woff2");
+  src: url("assets/fonts/fredoka-latin-700-normal.woff2?v=5") format("woff2");
 }
 
 :root {
@@ -196,17 +196,12 @@ p {
     margin-left: 0;
     width: 100%;
     justify-content: flex-start;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .nav::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap;
+    gap: 2px 4px;
   }
   .nav a {
-    font-size: 15px;
-    padding: 6px 10px;
+    font-size: 14px;
+    padding: 5px 9px;
     white-space: nowrap;
   }
 }
@@ -1048,4 +1043,26 @@ h3 {
   padding: 4px 14px;
   font-weight: 600;
   font-size: 0.85em;
+}
+
+/* Phones: the setup page's code table fits the screen instead of pushing the page sideways. */
+@media (max-width: 720px) {
+  .doc table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  .doc th,
+  .doc td {
+    overflow-wrap: anywhere;
+    font-size: 15px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
+
+/* Phones: the two-row menu scrolls away with the page rather than covering the content (as on the live site). */
+@media (max-width: 720px) {
+  .site-head {
+    position: static;
+  }
 }
