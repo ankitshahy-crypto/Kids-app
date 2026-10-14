@@ -13742,10 +13742,18 @@ button,
 /* iPad upright: the mockup's column, centred and in its order (dock row above Explore), with the nest
    and the letter at the phone's proportions scaled up, and the six doors in one row. */
 @media (min-width: 768px) and (orientation: portrait) {
+  /* Today scrolls here, as it does on a phone: its own scroller (.today-body) is gone (display:
+     contents, below), and the fit screen hides what does not fit. On a 1024-tall iPad (the mini,
+     the 9.7") a grown-up tip on Today pushed the Explore row 39px (the chip) or 119px (the card)
+     past the bottom edge, with nothing to scroll. Today is the one scroller; the tip stays above
+     it, and the screen body and the stage never scroll. On the taller iPads everything fits and
+     nothing moves. An iPad on its side keeps its own rules. */
   .today.is-nest {
     width: min(100%, 860px);
     margin: 0 auto;
     gap: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .today.is-nest .today-body {
