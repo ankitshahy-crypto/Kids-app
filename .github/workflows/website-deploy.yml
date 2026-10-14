@@ -1,0 +1,60 @@
+name: Website deploy
+
+# Publishes website/ to the Cloudflare Pages project "littlenest" (littlenestlearning.app).
+# Runs only after CI passed on a push to main, or by hand. Until the secrets
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set, the job skips and stays green.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    env:
+      HAS_SECRETS: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The commit CI passed on, not whatever main has moved to since.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 2
+
+      - name: Did website/ change?
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "website=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet HEAD~1 HEAD -- website/; then
+            echo "website=false" >> "$GITHUB_OUTPUT"
+            echo "No change under website/ in this push; nothing to deploy."
+          else
+            echo "website=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Secrets missing
+        if: env.HAS_SECRETS != 'true'
+        run: echo "::notice::CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is not set; skipping the website deploy."
+
+      - name: Deploy to Cloudflare Pages
+        if: env.HAS_SECRETS == 'true' && steps.changed.outputs.website == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy website --project-name=littlenest --branch=main
