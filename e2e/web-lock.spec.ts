@@ -19,7 +19,7 @@ function child(weeksAgo: number) {
   return { id: "mia", name: "Mia", ageRange: "5", animal: "fox", createdAt: created, stars: 0, days: {}, ladder: { step: 1, successes: 0 } };
 }
 
-async function install(page: Page, weeksAgo: number, extra: { preview?: boolean; cachedUnlock?: boolean } = {}) {
+async function install(page: Page, weeksAgo: number, extra: { preview?: boolean; cachedUnlock?: boolean; profile?: Record<string, unknown> } = {}) {
   await page.addInitScript(
     ({ saved, extra }) => {
       if (sessionStorage.getItem("littlenest-test-seeded")) return;
@@ -29,7 +29,7 @@ async function install(page: Page, weeksAgo: number, extra: { preview?: boolean;
       if (extra.preview) localStorage.setItem("littlenest-paywall-preview-v1", "1");
       if (extra.cachedUnlock) localStorage.setItem("littlenest-unlock-v1", JSON.stringify({ owned: true }));
     },
-    { saved: child(weeksAgo), extra },
+    { saved: { ...child(weeksAgo), ...(extra.profile ?? {}) }, extra },
   );
   await page.goto("./");
   await page.getByRole("button", { name: "Mia" }).waitFor();
@@ -101,4 +101,24 @@ test.describe("on Android", () => {
 test("the demo asks search engines not to list it", async ({ page }) => {
   await install(page, 0);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+});
+
+test("Trace a word offers a locked child only the words the free weeks' letters can spell", async ({ page }) => {
+  // Word stickers from beyond the free weeks (earned in the pilot, or before a refund): "pit" and
+  // "sun" wait for the unlock; "mat" and "sat" are made of m, a, s and t, the first two weeks' letters.
+  const stickers = ["mat", "pit", "sat", "sun"].map((label) => ({ subject: "reading", kind: "word", label }));
+  await install(page, 5, { profile: { stickers, ladder: { step: 3, successes: 0 } } });
+  await page.locator("[data-practice=word]").click();
+  const picker = page.locator("[data-screen=word][data-phase=pick]");
+  await expect(picker).toBeVisible();
+  await expect(picker.locator(".match-card")).toHaveText(["mat", "sat"]);
+  await expect(picker.locator("[data-word=pit]")).toHaveCount(0);
+  await expect(picker.locator("[data-word=sun]")).toHaveCount(0);
+});
+
+test("with only later words blended, a locked child has no Trace a word to open", async ({ page }) => {
+  const stickers = ["pit", "sun"].map((label) => ({ subject: "reading", kind: "word", label }));
+  await install(page, 5, { profile: { stickers, ladder: { step: 3, successes: 0 } } });
+  await expect(page.locator("[data-screen=today]")).toBeVisible();
+  await expect(page.locator("[data-practice=word]")).toHaveCount(0);
 });

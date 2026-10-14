@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { FREE_WEEKS, activityOpen, playableWeek, weekOpen } from "./access";
+import { wordsThrough } from "../data/ladder";
+import { FREE_WEEKS, activityOpen, playableWeek, tracedWordsOpen, weekOpen } from "./access";
 
 describe("what is free before the unlock", () => {
   it("opens the first two reading weeks and holds a child there", () => {
@@ -32,5 +33,19 @@ describe("what is free before the unlock", () => {
     expect(activityOpen("games", "code", true)).toBe(true);
     expect(activityOpen("games", "pop", false)).toBe(false);
     expect(activityOpen("games", "pop", true)).toBe(true);
+  });
+
+  it("lets a child without the unlock trace only the words the free weeks' letters can spell", () => {
+    const words = wordsThrough(3);
+    const pick = (text: string) => {
+      const word = words.find((entry) => entry.word === text);
+      if (!word) throw new Error(`no ladder word ${text}`);
+      return word;
+    };
+    // Weeks 1 and 2 teach m, a, s and t: "mat" and "sat" are theirs; "pit" and "sun" need later letters.
+    const earned = [pick("mat"), pick("pit"), pick("sat"), pick("sun")];
+    expect(tracedWordsOpen(earned, false).map((word) => word.word)).toEqual(["mat", "sat"]);
+    expect(tracedWordsOpen(earned, true)).toEqual(earned);
+    expect(tracedWordsOpen([], false)).toEqual([]);
   });
 });
