@@ -4,6 +4,12 @@
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+  /* Fredoka's own metrics (ascent 974, descent 236, cap height 700) put capitals and numerals a little
+     below the middle of their line, and Safari draws them lower still. These keep the same line height
+     and move the baseline so the middle of a capital is the middle of the line. */
+  ascent-override: 95.5%;
+  descent-override: 25.5%;
+  line-gap-override: 0%;
 }
 
 @font-face {
@@ -12,6 +18,12 @@
   font-weight: 600;
   font-style: normal;
   font-display: swap;
+  /* Fredoka's own metrics (ascent 974, descent 236, cap height 700) put capitals and numerals a little
+     below the middle of their line, and Safari draws them lower still. These keep the same line height
+     and move the baseline so the middle of a capital is the middle of the line. */
+  ascent-override: 95.5%;
+  descent-override: 25.5%;
+  line-gap-override: 0%;
 }
 
 @font-face {
@@ -20,6 +32,12 @@
   font-weight: 700;
   font-style: normal;
   font-display: swap;
+  /* Fredoka's own metrics (ascent 974, descent 236, cap height 700) put capitals and numerals a little
+     below the middle of their line, and Safari draws them lower still. These keep the same line height
+     and move the baseline so the middle of a capital is the middle of the line. */
+  ascent-override: 95.5%;
+  descent-override: 25.5%;
+  line-gap-override: 0%;
 }
 
 :root {
@@ -13965,4 +13983,36 @@ button,
 
 .title-say[data-said="b"] {
   animation: sticker-said-b 0.45s ease;
+}
+
+/* Labels in the middle of their button or card. Every label here is one line in the display font,
+   centred by flex on its box, with the line no taller than the letters. Where the browser can trim the
+   line to the letters themselves (Safari 18.2 and later, so the iPhone app), the trim makes the middle
+   of the capitals the middle of the box, whatever the font's own metrics say. */
+.play-button,
+.start-button,
+.game-done,
+.grownups-launch,
+.pick-number {
+  line-height: 1;
+}
+
+.game-done > span,
+.start-button > span,
+.play-button > span,
+.grownups-launch > span,
+.pick-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@supports (text-box: trim-both cap alphabetic) {
+  .game-done > span,
+  .start-button > span,
+  .play-button > span,
+  .grownups-launch > span,
+  .pick-number.is-numeral {
+    text-box: trim-both cap alphabetic;
+  }
 }
