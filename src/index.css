@@ -1929,6 +1929,9 @@ button:focus-visible {
 .lock-icon {
   width: 16px;
   height: 16px;
+  /* The lock is drawn 5 of 24 in from its box's left: that much less space before it, so the lock
+     and its word sit in the middle of the button by what is drawn. */
+  margin-left: calc(16px * -5 / 24);
 }
 
 .gate-hint {
@@ -14029,4 +14032,13 @@ button,
   .pick-number.is-numeral {
     text-box: trim-both cap alphabetic;
   }
+}
+
+/* Done's tick comes to the left of the word (hidden until the cue, but it keeps its place). An empty
+   place as wide as the tick on the right balances it, so the word "Done" is always in the middle of
+   the button, with the tick or without it. */
+.game-done::after {
+  content: "";
+  flex: 0 0 30px;
+  width: 30px;
 }
