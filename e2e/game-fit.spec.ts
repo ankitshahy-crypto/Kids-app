@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { game, onRound } from "./kit";
 import { createdThisWeek } from "./clock";
 import { DEVICES, openOn, roomUnder } from "./devices";
 
@@ -297,3 +298,26 @@ test("on an iPad on its side a plate of nine apples in Which has more is all on 
   expect(most).toBe(9);
   expect(heights.size).toBe(1);
 });
+
+// From an iPhone in TestFlight: with the last round done, Done came into the tray above the choices
+// and pushed them off the bottom of the screen. The scene gives up Done's room, so all of it fits.
+for (const size of [{ width: 375, height: 667 }, { width: 390, height: 844 }, { width: 430, height: 932 }]) {
+  test(`${size.width}x${size.height}: with the game done, Done and every choice are on the screen`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("littlenest-quick-rounds", "1"));
+    await open(page, size);
+    await openActivity(page, "math", "count");
+    const play = game(page, "count");
+    for (const round of [0, 1, 2]) {
+      await onRound(play, round);
+      const target = Number(await play.getAttribute("data-target"));
+      for (let index = 0; index < target; index += 1) await play.locator(`[data-object='${index}']`).click();
+      await play.locator(`.pick[data-number='${target}']`).click();
+    }
+    await expect(page.locator(".game-done")).toBeVisible({ timeout: 15000 });
+    const fit = await boxes(page);
+    const done = await page.locator(".game-done").boundingBox();
+    expect(done!.y).toBeGreaterThanOrEqual(fit.scene.bottom);
+    expect(fit.tray.bottom).toBeLessThanOrEqual(fit.viewport);
+    for (const pick of fit.picks) expect(pick.top + pick.height).toBeLessThanOrEqual(fit.viewport);
+  });
+}

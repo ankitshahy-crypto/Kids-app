@@ -13238,7 +13238,8 @@ a.unlock-buy {
   --page-rest: 84px;
   --tip-room: 0px;
   --tray-h: 118px;
-  --scene-fit: calc((var(--page-h) - var(--page-rest) - var(--tip-room)) / var(--frame-zoom) - 76px - var(--tray-h));
+  --done-room: 0px;
+  --scene-fit: calc((var(--page-h) - var(--page-rest) - var(--tip-room)) / var(--frame-zoom) - 76px - var(--tray-h) - var(--done-room));
   --scene-h: clamp(210px, min(max(33svh, 100svh - 470px), var(--scene-fit)), 360px);
 }
 
@@ -13251,6 +13252,19 @@ a.unlock-buy {
 
 .game-scene {
   height: var(--scene-h);
+}
+
+/* The last round done: Done comes into the tray above the choices (72, its 4 under it and the
+   tray's gap of 8), and the scene gives up that room so Done and every choice stay on the screen.
+   A scene's own smallest height (each game's clamp above) gives way here too, down to 140. */
+.game-frame[data-finished="true"]:has(.game-done) {
+  --done-room: 84px;
+  padding-bottom: 0;
+}
+
+.game-frame[data-finished="true"]:has(.game-done) .game-scene {
+  height: min(var(--scene-h), max(140px, var(--scene-fit)));
+  --art-h: max(min(var(--scene-h), max(140px, var(--scene-fit))), min(100vw - 32px, 460px) * 2 / 3);
 }
 
 /* Games whose choices take two rows (six cards, six letters under the word) keep a shorter scene,
