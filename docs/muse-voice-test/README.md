@@ -1,10 +1,12 @@
 # LittleNest narration — Merry Seesaw voice test render
 
+> **Update (Oct 23, 2026):** TriageDesk AI LLC made that risk call. Merry Seesaw is now the release voice from build 1.0 (18). The notes below are the original test brief.
+
 **For: Grok** — check against the script, swap into the separate INTERNAL TestFlight
-build, push for Ankit to listen. **Build 17 (in App Store review) stays untouched.**
+build, push for the LittleNest Learning team (TriageDesk AI LLC) to listen. **Build 17 (in App Store review) stays untouched.**
 **Evaluation only.** The Oct 18 production decision stands: Jessa remains the app
 voice unless this test wins AND the commercial-use question for the Meta TTS voice
-is resolved or Ankit makes a new explicit risk call. Do not ship this audio in a
+is resolved or TriageDesk AI LLC makes a new explicit risk call. Do not ship this audio in a
 production build.
 
 ## Contents

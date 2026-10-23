@@ -4,7 +4,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import { AUDIO_CACHE, RUNTIME_CACHE } from "./src/offline/cacheName.ts";
 
 /**
- * GitHub Pages serves this repo at https://ankitshahy-crypto.github.io/Kids-app/
+ * GitHub Pages serves this repo under /Kids-app/
  * so built asset URLs must start with /Kids-app/.
  * The installed iPhone app sets VITE_BASE=./ (see npm run ios:sync) so the
  * Capacitor WebView can load those same files from disk.

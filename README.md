@@ -12,9 +12,7 @@ There are no ads and no school accounts in this version. A child's name, speech,
 
 ## Open the demo on an iPhone
 
-https://ankitshahy-crypto.github.io/Kids-app/
-
-That address is the web build, published by GitHub Actions. Only a push to `main` deploys it. The preview branch does not publish over this site. It can also be started by hand from the Actions tab. Safari loads the app at that address. Refreshing it loads the app again. Any other path under the site uses the same page as a fallback, so a refresh does not stop on a host 404.
+The GitHub Pages site for this repo (path `/Kids-app/`) is the web build, published by GitHub Actions. Only a push to `main` deploys it. The preview branch does not publish over this site. It can also be started by hand from the Actions tab. Safari loads the app at that address. Refreshing it loads the app again. Any other path under the site uses the same page as a fallback, so a refresh does not stop on a host 404.
 
 The site is served from `/Kids-app/`. The installed iPhone app still builds with relative file paths (`npm run ios:sync`).
 
