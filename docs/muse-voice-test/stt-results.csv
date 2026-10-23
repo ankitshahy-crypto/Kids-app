@@ -1,0 +1,396 @@
+score,file,letter,render_text,heard,muse_s,jessa_s
+0.0,public/audio/letters/oi.mp3,yes,oy. as in coin.,"OI,",1.968,1.92
+0.0,public/audio/numbers/9.mp3,no,Nine.,Now.,0.912,0.72
+0.0,public/audio/prompts/min-10-5.mp3,no,Ten five.,10-5.,1.32,0.768
+0.0,public/audio/prompts/pair-u.mp3,yes,Big U and little u both say uh. as in umbrella.,,3.6,3.936
+0.0,public/audio/prompts/quarter-to-3.mp3,no,Quarter to three.,Quir.,6.408,1.248
+0.0,public/audio/sounds/a-e.mp3,yes,ay.,A,0.72,0.768
+0.0,public/audio/sounds/a.mp3,yes,aa.,A.,1.032,0.744
+0.0,public/audio/sounds/ai.mp3,yes,ay.,Thank you. Thank you.,0.72,0.768
+0.0,public/audio/sounds/ar.mp3,yes,ar.,R,0.72,0.864
+0.0,public/audio/sounds/ay.mp3,yes,ay.,A,0.768,0.768
+0.0,public/audio/sounds/c.mp3,yes,kuh.,ka,0.672,0.48
+0.0,public/audio/sounds/ch.mp3,yes,chuh.,Ciao!,0.672,0.48
+0.0,public/audio/sounds/ck.mp3,yes,kuh.,K.,0.648,0.48
+0.0,public/audio/sounds/ee.mp3,yes,ee.,Okay. I'll see you in the next one. Bye.,1.032,0.84
+0.0,public/audio/sounds/er.mp3,yes,er.,A,0.84,0.72
+0.0,public/audio/sounds/f.mp3,yes,Fffff...,,0.6,0.84
+0.0,public/audio/sounds/g.mp3,yes,guh.,Go!,0.72,0.48
+0.0,public/audio/sounds/i-e.mp3,yes,eye.,I,0.72,0.864
+0.0,public/audio/sounds/igh.mp3,yes,eye.,I,0.72,0.864
+0.0,public/audio/sounds/ir.mp3,yes,er.,A,0.84,0.72
+0.0,public/audio/sounds/j.mp3,yes,juh.,Ciao!,0.6,0.48
+0.0,public/audio/sounds/k.mp3,yes,kuh.,K.,0.648,0.48
+0.0,public/audio/sounds/l.mp3,yes,llll.,LLL,1.872,1.056
+0.0,public/audio/sounds/m.mp3,yes,mmmm.,A,4.752,0.984
+0.0,public/audio/sounds/n.mp3,yes,nnnn.,Mm-mm.,0.888,0.84
+0.0,public/audio/sounds/ng.mp3,yes,nggg.,NGG.,1.272,1.152
+0.0,public/audio/sounds/o.mp3,yes,aw.,Aww!,0.768,0.696
+0.0,public/audio/sounds/oi.mp3,yes,oy.,fully,0.48,0.72
+0.0,public/audio/sounds/oo.mp3,yes,oo.,Oh,0.84,0.864
+0.0,public/audio/sounds/p.mp3,yes,puh.,poo,0.672,0.48
+0.0,public/audio/sounds/q.mp3,yes,kwuh.,KWO.,1.32,0.48
+0.0,public/audio/sounds/r.mp3,yes,rrrr.,R. R.,1.272,1.08
+0.0,public/audio/sounds/s.mp3,yes,ssss.,,4.752,1.032
+0.0,public/audio/sounds/sh.mp3,yes,shhhh.,,0.72,1.104
+0.0,public/audio/sounds/t.mp3,yes,tuh.,Ta the,0.528,0.48
+0.0,public/audio/sounds/th.mp3,yes,thhhh.,Bye!,0.672,0.912
+0.0,public/audio/sounds/u.mp3,yes,uh.,,0.96,0.672
+0.0,public/audio/sounds/v.mp3,yes,Vvvvv...,V Double zero,4.8,0.888
+0.0,public/audio/sounds/w.mp3,yes,wuh.,Ooh!,0.96,0.48
+0.0,public/audio/sounds/wh.mp3,yes,wuh.,Ooooh!,0.96,0.48
+0.0,public/audio/sounds/y.mp3,yes,yuh.,Yeah.,0.72,0.48
+0.0,public/audio/sounds/z.mp3,yes,zzzz.,ZZZ,1.488,1.08
+0.0,public/audio/spell/l.mp3,yes,L.,Oh.,0.72,0.672
+0.0,public/audio/spell/o.mp3,yes,O.,Oh.,0.672,0.696
+0.0,public/audio/spell/r.mp3,yes,R.,,0.528,0.72
+0.0,public/audio/spell/x.mp3,yes,X.,,0.768,0.792
+0.0,public/audio/spell/y.mp3,yes,Y.,Why?,0.888,0.792
+0.0,public/audio/stories/w02-one-mat/p4-penguin.mp3,no,Oh no! No mat for Penguin.,,4.512,2.256
+0.0,public/audio/stories/w06-a-bun-for-hero/title-bear.mp3,no,A Bun for Bear.,Aban,1.608,1.128
+0.0,public/audio/stories/w13-zip/p1-pig.mp3,no,Pig has a bag. Zip it up! Zzzip.,,13.68,3.912
+0.0,public/audio/stories/w13-zip/p5-frog.mp3,no,Zip. Zap. Zzz. Frog has a nap.,"Z Z ,",2.952,4.632
+0.0,public/audio/words/ate.mp3,no,Ate.,8,0.72,0.576
+0.0,public/audio/words/bath.mp3,no,Bath.,That.,0.792,0.528
+0.0,public/audio/words/by.mp3,no,By.,Bye!,0.96,0.48
+0.0,public/audio/words/for.mp3,no,For.,Four.,0.84,0.648
+0.0,public/audio/words/horn.mp3,no,Horn.,PORN,0.768,0.552
+0.0,public/audio/words/mud.mp3,no,Mud.,Bye.,0.84,0.504
+0.0,public/audio/words/munch.mp3,no,Munch.,"M, m",0.888,0.72
+0.0,public/audio/words/past.mp3,no,Past.,I,0.888,0.792
+0.0,public/audio/words/pond.mp3,no,Pond.,We,0.84,0.744
+0.0,public/audio/words/sack.mp3,no,Sack.,SAC!,0.792,0.528
+0.0,public/audio/words/shh.mp3,no,Shh.,Shhh.,0.888,0.408
+0.0,public/audio/words/shouts.mp3,no,Shouts.,Ciao!,0.552,0.72
+0.0,public/audio/words/splish.mp3,no,Splish.,Splash?,1.08,0.84
+0.0,public/audio/words/sprout.mp3,no,Sprout.,,1.008,0.672
+0.0,public/audio/words/tin.mp3,no,Tin.,10,0.792,0.648
+0.0,public/audio/words/way.mp3,no,Way.,like,0.312,0.672
+0.0,public/audio/words/zed.mp3,no,Zed.,Z,0.84,0.648
+0.0,public/audio/words/zzz.mp3,no,Zzz.,,3.168,0.6
+0.2,public/audio/letters/v.mp3,yes,Vvvvv... as in van.,V van V van V van,7.248,2.136
+0.24,public/audio/stories/w20-a-light-at-night/p1-bunny.mp3,no,"It is night. Bunny has a light. A bright, bright light.",It is night. It is night with prismatic... Mmm... Night with prismatic rabbits. RABBITS.,22.32,4.848
+0.2857142857142857,public/audio/stories/w14-six-ducks/p3-bear.mp3,no,Bear asks Rex. Rex wags. Yes!,Bear,13.392,3.792
+0.3235294117647059,public/audio/stories/w22-a-bone-and-a-rope/p5-frog.mp3,no,"Home at last. The bone, the rope, the dog, and Frog. Cozy!","Home at last, I guess. The bone, the rope, and the dog and frog. That is the name. Please grab those added to the notebook of the interview. We have task to complete. Please note that the dog is no longer in the King's Castle. That is the name. Please go about and find your bone.",24.0,5.472
+0.3333333333333333,public/audio/letters/igh.mp3,yes,eye. as in light.,"I, as",1.872,2.016
+0.3333333333333333,public/audio/spell/t.mp3,yes,T.,T. T. R. T. T.,0.72,0.72
+0.3333333333333333,public/audio/stories/w13-zigzag/p4-fox.mp3,no,"Fox zigzags past the mud. Zig, zag, zig, zag.","Fox, zig zags,",3.36,4.416
+0.3333333333333333,public/audio/stories/w13-zip/p4-frog.mp3,no,Frog zips the bag. No bug in it now.,"Frog, z,, no",2.76,3.144
+0.33962264150943394,public/audio/prompts/pair-v.mp3,yes,Big V and little v both say Vvvvv... as in van.,"Pick V and little V, both say V. V-V-V-V. V-V-V-V. V-V-V-V. V-V-V-V. V-V-V-V. V-V R. V-V-V-D, V-V-V-V, as in VAN.",19.2,3.936
+0.4,public/audio/stories/w22-a-bone-and-a-rope/p5-cat.mp3,no,"Home at last. The bone, the rope, the dog, and Cat. Cozy!",Home at last. Back in the car. Back,19.32,5.376
+0.42857142857142855,public/audio/stories/w13-zip/p5-pig.mp3,no,Zip. Zap. Zzz. Pig has a nap.,"Zip, zap, zzz, pick as an app.",2.472,4.992
+0.5,public/audio/letters/d.mp3,yes,duh. as in dog.,Duh az an dog.,1.872,1.752
+0.5,public/audio/letters/ee.mp3,yes,ee. as in bee.,E as in B.,1.92,1.944
+0.5,public/audio/letters/ng.mp3,yes,nggg. as in ring.,"Mmmmm, as in mmmmm",6.288,2.4
+0.5,public/audio/letters/o.mp3,yes,aw. as in octopus.,"Oh, as an octopus.",1.92,2.304
+0.5,public/audio/letters/u.mp3,yes,uh. as in umbrella.,"Ah, as an umbrella.",1.992,2.04
+0.5,public/audio/prompts/cents-15.mp3,no,Fifteen cents.,15 cents,1.248,1.128
+0.5,public/audio/prompts/cents-9.mp3,no,Nine cents.,9 cents.,1.272,0.936
+0.5,public/audio/stories/w04-sand/p5.mp3,no,"Tada! A sand man. Nap, sand man.",Tada! A Sandman! NAP Sandman.,4.56,3.888
+0.5,public/audio/stories/w13-zigzag/p4-dog.mp3,no,"Dog zigzags past the mud. Zig, zag, zig, zag.",Dog zigzags pass the mud. Zigzag zigzag.,3.48,4.464
+0.5,public/audio/stories/w21-a-cake-for-kate/p5-cat.mp3,no,The cake is safe. Cat and a pal ate the cake. Yum!,The cake is safe.,19.56,4.92
+0.5333333333333333,public/audio/stories/w15-the-ship/p5-pig.mp3,no,"A shell, a fish, and a ship. What a day, Pig!","What a day, pig!",4.272,3.984
+0.5454545454545454,public/audio/stories/w09-the-elf-and-the-sled/p2-bear.mp3,no,"Bear gets on the sled. Fast, fast, fast!","Fast, fast, fast.",2.568,3.6
+0.5714285714285714,public/audio/letters/i.mp3,yes,ih... as in igloo as in igloo.,Ehhhhh as an igloo as an igloo.,3.192,2.184
+0.5714285714285714,public/audio/letters/t.mp3,yes,tuh. as in tent.,Tuh as intent.,1.848,1.848
+0.5714285714285714,public/audio/stories/t-dinosaurs-egg/p1-lion.mp3,no,"Lion dug in the sand. Dig, dig, dig.",Buy and dug in the sand.,1.224875,3.168
+0.5714285714285714,public/audio/stories/w07-dig-dug/p1-bunny.mp3,no,"Bunny digs. Dig, dig, dig.",Bunny digs.,4.344,2.664
+0.5714285714285714,public/audio/stories/w07-dig-dug/p1-cat.mp3,no,"Cat digs. Dig, dig, dig.",Cat digs.,4.104,2.64
+0.5714285714285714,public/audio/stories/w21-a-cake-for-kate/p5-pig.mp3,no,The cake is safe. Pig and a pal ate the cake. Yum!,The cake is safe. I've kissing the Kate. Yum!,19.488,5.016
+0.6,public/audio/stories/w14-six-ducks/p3-duck.mp3,no,Duck asks Rex. Rex wags. Yes!,Duck asks Rex. Rex wags. Pigs appears. Pigs appears. Pigs appears. Pigs appears Yes!,11.688,3.768
+0.6,public/audio/stories/w22-a-bone-and-a-rope/p5-owl.mp3,no,"Home at last. The bone, the rope, the dog, and Owl. Cozy!","Home at last. That's sad. That's sad. That's sad. That's sad. That's sad. That's sad. That's sad. That's sad. The bone, the rope, the dog, and owl. Cozy.",15.552,5.208
+0.6153846153846154,public/audio/stories/t-dinosaurs-egg/p1-cat.mp3,no,"Cat dug in the sand. Dig, dig, dig.","Cat, dog, in the sand.",1.296625,2.952
+0.631578947368421,public/audio/stories/w09-frog/p5-bunny.mp3,no,The frog is on the log. The frog is glad. Bunny is glad!,The frog is on the log,4.8,4.68
+0.6666666666666666,public/audio/letters/x.mp3,yes,ks. as in fox.,"K-S, as in Fox.",2.232,1.8
+0.6666666666666666,public/audio/prompts/pair-c.mp3,yes,Big C and little c both say kuh. as in cat.,"Bake C and Little C both R, as in-y.",4.08,3.576
+0.6666666666666666,public/audio/prompts/pair-o.mp3,yes,Big O and little o both say aw. as in octopus.,Oh and little o both say ow as an octopus,4.128,4.08
+0.6666666666666666,public/audio/stories/t-bugs-ant/p3-fox.mp3,no,Fox sat. The ant and the bug hop on Fox!,Fox Sat. The ant and the bug hop on Fox. Fox Sat. The ant and the bug hop on Fox.,3.888,3.72
+0.6666666666666666,public/audio/stories/w02-one-mat/p4-cat.mp3,no,Oh no! No mat for Cat.,Oh no! No map for K-,2.52,2.256
+0.6666666666666666,public/audio/stories/w05-camp/p1-pig.mp3,no,Pig is at camp.,at camp.,1.512,1.416
+0.6666666666666666,public/audio/stories/w11-jump/p5-koala.mp3,no,"The wasp is out. Jump, Koala, jump! Win!","Jump, Koala, jump! Win!",3.648,4.32
+0.6666666666666666,public/audio/stories/w12-the-van/p5-fox.mp3,no,"Fox got the plum. Yes! Yum, yum, yum.",of the plot yes yum yum yum,3.84,4.032
+0.6666666666666666,public/audio/stories/w14-the-ox-and-the-fox/p2.mp3,no,The fox zips. The ox plods.,The ox plods.,2.952,2.736
+0.6666666666666666,public/audio/stories/w16-the-long-path/p5.mp3,no,"Then, a ring! A ring on the path. Ding, ding!",A ring on the path.,20.28,4.344
+0.7058823529411765,public/audio/stories/t-vehicles-jet/p5-lion.mp3,no,"Lion got out. The jet is up. Bye, jet!",Flying flying got out the jet is up,2.808,4.464
+0.7272727272727273,public/audio/stories/w05-the-cot/p4-dog.mp3,no,"Stop, Tom! Dog can not nap.","Stop, Tom! Dog cannot nap!",2.88,2.856
+0.7272727272727273,public/audio/stories/w22-a-bone-and-a-rope/p5-koala.mp3,no,"Home at last. The bone, the rope, the dog, and Koala. Cozy!","Home at last. What a great day. What a great day with the bone, the rope, the dog, and koala. Cozy.",12.048,5.496
+0.7407407407407407,public/audio/prompts/pair-i.mp3,yes,Big I and little i both say ih... as in igloo as in igloo.,I and little i both say i as an igloo as an igloo,6.36,3.936
+0.75,public/audio/letters/a-e.mp3,yes,ay. as in cake.,A as in cake.,1.608,1.944
+0.75,public/audio/letters/ar.mp3,yes,ar. as in star.,"R, as in star.",1.848,2.256
+0.75,public/audio/letters/ay.mp3,yes,ay. as in day.,"I, as in day.",1.848,1.992
+0.75,public/audio/letters/b.mp3,yes,buh. as in bus.,"B, as in bus.",2.112,1.776
+0.75,public/audio/letters/c.mp3,yes,kuh. as in cat.,K as in cat.,1.8,1.8
+0.75,public/audio/letters/ch.mp3,yes,chuh. as in chick.,Ch as in chick,1.92,1.776
+0.75,public/audio/letters/ck.mp3,yes,kuh. as in duck.,K as in duck.,1.632,1.608
+0.75,public/audio/letters/er.mp3,yes,er. as in fern.,R as in fern,1.992,2.112
+0.75,public/audio/letters/g.mp3,yes,guh. as in goat.,G as in goat.,1.848,1.8
+0.75,public/audio/letters/i-e.mp3,yes,eye. as in kite.,"I, as in kite.",1.728,2.04
+0.75,public/audio/letters/ir.mp3,yes,er. as in bird.,R as in bird.,1.752,2.04
+0.75,public/audio/letters/k.mp3,yes,kuh. as in kite.,"K, as in kite.",1.752,1.728
+0.75,public/audio/letters/l.mp3,yes,llll. as in lamp.,LLL as in lamp.,2.688,2.304
+0.75,public/audio/letters/m.mp3,yes,mmmm. as in moon.,"Mmm, as in moon.",3.288,2.304
+0.75,public/audio/letters/n.mp3,yes,nnnn. as in nest.,NNN as in nest.,3.0,2.208
+0.75,public/audio/letters/oo.mp3,yes,oo. as in moon.,Ooh as in moon.,1.752,2.208
+0.75,public/audio/letters/ou.mp3,yes,ow. as in cloud.,"Oh, as in cloud.",2.088,1.968
+0.75,public/audio/letters/q.mp3,yes,kwuh. as in queen.,"Qua, as in queen.",1.92,1.848
+0.75,public/audio/letters/r.mp3,yes,rrrr. as in rain.,RRR as in rain.,2.568,2.448
+0.75,public/audio/letters/u-e.mp3,yes,you. as in cube.,Q as in cube.,1.68,2.136
+0.75,public/audio/letters/wh.mp3,yes,wuh. as in whale.,W as in whale,2.4,1.632
+0.75,public/audio/letters/z.mp3,yes,zzzz. as in zebra.,ZZZ as in Zebra.,2.328,2.496
+0.75,public/audio/sounds/e.mp3,yes,eh... as in egg,A as in egg.,2.16,0.864
+0.75,public/audio/sounds/i.mp3,yes,ih... as in igloo,iiii as in igloo,2.52,0.864
+0.75,public/audio/stories/t-castles-gem/p5-lion.mp3,no,"Flap, flap. Lion and the flag. The end!","Lap lap, lion and the flag. The end.",3.192,4.944
+0.75,public/audio/stories/w15-the-ship/p4-pig.mp3,no,Pig has a wish. A shell for the shelf!,"a wish, a shelf for the shelf.",3.072,2.952
+0.75,public/audio/stories/w16-bath-time/p1-koala.mp3,no,"Bath! Koala is in the bath. Splish, splash.","Bath. Koala is in the bath. Spish, slash.",2.952,4.752
+0.7619047619047619,public/audio/prompts/pair-t.mp3,yes,Big T and little t both say tuh. as in tent.,"Big T and Little T both say ta, as intent.",3.408,3.744
+0.7619047619047619,public/audio/stories/w18-the-moon/p1-pig.mp3,no,The moon is up. Pig can see the moon from the room.,The moon is up. Pick moon from the room.,3.84,3.816
+0.7619047619047619,public/audio/stories/w19-rain-rain/p4-owl.mp3,no,"The rain stops. Owl can paint. Paint a snail, paint a tail!",Ow can paint. Paint a snail. Paint a tail.,5.04,5.736
+0.7692307692307693,public/audio/stories/t-dinosaurs-egg/p1-bear.mp3,no,"Bear dug in the sand. Dig, dig, dig.",Bear dug in the sand.,1.31075,3.12
+0.7692307692307693,public/audio/stories/t-dinosaurs-egg/p1-dog.mp3,no,"Dog dug in the sand. Dig, dig, dig.",Dog dug in the sand.,1.318125,2.832
+0.7692307692307693,public/audio/stories/t-dinosaurs-egg/p1-duck.mp3,no,"Duck dug in the sand. Dig, dig, dig.",Duck dug in the sand.,1.508,3.216
+0.7692307692307693,public/audio/stories/t-dinosaurs-egg/p1-fox.mp3,no,"Fox dug in the sand. Dig, dig, dig.",Fox dug in the sand.,1.364,2.904
+0.7692307692307693,public/audio/stories/t-dinosaurs-egg/p1-frog.mp3,no,"Frog dug in the sand. Dig, dig, dig.",frog dug in the sand,1.553,3.144
+0.7692307692307693,public/audio/stories/t-dinosaurs-egg/p1-owl.mp3,no,"Owl dug in the sand. Dig, dig, dig.",Owl dug in the sand.,1.362125,3.48
+0.7692307692307693,public/audio/stories/t-dinosaurs-egg/p1-penguin.mp3,no,"Penguin dug in the sand. Dig, dig, dig.",penguin dug in the sand,1.547875,3.24
+0.7777777777777778,public/audio/stories/w04-dip-dip-dan/p5-lion.mp3,no,"Dan, Nan, and Lion sit and nap. Dip, dip, nap.","Dan, Nan, and Lion sittin dip, dip, nap.",3.672,4.656
+0.7857142857142857,public/audio/prompts/pair-e.mp3,yes,Big E and little e both say eh... as in egg as in egg.,Big E and little e both say e as an egg as an egg.,4.2,3.816
+0.8,public/audio/colors/light-brown.mp3,no,Light brown.,and light brown.,1.2,0.888
+0.8,public/audio/letters/y.mp3,yes,yuh. as in yo-yo.,"Yeah, as in yo-yo.",1.872,1.848
+0.8,public/audio/prompts/pair-q.mp3,yes,Big Q and little q both say kwuh. as in queen.,and little q both say q as in queen,4.32,4.104
+0.8,public/audio/stories/w07-dig-dug/p1-penguin.mp3,no,"Penguin digs. Dig, dig, dig.",When digs dig dig dig,4.56,2.952
+0.8,public/audio/stories/w07-dig-dug/p1-pig.mp3,no,"Pig digs. Dig, dig, dig.",Dig digs. Dig. Dig. Dig.,4.272,2.448
+0.8,public/audio/stories/w13-zip/p1-owl.mp3,no,Owl has a bag. Zip it up! Zzzip.,Owl has a bag. Zip it out.,14.208,4.104
+0.8181818181818182,public/audio/stories/w17-the-bee-and-the-tree/p3-pig.mp3,no,Pig has a sack. A seed is in the sack. Peek!,Pink has a sack. A seed is in the sack. Pink?,3.24,4.584
+0.8181818181818182,public/audio/stories/w26-the-coin/p4-duck.mp3,no,"Point to it, Duck! A whistle! A whale whistle. Whee, whee!","Point to it, duck. A whistle. A whale whistle. Weee-weee!",4.56,6.576
+0.8181818181818182,public/audio/stories/w26-the-whale-and-the-wheel/p3-bear.mp3,no,"Spin the wheel, Bear. The boat spins. Whee! The whale swims by.",A wheel bear. The boat spins. The whale swims by.,5.52,6.696
+0.8333333333333334,public/audio/prompts/pair-f.mp3,yes,Big F and little f both say Fffff... as in fish.,"Big F and little f both say f, f, f as in fish.",5.568,3.96
+0.8333333333333334,public/audio/stories/w02-one-mat/p4-fox.mp3,no,Oh no! No mat for Fox.,Oh no! No map for Fox!,2.688,2.208
+0.8333333333333334,public/audio/stories/w17-the-bee-and-the-tree/p5-fox.mp3,no,"Sleep, bee. Sleep in the tree. Fox sits in the green grass.","Sleepy, sleep in the tree. Fox sits in the green grass grass.",5.472,5.4
+0.8421052631578947,public/audio/stories/w07-the-hat/p5-penguin.mp3,no,"Penguin got the bug out. Hug, hug! Go, bug.","Hang-Wink got the bug out. Hug, hug, go bug.",2.712,4.296
+0.8421052631578947,public/audio/stories/w14-fox-box/p5-pig.mp3,no,"Max quit. The box has six eggs. Fix it, Pig!","Max.Clip, the box has six eggs. Fix it, pig.",3.768,4.488
+0.8571428571428571,public/audio/letters/ai.mp3,yes,ay. as in rain.,As in rain,1.752,1.92
+0.8571428571428571,public/audio/letters/e.mp3,yes,eh... as in egg as in egg.,A as in egg as in egg.,2.832,2.064
+0.8571428571428571,public/audio/letters/f.mp3,yes,Fffff... as in fish.,As in fish.,2.328,2.16
+0.8571428571428571,public/audio/letters/j.mp3,yes,juh. as in jet.,As in jet,1.752,1.68
+0.8571428571428571,public/audio/letters/th.mp3,yes,thhhh. as in thumb.,As in thumb.,2.04,2.208
+0.8571428571428571,public/audio/stories/w08-the-nest/p4-frog.mp3,no,"Rest, hen. Rest, egg. Frog sat and sat.","Rest hen, rest egg, and sat.",4.128,4.392
+0.8571428571428571,public/audio/stories/w10-the-mask/p1-bear.mp3,no,Bear has a mask. A pink mask.,"Here has a mask, a pink mask.",2.352,2.736
+0.8571428571428571,public/audio/stories/w13-zigzag/p3.mp3,no,"Zed runs in the mud. Slip, plop!",Z runs in the mud. Slip. Plop.,2.712,2.904
+0.8695652173913043,public/audio/prompts/pair-a.mp3,yes,Big A and little a both say aa. as in apple.,"Big A and Little A both say A-A, as in Apple.",4.08,3.744
+0.8695652173913043,public/audio/stories/t-ocean-crab/p1-lion.mp3,no,Lion is at the sand. A crab is on the sand.,The same is at the sand. A crab is on the sand.,2.712,3.672
+0.8695652173913043,public/audio/stories/w17-the-bee-and-the-tree/p5-penguin.mp3,no,"Sleep, bee. Sleep in the tree. Penguin sits in the green grass.","Sleepy, sleep in the tree. Penguin sits in the green grass.",4.752,5.688
+0.875,public/audio/stories/t-castles-gem/p5-dog.mp3,no,"Flap, flap. Dog and the flag. The end!","Flap, flap, dog in the flag. The end.",2.112,4.584
+0.8888888888888888,public/audio/stories/w15-the-ship/p4-bunny.mp3,no,Bunny has a wish. A shell for the shelf!,Bunny has a wish. A shelf for the shelf.,3.192,3.336
+0.8888888888888888,public/audio/stories/w20-the-goat-on-the-boat/p5-dog.mp3,no,"The boat floats home. Soap, bath, and bed for the goat. Night, Dog.","The boat floats home. Soap Soap, bat, and bed for the goat. Night dog.",5.04,5.4
+0.8888888888888888,public/audio/stories/w22-a-bone-and-a-rope/p5-fox.mp3,no,"Home at last. The bone, the rope, the dog, and Fox. Cozy!","Home at last. That bone, those... The bone, the rope, the dog, and fox. Cozy.",8.712,5.352
+0.9090909090909091,public/audio/prompts/check-read.mp3,no,You can read so much already!,You can read so much,2.208,1.8
+0.9090909090909091,public/audio/prompts/pair-b.mp3,yes,Big B and little b both say buh. as in bus.,"Big B and Little B both say b, as in bus.",4.008,3.624
+0.9090909090909091,public/audio/prompts/pair-g.mp3,yes,Big G and little g both say guh. as in goat.,Big G and Little G both say g as in goat.,4.512,3.72
+0.9090909090909091,public/audio/prompts/pair-k.mp3,yes,Big K and little k both say kuh. as in kite.,Big K and little k both say k as in kite.,4.608,3.744
+0.9090909090909091,public/audio/prompts/pair-l.mp3,yes,Big L and little l both say llll. as in lamp.,Big L and Little L both say LLL as in lamp.,5.352,4.224
+0.9090909090909091,public/audio/prompts/pair-m.mp3,yes,Big M and little m both say mmmm. as in moon.,"Big M and Little M both say, mmm, as in moon.",5.4,4.032
+0.9090909090909091,public/audio/prompts/pair-p.mp3,yes,Big P and little p both say puh. as in pig.,"Big P and Little P both say P, as in pig.",3.408,3.576
+0.9090909090909091,public/audio/prompts/pair-r.mp3,yes,Big R and little r both say rrrr. as in rain.,Big R and Little R both say RRR as in rain.,5.4,4.224
+0.9090909090909091,public/audio/prompts/pair-s.mp3,yes,Big S and little s both say ssss. as in sun.,"Big S, and. Little s both say s, as in sun.",4.2,4.2
+0.9090909090909091,public/audio/prompts/pair-x.mp3,yes,Big X and little x both say ks. as in fox.,"Big X and Little X both say Cass, as in Fox.",4.608,3.696
+0.9090909090909091,public/audio/stories/w02-one-mat/p5-dog.mp3,no,"Sam said, come here! Sam and Dog sat on one mat.","Sam said, come here! Sam and Doc sat on one mat.",3.96,4.08
+0.9090909090909091,public/audio/stories/w07-dig-dug/p1-bear.mp3,no,"Bear digs. Dig, dig, dig.","Bear digs. Dig, dig, dig, dig.",4.224,2.664
+0.9090909090909091,public/audio/stories/w11-jump/p1-cat.mp3,no,"Cat can jump. Jump, jump, jump!",can jump jump jump jump,2.688,2.472
+0.9090909090909091,public/audio/stories/w17-three-sheep/p5-owl.mp3,no,"Three sheep, a duck, and a hen. What a week, Owl!","Three sheep, a duck, and a hen. What a weak owl!",3.84,4.056
+0.9090909090909091,public/audio/stories/w25-a-mouse-in-the-house/p3-duck.mp3,no,"Shout, Duck! Out, mouse, out! The mouse hides in a pouch.","Out, duck, out, mouse, out. The mouse hides in a pouch.",4.152,4.992
+0.9166666666666666,public/audio/prompts/pair-y.mp3,yes,Big Y and little y both say yuh. as in yo-yo.,"Big Y and little Y both say yeah, as in yo-yo.",3.6,3.744
+0.9166666666666666,public/audio/stories/w17-the-bee-and-the-tree/p5-dog.mp3,no,"Sleep, bee. Sleep in the tree. Dog sits in the green grass.","Sleep, B, sleep in the tree. Dog sits in the green grass.",6.432,5.352
+0.9166666666666666,public/audio/stories/w21-a-cake-for-kate/p5-dog.mp3,no,The cake is safe. Dog and a pal ate the cake. Yum!,The cake is safe. Dog and a pal ate the cake. Yaaaaaaaaaaaaaaaa.,22.56,4.872
+0.9230769230769231,public/audio/stories/w06-a-bun-for-hero/p1-frog.mp3,no,Frog has a bun. A big bun.,"has a bun, a big bun.",2.88,2.4
+0.9230769230769231,public/audio/stories/w10-the-mask/p1-bunny.mp3,no,Bunny has a mask. A pink mask.,"has a mask, a pink mask.",3.0,2.832
+0.9230769230769231,public/audio/stories/w11-jog-with-jill/p5-pig.mp3,no,"Jill and Pig win. Jog, jump, win!","And Pig win. Jog, jump, win!",3.528,3.072
+0.9333333333333333,public/audio/stories/w13-zip/p1-bear.mp3,no,Bear has a bag. Zip it up! Zzzip.,Bear has a bag. Zip it up.,14.448,3.744
+0.9333333333333333,public/audio/stories/w13-zip/p1-bunny.mp3,no,Bunny has a bag. Zip it up! Zzzip.,Bunny has a bag. Zip it up.,14.88,3.72
+0.9333333333333333,public/audio/stories/w13-zip/p1-duck.mp3,no,Duck has a bag. Zip it up! Zzzip.,Duck has a-bag. Zip it up.,14.4,3.888
+0.9333333333333333,public/audio/stories/w13-zip/p1-penguin.mp3,no,Penguin has a bag. Zip it up! Zzzip.,Penguin has a bag. Zip it up.,15.912,3.648
+0.9411764705882353,public/audio/stories/w16-bath-time/p5-frog.mp3,no,"Then, out! Frog is fresh. Long, long, long bath.","Out! Frog is fresh. Long, long, long bath.",4.728,5.304
+0.9473684210526315,public/audio/stories/w18-the-zoo/p4-pig.mp3,no,"Food! Pig has food on a spoon. Yum, yum.",Food has Pig has food on a spoon. Yum Yum!,3.672,4.392
+0.9523809523809523,public/audio/stories/t-space-rocket/p4-koala.mp3,no,The moon is big. Koala can hop on the moon!,The moon is big. Koala can and hop on the moon.,3.672,3.432
+0.9565217391304348,public/audio/stories/w22-a-bone-and-a-rope/p1-frog.mp3,no,"Frog has a rope. A dog has a bone. Hello, dog!","A frog has a rope. A dog has a bone. Hello, dog.",3.888,4.488
+0.9629629629629629,public/audio/stories/w09-frog/p5-pig.mp3,no,The frog is on the log. The frog is glad. Pig is glad!,The frog is on the log. The frog is glad pig. Pig is glad.,4.272,4.584
+0.9629629629629629,public/audio/stories/w20-the-goat-on-the-boat/p2.mp3,no,The boat floats up the road? No! A boat floats on the pond.,"The boat floats up the road. No, a boat floats on on the pond.",5.568,4.44
+1.0,public/audio/colors/light-orange.mp3,no,Light orange.,Light orange.,1.32,0.984
+1.0,public/audio/letters/a.mp3,yes,aa. as in apple.,A.A. as in Apple.,2.208,1.92
+1.0,public/audio/letters/ea.mp3,yes,ee. as in leaf.,EE as in Leaf,1.872,2.016
+1.0,public/audio/letters/h.mp3,yes,huh. as in hat.,"Huh, as in hat.",1.8,1.704
+1.0,public/audio/letters/o-e.mp3,yes,oh. as in bone.,Oh. As in bone.,1.752,1.8
+1.0,public/audio/letters/oa.mp3,yes,oh. as in boat.,"Oh, as in boat?",1.8,1.728
+1.0,public/audio/letters/or.mp3,yes,or. as in fork.,or as in fork.,1.488,2.064
+1.0,public/audio/letters/p.mp3,yes,puh. as in pig.,"Puh, as in pig.",1.632,1.728
+1.0,public/audio/letters/s.mp3,yes,ssss. as in sun.,"Ssss, as in sun.",1.872,2.376
+1.0,public/audio/letters/sh.mp3,yes,shhhh. as in ship.,"Shhhh, as in ship.",3.0,2.328
+1.0,public/audio/letters/w.mp3,yes,wuh. as in web.,Wuh as in web.,1.728,1.632
+1.0,public/audio/prompts/build-again.mp3,no,Try again.,Try again.,1.152,0.888
+1.0,public/audio/prompts/cents-7.mp3,no,Seven cents.,Seven cents.,1.32,0.888
+1.0,public/audio/prompts/check-word.mp3,no,Read the word. Tap its picture.,"Read the word, tap its picture.",2.76,2.904
+1.0,public/audio/prompts/circle.mp3,no,Circle.,Circle,0.96,0.744
+1.0,public/audio/prompts/code-home.mp3,no,You made it home!,You made it home.,1.92,1.2
+1.0,public/audio/prompts/color-mix.mp3,no,Tap two paints. What do they make?,Tap two paints. What do they make?,2.832,2.688
+1.0,public/audio/prompts/half-2.mp3,no,Half past two.,Half past two.,1.392,1.056
+1.0,public/audio/prompts/num-count.mp3,no,How many? Tap each one to count.,How many? Tap each one to count.,2.52,2.952
+1.0,public/audio/prompts/pair-d.mp3,yes,Big D and little d both say duh. as in dog.,"Big D and Little D both say duh, as in dog.",3.36,3.672
+1.0,public/audio/prompts/pair-h.mp3,yes,Big H and little h both say huh. as in hat.,"Big H and Little H both say, huh, as in hat.",4.272,3.72
+1.0,public/audio/prompts/pair-j.mp3,yes,Big J and little j both say juh. as in jet.,"Big J and Little J both say juh, as in jet.",4.128,3.528
+1.0,public/audio/prompts/pair-n.mp3,yes,Big N and little n both say nnnn. as in nest.,Big N and little n both say NNNN as in nest.,4.8,3.84
+1.0,public/audio/prompts/pair-w.mp3,yes,Big W and little w both say wuh. as in web.,"Big W and Little W both say wuh, as in web.",3.84,3.72
+1.0,public/audio/prompts/pair-z.mp3,yes,Big Z and little z both say zzzz. as in zebra.,"Big Z and Little Z both say Zzzz, as in Zebra.",4.512,4.368
+1.0,public/audio/prompts/quarter-past-6.mp3,no,Quarter past six.,Quarter past six.,1.68,1.248
+1.0,public/audio/prompts/science-home-bird.mp3,no,Where does the bird live?,Where does the bird live?,1.8,1.32
+1.0,public/audio/prompts/shop-paid-dime.mp3,no,You pay with a dime.,You pay with a dime.,1.632,1.536
+1.0,public/audio/prompts/surprise-gift-bugs.mp3,no,And brought a ladybug!,and brought a ladybug.,1.848,1.512
+1.0,public/audio/prompts/time-payback.mp3,no,Pay the borrowed coin back.,Pay the borrowed coin back.,2.04,1.584
+1.0,public/audio/sounds/b.mp3,yes,buh.,Buh,0.768,0.48
+1.0,public/audio/sounds/d.mp3,yes,duh.,Duh!,0.768,0.48
+1.0,public/audio/sounds/ea.mp3,yes,ee.,EE,1.008,0.84
+1.0,public/audio/sounds/h.mp3,yes,huh.,Huh.,0.84,0.48
+1.0,public/audio/sounds/o-e.mp3,yes,oh.,Oh!,0.648,0.648
+1.0,public/audio/sounds/oa.mp3,yes,oh.,Oh!,0.432,0.648
+1.0,public/audio/sounds/or.mp3,yes,or.,or,0.792,0.72
+1.0,public/audio/sounds/ou.mp3,yes,ow.,Ow.,0.552,0.696
+1.0,public/audio/sounds/u-e.mp3,yes,you.,you,0.768,0.864
+1.0,public/audio/sounds/x.mp3,yes,ks.,K.S.,1.08,0.48
+1.0,public/audio/spell/a.mp3,yes,A.,A,0.72,0.648
+1.0,public/audio/spell/b.mp3,yes,B.,B,0.912,0.648
+1.0,public/audio/spell/c.mp3,yes,C.,C,0.792,0.744
+1.0,public/audio/spell/d.mp3,yes,D.,D,0.768,0.72
+1.0,public/audio/spell/e.mp3,yes,E.,E,0.672,0.6
+1.0,public/audio/spell/f.mp3,yes,F.,F,0.672,0.48
+1.0,public/audio/spell/g.mp3,yes,G.,G.,0.792,0.744
+1.0,public/audio/spell/h.mp3,yes,H.,H,0.888,0.72
+1.0,public/audio/spell/i.mp3,yes,I.,I,0.792,0.504
+1.0,public/audio/spell/j.mp3,yes,J.,J.,0.84,0.768
+1.0,public/audio/spell/k.mp3,yes,K.,K,0.672,0.816
+1.0,public/audio/spell/m.mp3,yes,M.,M.,0.672,0.696
+1.0,public/audio/spell/n.mp3,yes,N.,n,0.648,0.672
+1.0,public/audio/spell/p.mp3,yes,P.,P.,0.768,0.72
+1.0,public/audio/spell/q.mp3,yes,Q.,Q.,0.768,0.816
+1.0,public/audio/spell/s.mp3,yes,S.,S,0.888,0.72
+1.0,public/audio/spell/u.mp3,yes,U.,U,0.768,0.696
+1.0,public/audio/spell/v.mp3,yes,V.,V,0.768,0.696
+1.0,public/audio/spell/w.mp3,yes,W.,W.,0.96,0.84
+1.0,public/audio/spell/z.mp3,yes,Z.,Z,0.768,0.744
+1.0,public/audio/stories/t-bugs-ant/title.mp3,no,The Ant and the Bug.,The ant and the bug.,1.68,1.512
+1.0,public/audio/stories/t-castles-gem/p1-frog.mp3,no,Frog has a gem. It is a red gem.,Frog has a gem. It is a red gem.,2.832,3.288
+1.0,public/audio/stories/t-castles-gem/p4-dog.mp3,no,The king is glad. He hands Dog a flag.,The king is glad. He hands dog a flag.,3.192,3.24
+1.0,public/audio/stories/t-dinosaurs-egg/title-duck.mp3,no,Duck and the Egg.,Duck and the egg.,1.632,1.32
+1.0,public/audio/stories/t-space-rocket/p4-frog.mp3,no,The moon is big. Frog can hop on the moon!,The moon is big. Frog can hop on the moon.,4.008,3.096
+1.0,public/audio/stories/t-vehicles-jet/p1-fox.mp3,no,Fox is in a cab. The cab can go fast.,Fox is in a cab. The cab can go fast.,3.168,3.288
+1.0,public/audio/stories/w01-i-am/p2-fox.mp3,no,I am a fox.,I am a fox.,1.56,1.08
+1.0,public/audio/stories/w01-i-am/p2-pig.mp3,no,I am a pig.,I am a pig.,1.992,0.864
+1.0,public/audio/stories/w01-i-am/p5-bear.mp3,no,I am Bear. This is my home.,I am Bear. This is my home.,3.408,2.808
+1.0,public/audio/stories/w01-i-am/title-bear.mp3,no,I Am Bear.,I am Bear.,1.56,0.984
+1.0,public/audio/stories/w01-where-am-i/p4.mp3,no,"I am with a goat. Hi, goat!",I am with a goat. Hi goat!,2.448,2.328
+1.0,public/audio/stories/w02-one-mat/p5-koala.mp3,no,"Sam said, come here! Sam and Koala sat on one mat.","Sam said, come here! Sam and Koala sat on one mat.",4.368,4.272
+1.0,public/audio/stories/w02-the-mat/title-bunny.mp3,no,Bunny and the Mat.,Bunny and the mat.,1.872,1.488
+1.0,public/audio/stories/w03-the-map/p1-penguin.mp3,no,Penguin has a map.,Penguin has a map.,1.248,1.416
+1.0,public/audio/stories/w04-dip-dip-dan/p4-lion.mp3,no,Lion dips in. Snap! It is damp.,Lion dips in. Snap! It is damp.,3.288,3.6
+1.0,public/audio/stories/w05-spot-the-dot/p1-frog.mp3,no,Frog has a pot.,Frog has a pot.,1.512,1.032
+1.0,public/audio/stories/w06-bus/p4-pig.mp3,no,The cub is up. The pup is up. Pig is up!,The cub is up. The pup is up. Pig is up.,3.768,4.272
+1.0,public/audio/stories/w07-dig-dug/p1-dog.mp3,no,"Dog digs. Dig, dig, dig.","Dog digs. Dig, dig, dig.",4.344,2.496
+1.0,public/audio/stories/w07-dig-dug/p1-frog.mp3,no,"Frog digs. Dig, dig, dig.",Frog digs. Dig. Dig. Dig.,4.224,2.784
+1.0,public/audio/stories/w07-dig-dug/p1-koala.mp3,no,"Koala digs. Dig, dig, dig.",Koala digs. Dig. Dig. Dig.,4.584,2.736
+1.0,public/audio/stories/w07-dig-dug/p1-lion.mp3,no,"Lion digs. Dig, dig, dig.","Lion digs. Dig, dig, dig.",4.584,2.856
+1.0,public/audio/stories/w07-the-hat/p5-duck.mp3,no,"Duck got the bug out. Hug, hug! Go, bug.","Duck got the bug out. Hug, hug, go bug.",2.568,4.344
+1.0,public/audio/stories/w08-ben-and-the-drum/p5.mp3,no,"Drum, pot, tin. A band! The best band.","Drum pot tin, a band, the best band.",4.32,4.896
+1.0,public/audio/stories/w08-ted-and-meg/p4-cat.mp3,no,"Cat pets Meg. Pet, pet, pet.",Cat Pets Meg. Pet Pet Pet.,2.76,2.616
+1.0,public/audio/stories/w08-ted-and-meg/p4-duck.mp3,no,"Duck pets Meg. Pet, pet, pet.","Duck Pets Meg. Pet, pet, pet.",2.832,3.12
+1.0,public/audio/stories/w08-the-nest/p5-lion.mp3,no,Pop! A red hen is in the nest. Lion is a grand pet!,Pop! A red Hen is in the nest. Lion is a grand pet.,4.512,5.064
+1.0,public/audio/stories/w09-fun-in-the-fog/p1-owl.mp3,no,Fog! Owl is in the fog.,Fog! Owl is in the fog!,8.472,2.448
+1.0,public/audio/stories/w09-fun-in-the-fog/p2.mp3,no,"Is it a flag? No, it is a lamp!","Is it a flag? No, it is a lamp.",3.168,2.88
+1.0,public/audio/stories/w09-the-elf-and-the-sled/p3-lion.mp3,no,Flip! Lion fell off. Plop! Soft mud.,Flip! Lion fell off! Plop! Soft mud!,3.96,4.824
+1.0,public/audio/stories/w09-the-elf-and-the-sled/p4-dog.mp3,no,"The elf helps. Up, Dog, up!","The elf helps. Up dog, up!",2.592,2.88
+1.0,public/audio/stories/w09-the-elf-and-the-sled/title.mp3,no,The Elf and the Sled.,The Elf and the Sled,1.968,1.44
+1.0,public/audio/stories/w10-milk/p3-pig.mp3,no,Pig has a cup of milk for the kid.,Pig has a cup of milk for the kid,2.232,1.968
+1.0,public/audio/stories/w10-milk/title.mp3,no,Milk for the Kid.,Milk for the kid.,1.44,1.176
+1.0,public/audio/stories/w10-the-sink/p3-dog.mp3,no,Dog fills the sink up.,Dog fills the sink up.,1.632,1.416
+1.0,public/audio/stories/w10-the-sink/p3-duck.mp3,no,Duck fills the sink up.,Duck fills the sink up.,1.92,1.488
+1.0,public/audio/stories/w11-jump/p1-owl.mp3,no,"Owl can jump. Jump, jump, jump!","Owl can jump. Jump, jump, jump.",3.24,2.832
+1.0,public/audio/stories/w11-the-wind/p2-penguin.mp3,no,Penguin has a hat. Off it went!,Penguin has a hat off it went,2.928,2.592
+1.0,public/audio/stories/w11-the-wind/title.mp3,no,The Wind.,The wind.,0.912,0.768
+1.0,public/audio/stories/w12-the-van/p5-owl.mp3,no,"Owl got the plum. Yes! Yum, yum, yum.","Owl got the plum. Yes! Yum, yum, yum!",3.912,4.2
+1.0,public/audio/stories/w12-yum-yam/p1-frog.mp3,no,Frog has a big yam.,Frog has a big yam.,1.8,1.512
+1.0,public/audio/stories/w12-yum-yam/p5-lion.mp3,no,The yam is not big now. A bit is left for Lion. Yum!,The yam is not big now. A bit is left for Lion. Yum!,5.088,4.656
+1.0,public/audio/stories/w14-six-ducks/p2.mp3,no,Rex is next to the pond. Rex is big. Will Rex let us in?,Rex is next to the pond. Rex is big. Will Rex let us in?,4.752,5.232
+1.0,public/audio/stories/w14-six-ducks/p5-cat.mp3,no,"Six ducks, Rex, and Cat relax at the pond.","Six ducks, Rex, and Cat relax at the pond.",3.768,2.928
+1.0,public/audio/stories/w14-the-ox-and-the-fox/p3-frog.mp3,no,Frog asks: who wins? The fox? The ox?,"Frog asks, who wins? The fox, the ox?",3.408,4.656
+1.0,public/audio/stories/w15-chick-in-the-shop/p5-bear.mp3,no,Bear and the chick rush out. Such a fun lunch!,Bear and the Chick Rush Out. Such a fun lunch!,3.0,3.864
+1.0,public/audio/stories/w15-chick-in-the-shop/p5-bunny.mp3,no,Bunny and the chick rush out. Such a fun lunch!,Bunny and the chick rush out. Such a fun lunch.,2.88,3.552
+1.0,public/audio/stories/w15-the-ship/p1-dog.mp3,no,Dog has a ship. It is a big red ship.,Dog has a ship. It is a big red ship.,3.768,3.216
+1.0,public/audio/stories/w15-the-ship/p1-owl.mp3,no,Owl has a ship. It is a big red ship.,Owl has a ship. It is a big red ship.,3.312,3.264
+1.0,public/audio/stories/w15-the-ship/p5-bunny.mp3,no,"A shell, a fish, and a ship. What a day, Bunny!","A shell, a fish, and a ship. What a day, Bunny!",4.008,3.84
+1.0,public/audio/stories/w15-the-ship/title-cat.mp3,no,Cat and the Ship.,Cat and the Ship.,1.2,1.224
+1.0,public/audio/stories/w16-bath-time/p2.mp3,no,"Splash, splash! The bath is thick with suds.","Splash, splash! The bath is thick with suds.",3.72,3.696
+1.0,public/audio/stories/w16-bath-time/title-dog.mp3,no,Bath Time for Dog.,Bath time for dog.,1.728,1.392
+1.0,public/audio/stories/w16-the-long-path/p2-koala.mp3,no,"Sing, Koala! Sing a long song. La, la, la.","Sing Koala, sing a long song. La la la.",4.752,4.632
+1.0,public/audio/stories/w17-three-sheep/p4-penguin.mp3,no,"Penguin has a duck. The duck is on a deck. Cluck, cluck, hen!","Penguin has a duck. The duck is on a deck. Cluck, cluck, hen.",4.848,5.352
+1.0,public/audio/stories/w17-three-sheep/p4-pig.mp3,no,"Pig has a duck. The duck is on a deck. Cluck, cluck, hen!","Pig has a duck. The duck is on a deck. Cluck, cluck, hen!",4.368,5.424
+1.0,public/audio/stories/w17-three-sheep/p5-bunny.mp3,no,"Three sheep, a duck, and a hen. What a week, Bunny!","Three sheep, a duck, and a hen. What a week, bunny!",4.008,3.984
+1.0,public/audio/stories/w18-the-moon/p1-fox.mp3,no,The moon is up. Fox can see the moon from the room.,The moon is up. Fox can see the moon from the room.,3.96,3.744
+1.0,public/audio/stories/w18-the-moon/p3-koala.mp3,no,"Koala has a spoon and a cool drink. Sip. Soon, sleep.","Koala has a spoon and a cool drink. Sip, soon, sleep.",5.64,4.728
+1.0,public/audio/stories/w18-the-moon/title-cat.mp3,no,Cat and the Moon.,Cat and the moon.,1.56,1.2
+1.0,public/audio/stories/w18-the-zoo/p4-lion.mp3,no,"Food! Lion has food on a spoon. Yum, yum.","Food! Lion has food on a spoon. Yum, yum!",3.768,4.728
+1.0,public/audio/stories/w19-hay-day/p3-fox.mp3,no,May I nap? The hay is soft. Fox may nap in the hay.,May I nap? The hay is soft. Fox may nap in the hay.,4.272,4.872
+1.0,public/audio/stories/w19-hay-day/p3-koala.mp3,no,May I nap? The hay is soft. Koala may nap in the hay.,May I nap? The hay is soft. Koala may nap in the hay.,4.728,5.304
+1.0,public/audio/stories/w19-hay-day/p5-lion.mp3,no,"Rain and sun, hay and play. Lion can play all day!","Rain and sun, hay and play, lion can play all day.",5.832,5.088
+1.0,public/audio/stories/w19-rain-rain/p1-lion.mp3,no,Rain! Rain on the hill. Lion can wait in the tent.,"Rain, rain on the hill, lion can wait in the tent.",4.32,4.584
+1.0,public/audio/stories/w19-rain-rain/p4-bear.mp3,no,"The rain stops. Bear can paint. Paint a snail, paint a tail!",The rain stops bear can paint paint a snail paint a tail,4.848,5.64
+1.0,public/audio/stories/w19-rain-rain/p5-fox.mp3,no,"A day of rain, a day to paint. Not a bad day, Fox!","A day of rain, a day to paint. Not a bad day, Fox.",4.992,4.176
+1.0,public/audio/stories/w20-a-light-at-night/p4-frog.mp3,no,"Frog might see a star. High, high in the night. Wish on it!","Frog might see a star. High, high in the night. Wish on it.",4.128,5.424
+1.0,public/audio/stories/w21-a-cake-for-kate/p1-duck.mp3,no,Duck made a cake. A big cake with a name on it.,"Duck made a cake, a big cake with a name on it.",3.552,3.648
+1.0,public/audio/stories/w21-a-cake-for-kate/p4-bear.mp3,no,"No, snake. Bear gave the snake a grape. Same shape, small size.","No snake. Bear gave the snake a grape. Same shape, small size.",6.24,5.568
+1.0,public/audio/stories/w21-ride-the-bike/p1-penguin.mp3,no,Penguin has a bike and a kite. Time to ride! Time to fly!,"Penguin has a bike and a kite. Time to ride, time to fly!",4.56,5.16
+1.0,public/audio/stories/w22-a-cute-tune/p4-frog.mp3,no,"Use the flute, Frog. Use the cube. The mule wants more!","Use the flute, frog. Use the cube. The mule wants more.",4.608,4.656
+1.0,public/audio/stories/w23-corn-with-a-fork/p2-bear.mp3,no,"A storm! The sky is dark. Run to the porch, Bear!","A storm. The sky is dark. Run to the porch, bear.",4.128,5.064
+1.0,public/audio/stories/w23-corn-with-a-fork/p2-penguin.mp3,no,"A storm! The sky is dark. Run to the porch, Penguin!","A storm! The sky is dark! Run to the porch, penguin!",3.888,5.28
+1.0,public/audio/stories/w23-corn-with-a-fork/p5-duck.mp3,no,"More corn, Duck? Yes! Fork the corn. Yum, yum, yum.","More corn, duck? Yes, fork the corn. Yum, yum, yum.",5.448,5.376
+1.0,public/audio/stories/w23-star-in-the-jar/p2-pig.mp3,no,A jar! Pig has a jar. Can a star fit in a jar?,A jar! Pig has a jar. Can a star fit in a jar?,3.672,4.824
+1.0,public/audio/stories/w24-the-bird-and-the-fern/p2-bunny.mp3,no,"Bunny is the first to see it. A bird with a red shirt? No, a red bird!","Bunny is the first to see it. A bird with a red shirt? No, a red bird!",6.0,6.048
+1.0,public/audio/stories/w24-the-bird-and-the-fern/p2-fox.mp3,no,"Fox is the first to see it. A bird with a red shirt? No, a red bird!","Fox is the first to see it. A bird with a red shirt? No, a red bird!",6.288,5.712
+1.0,public/audio/stories/w24-the-red-shirt/p1-bunny.mp3,no,Bunny has a red shirt. The shirt is a bit big. It is a sister's shirt.,Bunny has a red shirt. The shirt is a bit big. It is a sister's shirt.,6.168,5.64
+1.0,public/audio/stories/w24-the-red-shirt/p2-frog.mp3,no,"Stir, stir! Frog stirs the dinner in the red shirt. Yum.","Stir, stir, frog stirs the dinner in the red shirt. Yum!",4.872,5.424
+1.0,public/audio/stories/w24-the-red-shirt/p5-cat.mp3,no,"The shirt is fresh. Better than ever! Third time is the best, Cat.","The shirt is fresh, better than ever. Third time is the best, Cat.",4.272,5.256
+1.0,public/audio/stories/w26-the-coin/p1-bear.mp3,no,Bear found a coin. A gold coin in the soil. Oh boy!,"Bear found a coin, a gold coin in the soil. Oh boy!",5.592,4.704
+1.0,public/audio/stories/w26-the-coin/p4-frog.mp3,no,"Point to it, Frog! A whistle! A whale whistle. Whee, whee!","Point to it, frog. A whistle. A whale whistle. Whee! Whee!",5.208,6.288
+1.0,public/audio/words/bell.mp3,no,Bell.,Bell,0.888,0.552
+1.0,public/audio/words/boot.mp3,no,Boot.,BOOT.,0.792,0.648
+1.0,public/audio/words/coin.mp3,no,Coin.,COIN,0.888,0.72
+1.0,public/audio/words/crack.mp3,no,Crack.,crack,0.648,0.552
+1.0,public/audio/words/dab.mp3,no,Dab.,DAB.,0.72,0.576
+1.0,public/audio/words/dance.mp3,no,Dance.,Dance.,0.96,0.768
+1.0,public/audio/words/debit.mp3,no,Debit.,Debit.,0.792,0.576
+1.0,public/audio/words/flop.mp3,no,Flop.,Flop.,0.72,0.72
+1.0,public/audio/words/frog.mp3,no,Frog.,Frog.,0.768,0.672
+1.0,public/audio/words/good.mp3,no,Good.,Good.,0.792,0.624
+1.0,public/audio/words/hang.mp3,no,Hang.,Hang.,0.792,0.552
+1.0,public/audio/words/hive.mp3,no,Hive.,Hive.,0.84,0.648
+1.0,public/audio/words/hmm.mp3,no,Hmm.,Hmm.,1.08,0.48
+1.0,public/audio/words/hooray.mp3,no,Hooray.,Hooray!,1.008,0.84
+1.0,public/audio/words/jill.mp3,no,Jill.,Jill,0.84,0.72
+1.0,public/audio/words/kids.mp3,no,Kids.,Kids.,0.84,0.72
+1.0,public/audio/words/lamp.mp3,no,Lamp.,Lamp.,1.008,0.648
+1.0,public/audio/words/may.mp3,no,May.,May,0.888,0.552
+1.0,public/audio/words/met.mp3,no,Met.,Met.,0.792,0.696
+1.0,public/audio/words/needs.mp3,no,Needs.,needs.,0.888,0.768
+1.0,public/audio/words/of.mp3,no,Of.,of,0.768,0.48
+1.0,public/audio/words/seat.mp3,no,Seat.,Seat.,0.84,0.672
+1.0,public/audio/words/sits.mp3,no,Sits.,Sits,0.912,0.72
+1.0,public/audio/words/spend.mp3,no,Spend.,spend,0.96,0.696
+1.0,public/audio/words/swing.mp3,no,Swing.,Swing,1.032,0.672
+1.0,public/audio/words/then.mp3,no,Then.,Then...,0.792,0.624
+1.0,public/audio/words/tiny.mp3,no,Tiny.,Tiny.,0.96,0.696
+1.0,public/audio/words/tip.mp3,no,Tip.,Tip.,0.648,0.648
+1.0,public/audio/words/toad.mp3,no,Toad.,Toad.,0.792,0.768
+1.0,public/audio/words/toot.mp3,no,Toot.,Toot!,0.96,0.72
+1.0,public/audio/words/toy.mp3,no,Toy.,Toy!,1.128,0.744
+1.0,public/audio/words/toybox.mp3,no,Toybox.,Toybox.,1.128,0.96
+1.0,public/audio/words/wake.mp3,no,Wake.,Wake!,0.792,0.576
+1.0,public/audio/words/wand.mp3,no,Wand.,Wand,0.912,0.6
+1.0,public/audio/words/yikes.mp3,no,Yikes.,Yikes!,1.128,0.72
+1.0,public/audio/words/yo-yo.mp3,no,Yo-yo.,Yo-yo,1.128,0.792
+1.0,public/audio/words/yum.mp3,no,Yum.,Yum!,1.56,0.672
+1.0,public/audio/words/zebra.mp3,no,Zebra.,Zebra,0.888,0.744
