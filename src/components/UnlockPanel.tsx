@@ -86,6 +86,7 @@ function LegalLinks() {
 }
 
 /** The grown-up page for the one-time unlock: what it opens, the price, a code, and Restore. */
+// Must only be reachable behind ParentGate (via GrownupsMenu). Enforced by src/releaseGuard.test.ts.
 export function UnlockPanel({ profiles = [] }: { profiles?: ChildProfile[] }) {
   const unlock = useUnlock();
   const busy = unlock.status === "busy";

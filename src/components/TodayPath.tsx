@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { MODULE_BUILD, MODULE_CODE, MODULE_COLORS, MODULE_NUMBERS, MODULE_SCIENCE, MODULE_TIME } from "../brand";
 import { ColorBoard } from "./ColorPlay";
 import { MathBoard } from "./MathPlay";
@@ -19,13 +20,15 @@ import { GoalRing } from "./GoalRing";
 import { Hero } from "./Hero";
 import { Chevron, StarIcon } from "./icons";
 import { EngineerBoard } from "./BuildGames";
-import { ScienceBoard } from "./ScienceGames";
 import { LockBadge } from "./LockBadge";
 import { artOf } from "../avatars";
 import { BasketNest, WovenNest } from "./sceneArt";
 import { BookLine, DropsLine, EggMark, ExploreMark, NestMark, PencilLine, SmileLine, StarMark } from "./TodayMarks";
 
 import { HoldButton } from "./HoldButton";
+
+/** Science games load on demand so they split into their own chunk. */
+const ScienceBoard = lazy(() => import("./ScienceGames").then((mod) => ({ default: mod.ScienceBoard })));
 
 const stops: { id: LessonStep; label: string }[] = [
   { id: "letter", label: "Letters" },
@@ -346,7 +349,9 @@ export function TodayPath({
             <EngineerBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[BUILD] ?? {}} onOpen={onBuild} locked={(id) => lockedActivity?.("build", id) ?? false} />
           ) : null}
           {shown === "science" ? (
-            <ScienceBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[SCIENCE] ?? {}} onOpen={onScience} locked={(id) => lockedActivity?.("science", id) ?? false} />
+            <Suspense fallback={null}>
+              <ScienceBoard ageRange={profile.ageRange} done={profile.days[todayKey(now)]?.[SCIENCE] ?? {}} onOpen={onScience} locked={(id) => lockedActivity?.("science", id) ?? false} />
+            </Suspense>
           ) : null}
         </section>
 
