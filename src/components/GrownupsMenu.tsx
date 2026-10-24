@@ -27,6 +27,10 @@ import { OfflinePanel } from "./OfflinePanel";
 import { UnlockPanel } from "./UnlockPanel";
 import { Printables } from "./Printables";
 import { SettingsFields } from "./SettingsFields";
+import { ParentSummary } from "./ParentSummary";
+import { markReviewAsked, shouldAskForReview } from "../data/reviewPrompt";
+import { requestStoreReview } from "../nativeExtras";
+import { deviceStorage } from "../deviceStorage";
 
 export type GrownupsPage =
   | "menu"
@@ -40,11 +44,13 @@ export type GrownupsPage =
   | "share"
   | "printables"
   | "offline"
-  | "progress";
+  | "progress"
+  | "summary";
 
 const rows: { id: Exclude<GrownupsPage, "menu">; title: string; note: string; tint: string; glyph: RowGlyphName }[] = [
   { id: "unlock", title: `Full ${PRODUCT_SHORT}`, note: "Every week and activity, one payment, and Restore", tint: tint.peach, glyph: "star" },
   { id: "progress", title: "Progress", note: "Lessons finished, sounds they know, and teacher codes", tint: tint.mintCard, glyph: "sprout" },
+  { id: "summary", title: "Progress summary", note: "Weeks, sounds, stories, and stickers so far, to share", tint: tint.sky, glyph: "page" },
   { id: "settings", title: "Settings", note: "Volume, voice, lesson length, calm mode, easier reading, tips, and Explore", tint: tint.mint, glyph: "sliders" },
   { id: "offline", title: "Offline", note: "Download lessons for a flight", tint: tint.sky, glyph: "download" },
   { id: "profiles", title: "Child profiles", note: "First name or initial, and an animal", tint: tint.peach, glyph: "face" },
@@ -170,6 +176,21 @@ export function GrownupsMenu({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, page, initialPage]);
 
+  // Apple's rating sheet: only here, past the grown-up check, once a child has finished a whole
+  // week, and once per version. Asked on the native app only; Apple decides whether it shows.
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    const storage = deviceStorage();
+    if (!shouldAskForReview(profiles, aboutContent.version, storage)) return;
+    const timer = window.setTimeout(() => {
+      markReviewAsked(aboutContent.version, storage);
+      void requestStoreReview();
+    }, 1500);
+    return () => window.clearTimeout(timer);
+    // Once per opening of Grown-ups.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (editingId && !profiles.some((profile) => profile.id === editingId)) setEditingId(null);
   }, [editingId, profiles]);
@@ -234,6 +255,8 @@ export function GrownupsMenu({
           />
         </section>
       ) : null}
+
+      {page === "summary" ? <ParentSummary profiles={profiles} /> : null}
 
       {page === "unlock" ? <UnlockPanel profiles={profiles} /> : null}
 

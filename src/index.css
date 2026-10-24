@@ -14042,3 +14042,10 @@ button,
   flex: 0 0 30px;
   width: 30px;
 }
+
+/* Progress summary (Grown-ups) */
+.summary-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.summary-card { background: var(--card, #fff); border-radius: 18px; padding: 16px; box-shadow: 0 1px 4px rgb(0 0 0 / 8%); }
+.summary-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.summary-head h3 { margin: 0; }
+.summary-name-toggle { display: flex; gap: 8px; align-items: center; margin: 12px 0; font-size: 0.95rem; }
