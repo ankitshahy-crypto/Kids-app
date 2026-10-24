@@ -14049,3 +14049,26 @@ button,
 .summary-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 .summary-head h3 { margin: 0; }
 .summary-name-toggle { display: flex; gap: 8px; align-items: center; margin: 12px 0; font-size: 0.95rem; }
+
+/* iPad: a grown-up page reads as a column, not a line across a 13-inch screen. */
+@media (min-width: 700px) {
+  .grownups-view:not([data-page="menu"]) > .grownups-bar,
+  .grownups-view > .adult-section {
+    max-width: 760px;
+    margin-inline: auto;
+  }
+  .summary-card {
+    max-width: 560px;
+    width: 100%;
+    margin-inline: auto;
+  }
+}
+@media (min-width: 1100px) {
+  .grownups-view[data-page="summary"] > .grownups-bar,
+  .grownups-view > .adult-section[data-section="summary"] {
+    max-width: 1000px;
+  }
+  .summary-list {
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  }
+}
